@@ -230,20 +230,52 @@ function finishElection(){
     });
 }
 
+<script>
 function exportPDF(){
-    const box=document.createElement("div");
-    box.className="result-box";
-    box.innerHTML=resultContent.innerHTML;
+
+    // 1. Criar caixa visível
+    const box = document.createElement("div");
+    box.className = "result-box";
+    box.style.position = "fixed";
+    box.style.top = "0";
+    box.style.left = "0";
+    box.style.width = "100%";
+    box.style.zIndex = "9999";
+    box.innerHTML = document.getElementById("resultContent").innerHTML;
+
     document.body.appendChild(box);
 
-    html2pdf({
-        margin:10,
-        filename:"resultado_eleicao.pdf",
-        html2canvas:{scale:2},
-        jsPDF:{unit:"mm",format:"a4"}
-    }).from(box).save().then(()=>box.remove());
+    // 2. Liberar overflow TEMPORARIAMENTE
+    const oldOverflow = document.body.style.overflow;
+    document.body.style.overflow = "visible";
+
+    // 3. Aguardar renderização real
+    setTimeout(() => {
+        html2pdf()
+            .set({
+                margin: 10,
+                filename: "resultado_eleicao.pdf",
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true
+                },
+                jsPDF: {
+                    unit: "mm",
+                    format: "a4",
+                    orientation: "portrait"
+                }
+            })
+            .from(box)
+            .save()
+            .then(() => {
+                // 4. Limpeza
+                document.body.style.overflow = oldOverflow;
+                document.body.removeChild(box);
+            });
+    }, 300);
 }
 </script>
+
 
 </body>
 </html>
