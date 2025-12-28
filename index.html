@@ -2,22 +2,32 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>UrnaWeb Pro</title>
+<title>UrnaWeb</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
 *{box-sizing:border-box}
+
 body{
     margin:0;
     font-family:Arial,Helvetica,sans-serif;
-    background:#0a2a66;
+    background:#0b1f3a;
     color:white;
     overflow:hidden;
 }
-.screen{display:none;padding:20px;height:100vh}
+
+.screen{
+    display:none;
+    padding:20px;
+    height:100vh;
+}
+
 .active{display:block}
-h2,h3,h4{text-align:center;margin:10px 0}
+
+h2,h3,h4{text-align:center;margin:8px 0}
+
+p{text-align:center}
 
 input,button{
     padding:12px;
@@ -27,16 +37,24 @@ input,button{
     border-radius:6px;
     border:none;
 }
-button{background:#1abc9c;color:black;font-weight:bold;cursor:pointer}
+
+button{
+    background:#1abc9c;
+    color:black;
+    font-weight:bold;
+    cursor:pointer;
+}
+
 button.secondary{background:#f1c40f}
 button.danger{background:#e74c3c;color:white}
 
 .candidate-grid{
     display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
     gap:10px;
-    height:70vh;
+    height:65vh;
 }
+
 .candidate{
     background:#122f5f;
     border:4px solid transparent;
@@ -45,14 +63,21 @@ button.danger{background:#e74c3c;color:white}
     text-align:center;
     cursor:pointer;
 }
+
 .candidate.selected{border-color:#2ecc71}
+
 .candidate img{
     width:100%;
     height:140px;
     object-fit:cover;
     border-radius:6px;
 }
-.footer-buttons{display:flex;gap:10px;margin-top:10px}
+
+.footer-buttons{
+    display:flex;
+    gap:10px;
+    margin-top:10px;
+}
 
 .result-box{
     background:white;
@@ -66,9 +91,12 @@ button.danger{background:#e74c3c;color:white}
 
 <!-- CONFIGURAÇÃO -->
 <div id="setup" class="screen active">
-<h2>Configuração da Eleição</h2>
+<h2>🗳️ UrnaWeb</h2>
+<p>Sistema de Votação Digital</p>
 
 <input id="electionName" placeholder="Nome da Eleição">
+
+<hr>
 
 <input id="cargoName" placeholder="Nome do Cargo">
 <input id="maxVotes" type="number" placeholder="Votos permitidos">
@@ -89,13 +117,17 @@ button.danger{background:#e74c3c;color:white}
 <div id="voting" class="screen">
 <h2 id="cargoTitle"></h2>
 <div id="candidates" class="candidate-grid"></div>
-<button onclick="confirmVote()">CONFIRMAR</button>
+
+<div class="footer-buttons">
+<button onclick="confirmVote()">CONFIRMAR VOTO</button>
+</div>
 </div>
 
 <!-- PÓS VOTO -->
 <div id="afterVote" class="screen">
 <h2>VOTO CONFIRMADO</h2>
-<p style="text-align:center">Aguarde o próximo eleitor</p>
+<p>Aguarde o próximo eleitor</p>
+
 <div class="footer-buttons">
 <button class="secondary" onclick="nextVoter()">Próximo Eleitor</button>
 <button class="danger" onclick="finishElection()">Encerrar Votação</button>
@@ -106,135 +138,131 @@ button.danger{background:#e74c3c;color:white}
 <div id="results" class="screen">
 <h2>Resultado Final</h2>
 <div id="resultContent"></div>
-<button onclick="exportPDF()">Exportar PDF</button>
+<button onclick="exportPDF()">Exportar Resultado em PDF</button>
 </div>
 
 <script>
-let election={name:"",cargos:[]}
-let currentCargo=0
-let selected=[]
+let election={name:"",cargos:[]};
+let currentCargo=0;
+let selected=[];
 
-function fileToBase64(file){
-    return new Promise(resolve=>{
-        const reader=new FileReader()
-        reader.onload=()=>resolve(reader.result)
-        reader.readAsDataURL(file)
-    })
-}
-
-async function addCargo(){
-    const cargo=cargoName.value
-    const max=parseInt(maxVotes.value)
-    const namesFile=candidateNames.files[0]
-    const photos=[...candidatePhotos.files]
+function addCargo(){
+    const cargo=cargoName.value;
+    const max=parseInt(maxVotes.value);
+    const namesFile=candidateNames.files[0];
+    const photos=[...candidatePhotos.files];
 
     if(!cargo||!max||!namesFile){
-        alert("Preencha todos os campos")
-        return
+        alert("Preencha todos os dados do cargo");
+        return;
     }
 
-    const namesText=await namesFile.text()
-    const names=namesText.split("\n").filter(n=>n.trim())
-
-    const candidates=[]
-    for(let i=0;i<names.length;i++){
-        let photo=""
-        if(photos[i]) photo=await fileToBase64(photos[i])
-        candidates.push({name:names[i].trim(),photo,votes:0})
-    }
-
-    election.cargos.push({cargo,max,candidates})
-    cargoList.innerHTML+=`<p>${cargo} (${max} voto(s))</p>`
-
-    cargoName.value=""
-    maxVotes.value=""
-    candidateNames.value=""
-    candidatePhotos.value=""
+    const reader=new FileReader();
+    reader.onload=()=>{
+        const names=reader.result.split("\n").filter(n=>n.trim());
+        const candidates=names.map((n,i)=>({
+            name:n.trim(),
+            photo:photos[i]?URL.createObjectURL(photos[i]):"",
+            votes:0
+        }));
+        election.cargos.push({cargo,max,candidates});
+        cargoList.innerHTML+=`<p>✔ ${cargo} (${max} voto(s))</p>`;
+        cargoName.value="";
+        maxVotes.value="";
+        candidateNames.value="";
+        candidatePhotos.value="";
+    };
+    reader.readAsText(namesFile,"UTF-8");
 }
 
 function startVoting(){
-    election.name=electionName.value
+    election.name=electionName.value;
     if(!election.name||election.cargos.length===0){
-        alert("Configure a eleição")
-        return
+        alert("Configure a eleição");
+        return;
     }
-    setup.classList.remove("active")
-    showCargo()
+    setup.classList.remove("active");
+    showCargo();
 }
 
 function showCargo(){
-    selected=[]
-    voting.classList.add("active")
-    const cargo=election.cargos[currentCargo]
-    cargoTitle.innerText=cargo.cargo
-    candidates.innerHTML=""
+    selected=[];
+    voting.classList.add("active");
+    const cargo=election.cargos[currentCargo];
+    cargoTitle.innerText=cargo.cargo;
+    candidates.innerHTML="";
 
     cargo.candidates.forEach((c,i)=>{
-        const div=document.createElement("div")
-        div.className="candidate"
-        div.innerHTML=`<img src="${c.photo}"><p>${c.name}</p>`
-        div.onclick=()=>toggle(i,div)
-        candidates.appendChild(div)
-    })
+        const div=document.createElement("div");
+        div.className="candidate";
+        div.innerHTML=`<img src="${c.photo}"><p>${c.name}</p>`;
+        div.onclick=()=>toggle(i,div);
+        candidates.appendChild(div);
+    });
 }
 
 function toggle(i,div){
-    const cargo=election.cargos[currentCargo]
+    const cargo=election.cargos[currentCargo];
     if(selected.includes(i)){
-        selected=selected.filter(x=>x!==i)
-        div.classList.remove("selected")
+        selected=selected.filter(x=>x!==i);
+        div.classList.remove("selected");
     }else{
         if(selected.length>=cargo.max){
-            alert("Limite de votos atingido")
-            return
+            alert("Limite de votos atingido");
+            return;
         }
-        selected.push(i)
-        div.classList.add("selected")
+        selected.push(i);
+        div.classList.add("selected");
     }
 }
 
 function confirmVote(){
-    const cargo=election.cargos[currentCargo]
-    selected.forEach(i=>cargo.candidates[i].votes++)
-    voting.classList.remove("active")
+    const cargo=election.cargos[currentCargo];
+    selected.forEach(i=>cargo.candidates[i].votes++);
+    voting.classList.remove("active");
 
     if(currentCargo<election.cargos.length-1){
-        currentCargo++
-        showCargo()
+        currentCargo++;
+        showCargo();
     }else{
-        afterVote.classList.add("active")
+        afterVote.classList.add("active");
     }
 }
 
 function nextVoter(){
-    afterVote.classList.remove("active")
-    currentCargo=0
-    showCargo()
+    afterVote.classList.remove("active");
+    currentCargo=0;
+    showCargo();
 }
 
 function finishElection(){
-    afterVote.classList.remove("active")
-    results.classList.add("active")
+    afterVote.classList.remove("active");
+    results.classList.add("active");
 
-    resultContent.innerHTML=`<h3>${election.name}</h3>`
+    resultContent.innerHTML=`<h3>${election.name}</h3>`;
     election.cargos.forEach(c=>{
-        resultContent.innerHTML+=`<h4>${c.cargo}</h4>`
+        resultContent.innerHTML+=`<h4>${c.cargo}</h4>`;
         c.candidates.forEach(cd=>{
-            resultContent.innerHTML+=`<p>${cd.name}: ${cd.votes} voto(s)</p>`
-        })
-    })
+            resultContent.innerHTML+=`<p>${cd.name}: ${cd.votes} voto(s)</p>`;
+        });
+    });
 }
 
 function exportPDF(){
-    const box=document.createElement("div")
-    box.className="result-box"
-    box.innerHTML=resultContent.innerHTML
-    document.body.appendChild(box)
+    const box=document.createElement("div");
+    box.className="result-box";
+    box.innerHTML=resultContent.innerHTML;
+    document.body.appendChild(box);
 
-    html2pdf().from(box).save(`resultado_${election.name}.pdf`)
-    .then(()=>box.remove())
+    html2pdf().set({
+        filename:`resultado_${election.name}.pdf`,
+        html2canvas:{scale:2},
+        jsPDF:{unit:"mm",format:"a4"}
+    }).from(box).save().then(()=>box.remove());
 }
 </script>
 
 </body>
 </html>
+
+
