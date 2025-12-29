@@ -4,6 +4,31 @@
 <meta charset="UTF-8">
 <title>UrnaWeb</title>
 
+<script>
+const userEmail = localStorage.getItem("userEmail");
+
+// chave única por usuário
+const FREE_KEY = "urnaweb_free_used_" + userEmail;
+
+// verifica se já usou a versão grátis
+function checkFreeAccess(){
+    if(localStorage.getItem(FREE_KEY)){
+        alert(
+          "Sua votação gratuita já foi utilizada.\n\n" +
+          "Para continuar, é necessário efetuar o pagamento."
+        );
+        return false;
+    }
+    return true;
+}
+
+// marca como usado
+function markFreeAsUsed(){
+    localStorage.setItem(FREE_KEY, "true");
+}
+</script>
+
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
@@ -127,6 +152,11 @@ button.danger{background:#e74c3c;color:white}
 </div>
 
 <script>
+if(!localStorage.getItem("userEmail")){
+    window.location.href = "login.html";
+}
+</script>
+
 let election = { name:"", cargos:[] };
 let currentCargo = 0;
 let selected = [];
@@ -165,6 +195,22 @@ function addCargo(){
 
 /* ===== INICIAR ===== */
 function startVoting(){
+
+    // 🔒 verifica se ainda tem direito à votação grátis
+    if(!checkFreeAccess()){
+        return;
+    }
+
+    election.name = electionName.value;
+
+    if(!election.name || election.cargos.length === 0){
+        alert("Configure a eleição primeiro");
+        return;
+    }
+
+    setup.classList.remove("active");
+    showCargo();
+}
     election.name = document.getElementById("electionName").value.trim();
     if(!election.name || election.cargos.length === 0){
         alert("Configure a eleição primeiro");
@@ -233,7 +279,9 @@ function nextVoter(){
 }
 
 /* ===== ENCERRAR ===== */
-function finishElection(){
+function finishElection()    // marca que a votação grátis foi usada
+    markFreeAsUsed();
+{
     document.getElementById("afterVote").classList.remove("active");
     document.getElementById("results").classList.add("active");
 
@@ -266,4 +314,3 @@ function exportPDF(){
 
 </body>
 </html>
-
