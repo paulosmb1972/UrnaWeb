@@ -1,39 +1,48 @@
+<!-- PAGAMENTO -->
+<div id="payment" class="screen">
+<h2>Pagamento Necessário</h2>
+
+<p style="text-align:center">
+Você já utilizou sua votação gratuita.<br><br>
+Para criar uma nova eleição, é necessário efetuar o pagamento.
+</p>
+
+<h3 style="text-align:center">Valor: R$ 15,00</h3>
+
+<button onclick="openPayment()">Pagar agora</button>
+<button onclick="confirmPayment()">Já paguei</button>
+
+<script>
+function confirmPayment(){
+    alert(
+      "Pagamento recebido?\n\n" +
+      "Se você já efetuou o pagamento, aguarde a liberação.\n" +
+      "Caso contrário, conclua o pagamento primeiro."
+    );
+}
+</script>
+
+<p style="text-align:center;font-size:14px;margin-top:10px">
+PIX • Crédito • Débito
+</p>
+</div>
+<script>
+const PAYMENT_LINK = "https://mpago.la/1VakcdN";
+
+function openPayment(){
+    window.open(PAYMENT_LINK, "_blank");
+}
+</script>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <title>UrnaWeb</title>
 
-<script>
-const userEmail = localStorage.getItem("userEmail");
-
-// chave única por usuário
-const FREE_KEY = "urnaweb_free_used_" + userEmail;
-
-// verifica se já usou a versão grátis
-function checkFreeAccess(){
-    if(localStorage.getItem(FREE_KEY)){
-        alert(
-          "Sua votação gratuita já foi utilizada.\n\n" +
-          "Para continuar, é necessário efetuar o pagamento."
-        );
-        return false;
-    }
-    return true;
-}
-
-// marca como usado
-function markFreeAsUsed(){
-    localStorage.setItem(FREE_KEY, "true");
-}
-</script>
-
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
 *{box-sizing:border-box}
-
 body{
     margin:0;
     font-family:Arial,Helvetica,sans-serif;
@@ -41,17 +50,13 @@ body{
     color:white;
     overflow:hidden;
 }
-
 .screen{
     display:none;
     padding:20px;
     height:100vh;
 }
-
 .active{display:block}
-
 h2,h3,h4{text-align:center;margin:10px 0}
-
 input,button{
     padding:12px;
     font-size:16px;
@@ -60,24 +65,20 @@ input,button{
     border-radius:6px;
     border:none;
 }
-
 button{
     background:#1abc9c;
     color:black;
     font-weight:bold;
     cursor:pointer;
 }
-
 button.secondary{background:#f1c40f}
 button.danger{background:#e74c3c;color:white}
-
 .candidate-grid{
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
     gap:10px;
     height:65vh;
 }
-
 .candidate{
     background:#122f5f;
     border:4px solid transparent;
@@ -86,33 +87,35 @@ button.danger{background:#e74c3c;color:white}
     text-align:center;
     cursor:pointer;
 }
-
 .candidate.selected{border-color:#2ecc71}
-
 .candidate img{
     width:100%;
     height:140px;
     object-fit:cover;
     border-radius:6px;
 }
-
 .result-box{
     background:white;
     color:black;
     padding:20px;
-    font-family:Arial,Helvetica,sans-serif;
 }
 </style>
 </head>
 
 <body>
 
+<!-- LOGIN SIMPLES -->
+<div id="login" class="screen active">
+<h2>Identificação do Usuário</h2>
+<input id="userEmail" placeholder="Digite seu e-mail">
+<button onclick="login()">Continuar</button>
+</div>
+
 <!-- CONFIGURAÇÃO -->
-<div id="setup" class="screen active">
+<div id="setup" class="screen">
 <h2>Configuração da Eleição</h2>
 
 <input id="electionName" placeholder="Nome da Eleição">
-
 <input id="cargoName" placeholder="Nome do Cargo">
 <input id="maxVotes" type="number" placeholder="Votos permitidos">
 
@@ -138,8 +141,6 @@ button.danger{background:#e74c3c;color:white}
 <!-- PÓS VOTO -->
 <div id="afterVote" class="screen">
 <h2>VOTO CONFIRMADO</h2>
-<p style="text-align:center">Próximo eleitor</p>
-
 <button onclick="nextVoter()">Novo Eleitor</button>
 <button class="danger" onclick="finishElection()">Encerrar Votação</button>
 </div>
@@ -152,95 +153,88 @@ button.danger{background:#e74c3c;color:white}
 </div>
 
 <script>
-if(!localStorage.getItem("userEmail")){
-    window.location.href = "login.html";
-}
-</script>
+let election={name:"",cargos:[]};
+let currentCargo=0;
+let selected=[];
+let userEmail="";
 
-let election = { name:"", cargos:[] };
-let currentCargo = 0;
-let selected = [];
+/* ===== LOGIN ===== */
+function login(){
+    const email=document.getElementById("userEmail").value.trim();
+    if(!email){
+        alert("Informe seu e-mail");
+        return;
+    }
+    userEmail=email;
+    localStorage.setItem("urnaweb_user",email);
+
+    const freeKey="urnaweb_free_"+email;
+    if(localStorage.getItem(freeKey)){
+        document.getElementById("login").classList.remove("active");
+document.getElementById("payment").classList.add("active");
+return;
+    }
+
+    document.getElementById("login").classList.remove("active");
+    document.getElementById("setup").classList.add("active");
+}
 
 /* ===== ADICIONAR CARGO ===== */
 function addCargo(){
-    const cargo = document.getElementById("cargoName").value.trim();
-    const max = parseInt(document.getElementById("maxVotes").value);
-    const namesFile = document.getElementById("candidateNames").files[0];
-    const photos = [...document.getElementById("candidatePhotos").files];
+    const cargo=cargoName.value.trim();
+    const max=parseInt(maxVotes.value);
+    const namesFile=candidateNames.files[0];
+    const photos=[...candidatePhotos.files];
 
-    if(!cargo || !max || !namesFile){
-        alert("Preencha todos os campos do cargo");
+    if(!cargo||!max||!namesFile){
+        alert("Preencha todos os campos");
         return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-        const names = reader.result.split("\n").filter(n=>n.trim());
-        const candidates = names.map((n,i)=>({
+    const reader=new FileReader();
+    reader.onload=()=>{
+        const names=reader.result.split("\n").filter(n=>n.trim());
+        const candidates=names.map((n,i)=>({
             name:n.trim(),
-            photo:photos[i] ? URL.createObjectURL(photos[i]) : "",
+            photo:photos[i]?URL.createObjectURL(photos[i]):"",
             votes:0
         }));
-
         election.cargos.push({cargo,max,candidates});
-        document.getElementById("cargoList").innerHTML += `<p>✔ ${cargo} (${max} voto(s))</p>`;
-
-        document.getElementById("cargoName").value="";
-        document.getElementById("maxVotes").value="";
-        document.getElementById("candidateNames").value="";
-        document.getElementById("candidatePhotos").value="";
+        cargoList.innerHTML+=`<p>✔ ${cargo}</p>`;
+        cargoName.value="";
+        maxVotes.value="";
+        candidateNames.value="";
+        candidatePhotos.value="";
     };
     reader.readAsText(namesFile,"UTF-8");
 }
 
 /* ===== INICIAR ===== */
 function startVoting(){
-
-    // 🔒 verifica se ainda tem direito à votação grátis
-    if(!checkFreeAccess()){
+    election.name=electionName.value.trim();
+    if(!election.name||election.cargos.length===0){
+        alert("Configure a eleição");
         return;
     }
-
-    election.name = electionName.value;
-
-    if(!election.name || election.cargos.length === 0){
-        alert("Configure a eleição primeiro");
-        return;
-    }
-
     setup.classList.remove("active");
     showCargo();
 }
-    election.name = document.getElementById("electionName").value.trim();
-    if(!election.name || election.cargos.length === 0){
-        alert("Configure a eleição primeiro");
-        return;
-    }
-    document.getElementById("setup").classList.remove("active");
-    showCargo();
-}
 
-/* ===== MOSTRAR CARGO ===== */
 function showCargo(){
     selected=[];
-    document.getElementById("voting").classList.add("active");
-
-    const cargo = election.cargos[currentCargo];
-    document.getElementById("cargoTitle").innerText = cargo.cargo;
-
-    const grid = document.getElementById("candidates");
-    grid.innerHTML="";
-
+    voting.classList.add("active");
+    const cargo=election.cargos[currentCargo];
+    cargoTitle.innerText=cargo.cargo;
+    candidates.innerHTML="";
     cargo.candidates.forEach((c,i)=>{
         const div=document.createElement("div");
         div.className="candidate";
         div.innerHTML=`<img src="${c.photo}"><p>${c.name}</p>`;
         div.onclick=()=>toggle(i,div);
-        grid.appendChild(div);
+        candidates.appendChild(div);
     });
 }
 
-/* ===== SELEÇÃO ===== */
 function toggle(i,div){
     const cargo=election.cargos[currentCargo];
     if(selected.includes(i)){
@@ -248,7 +242,7 @@ function toggle(i,div){
         div.classList.remove("selected");
     }else{
         if(selected.length>=cargo.max){
-            alert("Limite de votos atingido");
+            alert("Limite atingido");
             return;
         }
         selected.push(i);
@@ -256,59 +250,48 @@ function toggle(i,div){
     }
 }
 
-/* ===== CONFIRMAR ===== */
 function confirmVote(){
     const cargo=election.cargos[currentCargo];
     selected.forEach(i=>cargo.candidates[i].votes++);
+    voting.classList.remove("active");
 
-    document.getElementById("voting").classList.remove("active");
-
-    if(currentCargo < election.cargos.length-1){
+    if(currentCargo<election.cargos.length-1){
         currentCargo++;
         showCargo();
     }else{
-        document.getElementById("afterVote").classList.add("active");
+        afterVote.classList.add("active");
     }
 }
 
-/* ===== NOVO ELEITOR ===== */
 function nextVoter(){
-    document.getElementById("afterVote").classList.remove("active");
+    afterVote.classList.remove("active");
     currentCargo=0;
     showCargo();
 }
 
-/* ===== ENCERRAR ===== */
-function finishElection()    // marca que a votação grátis foi usada
-    markFreeAsUsed();
-{
-    document.getElementById("afterVote").classList.remove("active");
-    document.getElementById("results").classList.add("active");
+function finishElection(){
+    const freeKey="urnaweb_free_"+userEmail;
+    localStorage.setItem(freeKey,"used");
 
-    const r=document.getElementById("resultContent");
-    r.innerHTML=`<h3>${election.name}</h3>`;
+    afterVote.classList.remove("active");
+    results.classList.add("active");
 
+    resultContent.innerHTML=`<h3>${election.name}</h3>`;
     election.cargos.forEach(c=>{
-        r.innerHTML+=`<h4>${c.cargo}</h4>`;
+        resultContent.innerHTML+=`<h4>${c.cargo}</h4>`;
         c.candidates.forEach(cd=>{
-            r.innerHTML+=`<p>${cd.name}: ${cd.votes} voto(s)</p>`;
+            resultContent.innerHTML+=`<p>${cd.name}: ${cd.votes}</p>`;
         });
     });
 }
 
-/* ===== PDF (FUNCIONA) ===== */
 function exportPDF(){
     const box=document.createElement("div");
     box.className="result-box";
-    box.innerHTML=document.getElementById("resultContent").innerHTML;
+    box.innerHTML=resultContent.innerHTML;
     document.body.appendChild(box);
 
-    html2pdf().set({
-        margin:10,
-        filename:"resultado_eleicao.pdf",
-        html2canvas:{scale:2},
-        jsPDF:{format:"a4"}
-    }).from(box).save().then(()=>box.remove());
+    html2pdf().from(box).save().then(()=>box.remove());
 }
 </script>
 
