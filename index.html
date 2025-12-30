@@ -66,6 +66,12 @@ button.danger{background:#e74c3c;color:white}
 }
 .lang-box button{
     width:auto;
+    margin-left:4px;
+}
+.result-box{
+    background:white;
+    color:black;
+    padding:20px;
 }
 </style>
 </head>
@@ -81,40 +87,20 @@ button.danger{background:#e74c3c;color:white}
 <!-- LOGIN -->
 <div id="login" class="screen active">
     <h2 id="tLogin"></h2>
-    <input id="userEmail" placeholder="Digite seu e-mail">
+    <input id="userEmailInput" placeholder="Digite seu Gmail">
     <button onclick="loginUser()">Continuar</button>
-</div>
-
-<!-- PAGAMENTO -->
-<div id="payment" class="screen">
-    <h2>Plano Premium</h2>
-    <p style="text-align:center">
-        Sua votação gratuita já foi utilizada.<br><br>
-        Para criar uma nova eleição, efetue o pagamento.
-    </p>
-
-    <h3 style="text-align:center">R$ 15,00 / US$ 2,99</h3>
-
-    <button onclick="goToPayment()">Pagar com PIX ou Cartão</button>
-
-    <input id="paymentCode" placeholder="Código de liberação">
-    <button class="secondary" onclick="unlockElection()">Liberar eleição</button>
 </div>
 
 <!-- CONFIG -->
 <div id="setup" class="screen">
     <h2 id="tConfig"></h2>
-
     <input id="electionName" placeholder="Nome da Eleição">
     <input id="cargoName" placeholder="Nome do Cargo">
     <input id="maxVotes" type="number" placeholder="Qtd. de votos">
-
     <input type="file" id="candidateNames" accept=".txt">
     <input type="file" id="candidatePhotos" accept="image/*" multiple>
-
     <button onclick="addCargo()">Adicionar Cargo</button>
     <button class="secondary" onclick="startVoting()">Iniciar Votação</button>
-
     <div id="cargoList"></div>
 </div>
 
@@ -132,47 +118,57 @@ button.danger{background:#e74c3c;color:white}
     <button class="danger" onclick="finishElection()">Encerrar</button>
 </div>
 
-<!-- RESULTADO -->
+<!-- RESULTADOS -->
 <div id="results" class="screen">
     <h2 id="tResult"></h2>
     <div id="resultContent"></div>
     <button onclick="exportPDF()">Exportar PDF</button>
 </div>
 
+<!-- PAGAMENTO -->
+<div id="payment" class="screen">
+    <h2>Plano Premium</h2>
+    <p style="text-align:center">
+        Você já utilizou a votação gratuita.<br>
+        Para criar nova eleição, pague:
+    </p>
+    <h3 style="text-align:center">R$ 15,00 / US$ 2,99</h3>
+
+    <button onclick="goToPayment()">Pagar com PIX ou Cartão</button>
+    <button onclick="sendCode()">Enviar código para meu e-mail</button>
+
+    <input id="paymentCode" placeholder="Digite o código recebido">
+    <button class="secondary" onclick="unlockElection()">Validar Código</button>
+</div>
+
 <script>
-/* ================= DADOS ================= */
 let election={name:"",cargos:[]};
 let currentCargo=0;
 let selected=[];
-let userEmail="";
 let lang=localStorage.getItem("lang")||"pt";
+let userEmail="";
+let generatedCode="";
 
-/* ================= CÓDIGOS ================= */
-const VALID_CODES=["URNA15A","URNA15B","CLIENTE001"];
 const PAYMENT_LINK="https://mpago.la/1VakcdN";
 
-/* ================= TELAS ================= */
+/* TELAS */
 function showScreen(id){
     document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
     document.getElementById(id).classList.add("active");
 }
 
-/* ================= LOGIN ================= */
+/* LOGIN */
 function loginUser(){
-    const email=document.getElementById("userEmail").value.trim();
-    if(!email){alert("Informe o e-mail");return;}
-
-    userEmail=email;
-    localStorage.setItem("urnaweb_user",email);
-
-    if(localStorage.getItem("freeUsed_"+email)){
-        showScreen("payment");
-    }else{
-        showScreen("setup");
+    const email=document.getElementById("userEmailInput").value.trim().toLowerCase();
+    if(!email.includes("@gmail.com")){
+        alert("Use um Gmail válido");
+        return;
     }
+    userEmail=email;
+    showScreen("setup");
 }
 
-/* ================= CARGO ================= */
+/* CARGO */
 function addCargo(){
     const cargo=cargoName.value.trim();
     const max=parseInt(maxVotes.value);
@@ -180,7 +176,7 @@ function addCargo(){
     const photos=[...candidatePhotos.files];
 
     if(!cargo||!max||!namesFile){
-        alert("Preencha todos os campos");
+        alert("Campos obrigatórios");
         return;
     }
 
@@ -194,20 +190,36 @@ function addCargo(){
         }));
         election.cargos.push({cargo,max,candidates});
         cargoList.innerHTML+=`<p>✔ ${cargo}</p>`;
-        cargoName.value=maxVotes.value=candidateNames.value=candidatePhotos.value="";
+        cargoName.value="";
+        maxVotes.value="";
+        candidateNames.value="";
+        candidatePhotos.value="";
     };
-    reader.readAsText(namesFile,"UTF-8");
+    reader.readAsText(namesFile);
 }
 
-/* ================= VOTAÇÃO ================= */
+/* CONTROLE GRÁTIS */
+function canCreateElection(){
+    return !localStorage.getItem("freeUsed_"+userEmail);
+}
+function markElectionUsed(){
+    localStorage.setItem("freeUsed_"+userEmail,"true");
+}
+
+/* VOTAÇÃO */
 function startVoting(){
+    if(!canCreateElection()){
+        showScreen("payment");
+        return;
+    }
+
     election.name=electionName.value.trim();
     if(!election.name||election.cargos.length===0){
         alert("Configure a eleição");
         return;
     }
 
-    localStorage.setItem("freeUsed_"+userEmail,"true");
+    markElectionUsed();
     currentCargo=0;
     showCargo();
 }
@@ -233,7 +245,10 @@ function toggle(i,div){
         selected=selected.filter(x=>x!==i);
         div.classList.remove("selected");
     }else{
-        if(selected.length>=cargo.max){alert("Limite atingido");return;}
+        if(selected.length>=cargo.max){
+            alert("Limite atingido");
+            return;
+        }
         selected.push(i);
         div.classList.add("selected");
     }
@@ -266,28 +281,40 @@ function finishElection(){
     });
 }
 
-/* ================= PDF ================= */
+/* PDF */
 function exportPDF(){
-    html2pdf().from(resultContent).save();
+    const box=document.createElement("div");
+    box.className="result-box";
+    box.innerHTML=resultContent.innerHTML;
+    document.body.appendChild(box);
+    html2pdf().from(box).save().then(()=>box.remove());
 }
 
-/* ================= PAGAMENTO ================= */
+/* PAGAMENTO */
 function goToPayment(){
     window.open(PAYMENT_LINK,"_blank");
 }
 
+function sendCode(){
+    generatedCode="URNA-"+Math.floor(100000+Math.random()*900000);
+    localStorage.setItem("code_"+userEmail,generatedCode);
+    alert("Código enviado para "+userEmail+"\n\nCÓDIGO: "+generatedCode);
+}
+
 function unlockElection(){
-    const code=document.getElementById("paymentCode").value.trim().toUpperCase();
-    if(!VALID_CODES.includes(code)){
+    const code=paymentCode.value.trim().toUpperCase();
+    const saved=localStorage.getItem("code_"+userEmail);
+    if(code!==saved){
         alert("Código inválido");
         return;
     }
     localStorage.removeItem("freeUsed_"+userEmail);
+    localStorage.removeItem("code_"+userEmail);
     alert("Eleição liberada!");
     showScreen("setup");
 }
 
-/* ================= IDIOMAS ================= */
+/* IDIOMA */
 const txt={
 pt:{login:"Identificação do Usuário",config:"Configuração da Eleição",confirm:"CONFIRMAR VOTO",confirmed:"VOTO CONFIRMADO",result:"Resultado Final"},
 en:{login:"User Identification",config:"Election Setup",confirm:"CONFIRM VOTE",confirmed:"VOTE CONFIRMED",result:"Final Results"},
