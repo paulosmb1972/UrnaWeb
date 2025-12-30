@@ -1,38 +1,3 @@
-<!-- PAGAMENTO -->
-<div id="payment" class="screen">
-<h2>Pagamento Necessário</h2>
-
-<p style="text-align:center">
-Você já utilizou sua votação gratuita.<br><br>
-Para criar uma nova eleição, é necessário efetuar o pagamento.
-</p>
-
-<h3 style="text-align:center">Valor: R$ 15,00</h3>
-
-<button onclick="openPayment()">Pagar agora</button>
-<button onclick="confirmPayment()">Já paguei</button>
-
-<script>
-function confirmPayment(){
-    alert(
-      "Pagamento recebido?\n\n" +
-      "Se você já efetuou o pagamento, aguarde a liberação.\n" +
-      "Caso contrário, conclua o pagamento primeiro."
-    );
-}
-</script>
-
-<p style="text-align:center;font-size:14px;margin-top:10px">
-PIX • Crédito • Débito
-</p>
-</div>
-<script>
-const PAYMENT_LINK = "https://mpago.la/1VakcdN";
-
-function openPayment(){
-    window.open(PAYMENT_LINK, "_blank");
-}
-</script>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -48,12 +13,11 @@ body{
     font-family:Arial,Helvetica,sans-serif;
     background:#0a2a66;
     color:white;
-    overflow:hidden;
 }
 .screen{
     display:none;
     padding:20px;
-    height:100vh;
+    min-height:100vh;
 }
 .active{display:block}
 h2,h3,h4{text-align:center;margin:10px 0}
@@ -73,11 +37,11 @@ button{
 }
 button.secondary{background:#f1c40f}
 button.danger{background:#e74c3c;color:white}
+
 .candidate-grid{
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
     gap:10px;
-    height:65vh;
 }
 .candidate{
     background:#122f5f;
@@ -99,98 +63,120 @@ button.danger{background:#e74c3c;color:white}
     color:black;
     padding:20px;
 }
+.lang-box{
+    position:fixed;
+    top:10px;
+    right:10px;
+}
+.lang-box button{width:auto;margin-left:4px;}
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN SIMPLES -->
-<div id="login" class="screen active">
-<h2>Identificação do Usuário</h2>
-<input id="userEmail" placeholder="Digite seu e-mail">
-<button onclick="login()">Continuar</button>
+<div class="lang-box">
+    <button onclick="setLang('pt')">🇧🇷</button>
+    <button onclick="setLang('en')">🇺🇸</button>
+    <button onclick="setLang('es')">🇪🇸</button>
 </div>
 
-<!-- CONFIGURAÇÃO -->
+<!-- LOGIN -->
+<div id="login" class="screen active">
+    <h2 id="tLogin"></h2>
+    <input id="userEmail" placeholder="Digite seu e-mail">
+    <button onclick="loginUser()">Continuar</button>
+</div>
+
+<!-- CONFIG -->
 <div id="setup" class="screen">
-<h2>Configuração da Eleição</h2>
-
-<input id="electionName" placeholder="Nome da Eleição">
-<input id="cargoName" placeholder="Nome do Cargo">
-<input id="maxVotes" type="number" placeholder="Votos permitidos">
-
-<label>Nomes dos candidatos (.txt)</label>
-<input type="file" id="candidateNames" accept=".txt">
-
-<label>Fotos dos candidatos</label>
-<input type="file" id="candidatePhotos" accept="image/*" multiple>
-
-<button onclick="addCargo()">Adicionar Cargo</button>
-<button class="secondary" onclick="startVoting()">Iniciar Votação</button>
-
-<div id="cargoList"></div>
+    <h2 id="tConfig"></h2>
+    <input id="electionName" placeholder="Nome da Eleição">
+    <input id="cargoName" placeholder="Nome do Cargo">
+    <input id="maxVotes" type="number" placeholder="Qtd. de votos">
+    <input type="file" id="candidateNames" accept=".txt">
+    <input type="file" id="candidatePhotos" accept="image/*" multiple>
+    <button onclick="addCargo()">Adicionar Cargo</button>
+    <button class="secondary" onclick="startVoting()">Iniciar Votação</button>
+    <div id="cargoList"></div>
 </div>
 
 <!-- VOTAÇÃO -->
 <div id="voting" class="screen">
-<h2 id="cargoTitle"></h2>
-<div id="candidates" class="candidate-grid"></div>
-<button onclick="confirmVote()">CONFIRMAR VOTO</button>
+    <h2 id="cargoTitle"></h2>
+    <div id="candidates" class="candidate-grid"></div>
+    <button id="btnConfirm" onclick="confirmVote()"></button>
 </div>
 
-<!-- PÓS VOTO -->
+<!-- FINAL -->
 <div id="afterVote" class="screen">
-<h2>VOTO CONFIRMADO</h2>
-<button onclick="nextVoter()">Novo Eleitor</button>
-<button class="danger" onclick="finishElection()">Encerrar Votação</button>
+    <h2 id="tConfirmed"></h2>
+    <button onclick="nextVoter()">Novo Eleitor</button>
+    <button class="danger" onclick="finishElection()">Encerrar</button>
 </div>
 
 <!-- RESULTADO -->
 <div id="results" class="screen">
-<h2>Resultado Final</h2>
-<div id="resultContent"></div>
-<button onclick="exportPDF()">Exportar PDF</button>
+    <h2 id="tResult"></h2>
+    <div id="resultContent"></div>
+    <button onclick="exportPDF()">Exportar PDF</button>
+</div>
+
+<!-- PAGAMENTO -->
+<div id="payment" class="screen">
+    <h2>Plano Premium</h2>
+    <p style="text-align:center">
+        Você já utilizou a votação gratuita.<br><br>
+        Para criar nova eleição, faça o pagamento.
+    </p>
+    <h3 style="text-align:center">R$ 15,00</h3>
+    <button onclick="goToPayment()">Pagar com PIX ou Cartão</button>
+    <button class="secondary" onclick="unlockElection()">Já paguei</button>
 </div>
 
 <script>
+/* ================= VARIÁVEIS ================= */
 let election={name:"",cargos:[]};
 let currentCargo=0;
 let selected=[];
-let userEmail="";
+let lang=localStorage.getItem("lang")||"pt";
+const PAYMENT_LINK="https://mpago.la/1VakcdN";
 
-/* ===== LOGIN ===== */
-function login(){
-    const email=document.getElementById("userEmail").value.trim();
-    if(!email){
-        alert("Informe seu e-mail");
-        return;
-    }
-    userEmail=email;
-    localStorage.setItem("urnaweb_user",email);
-
-    const freeKey="urnaweb_free_"+email;
-    if(localStorage.getItem(freeKey)){
-        document.getElementById("login").classList.remove("active");
-document.getElementById("payment").classList.add("active");
-return;
-    }
-
-    document.getElementById("login").classList.remove("active");
-    document.getElementById("setup").classList.add("active");
+/* ================= TELAS ================= */
+function showScreen(id){
+    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
 }
 
-/* ===== ADICIONAR CARGO ===== */
+/* ================= LOGIN ================= */
+function loginUser(){
+    const email=userEmail.value.trim();
+    if(!email){alert("Informe o e-mail");return;}
+    showScreen("setup");
+}
+
+/* ================= PAGAMENTO ================= */
+function canCreateElection(){
+    return !localStorage.getItem("freeUsed");
+}
+function markElectionUsed(){
+    localStorage.setItem("freeUsed","true");
+}
+function goToPayment(){
+    window.open(PAYMENT_LINK,"_blank");
+}
+function unlockElection(){
+    localStorage.removeItem("freeUsed");
+    alert("Eleição liberada!");
+    showScreen("setup");
+}
+
+/* ================= CARGO ================= */
 function addCargo(){
     const cargo=cargoName.value.trim();
     const max=parseInt(maxVotes.value);
     const namesFile=candidateNames.files[0];
     const photos=[...candidatePhotos.files];
-
-    if(!cargo||!max||!namesFile){
-        alert("Preencha todos os campos");
-        return;
-    }
-
+    if(!cargo||!max||!namesFile){alert("Campos obrigatórios");return;}
     const reader=new FileReader();
     reader.onload=()=>{
         const names=reader.result.split("\n").filter(n=>n.trim());
@@ -201,28 +187,26 @@ function addCargo(){
         }));
         election.cargos.push({cargo,max,candidates});
         cargoList.innerHTML+=`<p>✔ ${cargo}</p>`;
-        cargoName.value="";
-        maxVotes.value="";
-        candidateNames.value="";
-        candidatePhotos.value="";
+        cargoName.value=maxVotes.value=candidateNames.value=candidatePhotos.value="";
     };
     reader.readAsText(namesFile,"UTF-8");
 }
 
-/* ===== INICIAR ===== */
+/* ================= VOTAÇÃO ================= */
 function startVoting(){
+    if(!canCreateElection()){showScreen("payment");return;}
     election.name=electionName.value.trim();
     if(!election.name||election.cargos.length===0){
-        alert("Configure a eleição");
-        return;
+        alert("Configure a eleição");return;
     }
-    setup.classList.remove("active");
+    markElectionUsed();
+    currentCargo=0;
     showCargo();
 }
 
 function showCargo(){
     selected=[];
-    voting.classList.add("active");
+    showScreen("voting");
     const cargo=election.cargos[currentCargo];
     cargoTitle.innerText=cargo.cargo;
     candidates.innerHTML="";
@@ -241,10 +225,7 @@ function toggle(i,div){
         selected=selected.filter(x=>x!==i);
         div.classList.remove("selected");
     }else{
-        if(selected.length>=cargo.max){
-            alert("Limite atingido");
-            return;
-        }
+        if(selected.length>=cargo.max){alert("Limite atingido");return;}
         selected.push(i);
         div.classList.add("selected");
     }
@@ -253,29 +234,16 @@ function toggle(i,div){
 function confirmVote(){
     const cargo=election.cargos[currentCargo];
     selected.forEach(i=>cargo.candidates[i].votes++);
-    voting.classList.remove("active");
-
     if(currentCargo<election.cargos.length-1){
-        currentCargo++;
-        showCargo();
+        currentCargo++; showCargo();
     }else{
-        afterVote.classList.add("active");
+        showScreen("afterVote");
     }
 }
 
-function nextVoter(){
-    afterVote.classList.remove("active");
-    currentCargo=0;
-    showCargo();
-}
-
+function nextVoter(){currentCargo=0;showCargo();}
 function finishElection(){
-    const freeKey="urnaweb_free_"+userEmail;
-    localStorage.setItem(freeKey,"used");
-
-    afterVote.classList.remove("active");
-    results.classList.add("active");
-
+    showScreen("results");
     resultContent.innerHTML=`<h3>${election.name}</h3>`;
     election.cargos.forEach(c=>{
         resultContent.innerHTML+=`<h4>${c.cargo}</h4>`;
@@ -285,14 +253,30 @@ function finishElection(){
     });
 }
 
+/* ================= PDF ================= */
 function exportPDF(){
     const box=document.createElement("div");
     box.className="result-box";
     box.innerHTML=resultContent.innerHTML;
     document.body.appendChild(box);
-
     html2pdf().from(box).save().then(()=>box.remove());
 }
+
+/* ================= IDIOMAS ================= */
+const txt={
+pt:{login:"Identificação do Usuário",config:"Configuração da Eleição",confirm:"CONFIRMAR VOTO",confirmed:"VOTO CONFIRMADO",result:"Resultado Final"},
+en:{login:"User Identification",config:"Election Setup",confirm:"CONFIRM VOTE",confirmed:"VOTE CONFIRMED",result:"Final Results"},
+es:{login:"Identificación del Usuario",config:"Configuración de la Elección",confirm:"CONFIRMAR VOTO",confirmed:"VOTO CONFIRMADO",result:"Resultados Finales"}
+};
+function setLang(l){
+    lang=l;localStorage.setItem("lang",l);
+    tLogin.innerText=txt[l].login;
+    tConfig.innerText=txt[l].config;
+    btnConfirm.innerText=txt[l].confirm;
+    tConfirmed.innerText=txt[l].confirmed;
+    tResult.innerText=txt[l].result;
+}
+setLang(lang);
 </script>
 
 </body>
