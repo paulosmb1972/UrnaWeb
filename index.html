@@ -4,338 +4,18 @@
 <meta charset="UTF-8">
 <title>UrnaWeb</title>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-<style>
-*{box-sizing:border-box}
-body{
-    margin:0;
-    font-family:Arial,Helvetica,sans-serif;
-    background:#0a2a66;
-    color:white;
-}
-.screen{
-    display:none;
-    padding:20px;
-    min-height:100vh;
-}
-.active{display:block}
-h2,h3,h4{text-align:center}
-input,button{
-    padding:12px;
-    font-size:16px;
-    width:100%;
-    margin:6px 0;
-    border-radius:6px;
-    border:none;
-}
-button{
-    background:#1abc9c;
-    color:black;
-    font-weight:bold;
-    cursor:pointer;
-}
-button.secondary{background:#f1c40f}
-button.danger{background:#e74c3c;color:white}
-
-.candidate-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-    gap:10px;
-}
-.candidate{
-    background:#122f5f;
-    border:4px solid transparent;
-    border-radius:8px;
-    padding:8px;
-    text-align:center;
-    cursor:pointer;
-}
-.candidate.selected{border-color:#2ecc71}
-.candidate img{
-    width:100%;
-    height:140px;
-    object-fit:cover;
-    border-radius:6px;
-}
-
-.lang-box{
-    position:fixed;
-    top:10px;
-    right:10px;
-}
-.lang-box button{
-    width:auto;
-    margin-left:4px;
-}
-.result-box{
-    background:white;
-    color:black;
-    padding:20px;
-}
-</style>
-</head>
-
-<body>
-
-<div class="lang-box">
-    <button onclick="setLang('pt')">🇧🇷</button>
-    <button onclick="setLang('en')">🇺🇸</button>
-    <button onclick="setLang('es')">🇪🇸</button>
-</div>
-
-<!-- LOGIN -->
-<div id="login" class="screen active">
-    <h2 id="tLogin"></h2>
-    <input id="userEmailInput" placeholder="Digite seu Gmail">
-    <button onclick="loginUser()">Continuar</button>
-</div>
-
-<!-- CONFIG -->
-<div id="setup" class="screen">
-    <h2 id="tConfig"></h2>
-    <input id="electionName" placeholder="Nome da Eleição">
-    <input id="cargoName" placeholder="Nome do Cargo">
-    <input id="maxVotes" type="number" placeholder="Qtd. de votos">
-    <input type="file" id="candidateNames" accept=".txt">
-    <input type="file" id="candidatePhotos" accept="image/*" multiple>
-    <button onclick="addCargo()">Adicionar Cargo</button>
-    <button class="secondary" onclick="startVoting()">Iniciar Votação</button>
-    <div id="cargoList"></div>
-</div>
-
-<!-- VOTAÇÃO -->
-<div id="voting" class="screen">
-    <h2 id="cargoTitle"></h2>
-    <div id="candidates" class="candidate-grid"></div>
-    <button id="btnConfirm" onclick="confirmVote()"></button>
-</div>
-
-<!-- FINAL -->
-<div id="afterVote" class="screen">
-    <h2 id="tConfirmed"></h2>
-    <button onclick="nextVoter()">Novo Eleitor</button>
-    <button class="danger" onclick="finishElection()">Encerrar</button>
-</div>
-
-<!-- RESULTADOS -->
-<div id="results" class="screen">
-    <h2 id="tResult"></h2>
-    <div id="resultContent"></div>
-    <button onclick="exportPDF()">Exportar PDF</button>
-</div>
-
-<!-- PAGAMENTO -->
-<div id="payment" class="screen">
-    <h2>Plano Premium</h2>
-    <p style="text-align:center">
-        Você já utilizou a votação gratuita.<br>
-        Para criar nova eleição, pague:
-    </p>
-    <h3 style="text-align:center">R$ 15,00 / US$ 2,99</h3>
-
-    <button onclick="goToPayment()">Pagar com PIX ou Cartão</button>
-    <button onclick="sendCode()">Enviar código para meu e-mail</button>
-
-    <input id="paymentCode" placeholder="Digite o código recebido">
-    <button class="secondary" onclick="unlockElection()">Validar Código</button>
-</div>
-
-<script>
-let election={name:"",cargos:[]};
-let currentCargo=0;
-let selected=[];
-let lang=localStorage.getItem("lang")||"pt";
-let userEmail="";
-let generatedCode="";
-
-const PAYMENT_LINK="https://mpago.la/1VakcdN";
-
-/* TELAS */
-function showScreen(id){
-    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-    document.getElementById(id).classList.add("active");
-}
-
-/* LOGIN */
-function loginUser(){
-    const email=document.getElementById("userEmailInput").value.trim().toLowerCase();
-    if(!email.includes("@gmail.com")){
-        alert("Use um Gmail válido");
-        return;
-    }
-    userEmail=email;
-    showScreen("setup");
-}
-
-/* CARGO */
-function addCargo(){
-    const cargo=cargoName.value.trim();
-    const max=parseInt(maxVotes.value);
-    const namesFile=candidateNames.files[0];
-    const photos=[...candidatePhotos.files];
-
-    if(!cargo||!max||!namesFile){
-        alert("Campos obrigatórios");
-        return;
-    }
-
-    const reader=new FileReader();
-    reader.onload=()=>{
-        const names=reader.result.split("\n").filter(n=>n.trim());
-        const candidates=names.map((n,i)=>({
-            name:n.trim(),
-            photo:photos[i]?URL.createObjectURL(photos[i]):"",
-            votes:0
-        }));
-        election.cargos.push({cargo,max,candidates});
-        cargoList.innerHTML+=`<p>✔ ${cargo}</p>`;
-        cargoName.value="";
-        maxVotes.value="";
-        candidateNames.value="";
-        candidatePhotos.value="";
-    };
-    reader.readAsText(namesFile);
-}
-
-/* CONTROLE GRÁTIS */
-function canCreateElection(){
-    return !localStorage.getItem("freeUsed_"+userEmail);
-}
-function markElectionUsed(){
-    localStorage.setItem("freeUsed_"+userEmail,"true");
-}
-
-/* VOTAÇÃO */
-function startVoting(){
-    if(!canCreateElection()){
-        showScreen("payment");
-        return;
-    }
-
-    election.name=electionName.value.trim();
-    if(!election.name||election.cargos.length===0){
-        alert("Configure a eleição");
-        return;
-    }
-
-    markElectionUsed();
-    currentCargo=0;
-    showCargo();
-}
-
-function showCargo(){
-    selected=[];
-    showScreen("voting");
-    const cargo=election.cargos[currentCargo];
-    cargoTitle.innerText=cargo.cargo;
-    candidates.innerHTML="";
-    cargo.candidates.forEach((c,i)=>{
-        const div=document.createElement("div");
-        div.className="candidate";
-        div.innerHTML=`<img src="${c.photo}"><p>${c.name}</p>`;
-        div.onclick=()=>toggle(i,div);
-        candidates.appendChild(div);
-    });
-}
-
-function toggle(i,div){
-    const cargo=election.cargos[currentCargo];
-    if(selected.includes(i)){
-        selected=selected.filter(x=>x!==i);
-        div.classList.remove("selected");
-    }else{
-        if(selected.length>=cargo.max){
-            alert("Limite atingido");
-            return;
-        }
-        selected.push(i);
-        div.classList.add("selected");
-    }
-}
-
-function confirmVote(){
-    const cargo=election.cargos[currentCargo];
-    selected.forEach(i=>cargo.candidates[i].votes++);
-    if(currentCargo<election.cargos.length-1){
-        currentCargo++;
-        showCargo();
-    }else{
-        showScreen("afterVote");
-    }
-}
-
-function nextVoter(){
-    currentCargo=0;
-    showCargo();
-}
-
-function finishElection(){
-    showScreen("results");
-    resultContent.innerHTML=`<h3>${election.name}</h3>`;
-    election.cargos.forEach(c=>{
-        resultContent.innerHTML+=`<h4>${c.cargo}</h4>`;
-        c.candidates.forEach(cd=>{
-            resultContent.innerHTML+=`<p>${cd.name}: ${cd.votes}</p>`;
-        });
-    });
-}
-
-/* PDF */
-function exportPDF(){
-    const box=document.createElement("div");
-    box.className="result-box";
-    box.innerHTML=resultContent.innerHTML;
-    document.body.appendChild(box);
-    html2pdf().from(box).save().then(()=>box.remove());
-}
-
-/* PAGAMENTO */
-function goToPayment(){
-    window.open(PAYMENT_LINK,"_blank");
-}
-
-function sendCode(){
-    generatedCode="URNA-"+Math.floor(100000+Math.random()*900000);
-    localStorage.setItem("code_"+userEmail,generatedCode);
-    alert("Código enviado para "+userEmail+"\n\nCÓDIGO: "+generatedCode);
-}
-
-function unlockElection(){
-    const code=paymentCode.value.trim().toUpperCase();
-    const saved=localStorage.getItem("code_"+userEmail);
-    if(code!==saved){
-        alert("Código inválido");
-        return;
-    }
-    localStorage.removeItem("freeUsed_"+userEmail);
-    localStorage.removeItem("code_"+userEmail);
-    alert("Eleição liberada!");
-    showScreen("setup");
-}
-
-/* IDIOMA */
-const txt={
-pt:{login:"Identificação do Usuário",config:"Configuração da Eleição",confirm:"CONFIRMAR VOTO",confirmed:"VOTO CONFIRMADO",result:"Resultado Final"},
-en:{login:"User Identification",config:"Election Setup",confirm:"CONFIRM VOTE",confirmed:"VOTE CONFIRMED",result:"Final Results"},
-es:{<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<title>UrnaWeb</title>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <script>
-const EMAILJS_PUBLIC_KEY = "SUA_PUBLIC_KEY";
+/* 🔴 CONFIGURE AQUI */
 const EMAILJS_SERVICE_ID = "SEU_SERVICE_ID";
 const EMAILJS_TEMPLATE_ID = "SEU_TEMPLATE_ID";
-const PAYMENT_LINK = "https://mpago.la/SEU_LINK";
+const EMAILJS_PUBLIC_KEY = "SUA_PUBLIC_KEY";
 
-(function(){
-    emailjs.init(EMAILJS_PUBLIC_KEY);
-})();
+const PAYMENT_LINK = "https://mpago.la/1VakcdN";
+
+emailjs.init(EMAILJS_PUBLIC_KEY);
 </script>
 
 <style>
@@ -348,7 +28,6 @@ body{
 }
 .screen{display:none;padding:20px;min-height:100vh}
 .active{display:block}
-h2,h3,h4{text-align:center}
 input,button{
     padding:12px;font-size:16px;width:100%;
     margin:6px 0;border-radius:6px;border:none
@@ -356,13 +35,21 @@ input,button{
 button{background:#1abc9c;font-weight:bold;cursor:pointer}
 button.secondary{background:#f1c40f}
 button.danger{background:#e74c3c;color:white}
-.lang-box{position:fixed;top:10px;right:10px}
-.lang-box button{width:auto}
-.candidate-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
-.candidate{background:#122f5f;border:4px solid transparent;border-radius:8px;padding:8px;text-align:center;cursor:pointer}
-.candidate.selected{border-color:#2ecc71}
+.candidate-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+    gap:10px
+}
+.candidate{
+    background:#122f5f;border-radius:8px;
+    padding:8px;text-align:center;cursor:pointer
+}
+.candidate.selected{border:4px solid #2ecc71}
 .candidate img{width:100%;height:140px;object-fit:cover;border-radius:6px}
 .result-box{background:white;color:black;padding:20px}
+
+.lang-box{position:fixed;top:10px;right:10px}
+.lang-box button{width:auto;margin-left:4px}
 </style>
 </head>
 
@@ -377,27 +64,25 @@ button.danger{background:#e74c3c;color:white}
 <!-- LOGIN -->
 <div id="login" class="screen active">
 <h2 id="tLogin"></h2>
-<input id="userEmail" placeholder="Digite seu Gmail">
-<button onclick="loginUser()">Continuar</button>
-</div>
-
-<!-- PAGAMENTO -->
-<div id="payment" class="screen">
-<h2>Plano Premium</h2>
-<p style="text-align:center">
-Primeira eleição grátis já utilizada.<br>
-Para criar nova eleição, realize o pagamento.
-</p>
-<h3 style="text-align:center">R$ 15,00 ou US$ 2,99</h3>
-<button onclick="goToPayment()">Pagar com PIX ou Cartão</button>
-<button class="secondary" onclick="sendCode()">Já paguei – Enviar código</button>
+<input id="userEmail" placeholder="Digite seu e-mail">
+<button onclick="startLogin()">Continuar</button>
 </div>
 
 <!-- CÓDIGO -->
 <div id="codeScreen" class="screen">
 <h2>Código de Confirmação</h2>
-<input id="codeInput" placeholder="Digite o código recebido">
-<button onclick="validateCode()">Validar Código</button>
+<p>Enviamos um código para seu e-mail</p>
+<input id="codeInput" placeholder="Digite o código">
+<button onclick="validateCode()">Validar</button>
+</div>
+
+<!-- PAGAMENTO -->
+<div id="payment" class="screen">
+<h2>Plano Premium</h2>
+<p>Você já utilizou a eleição gratuita.</p>
+<h3>R$ 15,00 ou US$ 2,99</h3>
+<button onclick="window.open(PAYMENT_LINK,'_blank')">Pagar com PIX ou Cartão</button>
+<button class="secondary" onclick="unlockPaid()">Já paguei</button>
 </div>
 
 <!-- CONFIG -->
@@ -405,7 +90,7 @@ Para criar nova eleição, realize o pagamento.
 <h2 id="tConfig"></h2>
 <input id="electionName" placeholder="Nome da Eleição">
 <input id="cargoName" placeholder="Nome do Cargo">
-<input id="maxVotes" type="number" placeholder="Qtd. de votos">
+<input id="maxVotes" type="number" placeholder="Qtd. votos">
 <input type="file" id="candidateNames" accept=".txt">
 <input type="file" id="candidatePhotos" accept="image/*" multiple>
 <button onclick="addCargo()">Adicionar Cargo</button>
@@ -436,10 +121,8 @@ Para criar nova eleição, realize o pagamento.
 
 <script>
 let election={name:"",cargos:[]};
-let currentCargo=0;
-let selected=[];
-let userEmail="";
-let generatedCode="";
+let currentCargo=0, selected=[];
+let userEmail="", verificationCode="";
 let lang=localStorage.getItem("lang")||"pt";
 
 /* TELAS */
@@ -448,128 +131,122 @@ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
 document.getElementById(id).classList.add("active");
 }
 
-/* LOGIN */
-function loginUser(){
-const email=document.getElementById("userEmail").value.trim();
-if(!email || !email.endsWith("@gmail.com")){
-alert("Informe um Gmail válido");
-return;
-}
-userEmail=email;
+/* LOGIN + EMAIL */
+function startLogin(){
+userEmail=document.getElementById("userEmail").value.trim();
+if(!userEmail){alert("Informe o e-mail");return;}
 
-if(localStorage.getItem("used_"+email)){
-showScreen("payment");
+if(localStorage.getItem("paid_"+userEmail)){
+showScreen("setup");return;
+}
+
+if(!localStorage.getItem("free_"+userEmail)){
+sendCode();
 }else{
-showScreen("setup");
+showScreen("payment");
 }
-}
-
-/* PAGAMENTO */
-function goToPayment(){
-window.open(PAYMENT_LINK,"_blank");
 }
 
 function sendCode(){
-generatedCode="URNA-"+Math.floor(100000+Math.random()*900000);
+verificationCode=Math.floor(100000+Math.random()*900000).toString();
+localStorage.setItem("code_"+userEmail,verificationCode);
+
 emailjs.send(
 EMAILJS_SERVICE_ID,
 EMAILJS_TEMPLATE_ID,
-{to_email:userEmail,code:generatedCode}
+{to_email:userEmail,code:verificationCode}
 ).then(()=>{
-localStorage.setItem("code_"+userEmail,generatedCode);
-alert("Código enviado para seu e-mail");
 showScreen("codeScreen");
-});
+}).catch(()=>alert("Erro ao enviar e-mail"));
 }
 
 function validateCode(){
 const input=document.getElementById("codeInput").value.trim();
-const saved=localStorage.getItem("code_"+userEmail);
-if(input===saved){
-localStorage.removeItem("code_"+userEmail);
-localStorage.removeItem("used_"+userEmail);
-alert("Pagamento confirmado!");
+if(input===localStorage.getItem("code_"+userEmail)){
+localStorage.setItem("free_"+userEmail,"used");
 showScreen("setup");
 }else{
 alert("Código inválido");
 }
 }
 
-/* CONFIG / VOTAÇÃO */
+/* PAGAMENTO */
+function unlockPaid(){
+localStorage.setItem("paid_"+userEmail,"true");
+showScreen("setup");
+}
+
+/* ELEIÇÃO */
 function addCargo(){
 const cargo=cargoName.value.trim();
 const max=parseInt(maxVotes.value);
 const file=candidateNames.files[0];
+const photos=[...candidatePhotos.files];
 if(!cargo||!max||!file){alert("Campos obrigatórios");return;}
-const reader=new FileReader();
-reader.onload=()=>{
-const names=reader.result.split("\n").filter(n=>n.trim());
-const candidates=names.map(n=>({name:n,votes:0,photo:""}));
-election.cargos.push({cargo,max,candidates});
+
+const r=new FileReader();
+r.onload=()=>{
+const names=r.result.split("\n").filter(n=>n.trim());
+const cands=names.map((n,i)=>({name:n,photo:photos[i]?URL.createObjectURL(photos[i]):"",votes:0}));
+election.cargos.push({cargo,max,candidates:cands});
 cargoList.innerHTML+=`<p>✔ ${cargo}</p>`;
+cargoName.value=maxVotes.value=candidateNames.value=candidatePhotos.value="";
 };
-reader.readAsText(file);
+r.readAsText(file,"UTF-8");
 }
 
 function startVoting(){
-if(!election.cargos.length){alert("Adicione cargos");return;}
-localStorage.setItem("used_"+userEmail,"true");
-currentCargo=0;
-showCargo();
+election.name=electionName.value.trim();
+if(!election.name||!election.cargos.length){alert("Configure a eleição");return;}
+currentCargo=0;showCargo();
 }
 
 function showCargo(){
-selected=[];
-showScreen("voting");
-const cargo=election.cargos[currentCargo];
-cargoTitle.innerText=cargo.cargo;
+selected=[];showScreen("voting");
+const c=election.cargos[currentCargo];
+cargoTitle.innerText=c.cargo;
 candidates.innerHTML="";
-cargo.candidates.forEach((c,i)=>{
+c.candidates.forEach((x,i)=>{
 const d=document.createElement("div");
 d.className="candidate";
-d.innerHTML=`<p>${c.name}</p>`;
+d.innerHTML=`<img src="${x.photo}"><p>${x.name}</p>`;
 d.onclick=()=>toggle(i,d);
 candidates.appendChild(d);
 });
 }
 
 function toggle(i,d){
-const cargo=election.cargos[currentCargo];
-if(selected.includes(i)){
-selected=selected.filter(x=>x!==i);
-d.classList.remove("selected");
-}else{
-if(selected.length>=cargo.max){alert("Limite");return;}
-selected.push(i);
-d.classList.add("selected");
+const c=election.cargos[currentCargo];
+if(selected.includes(i)){selected=selected.filter(x=>x!==i);d.classList.remove("selected");}
+else{
+if(selected.length>=c.max){alert("Limite atingido");return;}
+selected.push(i);d.classList.add("selected");
 }
 }
 
 function confirmVote(){
-selected.forEach(i=>election.cargos[currentCargo].candidates[i].votes++);
-if(currentCargo<election.cargos.length-1){
-currentCargo++;showCargo();
-}else showScreen("afterVote");
+const c=election.cargos[currentCargo];
+selected.forEach(i=>c.candidates[i].votes++);
+currentCargo<candidates.length-1?showCargo():showScreen("afterVote");
 }
 
 function nextVoter(){currentCargo=0;showCargo();}
+
 function finishElection(){
 showScreen("results");
-resultContent.innerHTML="";
+resultContent.innerHTML=`<h3>${election.name}</h3>`;
 election.cargos.forEach(c=>{
 resultContent.innerHTML+=`<h4>${c.cargo}</h4>`;
-c.candidates.forEach(cd=>{
-resultContent.innerHTML+=`<p>${cd.name}: ${cd.votes}</p>`;
-});
+c.candidates.forEach(x=>resultContent.innerHTML+=`<p>${x.name}: ${x.votes}</p>`);
 });
 }
 
 function exportPDF(){
-const box=document.createElement("div");
-box.className="result-box";
-box.innerHTML=resultContent.innerHTML;
-document.body.appendChild(box);
-html2pdf().from(box).save().then(()=>box.remove());
+const b=document.createElement("div");
+b.className="result-box";
+b.innerHTML=resultContent.innerHTML;
+document.body.appendChild(b);
+html2pdf().from(b).save().then(()=>b.remove());
 }
 
 /* IDIOMAS */
@@ -585,22 +262,6 @@ tConfig.innerText=txt[l].config;
 btnConfirm.innerText=txt[l].confirm;
 tConfirmed.innerText=txt[l].confirmed;
 tResult.innerText=txt[l].result;
-}
-setLang(lang);
-</script>
-
-</body>
-</html>
-login:"Identificación del Usuario",config:"Configuración de la Elección",confirm:"CONFIRMAR VOTO",confirmed:"VOTO CONFIRMADO",result:"Resultados Finales"}
-};
-
-function setLang(l){
-    lang=l;localStorage.setItem("lang",l);
-    tLogin.innerText=txt[l].login;
-    tConfig.innerText=txt[l].config;
-    btnConfirm.innerText=txt[l].confirm;
-    tConfirmed.innerText=txt[l].confirmed;
-    tResult.innerText=txt[l].result;
 }
 setLang(lang);
 </script>
