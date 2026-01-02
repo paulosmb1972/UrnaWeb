@@ -274,13 +274,24 @@ function exportPDF(){
 const PAYMENT_LINK="https://mpago.la/1VakcdN";
 
 function goToPayment(){
-    window.open(PAYMENT_LINK,"_blank");
+    window.open("https://mpago.la/1VakcdN","_blank");
 }
 
-function unlockElection(){
-    localStorage.removeItem("freeUsed");
-    alert("Pagamento confirmado! Nova eleição liberada.");
-    showScreen("setup");
+async function unlockElection(){
+    try{
+        const resp = await fetch("https://urnaweb-backend.paulosmb1972.workers.dev/*/status-pagamento");
+        const data = await resp.json();
+
+        if(data.pago){
+            localStorage.removeItem("freeUsed");
+            alert("Pagamento confirmado! Nova eleição liberada.");
+            showScreen("setup");
+        }else{
+            alert("Pagamento ainda não identificado.");
+        }
+    }catch(e){
+        alert("Erro ao verificar pagamento.");
+    }
 }
 
 /* IDIOMA */
