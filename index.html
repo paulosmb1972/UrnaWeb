@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <title>UrnaWeb</title>
 
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+<script>
+(function(){
+  emailjs.init("yRM6j-xNoNkVxF0CR");
+})();
+</script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
@@ -31,16 +38,14 @@ input,button{
 }
 button{
     background:#1abc9c;
-    color:black;
     font-weight:bold;
     cursor:pointer;
 }
 button.secondary{background:#f1c40f}
 button.danger{background:#e74c3c;color:white}
-
 .candidate-grid{
     display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
     gap:10px;
 }
 .candidate{
@@ -48,240 +53,228 @@ button.danger{background:#e74c3c;color:white}
     border:4px solid transparent;
     border-radius:8px;
     padding:8px;
-    text-align:center;
     cursor:pointer;
+    text-align:center;
 }
 .candidate.selected{border-color:#2ecc71}
 .candidate img{
     width:100%;
-    height:140px;
+    height:130px;
     object-fit:cover;
     border-radius:6px;
 }
-
-.lang-box{
-    position:fixed;
-    top:10px;
-    right:10px;
+.result-box{
+    background:white;
+    color:black;
+    padding:20px;
 }
-.lang-box button{width:auto}
 </style>
 </head>
 
 <body>
 
-<div class="lang-box">
-    <button onclick="setLang('pt')">🇧🇷</button>
-    <button onclick="setLang('en')">🇺🇸</button>
-    <button onclick="setLang('es')">🇪🇸</button>
-</div>
-
 <!-- LOGIN -->
 <div id="login" class="screen active">
-    <h2 id="tLogin">Identificação do Usuário</h2>
-    <input id="userEmail" placeholder="Digite seu Gmail">
-    <button onclick="sendCode()">Continuar</button>
+  <h2>Identificação do Usuário</h2>
+  <input id="email" placeholder="Digite seu Gmail">
+  <button onclick="sendCode()">Continuar</button>
 </div>
 
-<!-- CÓDIGO -->
-<div id="codeScreen" class="screen">
-    <h2>Código de Verificação</h2>
-    <input id="userCode" placeholder="Código recebido">
-    <button onclick="validateCode()">Validar Código</button>
+<!-- VERIFICAÇÃO -->
+<div id="verify" class="screen">
+  <h2>Código de Verificação</h2>
+  <input id="codeInput" placeholder="Digite o código recebido">
+  <button onclick="verifyCode()">Confirmar</button>
 </div>
 
-<!-- PAGAMENTO -->
-<div id="payment" class="screen">
-    <h2>Plano Premium</h2>
-    <p style="text-align:center">
-        Você já utilizou a votação gratuita.<br>
-        Para criar nova eleição, realize o pagamento.
-    </p>
-    <h3 style="text-align:center">R$ 15,00 ou US$ 2,99</h3>
-    <button onclick="goToPayment()">Pagar com PIX ou Cartão</button>
-    <button class="secondary" onclick="checkPayment()">Já paguei</button>
-</div>
-
-<!-- CONFIG -->
+<!-- CONFIGURAÇÃO -->
 <div id="setup" class="screen">
-    <h2 id="tConfig">Configuração da Eleição</h2>
-    <input id="electionName" placeholder="Nome da Eleição">
-    <input id="cargoName" placeholder="Nome do Cargo">
-    <input id="maxVotes" type="number" placeholder="Qtd. votos">
-    <input type="file" id="candidateNames" accept=".txt">
-    <input type="file" id="candidatePhotos" accept="image/*" multiple>
-    <button onclick="addCargo()">Adicionar Cargo</button>
-    <button class="secondary" onclick="startVoting()">Iniciar Votação</button>
-    <div id="cargoList"></div>
+  <h2>Configuração da Eleição</h2>
+  <input id="electionName" placeholder="Nome da eleição">
+  <input id="cargoName" placeholder="Nome do cargo">
+  <input id="maxVotes" type="number" placeholder="Qtd. de votos">
+  <input type="file" id="candidateNames" accept=".txt">
+  <input type="file" id="candidatePhotos" accept="image/*" multiple>
+  <button onclick="addCargo()">Adicionar Cargo</button>
+  <button class="secondary" onclick="startVoting()">Iniciar Votação</button>
+  <div id="cargoList"></div>
 </div>
 
 <!-- VOTAÇÃO -->
 <div id="voting" class="screen">
-    <h2 id="cargoTitle"></h2>
-    <div id="candidates" class="candidate-grid"></div>
-    <button onclick="confirmVote()">CONFIRMAR VOTO</button>
+  <h2 id="cargoTitle"></h2>
+  <div id="candidates" class="candidate-grid"></div>
+  <button onclick="confirmVote()">CONFIRMAR VOTO</button>
 </div>
 
 <!-- FINAL -->
 <div id="afterVote" class="screen">
-    <h2>VOTO CONFIRMADO</h2>
-    <button onclick="nextVoter()">Novo Eleitor</button>
-    <button class="danger" onclick="finishElection()">Encerrar</button>
+  <h2>VOTO CONFIRMADO</h2>
+  <button onclick="nextVoter()">Novo Eleitor</button>
+  <button class="danger" onclick="finishElection()">Encerrar</button>
 </div>
 
 <!-- RESULTADO -->
 <div id="results" class="screen">
-    <h2>Resultado Final</h2>
-    <div id="resultContent"></div>
-    <button onclick="exportPDF()">Exportar PDF</button>
+  <h2>Resultado Final</h2>
+  <div id="resultContent"></div>
+  <button onclick="exportPDF()">Exportar PDF</button>
 </div>
 
 <script>
-const API = "http://localhost:3000";
-const PAYMENT_LINK = "https://mpago.la/1VakcdN";
-
 let election={name:"",cargos:[]};
 let currentCargo=0;
 let selected=[];
-let lang="pt";
+let verificationCode="";
+let freeUsed=localStorage.getItem("freeUsed");
 
 /* TELAS */
 function showScreen(id){
-    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-    document.getElementById(id).classList.add("active");
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
 }
 
-/* LOGIN + CÓDIGO */
+/* EMAIL */
 function sendCode(){
-    const email=userEmail.value.trim();
-    if(!email.endsWith("@gmail.com")){
-        alert("Use um Gmail válido");
-        return;
-    }
-    fetch(API+"/send-code",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({email})
-    }).then(()=>showScreen("codeScreen"))
-      .catch(()=>alert("Erro ao enviar código"));
+  const email=document.getElementById("email").value.trim();
+  if(!email.endsWith("@gmail.com")){
+    alert("Informe um Gmail válido");
+    return;
+  }
+  verificationCode=Math.floor(100000+Math.random()*900000).toString();
+
+  emailjs.send(
+    "service_oqfbzrm",
+    "template_t3aio8f",
+    { codigo: verificationCode, to_email: email }
+  ).then(()=>{
+    showScreen("verify");
+  },()=>{
+    alert("Erro ao enviar o e-mail");
+  });
 }
 
-function validateCode(){
-    fetch(API+"/validate-code",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({code:userCode.value})
-    }).then(r=>{
-        if(!r.ok) throw Error();
-        return fetch(API+"/can-create-election");
-    }).then(r=>r.json())
-      .then(d=>{
-        if(d.allowed) showScreen("setup");
-        else showScreen("payment");
-      }).catch(()=>alert("Código inválido"));
-}
-
-/* PAGAMENTO */
-function goToPayment(){
-    window.open(PAYMENT_LINK,"_blank");
-}
-function checkPayment(){
-    fetch(API+"/can-create-election")
-        .then(r=>r.json())
-        .then(d=>{
-            if(d.allowed) showScreen("setup");
-            else alert("Pagamento ainda não identificado");
-        });
+function verifyCode(){
+  const code=document.getElementById("codeInput").value.trim();
+  if(code===verificationCode){
+    showScreen("setup");
+  }else{
+    alert("Código incorreto");
+  }
 }
 
 /* CARGO */
 function addCargo(){
-    const cargo=cargoName.value;
-    const max=parseInt(maxVotes.value);
-    const namesFile=candidateNames.files[0];
-    const photos=[...candidatePhotos.files];
-    if(!cargo||!max||!namesFile){alert("Campos obrigatórios");return;}
-    const reader=new FileReader();
-    reader.onload=()=>{
-        const names=reader.result.split("\n").filter(n=>n.trim());
-        const candidates=names.map((n,i)=>({
-            name:n.trim(),
-            photo:photos[i]?URL.createObjectURL(photos[i]):"",
-            votes:0
-        }));
-        election.cargos.push({cargo,max,candidates});
-        cargoList.innerHTML+=`<p>✔ ${cargo}</p>`;
-    };
-    reader.readAsText(namesFile);
+  const cargo=cargoName.value.trim();
+  const max=parseInt(maxVotes.value);
+  const namesFile=candidateNames.files[0];
+  const photos=[...candidatePhotos.files];
+
+  if(!cargo||!max||!namesFile){
+    alert("Preencha todos os campos");
+    return;
+  }
+
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const names=reader.result.split("\n").filter(n=>n.trim());
+    const candidates=names.map((n,i)=>({
+      name:n.trim(),
+      photo:photos[i]?URL.createObjectURL(photos[i]):"",
+      votes:0
+    }));
+    election.cargos.push({cargo,max,candidates});
+    cargoList.innerHTML+=`<p>✔ ${cargo}</p>`;
+    cargoName.value=maxVotes.value="";
+    candidateNames.value=candidatePhotos.value="";
+  };
+  reader.readAsText(namesFile,"UTF-8");
 }
 
 /* VOTAÇÃO */
 function startVoting(){
-    if(!election.cargos.length){alert("Adicione cargos");return;}
-    election.name=electionName.value;
-    currentCargo=0;
-    showCargo();
+  if(freeUsed){
+    alert("Você já utilizou a eleição gratuita.");
+    return;
+  }
+  election.name=electionName.value.trim();
+  if(!election.name||election.cargos.length===0){
+    alert("Configure a eleição");
+    return;
+  }
+  localStorage.setItem("freeUsed","true");
+  currentCargo=0;
+  showCargo();
 }
 
 function showCargo(){
-    selected=[];
-    showScreen("voting");
-    const c=election.cargos[currentCargo];
-    cargoTitle.innerText=c.cargo;
-    candidates.innerHTML="";
-    c.candidates.forEach((cd,i)=>{
-        const d=document.createElement("div");
-        d.className="candidate";
-        d.innerHTML=`<img src="${cd.photo}"><p>${cd.name}</p>`;
-        d.onclick=()=>toggle(i,d);
-        candidates.appendChild(d);
-    });
+  selected=[];
+  showScreen("voting");
+  const cargo=election.cargos[currentCargo];
+  cargoTitle.innerText=cargo.cargo;
+  candidates.innerHTML="";
+  cargo.candidates.forEach((c,i)=>{
+    const div=document.createElement("div");
+    div.className="candidate";
+    div.innerHTML=`<img src="${c.photo}"><p>${c.name}</p>`;
+    div.onclick=()=>toggle(i,div);
+    candidates.appendChild(div);
+  });
 }
 
 function toggle(i,div){
-    const max=election.cargos[currentCargo].max;
-    if(selected.includes(i)){
-        selected=selected.filter(x=>x!==i);
-        div.classList.remove("selected");
-    }else{
-        if(selected.length>=max){alert("Limite atingido");return;}
-        selected.push(i);
-        div.classList.add("selected");
+  const cargo=election.cargos[currentCargo];
+  if(selected.includes(i)){
+    selected=selected.filter(x=>x!==i);
+    div.classList.remove("selected");
+  }else{
+    if(selected.length>=cargo.max){
+      alert("Limite atingido");
+      return;
     }
+    selected.push(i);
+    div.classList.add("selected");
+  }
 }
 
 function confirmVote(){
-    const c=election.cargos[currentCargo];
-    selected.forEach(i=>c.candidates[i].votes++);
-    if(currentCargo<election.cargos.length-1){
-        currentCargo++;
-        showCargo();
-    }else showScreen("afterVote");
+  const cargo=election.cargos[currentCargo];
+  selected.forEach(i=>cargo.candidates[i].votes++);
+  if(currentCargo<election.cargos.length-1){
+    currentCargo++;
+    showCargo();
+  }else{
+    showScreen("afterVote");
+  }
 }
 
 function nextVoter(){
-    currentCargo=0;
-    showCargo();
+  currentCargo=0;
+  showCargo();
 }
 
 function finishElection(){
-    showScreen("results");
-    resultContent.innerHTML=`<h3>${election.name}</h3>`;
-    election.cargos.forEach(c=>{
-        resultContent.innerHTML+=`<h4>${c.cargo}</h4>`;
-        c.candidates.forEach(cd=>{
-            resultContent.innerHTML+=`<p>${cd.name}: ${cd.votes}</p>`;
-        });
+  showScreen("results");
+  resultContent.innerHTML=`<h3>${election.name}</h3>`;
+  election.cargos.forEach(c=>{
+    resultContent.innerHTML+=`<h4>${c.cargo}</h4>`;
+    c.candidates.forEach(cd=>{
+      resultContent.innerHTML+=`<p>${cd.name}: ${cd.votes}</p>`;
     });
+  });
 }
 
+/* PDF */
 function exportPDF(){
-    html2pdf().from(resultContent).save();
+  const box=document.createElement("div");
+  box.className="result-box";
+  box.innerHTML=resultContent.innerHTML;
+  document.body.appendChild(box);
+  html2pdf().from(box).save().then(()=>box.remove());
 }
-
-/* IDIOMA */
-function setLang(l){lang=l;}
 </script>
 
 </body>
 </html>
+
+
