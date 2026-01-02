@@ -3,23 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <title>UrnaWeb</title>
+
 <style>
 body{
-  font-family: Arial, sans-serif;
-  background:#f2f2f2;
+  font-family:Arial,Helvetica,sans-serif;
+  background:#f0f2f5;
   margin:0;
 }
 .screen{
   display:none;
-  padding:20px;
-  max-width:600px;
-  margin:auto;
   background:#fff;
-  margin-top:40px;
+  padding:20px;
+  max-width:650px;
+  margin:40px auto;
   border-radius:8px;
 }
 h2{text-align:center}
-input,button{
+input,textarea,button{
   width:100%;
   padding:10px;
   margin:8px 0;
@@ -30,11 +30,13 @@ button{
   border:none;
   cursor:pointer;
 }
-button:hover{opacity:0.9}
-.list-item{
-  padding:8px;
-  border-bottom:1px solid #ddd;
+button.secondary{background:#999}
+.star{
+  font-size:28px;
+  cursor:pointer;
+  color:#ccc;
 }
+.star.selected{color:gold}
 </style>
 </head>
 
@@ -43,33 +45,33 @@ button:hover{opacity:0.9}
 <!-- LOGIN -->
 <div id="loginScreen" class="screen">
   <h2>Identificação</h2>
-  <p>Informe seu Gmail para continuar</p>
   <input type="email" id="emailInput" placeholder="seuemail@gmail.com">
-  <button onclick="confirmEmail()">Continuar</button>
+  <button onclick="login()">Continuar</button>
 </div>
 
-<!-- PAGAMENTO -->
-<div id="paymentScreen" class="screen">
-  <h2>Pagamento necessário</h2>
-  <p>Você já utilizou a eleição gratuita.</p>
-  <p>Para criar novas eleições, realize o pagamento:</p>
+<!-- CUPOM / PAGAMENTO -->
+<div id="accessScreen" class="screen">
+  <h2>Acesso ao Sistema</h2>
+  <p id="creditInfo"></p>
+
+  <input id="couponInput" placeholder="Código promocional">
+  <button onclick="applyCoupon()">Aplicar Cupom</button>
+
+  <hr>
 
   <a href="https://mpago.la/1VakcdN" target="_blank">
     <button>Pagar com PIX ou Cartão</button>
   </a>
 
-  <button onclick="confirmPayment()">Já paguei</button>
+  <button class="secondary" onclick="confirmPayment()">Já paguei</button>
 </div>
 
 <!-- SETUP -->
 <div id="setupScreen" class="screen">
   <h2>Criar Eleição</h2>
-
   <input id="cargoNome" placeholder="Nome do Cargo">
   <button onclick="addCargo()">Adicionar Cargo</button>
-
   <div id="cargoList"></div>
-
   <button onclick="startVoting()">Iniciar Votação</button>
 </div>
 
@@ -84,48 +86,103 @@ button:hover{opacity:0.9}
 <div id="resultScreen" class="screen">
   <h2>Resultado</h2>
   <div id="resultArea"></div>
+  <button onclick="feedback()">Avaliar Sistema</button>
   <button onclick="newElection()">Nova Eleição</button>
 </div>
 
-<script>
-let cargos = [];
-let votos = {};
+<!-- AVALIAÇÃO -->
+<div id="feedbackScreen" class="screen">
+  <h2>Avalie o UrnaWeb</h2>
 
-function showScreen(id){
+  <div style="text-align:center">
+    <span class="star" onclick="rate(1)">★</span>
+    <span class="star" onclick="rate(2)">★</span>
+    <span class="star" onclick="rate(3)">★</span>
+    <span class="star" onclick="rate(4)">★</span>
+    <span class="star" onclick="rate(5)">★</span>
+  </div>
+
+  <textarea id="suggestion" placeholder="Sugestões ou críticas"></textarea>
+  <button onclick="saveFeedback()">Enviar Avaliação</button>
+</div>
+
+<script>
+let cargos=[];
+let votos={};
+let rating=0;
+
+const COUPONS={
+  "URNA50":1,
+  "URNAFREE":3
+};
+
+function show(id){
   document.querySelectorAll(".screen").forEach(s=>s.style.display="none");
   document.getElementById(id).style.display="block";
 }
 
+function getEmail(){
+  return localStorage.getItem("urnaweb_email");
+}
+
+function getCredits(){
+  return parseInt(localStorage.getItem("credits_"+getEmail()))||0;
+}
+
+function setCredits(v){
+  localStorage.setItem("credits_"+getEmail(),v);
+}
+
 /* LOGIN */
-function confirmEmail(){
-  const email = emailInput.value.trim();
+function login(){
+  const email=emailInput.value.trim();
   if(!email.endsWith("@gmail.com")){
-    alert("Informe um Gmail válido.");
+    alert("Informe um Gmail válido");
     return;
   }
-  localStorage.setItem("urnaweb_email", email);
+  localStorage.setItem("urnaweb_email",email);
 
-  if(localStorage.getItem("freeUsed_"+email)){
-    showScreen("paymentScreen");
-  }else{
-    showScreen("setupScreen");
+  if(!localStorage.getItem("used_"+email)){
+    setCredits(1);
+    localStorage.setItem("used_"+email,"true");
   }
+  checkAccess();
+}
+
+/* ACESSO */
+function checkAccess(){
+  const c=getCredits();
+  if(c>0){
+    show("setupScreen");
+  }else{
+    creditInfo.innerText="Você não possui eleições disponíveis.";
+    show("accessScreen");
+  }
+}
+
+/* CUPOM */
+function applyCoupon(){
+  const code=couponInput.value.trim().toUpperCase();
+  if(!COUPONS[code]){
+    alert("Cupom inválido");
+    return;
+  }
+  setCredits(getCredits()+COUPONS[code]);
+  alert("Cupom aplicado com sucesso!");
+  checkAccess();
 }
 
 /* PAGAMENTO */
 function confirmPayment(){
-  const email = localStorage.getItem("urnaweb_email");
-  localStorage.removeItem("freeUsed_"+email);
-  alert("Pagamento liberado!");
-  showScreen("setupScreen");
+  setCredits(getCredits()+1);
+  alert("Pagamento confirmado!");
+  checkAccess();
 }
 
 /* SETUP */
 function addCargo(){
-  const nome = cargoNome.value.trim();
-  if(!nome) return;
-
-  cargos.push({nome:nome, candidatos:[]});
+  if(!cargoNome.value) return;
+  cargos.push({nome:cargoNome.value,candidatos:[]});
   cargoNome.value="";
   renderCargos();
 }
@@ -133,76 +190,54 @@ function addCargo(){
 function renderCargos(){
   cargoList.innerHTML="";
   cargos.forEach((c,i)=>{
-    const div=document.createElement("div");
-    div.className="list-item";
-    div.innerHTML=`
-      <strong>${c.nome}</strong><br>
-      <input placeholder="Nome do candidato" id="cand_${i}">
-      <button onclick="addCandidato(${i})">Adicionar Candidato</button>
-      <div id="candList_${i}"></div>
-    `;
-    cargoList.appendChild(div);
+    cargoList.innerHTML+=`
+      <div>
+        <strong>${c.nome}</strong><br>
+        <input id="cand_${i}" placeholder="Candidato">
+        <button onclick="addCandidato(${i})">Adicionar</button>
+      </div>`;
   });
 }
 
 function addCandidato(i){
-  const input=document.getElementById("cand_"+i);
-  if(!input.value) return;
-  cargos[i].candidatos.push(input.value);
-  input.value="";
-  renderCandidatos(i);
-}
-
-function renderCandidatos(i){
-  const div=document.getElementById("candList_"+i);
-  div.innerHTML="";
-  cargos[i].candidatos.forEach(c=>{
-    div.innerHTML+=`- ${c}<br>`;
-  });
+  const el=document.getElementById("cand_"+i);
+  if(!el.value)return;
+  cargos[i].candidatos.push(el.value);
+  el.value="";
 }
 
 /* VOTAÇÃO */
 function startVoting(){
   if(cargos.length===0){
-    alert("Adicione ao menos um cargo.");
+    alert("Crie ao menos um cargo");
     return;
   }
   votos={};
-  showScreen("votingScreen");
-  renderVoting();
-}
-
-function renderVoting(){
+  show("votingScreen");
   votingArea.innerHTML="";
   cargos.forEach(c=>{
     votingArea.innerHTML+=`<h3>${c.nome}</h3>`;
-    c.candidatos.forEach(nome=>{
-      votingArea.innerHTML+=`
-        <button onclick="vote('${c.nome}','${nome}')">${nome}</button>
-      `;
+    c.candidatos.forEach(n=>{
+      votingArea.innerHTML+=`<button onclick="vote('${c.nome}','${n}')">${n}</button>`;
     });
   });
 }
 
-function vote(cargo,candidato){
-  votos[cargo]=votos[cargo]||{};
-  votos[cargo][candidato]=(votos[cargo][candidato]||0)+1;
-  alert("Voto computado!");
+function vote(c,n){
+  votos[c]=votos[c]||{};
+  votos[c][n]=(votos[c][n]||0)+1;
+  alert("Voto computado");
 }
 
 /* RESULTADO */
 function finishVoting(){
-  const email = localStorage.getItem("urnaweb_email");
-  if(!localStorage.getItem("freeUsed_"+email)){
-    localStorage.setItem("freeUsed_"+email,"true");
-  }
-
-  showScreen("resultScreen");
+  setCredits(getCredits()-1);
+  show("resultScreen");
   resultArea.innerHTML="";
-  for(let cargo in votos){
-    resultArea.innerHTML+=`<h3>${cargo}</h3>`;
-    for(let cand in votos[cargo]){
-      resultArea.innerHTML+=`${cand}: ${votos[cargo][cand]} votos<br>`;
+  for(let c in votos){
+    resultArea.innerHTML+=`<h3>${c}</h3>`;
+    for(let n in votos[c]){
+      resultArea.innerHTML+=`${n}: ${votos[c][n]} votos<br>`;
     }
   }
 }
@@ -210,11 +245,37 @@ function finishVoting(){
 function newElection(){
   cargos=[];
   votos={};
-  showScreen("setupScreen");
+  checkAccess();
+}
+
+/* FEEDBACK */
+function feedback(){
+  show("feedbackScreen");
+}
+
+function rate(v){
+  rating=v;
+  document.querySelectorAll(".star").forEach((s,i)=>{
+    s.classList.toggle("selected",i<v);
+  });
+}
+
+function saveFeedback(){
+  const data={
+    email:getEmail(),
+    rating,
+    suggestion:suggestion.value,
+    date:new Date().toISOString()
+  };
+  let list=JSON.parse(localStorage.getItem("feedbacks")||"[]");
+  list.push(data);
+  localStorage.setItem("feedbacks",JSON.stringify(list));
+  alert("Obrigado pela avaliação!");
+  checkAccess();
 }
 
 /* INICIAL */
-showScreen("loginScreen");
+show("loginScreen");
 </script>
 
 </body>
