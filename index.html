@@ -60,7 +60,7 @@ button{background:#1abc9c;font-weight:bold;cursor:pointer}
 <!-- LOGIN -->
 <div id="login" class="screen active">
     <div class="card">
-        <h2>UrnaWeb Pro</h2>
+        <h2 onclick="adminClick()">UrnaWeb Pro</h2>
         <input id="userEmail" placeholder="Seu e-mail">
         <input id="coupon" placeholder="Cupom promocional (opcional)">
         <button onclick="login()">Continuar</button>
@@ -90,7 +90,7 @@ button{background:#1abc9c;font-weight:bold;cursor:pointer}
     <button onclick="confirmVote()">Confirmar Voto</button>
 </div>
 
-<!-- FINAL -->
+<!-- CONFIRMAÇÃO -->
 <div id="afterVote" class="screen">
     <div class="card">
         <h3>Voto Confirmado</h3>
@@ -121,12 +121,19 @@ button{background:#1abc9c;font-weight:bold;cursor:pointer}
     </div>
 </div>
 
-<script>
-let election={name:"",cargos:[]};
-let currentCargo=0;
-let selected=[];
+<!-- ADMIN OCULTO -->
+<div id="admin" class="screen">
+    <div class="card">
+        <h3>🔐 Painel Administrativo</h3>
+        <button onclick="resetFree()">Resetar FREE3</button>
+        <button onclick="resetCoupons()">Resetar Cupons</button>
+        <button onclick="unlockAll()">Liberar Eleições</button>
+        <button class="secondary" onclick="show('login')">Voltar</button>
+    </div>
+</div>
 
-/* NAVEGAÇÃO */
+<script>
+/* CONTROLE DE TELAS */
 function show(id){
     document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
     document.getElementById(id).classList.add("active");
@@ -134,69 +141,52 @@ function show(id){
 
 /* LOGIN + CUPONS */
 function login(){
-    const cup=document.getElementById("coupon").value.trim().toUpperCase();
-    let msg=document.getElementById("couponMsg");
+    const cup=coupon.value.trim().toUpperCase();
+    let msg=couponMsg;
 
     if(cup==="FREE3" && !localStorage.freeUsed){
         localStorage.freeUsed="true";
         localStorage.freeCount="3";
-        msg.innerText="🎉 Cupom FREE3 ativado";
+        msg.innerText="🎉 FREE3 ativado";
     }
     else if(cup==="50OFF" && !localStorage.offUsed){
         localStorage.offUsed="true";
-        msg.innerText="🎉 Cupom 50% aplicado";
+        msg.innerText="🎉 50% aplicado";
     }
     else if(cup){
-        msg.innerText="❌ Cupom inválido ou já utilizado";
+        msg.innerText="❌ Cupom inválido ou usado";
         return;
     }
     show("setup");
 }
 
-/* DASHBOARD */
-function openDashboard(){
-    dashElections.innerText=localStorage.freeCount||"0";
-    dashFree3.innerText=localStorage.freeUsed?"SIM":"NÃO";
-    dash50.innerText=localStorage.offUsed?"SIM":"NÃO";
-    show("dashboard");
-}
-
-function exportDashboard(){
-    const box=document.createElement("div");
-    box.style.background="white";
-    box.style.color="black";
-    box.style.padding="20px";
-    box.innerHTML=`
-        <h2>Relatório UrnaWeb Pro</h2>
-        <p>Eleições restantes: ${localStorage.freeCount||0}</p>
-        <p>Cupom FREE3 usado: ${localStorage.freeUsed?"SIM":"NÃO"}</p>
-        <p>Cupom 50% usado: ${localStorage.offUsed?"SIM":"NÃO"}</p>`;
-    document.body.appendChild(box);
-    html2pdf().from(box).save("relatorio-urnaweb.pdf")
-        .then(()=>box.remove());
-}
-
 /* ELEIÇÃO */
+let election={name:"",cargos:[]};
+let currentCargo=0;
+let selected=[];
+
 function addCargo(){
     const cargo=cargoName.value;
     const max=+maxVotes.value;
     const namesFile=candidateNames.files[0];
-    if(!cargo||!max||!namesFile)return alert("Preencha tudo");
+    const photos=[...candidatePhotos.files];
+
+    if(!cargo||!max||!namesFile)return alert("Dados incompletos");
 
     const r=new FileReader();
     r.onload=()=>{
         const names=r.result.split("\n").filter(n=>n.trim());
-        election.cargos.push({
-            cargo,max,
-            candidates:names.map(n=>({name:n,votes:0,photo:""}))
-        });
+        const cand=names.map((n,i)=>({
+            name:n,photo:photos[i]?URL.createObjectURL(photos[i]):"",votes:0
+        }));
+        election.cargos.push({cargo,max,candidates:cand});
         cargoList.innerHTML+=`<p>✔ ${cargo}</p>`;
     };
     r.readAsText(namesFile);
 }
 
 function startVoting(){
-    if(!election.cargos.length)return alert("Adicione cargos");
+    election.name=electionName.value;
     currentCargo=0;
     showCargo();
 }
@@ -210,7 +200,7 @@ function showCargo(){
     c.candidates.forEach((x,i)=>{
         let d=document.createElement("div");
         d.className="candidate";
-        d.innerHTML=`<p>${x.name}</p>`;
+        d.innerHTML=`<img src="${x.photo}"><p>${x.name}</p>`;
         d.onclick=()=>toggle(i,d);
         candidates.appendChild(d);
     });
@@ -237,17 +227,63 @@ function nextVoter(){currentCargo=0;showCargo();}
 
 function finishElection(){
     show("results");
-    resultContent.innerHTML="";
+    let r="";
     election.cargos.forEach(c=>{
-        resultContent.innerHTML+=`<h4>${c.cargo}</h4>`;
-        c.candidates.forEach(x=>resultContent.innerHTML+=`<p>${x.name}: ${x.votes}</p>`);
+        r+=`<h4>${c.cargo}</h4>`;
+        c.candidates.forEach(x=>r+=`<p>${x.name}: ${x.votes}</p>`);
     });
-    let f=+localStorage.freeCount||0;
-    if(f>0)localStorage.freeCount=f-1;
+    resultContent.innerHTML=r;
+
+    let free=+localStorage.freeCount||0;
+    if(free>0)localStorage.freeCount=free-1;
 }
 
+/* PDF */
 function exportPDF(){
-    html2pdf().from(resultContent).save();
+    html2pdf().from(resultContent).save("resultado.pdf");
+}
+
+function exportDashboard(){
+    const box=document.createElement("div");
+    box.innerHTML=`
+    <h2>Relatório UrnaWeb Pro</h2>
+    <p>Eleições restantes: ${localStorage.freeCount||0}</p>
+    <p>FREE3 usado: ${localStorage.freeUsed?"SIM":"NÃO"}</p>
+    <p>50% usado: ${localStorage.offUsed?"SIM":"NÃO"}</p>`;
+    html2pdf().from(box).save("dashboard.pdf");
+}
+
+/* DASHBOARD */
+function openDashboard(){
+    dashElections.innerText=localStorage.freeCount||0;
+    dashFree3.innerText=localStorage.freeUsed?"SIM":"NÃO";
+    dash50.innerText=localStorage.offUsed?"SIM":"NÃO";
+    show("dashboard");
+}
+
+/* ADMIN OCULTO */
+let adminClicks=0;
+function adminClick(){
+    adminClicks++;
+    if(adminClicks===5){
+        adminClicks=0;
+        if(prompt("Senha admin:")==="1234")show("admin");
+        else alert("Senha incorreta");
+    }
+}
+
+function resetFree(){
+    localStorage.removeItem("freeCount");
+    localStorage.removeItem("freeUsed");
+    alert("FREE3 resetado");
+}
+function resetCoupons(){
+    localStorage.removeItem("offUsed");
+    alert("Cupons resetados");
+}
+function unlockAll(){
+    localStorage.freeCount="999";
+    alert("Eleições liberadas");
 }
 </script>
 
