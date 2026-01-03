@@ -22,10 +22,11 @@ body{
     max-width:520px;
     margin:auto;
 }
-input,button{
+label{font-size:14px;opacity:.9}
+input,button,textarea{
     width:100%;
     padding:14px;
-    margin:8px 0;
+    margin:6px 0 12px 0;
     border-radius:8px;
     border:none;
     font-size:16px;
@@ -49,36 +50,73 @@ button{background:#1abc9c;font-weight:bold;cursor:pointer}
 .candidate.selected{border-color:#2ecc71}
 .candidate img{
     width:100%;
-    height:130px;
+    height:140px;
     object-fit:cover;
+    border-radius:6px;
 }
+#resultContent{
+    background:white;
+    color:black;
+    padding:20px;
+}
+.lang{
+    position:fixed;
+    top:10px;
+    right:10px;
+}
+.lang button{
+    width:auto;
+    padding:6px 10px;
+}
+small{opacity:.8}
 </style>
 </head>
 
 <body>
 
+<!-- IDIOMAS -->
+<div class="lang">
+    <button onclick="setLang('pt')">🇧🇷</button>
+    <button onclick="setLang('en')">🇺🇸</button>
+    <button onclick="setLang('es')">🇪🇸</button>
+</div>
+
 <!-- LOGIN -->
 <div id="login" class="screen active">
     <div class="card">
-        <h2 onclick="adminClick()">UrnaWeb Pro</h2>
-        <input id="userEmail" placeholder="Seu e-mail">
-        <input id="coupon" placeholder="Cupom promocional (opcional)">
-        <button onclick="login()">Continuar</button>
-        <p id="couponMsg"></p>
+        <h2 data-i18n="title">UrnaWeb Pro</h2>
+
+        <label data-i18n="email">Seu Gmail</label>
+        <input id="userEmail" type="email" placeholder="exemplo@gmail.com">
+
+        <button onclick="login()" data-i18n="continue">Continuar</button>
+        <small data-i18n="login_info">✔ Somente Gmail | 1 eleição grátis</small>
     </div>
 </div>
 
 <!-- SETUP -->
 <div id="setup" class="screen">
     <div class="card">
-        <h3>Configuração da Eleição</h3>
-        <input id="electionName" placeholder="Nome da eleição">
-        <input id="cargoName" placeholder="Cargo">
-        <input id="maxVotes" type="number" placeholder="Votos permitidos">
+        <h3 data-i18n="setup">Configuração da Eleição</h3>
+
+        <label data-i18n="election">Nome da eleição</label>
+        <input id="electionName">
+
+        <label data-i18n="cargo">Cargo</label>
+        <input id="cargoName">
+
+        <label data-i18n="votes">Votos permitidos</label>
+        <input id="maxVotes" type="number">
+
+        <label data-i18n="names">Arquivo com nomes (.txt)</label>
         <input type="file" id="candidateNames" accept=".txt">
+
+        <label data-i18n="photos">Fotos dos candidatos</label>
         <input type="file" id="candidatePhotos" accept="image/*" multiple>
-        <button onclick="addCargo()">Adicionar Cargo</button>
-        <button class="secondary" onclick="startVoting()">Iniciar</button>
+
+        <button onclick="addCargo()" data-i18n="add">Adicionar Cargo</button>
+        <button class="secondary" onclick="startVoting()" data-i18n="start">Iniciar Eleição</button>
+
         <div id="cargoList"></div>
     </div>
 </div>
@@ -87,105 +125,87 @@ button{background:#1abc9c;font-weight:bold;cursor:pointer}
 <div id="voting" class="screen">
     <h2 id="cargoTitle"></h2>
     <div id="candidates" class="candidate-grid"></div>
-    <button onclick="confirmVote()">Confirmar Voto</button>
+    <button onclick="confirmVote()" data-i18n="confirm">Confirmar Voto</button>
 </div>
 
-<!-- CONFIRMAÇÃO -->
+<!-- FINAL -->
 <div id="afterVote" class="screen">
     <div class="card">
-        <h3>Voto Confirmado</h3>
-        <button onclick="nextVoter()">Novo Eleitor</button>
-        <button class="danger" onclick="finishElection()">Encerrar</button>
+        <h3 data-i18n="confirmed">Voto Confirmado</h3>
+        <button onclick="nextVoter()" data-i18n="next">Novo Eleitor</button>
+        <button class="danger" onclick="finishElection()" data-i18n="finish">Encerrar Eleição</button>
     </div>
 </div>
 
 <!-- RESULTADOS -->
 <div id="results" class="screen">
     <div class="card">
-        <h3>Resultado Final</h3>
+        <h3 data-i18n="results">Resultado Final</h3>
         <div id="resultContent"></div>
-        <button onclick="exportPDF()">Exportar PDF</button>
-        <button onclick="openDashboard()">Painel de Controle</button>
+        <button onclick="exportPDF()" data-i18n="pdf">Exportar PDF</button>
+        <button onclick="show('feedback')" data-i18n="feedback">Avaliar Sistema</button>
     </div>
 </div>
 
-<!-- DASHBOARD -->
-<div id="dashboard" class="screen">
+<!-- FEEDBACK -->
+<div id="feedback" class="screen">
     <div class="card">
-        <h3>Painel de Controle</h3>
-        <p><b>Eleições restantes:</b> <span id="dashElections"></span></p>
-        <p><b>Cupom FREE3 usado:</b> <span id="dashFree3"></span></p>
-        <p><b>Cupom 50% usado:</b> <span id="dash50"></span></p>
-        <button onclick="exportDashboard()">Exportar Relatório PDF</button>
-        <button class="secondary" onclick="show('setup')">Nova Eleição</button>
-    </div>
-</div>
-
-<!-- ADMIN OCULTO -->
-<div id="admin" class="screen">
-    <div class="card">
-        <h3>🔐 Painel Administrativo</h3>
-        <button onclick="resetFree()">Resetar FREE3</button>
-        <button onclick="resetCoupons()">Resetar Cupons</button>
-        <button onclick="unlockAll()">Liberar Eleições</button>
-        <button class="secondary" onclick="show('login')">Voltar</button>
+        <h3 data-i18n="rate">Avalie o UrnaWeb Pro</h3>
+        <textarea></textarea>
+        <button onclick="sendFeedback()" data-i18n="send">Enviar Avaliação</button>
     </div>
 </div>
 
 <script>
-/* CONTROLE DE TELAS */
+/* ================= SISTEMA ================= */
+let election={name:"",cargos:[]};
+let currentCargo=0;
+let selected=[];
+
 function show(id){
     document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
     document.getElementById(id).classList.add("active");
 }
 
-/* LOGIN + CUPONS */
 function login(){
-    const cup=coupon.value.trim().toUpperCase();
-    let msg=couponMsg;
-
-    if(cup==="FREE3" && !localStorage.freeUsed){
-        localStorage.freeUsed="true";
-        localStorage.freeCount="3";
-        msg.innerText="🎉 FREE3 ativado";
-    }
-    else if(cup==="50OFF" && !localStorage.offUsed){
-        localStorage.offUsed="true";
-        msg.innerText="🎉 50% aplicado";
-    }
-    else if(cup){
-        msg.innerText="❌ Cupom inválido ou usado";
+    const email=userEmail.value.trim().toLowerCase();
+    if(!email.endsWith("@gmail.com")){
+        alert("Use um Gmail válido");
         return;
     }
+    if(!localStorage.elections) localStorage.elections="1";
     show("setup");
 }
-
-/* ELEIÇÃO */
-let election={name:"",cargos:[]};
-let currentCargo=0;
-let selected=[];
 
 function addCargo(){
     const cargo=cargoName.value;
     const max=+maxVotes.value;
     const namesFile=candidateNames.files[0];
     const photos=[...candidatePhotos.files];
-
-    if(!cargo||!max||!namesFile)return alert("Dados incompletos");
+    if(!cargo || !max || !namesFile) return alert("Preencha todos os campos");
 
     const r=new FileReader();
     r.onload=()=>{
         const names=r.result.split("\n").filter(n=>n.trim());
-        const cand=names.map((n,i)=>({
-            name:n,photo:photos[i]?URL.createObjectURL(photos[i]):"",votes:0
-        }));
-        election.cargos.push({cargo,max,candidates:cand});
+        election.cargos.push({
+            cargo,
+            max,
+            candidates:names.map((n,i)=>({
+                name:n.trim(),
+                photo:photos[i]?URL.createObjectURL(photos[i]):"",
+                votes:0
+            }))
+        });
         cargoList.innerHTML+=`<p>✔ ${cargo}</p>`;
     };
-    r.readAsText(namesFile);
+    r.readAsText(namesFile,"UTF-8");
 }
 
 function startVoting(){
+    if(+localStorage.elections<=0){
+        alert("Pagamento necessário");
+        return;
+    }
     election.name=electionName.value;
     currentCargo=0;
     showCargo();
@@ -198,7 +218,7 @@ function showCargo(){
     cargoTitle.innerText=c.cargo;
     candidates.innerHTML="";
     c.candidates.forEach((x,i)=>{
-        let d=document.createElement("div");
+        const d=document.createElement("div");
         d.className="candidate";
         d.innerHTML=`<img src="${x.photo}"><p>${x.name}</p>`;
         d.onclick=()=>toggle(i,d);
@@ -220,71 +240,70 @@ function toggle(i,d){
 function confirmVote(){
     const c=election.cargos[currentCargo];
     selected.forEach(i=>c.candidates[i].votes++);
-    currentCargo<election.cargos.length-1?showCargo(++currentCargo):show("afterVote");
+    currentCargo<election.cargos.length-1 ? showCargo(++currentCargo) : show("afterVote");
 }
 
 function nextVoter(){currentCargo=0;showCargo();}
 
 function finishElection(){
     show("results");
-    let r="";
+    let r=`<h3>${election.name}</h3>`;
     election.cargos.forEach(c=>{
         r+=`<h4>${c.cargo}</h4>`;
         c.candidates.forEach(x=>r+=`<p>${x.name}: ${x.votes}</p>`);
     });
     resultContent.innerHTML=r;
-
-    let free=+localStorage.freeCount||0;
-    if(free>0)localStorage.freeCount=free-1;
+    localStorage.elections="0";
 }
 
-/* PDF */
 function exportPDF(){
-    html2pdf().from(resultContent).save("resultado.pdf");
+    html2pdf().from(resultContent).set({filename:"resultado-urnaweb.pdf"}).save();
 }
 
-function exportDashboard(){
-    const box=document.createElement("div");
-    box.innerHTML=`
-    <h2>Relatório UrnaWeb Pro</h2>
-    <p>Eleições restantes: ${localStorage.freeCount||0}</p>
-    <p>FREE3 usado: ${localStorage.freeUsed?"SIM":"NÃO"}</p>
-    <p>50% usado: ${localStorage.offUsed?"SIM":"NÃO"}</p>`;
-    html2pdf().from(box).save("dashboard.pdf");
+function sendFeedback(){
+    alert("Obrigado pela avaliação!");
+    show("login");
 }
 
-/* DASHBOARD */
-function openDashboard(){
-    dashElections.innerText=localStorage.freeCount||0;
-    dashFree3.innerText=localStorage.freeUsed?"SIM":"NÃO";
-    dash50.innerText=localStorage.offUsed?"SIM":"NÃO";
-    show("dashboard");
+/* ================= IDIOMAS (CORRIGIDO) ================= */
+const translations={
+pt:{
+    title:"UrnaWeb Pro",continue:"Continuar",login_info:"✔ Somente Gmail | 1 eleição grátis",
+    setup:"Configuração da Eleição",email:"Seu Gmail",election:"Nome da eleição",
+    cargo:"Cargo",votes:"Votos permitidos",names:"Arquivo com nomes (.txt)",
+    photos:"Fotos dos candidatos",add:"Adicionar Cargo",start:"Iniciar Eleição",
+    confirm:"Confirmar Voto",confirmed:"Voto Confirmado",next:"Novo Eleitor",
+    finish:"Encerrar Eleição",results:"Resultado Final",pdf:"Exportar PDF",
+    feedback:"Avaliar Sistema",rate:"Avalie o UrnaWeb Pro",send:"Enviar Avaliação"
+},
+en:{
+    title:"UrnaWeb Pro",continue:"Continue",login_info:"✔ Gmail only | 1 free election",
+    setup:"Election Setup",email:"Your Gmail",election:"Election name",
+    cargo:"Position",votes:"Allowed votes",names:"Candidates file (.txt)",
+    photos:"Candidates photos",add:"Add Position",start:"Start Election",
+    confirm:"Confirm Vote",confirmed:"Vote Confirmed",next:"Next Voter",
+    finish:"Finish Election",results:"Final Results",pdf:"Export PDF",
+    feedback:"Rate System",rate:"Rate UrnaWeb Pro",send:"Send Feedback"
+},
+es:{
+    title:"UrnaWeb Pro",continue:"Continuar",login_info:"✔ Solo Gmail | 1 elección gratis",
+    setup:"Configuración Electoral",email:"Tu Gmail",election:"Nombre de la elección",
+    cargo:"Cargo",votes:"Votos permitidos",names:"Archivo de candidatos (.txt)",
+    photos:"Fotos de candidatos",add:"Agregar Cargo",start:"Iniciar Elección",
+    confirm:"Confirmar Voto",confirmed:"Voto Confirmado",next:"Nuevo Votante",
+    finish:"Finalizar Elección",results:"Resultado Final",pdf:"Exportar PDF",
+    feedback:"Evaluar Sistema",rate:"Evalúe UrnaWeb Pro",send:"Enviar Evaluación"
+}
+};
+
+function setLang(l){
+    localStorage.lang=l;
+    document.querySelectorAll("[data-i18n]").forEach(el=>{
+        el.innerText=translations[l][el.dataset.i18n];
+    });
 }
 
-/* ADMIN OCULTO */
-let adminClicks=0;
-function adminClick(){
-    adminClicks++;
-    if(adminClicks===5){
-        adminClicks=0;
-        if(prompt("Senha admin:")==="1234")show("admin");
-        else alert("Senha incorreta");
-    }
-}
-
-function resetFree(){
-    localStorage.removeItem("freeCount");
-    localStorage.removeItem("freeUsed");
-    alert("FREE3 resetado");
-}
-function resetCoupons(){
-    localStorage.removeItem("offUsed");
-    alert("Cupons resetados");
-}
-function unlockAll(){
-    localStorage.freeCount="999";
-    alert("Eleições liberadas");
-}
+window.onload=()=>setLang(localStorage.lang||"pt");
 </script>
 
 </body>
