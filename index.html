@@ -8,302 +8,164 @@
 
 <style>
 body{
-    margin:0;
-    font-family:Segoe UI,Arial;
-    background:#0a2a66;
-    color:white;
+  margin:0;
+  font-family:Segoe UI,Arial;
+  background:#0a2a66;
+  color:white;
 }
 .screen{display:none;padding:25px;min-height:100vh}
 .active{display:block}
 .card{
-    background:#122f5f;
-    border-radius:12px;
-    padding:20px;
-    max-width:520px;
-    margin:auto;
+  background:#122f5f;
+  border-radius:12px;
+  padding:20px;
+  max-width:520px;
+  margin:auto;
 }
-label{font-size:14px;opacity:.9}
-input,button,textarea{
-    width:100%;
-    padding:14px;
-    margin:6px 0 12px 0;
-    border-radius:8px;
-    border:none;
-    font-size:16px;
+input,button{
+  width:100%;
+  padding:14px;
+  margin:8px 0;
+  border-radius:8px;
+  border:none;
+  font-size:16px;
 }
 button{background:#1abc9c;font-weight:bold;cursor:pointer}
 .secondary{background:#f1c40f}
 .danger{background:#e74c3c;color:white}
-.candidate-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-    gap:12px;
-}
-.candidate{
-    background:#163a75;
-    border-radius:10px;
-    padding:8px;
-    text-align:center;
-    cursor:pointer;
-    border:4px solid transparent;
-}
-.candidate.selected{border-color:#2ecc71}
-.candidate img{
-    width:100%;
-    height:140px;
-    object-fit:cover;
-    border-radius:6px;
-}
-#resultContent{
-    background:white;
-    color:black;
-    padding:20px;
-}
-.lang{
-    position:fixed;
-    top:10px;
-    right:10px;
-}
-.lang button{
-    width:auto;
-    padding:6px 10px;
-}
 small{opacity:.8}
 </style>
 </head>
 
 <body>
 
-<!-- IDIOMAS -->
-<div class="lang">
-    <button onclick="setLang('pt')">🇧🇷</button>
-    <button onclick="setLang('en')">🇺🇸</button>
-    <button onclick="setLang('es')">🇪🇸</button>
-</div>
-
 <!-- LOGIN -->
 <div id="login" class="screen active">
-    <div class="card">
-        <h2 data-i18n="title">UrnaWeb Pro</h2>
+  <div class="card">
+    <h2>UrnaWeb Pro</h2>
+    <input id="email" type="email" placeholder="Seu Gmail">
+    <button onclick="login()">Entrar</button>
+    <small>Login com confirmação por e-mail</small>
+  </div>
+</div>
 
-        <label data-i18n="email">Seu Gmail</label>
-        <input id="userEmail" type="email" placeholder="exemplo@gmail.com">
-
-        <button onclick="login()" data-i18n="continue">Continuar</button>
-        <small data-i18n="login_info">✔ Somente Gmail | 1 eleição grátis</small>
-    </div>
+<!-- AGUARDANDO CONFIRMAÇÃO -->
+<div id="wait" class="screen">
+  <div class="card">
+    <h3>Confirme seu acesso</h3>
+    <p>Enviamos um link para seu e-mail.</p>
+    <small>Verifique a caixa de spam</small>
+  </div>
 </div>
 
 <!-- SETUP -->
 <div id="setup" class="screen">
-    <div class="card">
-        <h3 data-i18n="setup">Configuração da Eleição</h3>
+  <div class="card">
+    <h3>Nova Eleição</h3>
+    <input id="electionName" placeholder="Nome da eleição">
+    <button onclick="checkElection()">Iniciar Eleição</button>
 
-        <label data-i18n="election">Nome da eleição</label>
-        <input id="electionName">
-
-        <label data-i18n="cargo">Cargo</label>
-        <input id="cargoName">
-
-        <label data-i18n="votes">Votos permitidos</label>
-        <input id="maxVotes" type="number">
-
-        <label data-i18n="names">Arquivo com nomes (.txt)</label>
-        <input type="file" id="candidateNames" accept=".txt">
-
-        <label data-i18n="photos">Fotos dos candidatos</label>
-        <input type="file" id="candidatePhotos" accept="image/*" multiple>
-
-        <button onclick="addCargo()" data-i18n="add">Adicionar Cargo</button>
-        <button class="secondary" onclick="startVoting()" data-i18n="start">Iniciar Eleição</button>
-
-        <div id="cargoList"></div>
-    </div>
+    <hr>
+    <input id="coupon" placeholder="Cupom promocional">
+    <button class="secondary" onclick="applyCoupon()">Aplicar Cupom</button>
+  </div>
 </div>
 
-<!-- VOTAÇÃO -->
-<div id="voting" class="screen">
-    <h2 id="cargoTitle"></h2>
-    <div id="candidates" class="candidate-grid"></div>
-    <button onclick="confirmVote()" data-i18n="confirm">Confirmar Voto</button>
+<!-- PAGAMENTO -->
+<div id="payment" class="screen">
+  <div class="card">
+    <h3>Plano Profissional</h3>
+    <p>Você não possui eleições disponíveis.</p>
+    <button onclick="pay()">Pagar R$ 15,00</button>
+  </div>
 </div>
 
-<!-- FINAL -->
-<div id="afterVote" class="screen">
-    <div class="card">
-        <h3 data-i18n="confirmed">Voto Confirmado</h3>
-        <button onclick="nextVoter()" data-i18n="next">Novo Eleitor</button>
-        <button class="danger" onclick="finishElection()" data-i18n="finish">Encerrar Eleição</button>
-    </div>
-</div>
-
-<!-- RESULTADOS -->
-<div id="results" class="screen">
-    <div class="card">
-        <h3 data-i18n="results">Resultado Final</h3>
-        <div id="resultContent"></div>
-        <button onclick="exportPDF()" data-i18n="pdf">Exportar PDF</button>
-        <button onclick="show('feedback')" data-i18n="feedback">Avaliar Sistema</button>
-    </div>
-</div>
-
-<!-- FEEDBACK -->
-<div id="feedback" class="screen">
-    <div class="card">
-        <h3 data-i18n="rate">Avalie o UrnaWeb Pro</h3>
-        <textarea></textarea>
-        <button onclick="sendFeedback()" data-i18n="send">Enviar Avaliação</button>
-    </div>
+<!-- ELEIÇÃO -->
+<div id="election" class="screen">
+  <div class="card">
+    <h3 id="elName"></h3>
+    <p>Eleição iniciada com sucesso.</p>
+    <button onclick="finish()">Encerrar Eleição</button>
+  </div>
 </div>
 
 <script>
-/* ================= SISTEMA ================= */
-let election={name:"",cargos:[]};
-let currentCargo=0;
-let selected=[];
+const API = "https://urnaweb-backend.paulosmb1972.workers.dev";
+let userEmail = "";
 
+/* UTIL */
 function show(id){
-    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-    document.getElementById(id).classList.add("active");
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
 }
 
-function login(){
-    const email=userEmail.value.trim().toLowerCase();
-    if(!email.endsWith("@gmail.com")){
-        alert("Use um Gmail válido");
-        return;
-    }
-    if(!localStorage.elections) localStorage.elections="1";
-    show("setup");
+/* LOGIN */
+async function login(){
+  const email = document.getElementById("email").value.trim().toLowerCase();
+  if(!email.endsWith("@gmail.com")){
+    alert("Use um Gmail válido");
+    return;
+  }
+  userEmail = email;
+
+  await fetch(API+"/login",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({email})
+  });
+
+  show("wait");
 }
 
-function addCargo(){
-    const cargo=cargoName.value;
-    const max=+maxVotes.value;
-    const namesFile=candidateNames.files[0];
-    const photos=[...candidatePhotos.files];
-    if(!cargo || !max || !namesFile) return alert("Preencha todos os campos");
+/* VERIFICAR ELEIÇÃO */
+async function checkElection(){
+  const r = await fetch(API+"/can-start",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({email:userEmail})
+  });
 
-    const r=new FileReader();
-    r.onload=()=>{
-        const names=r.result.split("\n").filter(n=>n.trim());
-        election.cargos.push({
-            cargo,
-            max,
-            candidates:names.map((n,i)=>({
-                name:n.trim(),
-                photo:photos[i]?URL.createObjectURL(photos[i]):"",
-                votes:0
-            }))
-        });
-        cargoList.innerHTML+=`<p>✔ ${cargo}</p>`;
-    };
-    r.readAsText(namesFile,"UTF-8");
+  const data = await r.json();
+
+  if(data.allowed){
+    startElection();
+  }else{
+    show("payment");
+  }
 }
 
-function startVoting(){
-    if(+localStorage.elections<=0){
-        alert("Pagamento necessário");
-        return;
-    }
-    election.name=electionName.value;
-    currentCargo=0;
-    showCargo();
+/* CUPOM */
+async function applyCoupon(){
+  const code = document.getElementById("coupon").value.trim().toUpperCase();
+  if(!code) return alert("Digite um cupom");
+
+  const r = await fetch(API+"/coupon",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({email:userEmail, code})
+  });
+
+  const d = await r.json();
+  if(d.success) alert("Cupom aplicado com sucesso!");
+  else alert("Cupom inválido");
 }
 
-function showCargo(){
-    selected=[];
-    show("voting");
-    const c=election.cargos[currentCargo];
-    cargoTitle.innerText=c.cargo;
-    candidates.innerHTML="";
-    c.candidates.forEach((x,i)=>{
-        const d=document.createElement("div");
-        d.className="candidate";
-        d.innerHTML=`<img src="${x.photo}"><p>${x.name}</p>`;
-        d.onclick=()=>toggle(i,d);
-        candidates.appendChild(d);
-    });
+/* PAGAMENTO */
+function pay(){
+  window.open("https://mpago.la/1VakcdN","_blank");
 }
 
-function toggle(i,d){
-    const c=election.cargos[currentCargo];
-    if(selected.includes(i)){
-        selected=selected.filter(x=>x!==i);
-        d.classList.remove("selected");
-    }else if(selected.length<c.max){
-        selected.push(i);
-        d.classList.add("selected");
-    }
+/* ELEIÇÃO */
+function startElection(){
+  document.getElementById("elName").innerText =
+    document.getElementById("electionName").value;
+  show("election");
 }
 
-function confirmVote(){
-    const c=election.cargos[currentCargo];
-    selected.forEach(i=>c.candidates[i].votes++);
-    currentCargo<election.cargos.length-1 ? showCargo(++currentCargo) : show("afterVote");
+function finish(){
+  alert("Eleição encerrada");
+  show("setup");
 }
-
-function nextVoter(){currentCargo=0;showCargo();}
-
-function finishElection(){
-    show("results");
-    let r=`<h3>${election.name}</h3>`;
-    election.cargos.forEach(c=>{
-        r+=`<h4>${c.cargo}</h4>`;
-        c.candidates.forEach(x=>r+=`<p>${x.name}: ${x.votes}</p>`);
-    });
-    resultContent.innerHTML=r;
-    localStorage.elections="0";
-}
-
-function exportPDF(){
-    html2pdf().from(resultContent).set({filename:"resultado-urnaweb.pdf"}).save();
-}
-
-function sendFeedback(){
-    alert("Obrigado pela avaliação!");
-    show("login");
-}
-
-/* ================= IDIOMAS (CORRIGIDO) ================= */
-const translations={
-pt:{
-    title:"UrnaWeb Pro",continue:"Continuar",login_info:"✔ Somente Gmail | 1 eleição grátis",
-    setup:"Configuração da Eleição",email:"Seu Gmail",election:"Nome da eleição",
-    cargo:"Cargo",votes:"Votos permitidos",names:"Arquivo com nomes (.txt)",
-    photos:"Fotos dos candidatos",add:"Adicionar Cargo",start:"Iniciar Eleição",
-    confirm:"Confirmar Voto",confirmed:"Voto Confirmado",next:"Novo Eleitor",
-    finish:"Encerrar Eleição",results:"Resultado Final",pdf:"Exportar PDF",
-    feedback:"Avaliar Sistema",rate:"Avalie o UrnaWeb Pro",send:"Enviar Avaliação"
-},
-en:{
-    title:"UrnaWeb Pro",continue:"Continue",login_info:"✔ Gmail only | 1 free election",
-    setup:"Election Setup",email:"Your Gmail",election:"Election name",
-    cargo:"Position",votes:"Allowed votes",names:"Candidates file (.txt)",
-    photos:"Candidates photos",add:"Add Position",start:"Start Election",
-    confirm:"Confirm Vote",confirmed:"Vote Confirmed",next:"Next Voter",
-    finish:"Finish Election",results:"Final Results",pdf:"Export PDF",
-    feedback:"Rate System",rate:"Rate UrnaWeb Pro",send:"Send Feedback"
-},
-es:{
-    title:"UrnaWeb Pro",continue:"Continuar",login_info:"✔ Solo Gmail | 1 elección gratis",
-    setup:"Configuración Electoral",email:"Tu Gmail",election:"Nombre de la elección",
-    cargo:"Cargo",votes:"Votos permitidos",names:"Archivo de candidatos (.txt)",
-    photos:"Fotos de candidatos",add:"Agregar Cargo",start:"Iniciar Elección",
-    confirm:"Confirmar Voto",confirmed:"Voto Confirmado",next:"Nuevo Votante",
-    finish:"Finalizar Elección",results:"Resultado Final",pdf:"Exportar PDF",
-    feedback:"Evaluar Sistema",rate:"Evalúe UrnaWeb Pro",send:"Enviar Evaluación"
-}
-};
-
-function setLang(l){
-    localStorage.lang=l;
-    document.querySelectorAll("[data-i18n]").forEach(el=>{
-        el.innerText=translations[l][el.dataset.i18n];
-    });
-}
-
-window.onload=()=>setLang(localStorage.lang||"pt");
 </script>
 
 </body>
