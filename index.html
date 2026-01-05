@@ -33,7 +33,27 @@ input,button{
 button{background:#1abc9c;font-weight:bold;cursor:pointer}
 .secondary{background:#f1c40f}
 .danger{background:#e74c3c;color:white}
-small{opacity:.8}
+
+.candidates{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:10px;
+}
+.candidate{
+  background:#163a75;
+  padding:10px;
+  border-radius:10px;
+  text-align:center;
+  cursor:pointer;
+  border:3px solid transparent;
+}
+.candidate.selected{border-color:#2ecc71}
+
+#resultBox{
+  background:white;
+  color:black;
+  padding:20px;
+}
 </style>
 </head>
 
@@ -45,53 +65,41 @@ small{opacity:.8}
     <h2>UrnaWeb Pro</h2>
     <input id="email" type="email" placeholder="Seu Gmail">
     <button onclick="login()">Entrar</button>
-    <small>Login com confirmação por e-mail</small>
-  </div>
-</div>
-
-<!-- AGUARDANDO CONFIRMAÇÃO -->
-<div id="wait" class="screen">
-  <div class="card">
-    <h3>Confirme seu acesso</h3>
-    <p>Enviamos um link para seu e-mail.</p>
-    <small>Verifique a caixa de spam</small>
   </div>
 </div>
 
 <!-- SETUP -->
 <div id="setup" class="screen">
   <div class="card">
-    <h3>Nova Eleição</h3>
+    <h3>Configurar Eleição</h3>
     <input id="electionName" placeholder="Nome da eleição">
-    <button onclick="checkElection()">Iniciar Eleição</button>
-
-    <hr>
-    <input id="coupon" placeholder="Cupom promocional">
-    <button class="secondary" onclick="applyCoupon()">Aplicar Cupom</button>
+    <input id="cargoName" placeholder="Cargo">
+    <input id="candidatesTxt" placeholder="Candidatos separados por vírgula">
+    <button onclick="startElection()">Iniciar Votação</button>
   </div>
 </div>
 
-<!-- PAGAMENTO -->
-<div id="payment" class="screen">
-  <div class="card">
-    <h3>Plano Profissional</h3>
-    <p>Você não possui eleições disponíveis.</p>
-    <button onclick="pay()">Pagar R$ 15,00</button>
-  </div>
+<!-- VOTAÇÃO -->
+<div id="vote" class="screen">
+  <h2 id="cargoTitle"></h2>
+  <div id="candidateList" class="candidates"></div>
+  <button onclick="confirmVote()">Confirmar Voto</button>
 </div>
 
-<!-- ELEIÇÃO -->
-<div id="election" class="screen">
+<!-- RESULTADO -->
+<div id="result" class="screen">
   <div class="card">
-    <h3 id="elName"></h3>
-    <p>Eleição iniciada com sucesso.</p>
-    <button onclick="finish()">Encerrar Eleição</button>
+    <h3>Resultado Final</h3>
+    <div id="resultBox"></div>
+    <button onclick="exportPDF()">Exportar PDF</button>
+    <button class="secondary" onclick="restart()">Nova Eleição</button>
   </div>
 </div>
 
 <script>
-const API = "https://urnaweb-backend.paulosmb1972.workers.dev";
-let userEmail = "";
+let emailUser="";
+let election={name:"",cargo:"",candidates:[]};
+let selected=null;
 
 /* UTIL */
 function show(id){
@@ -101,70 +109,73 @@ function show(id){
 
 /* LOGIN */
 async function login(){
-  const email = document.getElementById("email").value.trim().toLowerCase();
-  if(!email.endsWith("@gmail.com")){
-    alert("Use um Gmail válido");
-    return;
-  }
-  userEmail = email;
-
-  await fetch(API+"/login",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({email})
-  });
-
-  show("wait");
-}
-
-/* VERIFICAR ELEIÇÃO */
-async function checkElection(){
-  const r = await fetch(API+"/can-start",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({email:userEmail})
-  });
-
-  const data = await r.json();
-
-  if(data.allowed){
-    startElection();
-  }else{
-    show("payment");
-  }
-}
-
-/* CUPOM */
-async function applyCoupon(){
-  const code = document.getElementById("coupon").value.trim().toUpperCase();
-  if(!code) return alert("Digite um cupom");
-
-  const r = await fetch(API+"/coupon",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({email:userEmail, code})
-  });
-
-  const d = await r.json();
-  if(d.success) alert("Cupom aplicado com sucesso!");
-  else alert("Cupom inválido");
-}
-
-/* PAGAMENTO */
-function pay(){
-  window.open("https://mpago.la/1VakcdN","_blank");
-}
-
-/* ELEIÇÃO */
-function startElection(){
-  document.getElementById("elName").innerText =
-    document.getElementById("electionName").value;
-  show("election");
-}
-
-function finish(){
-  alert("Eleição encerrada");
+  const email=document.getElementById("email").value.trim().toLowerCase();
+  if(!email.endsWith("@gmail.com")) return alert("Use Gmail");
+  emailUser=email;
   show("setup");
+}
+
+/* START */
+function startElection(){
+  election.name=electionName.value;
+  election.cargo=cargoName.value;
+  election.candidates=candidatesTxt.value.split(",").map(n=>({
+    name:n.trim(),
+    votes:0
+  }));
+  showVote();
+}
+
+/* VOTAÇÃO */
+function showVote(){
+  show("vote");
+  cargoTitle.innerText=election.cargo;
+  candidateList.innerHTML="";
+  election.candidates.forEach((c,i)=>{
+    const d=document.createElement("div");
+    d.className="candidate";
+    d.innerText=c.name;
+    d.onclick=()=>{
+      document.querySelectorAll(".candidate").forEach(x=>x.classList.remove("selected"));
+      d.classList.add("selected");
+      selected=i;
+    };
+    candidateList.appendChild(d);
+  });
+}
+
+function confirmVote(){
+  if(selected===null) return alert("Selecione um candidato");
+  election.candidates[selected].votes++;
+  selected=null;
+  showVote();
+}
+
+/* RESULTADO */
+function finish(){
+  show("result");
+  let html=`<h3>${election.name}</h3>`;
+  election.candidates.forEach(c=>{
+    html+=`<p>${c.name}: ${c.votes} votos</p>`;
+  });
+  resultBox.innerHTML=html;
+}
+
+/* PDF – NÃO FICA EM BRANCO */
+function exportPDF(){
+  const clone=resultBox.cloneNode(true);
+  document.body.appendChild(clone);
+  clone.style.display="block";
+
+  html2pdf()
+    .set({filename:"resultado-urnaweb.pdf"})
+    .from(clone)
+    .save()
+    .then(()=>document.body.removeChild(clone));
+}
+
+function restart(){
+  location.reload();
 }
 </script>
 
