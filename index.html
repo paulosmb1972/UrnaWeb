@@ -181,3 +181,272 @@ function restart(){
 
 </body>
 </html>
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>UrnaWeb Pro</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:Segoe UI,Arial;
+  background:#0a2a66;
+  color:white;
+}
+.screen{display:none;padding:25px;min-height:100vh}
+.active{display:block}
+.card{
+  background:#122f5f;
+  border-radius:12px;
+  padding:20px;
+  max-width:540px;
+  margin:auto;
+}
+input,button{
+  width:100%;
+  padding:14px;
+  margin:8px 0;
+  border-radius:8px;
+  border:none;
+  font-size:16px;
+}
+button{background:#1abc9c;font-weight:bold;cursor:pointer}
+.secondary{background:#f1c40f}
+.danger{background:#e74c3c;color:white}
+
+.candidates{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:12px;
+}
+.candidate{
+  background:#163a75;
+  border-radius:10px;
+  padding:10px;
+  text-align:center;
+  cursor:pointer;
+  border:4px solid transparent;
+}
+.candidate.selected{border-color:#2ecc71}
+.candidate img{
+  width:100%;
+  height:140px;
+  object-fit:cover;
+  border-radius:6px;
+}
+
+#resultBox{
+  background:white;
+  color:black;
+  padding:20px;
+}
+small{opacity:.8}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="login" class="screen active">
+  <div class="card">
+    <h2>UrnaWeb Pro</h2>
+    <input id="email" type="email" placeholder="Seu Gmail">
+    <button onclick="login()">Entrar</button>
+    <small>Confirmação por e-mail</small>
+  </div>
+</div>
+
+<!-- AGUARDANDO -->
+<div id="wait" class="screen">
+  <div class="card">
+    <h3>Confirme seu acesso</h3>
+    <p>Verifique seu e-mail para continuar.</p>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div id="setup" class="screen">
+  <div class="card">
+    <h3>Nova Eleição</h3>
+
+    <input id="electionName" placeholder="Nome da eleição">
+    <input id="cargoName" placeholder="Cargo">
+
+    <small>Candidatos (.txt)</small>
+    <input type="file" id="namesFile" accept=".txt">
+
+    <small>Fotos dos candidatos</small>
+    <input type="file" id="photosFile" accept="image/*" multiple>
+
+    <button onclick="checkElection()">Iniciar Eleição</button>
+
+    <hr>
+    <input id="coupon" placeholder="Cupom promocional">
+    <button class="secondary" onclick="applyCoupon()">Aplicar Cupom</button>
+  </div>
+</div>
+
+<!-- PAGAMENTO -->
+<div id="payment" class="screen">
+  <div class="card">
+    <h3>Plano Profissional</h3>
+    <p>Você não possui eleições disponíveis.</p>
+    <button onclick="pay()">Pagar R$ 15,00</button>
+  </div>
+</div>
+
+<!-- VOTAÇÃO -->
+<div id="vote" class="screen">
+  <h2 id="voteCargo"></h2>
+  <div id="candidateList" class="candidates"></div>
+  <button onclick="confirmVote()">Confirmar Voto</button>
+  <button class="danger" onclick="finishElection()">Encerrar Eleição</button>
+</div>
+
+<!-- RESULTADO -->
+<div id="result" class="screen">
+  <div class="card">
+    <h3>Resultado Final</h3>
+    <div id="resultBox"></div>
+    <button onclick="exportPDF()">Exportar PDF</button>
+    <button class="secondary" onclick="reset()">Nova Eleição</button>
+  </div>
+</div>
+
+<script>
+const API="https://urnaweb-backend.paulosmb1972.workers.dev";
+let userEmail="";
+let election={name:"",cargo:"",candidates:[]};
+let selected=null;
+
+/* UTIL */
+function show(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+/* LOGIN */
+async function login(){
+  const email=document.getElementById("email").value.trim().toLowerCase();
+  if(!email.endsWith("@gmail.com")) return alert("Use Gmail válido");
+  userEmail=email;
+
+  await fetch(API+"/login",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({email})
+  });
+
+  show("wait");
+}
+
+/* CHECK */
+async function checkElection(){
+  const r=await fetch(API+"/can-start",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({email:userEmail})
+  });
+  const d=await r.json();
+  if(d.allowed) loadCandidates();
+  else show("payment");
+}
+
+/* LOAD */
+function loadCandidates(){
+  const file=document.getElementById("namesFile").files[0];
+  const photos=[...document.getElementById("photosFile").files];
+  if(!file) return alert("Arquivo .txt obrigatório");
+
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const names=reader.result.split("\n").filter(n=>n.trim());
+    election={
+      name:electionName.value,
+      cargo:cargoName.value,
+      candidates:names.map((n,i)=>({
+        name:n.trim(),
+        photo:photos[i]?URL.createObjectURL(photos[i]):"",
+        votes:0
+      }))
+    };
+    startVote();
+  };
+  reader.readAsText(file,"UTF-8");
+}
+
+/* CUPOM */
+async function applyCoupon(){
+  const code=coupon.value.trim().toUpperCase();
+  if(!code) return;
+  const r=await fetch(API+"/coupon",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({email:userEmail,code})
+  });
+  const d=await r.json();
+  alert(d.success?"Cupom aplicado":"Cupom inválido");
+}
+
+/* PAY */
+function pay(){
+  window.open("https://mpago.la/1VakcdN","_blank");
+}
+
+/* VOTAÇÃO */
+function startVote(){
+  show("vote");
+  voteCargo.innerText=election.cargo;
+  renderCandidates();
+}
+function renderCandidates(){
+  selected=null;
+  candidateList.innerHTML="";
+  election.candidates.forEach((c,i)=>{
+    const d=document.createElement("div");
+    d.className="candidate";
+    d.innerHTML=`${c.photo?`<img src="${c.photo}">`:""}<p>${c.name}</p>`;
+    d.onclick=()=>{
+      document.querySelectorAll(".candidate").forEach(x=>x.classList.remove("selected"));
+      d.classList.add("selected");
+      selected=i;
+    };
+    candidateList.appendChild(d);
+  });
+}
+function confirmVote(){
+  if(selected===null) return alert("Selecione um candidato");
+  election.candidates[selected].votes++;
+  renderCandidates();
+}
+
+/* FINAL */
+function finishElection(){
+  show("result");
+  let html=`<h3>${election.name}</h3><h4>${election.cargo}</h4>`;
+  election.candidates.forEach(c=>{
+    html+=`<p>${c.name}: ${c.votes} votos</p>`;
+  });
+  resultBox.innerHTML=html;
+}
+
+/* PDF */
+function exportPDF(){
+  const clone=resultBox.cloneNode(true);
+  document.body.appendChild(clone);
+  clone.style.display="block";
+  html2pdf().set({filename:"resultado-urnaweb.pdf"}).from(clone).save()
+    .then(()=>document.body.removeChild(clone));
+}
+
+function reset(){
+  location.reload();
+}
+</script>
+
+</body>
+</html>
