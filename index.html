@@ -34,7 +34,7 @@ input,button,textarea{
 button{background:#1abc9c;font-weight:bold;cursor:pointer}
 .secondary{background:#f1c40f}
 .danger{background:#e74c3c;color:white}
-.admin{background:#8e44ad}
+.admin{background:#9b59b6}
 .candidate-grid{
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
@@ -60,215 +60,276 @@ button{background:#1abc9c;font-weight:bold;cursor:pointer}
     color:black;
     padding:20px;
 }
+.lang{
+    position:fixed;
+    top:10px;
+    right:10px;
+}
+.lang button{
+    width:auto;
+    padding:6px 10px;
+    margin-left:4px;
+}
 small{opacity:.8}
 </style>
 </head>
 
 <body>
 
+<!-- IDIOMAS -->
+<div class="lang">
+    <button onclick="setLang('pt')">🇧🇷</button>
+    <button onclick="setLang('en')">🇺🇸</button>
+    <button onclick="setLang('es')">🇪🇸</button>
+</div>
+
 <!-- LOGIN -->
 <div id="login" class="screen active">
-<div class="card">
-<h2>UrnaWeb Pro</h2>
-<label>Seu Gmail</label>
-<input id="userEmail">
-<label>Cupom (opcional)</label>
-<input id="coupon">
-<button onclick="login()">Continuar</button>
-<small id="statusInfo"></small>
-</div>
-</div>
+    <div class="card">
+        <h2 data-i18n="title">UrnaWeb Pro</h2>
 
-<!-- SETUP -->
-<div id="setup" class="screen">
-<div class="card">
-<h3>Configuração da Eleição</h3>
+        <label data-i18n="email">Seu e-mail</label>
+        <input id="userEmail" type="email" placeholder="exemplo@email.com">
 
-<label>Nome da eleição</label>
-<input id="electionName">
+        <button onclick="login()" data-i18n="continue">Continuar</button>
+        <button class="admin" onclick="adminLogin()" data-i18n="admin">Administrador</button>
 
-<label>Cargo</label>
-<input id="cargoName">
-
-<label>Votos permitidos</label>
-<input id="maxVotes" type="number">
-
-<label>Candidatos (.txt)</label>
-<input type="file" id="candidateNames" accept=".txt">
-
-<label>Fotos</label>
-<input type="file" id="candidatePhotos" multiple>
-
-<button onclick="addCargo()">Adicionar Cargo</button>
-<button class="secondary" onclick="startVoting()">Iniciar Eleição</button>
-
-<div id="cargoList"></div>
-
-<button class="admin" onclick="showAdmin()">Painel Administrativo</button>
-</div>
-</div>
-
-<!-- VOTAÇÃO -->
-<div id="voting" class="screen">
-<h2 id="cargoTitle"></h2>
-<div id="candidates" class="candidate-grid"></div>
-<button onclick="confirmVote()">Confirmar Voto</button>
-</div>
-
-<!-- FINAL -->
-<div id="afterVote" class="screen">
-<div class="card">
-<h3>Voto Confirmado</h3>
-<button onclick="nextVoter()">Novo Eleitor</button>
-<button class="danger" onclick="finishElection()">Encerrar Eleição</button>
-</div>
-</div>
-
-<!-- RESULTADOS -->
-<div id="results" class="screen">
-<div class="card">
-<h3>Resultado Final</h3>
-<div id="resultContent"></div>
-<button onclick="exportPDF()">Exportar PDF</button>
-<button onclick="show('feedback')">Avaliar Sistema</button>
-</div>
-</div>
-
-<!-- FEEDBACK -->
-<div id="feedback" class="screen">
-<div class="card">
-<h3>Avaliação e Sugestões</h3>
-<textarea id="feedbackText"></textarea>
-<button onclick="sendFeedback()">Enviar</button>
-</div>
+        <small data-i18n="login_info">Sistema de votação profissional</small>
+    </div>
 </div>
 
 <!-- ADMIN -->
 <div id="admin" class="screen">
-<div class="card">
-<h3>Painel Administrativo</h3>
-<div id="adminData"></div>
-<button onclick="show('setup')">Voltar</button>
+    <div class="card">
+        <h3 data-i18n="admin_panel">Painel Administrativo</h3>
+        <p id="adminInfo"></p>
+        <button onclick="show('login')">Voltar</button>
+    </div>
 </div>
+
+<!-- SETUP -->
+<div id="setup" class="screen">
+    <div class="card">
+        <h3 data-i18n="setup">Configuração da Eleição</h3>
+
+        <label data-i18n="election">Nome da eleição</label>
+        <input id="electionName">
+
+        <label data-i18n="cargo">Cargo</label>
+        <input id="cargoName">
+
+        <label data-i18n="votes">Votos permitidos</label>
+        <input id="maxVotes" type="number" min="1">
+
+        <label data-i18n="names">Arquivo com nomes (.txt)</label>
+        <input type="file" id="candidateNames" accept=".txt">
+
+        <label data-i18n="photos">Fotos dos candidatos</label>
+        <input type="file" id="candidatePhotos" accept="image/*" multiple>
+
+        <button onclick="addCargo()" data-i18n="add">Adicionar Cargo</button>
+        <button class="secondary" onclick="startVoting()" data-i18n="start">Iniciar Eleição</button>
+
+        <div id="cargoList"></div>
+    </div>
+</div>
+
+<!-- VOTAÇÃO -->
+<div id="voting" class="screen">
+    <h2 id="cargoTitle"></h2>
+    <div id="candidates" class="candidate-grid"></div>
+    <button onclick="confirmVote()" data-i18n="confirm">Confirmar Voto</button>
+</div>
+
+<!-- FINAL -->
+<div id="afterVote" class="screen">
+    <div class="card">
+        <h3 data-i18n="confirmed">Voto Confirmado</h3>
+        <button onclick="nextVoter()" data-i18n="next">Novo Eleitor</button>
+        <button class="danger" onclick="finishElection()" data-i18n="finish">Encerrar Eleição</button>
+    </div>
+</div>
+
+<!-- RESULTADOS -->
+<div id="results" class="screen">
+    <div class="card">
+        <h3 data-i18n="results">Resultado Final</h3>
+        <div id="resultContent"></div>
+        <button onclick="exportPDF()" data-i18n="pdf">Exportar PDF</button>
+    </div>
 </div>
 
 <script>
-/* ===== ESTADO ===== */
+const ADMIN_PASSWORD = "admin123";
+
 let election={name:"",cargos:[]};
-let currentCargo=0,selected=[];
-let electionsLeft=+localStorage.elections||1;
-let feedbacks=JSON.parse(localStorage.feedbacks||"[]");
+let currentCargo=0;
+let selected=[];
 
-/* ===== UI ===== */
 function show(id){
-document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-document.getElementById(id).classList.add("active");
+    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
 }
 
-/* ===== LOGIN + CUPONS ===== */
+/* LOGIN */
 function login(){
-const email=userEmail.value.trim().toLowerCase();
-const c=coupon.value.trim().toUpperCase();
-if(!email.endsWith("@gmail.com")) return alert("Use Gmail válido");
-
-if(c==="FREE5") electionsLeft+=5;
-if(c==="CUPOM50") alert("Cupom 50% aplicado (simulado)");
-
-localStorage.elections=electionsLeft;
-statusInfo.innerText=`Eleições disponíveis: ${electionsLeft}`;
-show("setup");
+    const email=userEmail.value.trim();
+    const emailRegex=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if(!emailRegex.test(email)){
+        alert("E-mail inválido");
+        return;
+    }
+    show("setup");
 }
 
-/* ===== ELEIÇÃO ===== */
+/* ADMIN */
+function adminLogin(){
+    const pass=prompt("Senha do administrador:");
+    if(pass===ADMIN_PASSWORD){
+        adminInfo.innerText="Total de cargos: "+election.cargos.length;
+        show("admin");
+    }else{
+        alert("Senha incorreta");
+    }
+}
+
+/* CARGOS */
 function addCargo(){
-const r=new FileReader();
-r.onload=()=>{
-const names=r.result.split("\n").filter(x=>x.trim());
-election.cargos.push({
-cargo:cargoName.value,
-max:+maxVotes.value,
-candidates:names.map((n,i)=>({
-name:n,
-photo:URL.createObjectURL(candidatePhotos.files[i]||new Blob()),
-votes:0
-}))
-});
-cargoList.innerHTML+=`<p>✔ ${cargoName.value}</p>`;
-};
-r.readAsText(candidateNames.files[0],"UTF-8");
+    const cargo=cargoName.value;
+    const max=+maxVotes.value;
+    const namesFile=candidateNames.files[0];
+    const photos=[...candidatePhotos.files];
+
+    if(!cargo||!max||!namesFile){
+        alert("Preencha todos os campos");
+        return;
+    }
+
+    const r=new FileReader();
+    r.onload=()=>{
+        const names=r.result.split("\n").filter(n=>n.trim());
+        election.cargos.push({
+            cargo,max,
+            candidates:names.map((n,i)=>({
+                name:n.trim(),
+                photo:photos[i]?URL.createObjectURL(photos[i]):"",
+                votes:0
+            }))
+        });
+        cargoList.innerHTML+=`<p>✔ ${cargo}</p>`;
+    };
+    r.readAsText(namesFile,"UTF-8");
 }
 
-function startVoting(){
-if(electionsLeft<=0) return alert("Sem eleições disponíveis");
-election.name=electionName.value;
-currentCargo=0;
-showCargo();
+/* VOTAÇÃO */
+<script>
+async function startVoting(){
+    if(!election.cargos.length){
+        alert("Adicione pelo menos um cargo");
+        return;
+    }
+
+    const email = userEmail.value.trim();
+
+    const r = await fetch("https://urnaweb-backend.paulosmb1972.workers.dev/can-start",{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({ email })
+    });
+
+    const data = await r.json();
+
+    if(data.allowed){
+        election.name = electionName.value;
+        currentCargo = 0;
+        showCargo();
+    }else{
+        window.open(data.paymentUrl,"_blank");
+        alert("Pagamento necessário para continuar");
+    }
 }
+</script>
 
 function showCargo(){
-selected=[];
-show("voting");
-const c=election.cargos[currentCargo];
-cargoTitle.innerText=c.cargo;
-candidates.innerHTML="";
-c.candidates.forEach((x,i)=>{
-const d=document.createElement("div");
-d.className="candidate";
-d.innerHTML=`<img src="${x.photo}"><p>${x.name}</p>`;
-d.onclick=()=>toggle(i,d);
-candidates.appendChild(d);
-});
+    selected=[];
+    show("voting");
+    const c=election.cargos[currentCargo];
+    cargoTitle.innerText=c.cargo;
+    candidates.innerHTML="";
+    c.candidates.forEach((x,i)=>{
+        const d=document.createElement("div");
+        d.className="candidate";
+        d.innerHTML=`<img src="${x.photo}"><p>${x.name}</p>`;
+        d.onclick=()=>toggle(i,d);
+        candidates.appendChild(d);
+    });
 }
-
 function toggle(i,d){
-const c=election.cargos[currentCargo];
-if(selected.includes(i)){selected=selected.filter(x=>x!==i);d.classList.remove("selected");}
-else if(selected.length<c.max){selected.push(i);d.classList.add("selected");}
+    const c=election.cargos[currentCargo];
+    if(selected.includes(i)){
+        selected=selected.filter(x=>x!==i);
+        d.classList.remove("selected");
+    }else if(selected.length<c.max){
+        selected.push(i);
+        d.classList.add("selected");
+    }
 }
-
 function confirmVote(){
-selected.forEach(i=>election.cargos[currentCargo].candidates[i].votes++);
-currentCargo<election.cargos.length-1?showCargo(++currentCargo):show("afterVote");
+    const c=election.cargos[currentCargo];
+    selected.forEach(i=>c.candidates[i].votes++);
+    currentCargo<election.cargos.length-1
+        ? showCargo(++currentCargo)
+        : show("afterVote");
+}
+function nextVoter(){
+    currentCargo=0;
+    showCargo();
 }
 
-function nextVoter(){currentCargo=0;showCargo();}
-
+/* RESULTADOS */
 function finishElection(){
-electionsLeft--;
-localStorage.elections=electionsLeft;
-show("results");
-let h=`<h3>${election.name}</h3>`;
-election.cargos.forEach(c=>{
-h+=`<h4>${c.cargo}</h4>`;
-c.candidates.forEach(x=>h+=`<p>${x.name}: ${x.votes}</p>`);
-});
-resultContent.innerHTML=h;
+    show("results");
+    let r=`<h3>${election.name}</h3>`;
+    election.cargos.forEach(c=>{
+        r+=`<h4>${c.cargo}</h4>`;
+        c.candidates.forEach(x=>{
+            r+=`<p>${x.name}: ${x.votes}</p>`;
+        });
+    });
+    resultContent.innerHTML=r;
 }
-
-/* ===== PDF ===== */
 function exportPDF(){
-html2pdf().from(resultContent).set({filename:"resultado-urnaweb.pdf"}).save();
+    html2pdf().from(resultContent)
+        .set({filename:"resultado-urnaweb.pdf"})
+        .save();
 }
 
-/* ===== FEEDBACK ===== */
-function sendFeedback(){
-feedbacks.push(feedbackText.value);
-localStorage.feedbacks=JSON.stringify(feedbacks);
-alert("Avaliação enviada!");
-show("login");
+/* IDIOMAS */
+const translations={
+pt:{title:"UrnaWeb Pro",continue:"Continuar",admin:"Administrador",login_info:"Sistema de votação profissional",
+setup:"Configuração da Eleição",email:"Seu e-mail",election:"Nome da eleição",cargo:"Cargo",votes:"Votos permitidos",
+names:"Arquivo com nomes (.txt)",photos:"Fotos dos candidatos",add:"Adicionar Cargo",start:"Iniciar Eleição",
+confirm:"Confirmar Voto",confirmed:"Voto Confirmado",next:"Novo Eleitor",finish:"Encerrar Eleição",
+results:"Resultado Final",pdf:"Exportar PDF",admin_panel:"Painel Administrativo"},
+en:{title:"UrnaWeb Pro",continue:"Continue",admin:"Admin",login_info:"Professional voting system",
+setup:"Election Setup",email:"Your email",election:"Election name",cargo:"Position",votes:"Allowed votes",
+names:"Candidates file (.txt)",photos:"Candidates photos",add:"Add Position",start:"Start Election",
+confirm:"Confirm Vote",confirmed:"Vote Confirmed",next:"Next Voter",finish:"Finish Election",
+results:"Final Results",pdf:"Export PDF",admin_panel:"Admin Panel"},
+es:{title:"UrnaWeb Pro",continue:"Continuar",admin:"Administrador",login_info:"Sistema de votación profesional",
+setup:"Configuración Electoral",email:"Tu correo",election:"Nombre de la elección",cargo:"Cargo",votes:"Votos permitidos",
+names:"Archivo de candidatos (.txt)",photos:"Fotos de candidatos",add:"Agregar Cargo",start:"Iniciar Elección",
+confirm:"Confirmar Voto",confirmed:"Voto Confirmado",next:"Nuevo Votante",finish:"Finalizar Elección",
+results:"Resultado Final",pdf:"Exportar PDF",admin_panel:"Panel Administrativo"}
+};
+function setLang(l){
+    localStorage.lang=l;
+    document.querySelectorAll("[data-i18n]").forEach(el=>{
+        el.innerText=translations[l][el.dataset.i18n];
+    });
 }
-
-/* ===== ADMIN ===== */
-function showAdmin(){
-adminData.innerHTML=`
-<p>Eleições restantes: ${electionsLeft}</p>
-<p>Avaliações recebidas: ${feedbacks.length}</p>
-<ul>${feedbacks.map(f=>`<li>${f}</li>`).join("")}</ul>
-`;
-show("admin");
-}
+window.onload=()=>setLang(localStorage.lang||"pt");
 </script>
 
 </body>
 </html>
-
