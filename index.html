@@ -221,441 +221,167 @@ function addCargo(){
     r.readAsText(namesFile,"UTF-8");
 }
 
-/* VOTAÇÃO */
 <script>
-async function startVoting(){
-    if(!election.cargos.length){
-        alert("Adicione pelo menos um cargo");
-        return;
-    }
-
-    const email = userEmail.value.trim();
-
-    const r = await fetch("https://urnaweb-backend.paulosmb1972.workers.dev/can-start",{
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body:JSON.stringify({ email })
-    });
-
-    const data = await r.json();
-
-    if(data.allowed){
-        election.name = electionName.value;
-        currentCargo = 0;
-        showCargo();
-    }else{
-        window.open(data.paymentUrl,"_blank");
-        alert("Pagamento necessário para continuar");
-    }
-}
-</script>
+/* ================= VOTAÇÃO ================= */
 
 function showCargo(){
-    selected=[];
+    selected = [];
     show("voting");
-    const c=election.cargos[currentCargo];
-    cargoTitle.innerText=c.cargo;
-    candidates.innerHTML="";
-    c.candidates.forEach((x,i)=>{
-        const d=document.createElement("div");
-        d.className="candidate";
-        d.innerHTML=`<img src="${x.photo}"><p>${x.name}</p>`;
-        d.onclick=()=>toggle(i,d);
+
+    const c = election.cargos[currentCargo];
+    cargoTitle.innerText = c.cargo;
+    candidates.innerHTML = "";
+
+    c.candidates.forEach((x, i) => {
+        const d = document.createElement("div");
+        d.className = "candidate";
+        d.innerHTML = `
+            <p>${x.name}</p>
+        `;
+        d.onclick = () => toggle(i, d);
         candidates.appendChild(d);
     });
 }
-function toggle(i,d){
-    const c=election.cargos[currentCargo];
-    if(selected.includes(i)){
-        selected=selected.filter(x=>x!==i);
+
+function toggle(i, d){
+    const c = election.cargos[currentCargo];
+
+    if (selected.includes(i)) {
+        selected = selected.filter(x => x !== i);
         d.classList.remove("selected");
-    }else if(selected.length<c.max){
+    } else if (selected.length < c.max) {
         selected.push(i);
         d.classList.add("selected");
     }
 }
+
 function confirmVote(){
-    const c=election.cargos[currentCargo];
-    selected.forEach(i=>c.candidates[i].votes++);
-    currentCargo<election.cargos.length-1
-        ? showCargo(++currentCargo)
-        : show("afterVote");
+    const c = election.cargos[currentCargo];
+
+    selected.forEach(i => {
+        c.candidates[i].votes++;
+    });
+
+    if (currentCargo < election.cargos.length - 1) {
+        currentCargo++;
+        showCargo();
+    } else {
+        show("afterVote");
+    }
 }
+
 function nextVoter(){
-    currentCargo=0;
+    currentCargo = 0;
     showCargo();
 }
 
-/* RESULTADOS */
+/* ================= RESULTADOS ================= */
+
 function finishElection(){
     show("results");
-    let r=`<h3>${election.name}</h3>`;
-    election.cargos.forEach(c=>{
-        r+=`<h4>${c.cargo}</h4>`;
-        c.candidates.forEach(x=>{
-            r+=`<p>${x.name}: ${x.votes}</p>`;
+
+    let r = `<h3>${election.name}</h3>`;
+
+    election.cargos.forEach(c => {
+        r += `<h4>${c.cargo}</h4>`;
+        c.candidates.forEach(x => {
+            r += `<p>${x.name}: ${x.votes}</p>`;
         });
     });
-    resultContent.innerHTML=r;
+
+    resultContent.innerHTML = r;
 }
+
 function exportPDF(){
-    html2pdf().from(resultContent)
-        .set({filename:"resultado-urnaweb.pdf"})
+    html2pdf()
+        .from(resultContent)
+        .set({
+            filename: "resultado-urnaweb.pdf",
+            margin: 10,
+            html2canvas: { scale: 2 }
+        })
         .save();
 }
 
-/* IDIOMAS */
-const translations={
-pt:{title:"UrnaWeb Pro",continue:"Continuar",admin:"Administrador",login_info:"Sistema de votação profissional",
-setup:"Configuração da Eleição",email:"Seu e-mail",election:"Nome da eleição",cargo:"Cargo",votes:"Votos permitidos",
-names:"Arquivo com nomes (.txt)",photos:"Fotos dos candidatos",add:"Adicionar Cargo",start:"Iniciar Eleição",
-confirm:"Confirmar Voto",confirmed:"Voto Confirmado",next:"Novo Eleitor",finish:"Encerrar Eleição",
-results:"Resultado Final",pdf:"Exportar PDF",admin_panel:"Painel Administrativo"},
-en:{title:"UrnaWeb Pro",continue:"Continue",admin:"Admin",login_info:"Professional voting system",
-setup:"Election Setup",email:"Your email",election:"Election name",cargo:"Position",votes:"Allowed votes",
-names:"Candidates file (.txt)",photos:"Candidates photos",add:"Add Position",start:"Start Election",
-confirm:"Confirm Vote",confirmed:"Vote Confirmed",next:"Next Voter",finish:"Finish Election",
-results:"Final Results",pdf:"Export PDF",admin_panel:"Admin Panel"},
-es:{title:"UrnaWeb Pro",continue:"Continuar",admin:"Administrador",login_info:"Sistema de votación profesional",
-setup:"Configuración Electoral",email:"Tu correo",election:"Nombre de la elección",cargo:"Cargo",votes:"Votos permitidos",
-names:"Archivo de candidatos (.txt)",photos:"Fotos de candidatos",add:"Agregar Cargo",start:"Iniciar Elección",
-confirm:"Confirmar Voto",confirmed:"Voto Confirmado",next:"Nuevo Votante",finish:"Finalizar Elección",
-results:"Resultado Final",pdf:"Exportar PDF",admin_panel:"Panel Administrativo"}
+/* ================= IDIOMAS ================= */
+
+const translations = {
+    pt:{
+        title:"UrnaWeb Pro",
+        continue:"Continuar",
+        admin:"Administrador",
+        login_info:"Sistema de votação profissional",
+        setup:"Configuração da Eleição",
+        email:"Seu e-mail",
+        election:"Nome da eleição",
+        cargo:"Cargo",
+        votes:"Votos permitidos",
+        names:"Arquivo com nomes (.txt)",
+        photos:"Fotos dos candidatos",
+        add:"Adicionar Cargo",
+        start:"Iniciar Eleição",
+        confirm:"Confirmar Voto",
+        confirmed:"Voto Confirmado",
+        next:"Novo Eleitor",
+        finish:"Encerrar Eleição",
+        results:"Resultado Final",
+        pdf:"Exportar PDF",
+        admin_panel:"Painel Administrativo"
+    },
+    en:{
+        title:"UrnaWeb Pro",
+        continue:"Continue",
+        admin:"Admin",
+        login_info:"Professional voting system",
+        setup:"Election Setup",
+        email:"Your email",
+        election:"Election name",
+        cargo:"Position",
+        votes:"Allowed votes",
+        names:"Candidates file (.txt)",
+        photos:"Candidates photos",
+        add:"Add Position",
+        start:"Start Election",
+        confirm:"Confirm Vote",
+        confirmed:"Vote Confirmed",
+        next:"Next Voter",
+        finish:"Finish Election",
+        results:"Final Results",
+        pdf:"Export PDF",
+        admin_panel:"Admin Panel"
+    },
+    es:{
+        title:"UrnaWeb Pro",
+        continue:"Continuar",
+        admin:"Administrador",
+        login_info:"Sistema de votación profesional",
+        setup:"Configuración Electoral",
+        email:"Tu correo",
+        election:"Nombre de la elección",
+        cargo:"Cargo",
+        votes:"Votos permitidos",
+        names:"Archivo de candidatos (.txt)",
+        photos:"Fotos de candidatos",
+        add:"Agregar Cargo",
+        start:"Iniciar Elección",
+        confirm:"Confirmar Voto",
+        confirmed:"Voto Confirmado",
+        next:"Nuevo Votante",
+        finish:"Finalizar Elección",
+        results:"Resultado Final",
+        pdf:"Exportar PDF",
+        admin_panel:"Panel Administrativo"
+    }
 };
+
 function setLang(l){
-    localStorage.lang=l;
-    document.querySelectorAll("[data-i18n]").forEach(el=>{
-        el.innerText=translations[l][el.dataset.i18n];
+    localStorage.lang = l;
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+        el.innerText = translations[l][el.dataset.i18n];
     });
 }
-window.onload=()=>setLang(localStorage.lang||"pt");
+
+window.onload = () => setLang(localStorage.lang || "pt");
 </script>
-
-</body>
-</html>
-
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<title>UrnaWeb Pro</title>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-<style>
-body{
-    margin:0;
-    font-family:Segoe UI,Arial;
-    background:#0a2a66;
-    color:white;
-}
-.screen{display:none;padding:25px;min-height:100vh}
-.active{display:block}
-.card{
-    background:#122f5f;
-    border-radius:12px;
-    padding:20px;
-    max-width:560px;
-    margin:auto;
-}
-label{font-size:14px;opacity:.9}
-input,button,textarea{
-    width:100%;
-    padding:14px;
-    margin:6px 0 12px 0;
-    border-radius:8px;
-    border:none;
-    font-size:16px;
-}
-button{background:#1abc9c;font-weight:bold;cursor:pointer}
-.secondary{background:#f1c40f}
-.danger{background:#e74c3c;color:white}
-.admin{background:#9b59b6}
-.candidate-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-    gap:12px;
-}
-.candidate{
-    background:#163a75;
-    border-radius:10px;
-    padding:8px;
-    text-align:center;
-    cursor:pointer;
-    border:4px solid transparent;
-}
-.candidate.selected{border-color:#2ecc71}
-.candidate img{
-    width:100%;
-    height:140px;
-    object-fit:cover;
-    border-radius:6px;
-}
-#resultContent{
-    background:white;
-    color:black;
-    padding:20px;
-}
-.lang{
-    position:fixed;
-    top:10px;
-    right:10px;
-}
-.lang button{
-    width:auto;
-    padding:6px 10px;
-    margin-left:4px;
-}
-small{opacity:.8}
-</style>
-</head>
-
-<body>
-
-<!-- IDIOMAS -->
-<div class="lang">
-    <button onclick="setLang('pt')">🇧🇷</button>
-    <button onclick="setLang('en')">🇺🇸</button>
-    <button onclick="setLang('es')">🇪🇸</button>
-</div>
-
-<!-- LOGIN -->
-<div id="login" class="screen active">
-    <div class="card">
-        <h2 data-i18n="title">UrnaWeb Pro</h2>
-
-        <label data-i18n="email">Seu e-mail</label>
-        <input id="userEmail" type="email" placeholder="exemplo@email.com">
-
-        <button onclick="login()" data-i18n="continue">Continuar</button>
-        <button class="admin" onclick="adminLogin()" data-i18n="admin">Administrador</button>
-
-        <small data-i18n="login_info">Sistema de votação profissional</small>
-    </div>
-</div>
-
-<!-- ADMIN -->
-<div id="admin" class="screen">
-    <div class="card">
-        <h3 data-i18n="admin_panel">Painel Administrativo</h3>
-        <p id="adminInfo"></p>
-        <button onclick="show('login')">Voltar</button>
-    </div>
-</div>
-
-<!-- SETUP -->
-<div id="setup" class="screen">
-    <div class="card">
-        <h3 data-i18n="setup">Configuração da Eleição</h3>
-
-        <label data-i18n="election">Nome da eleição</label>
-        <input id="electionName">
-
-        <label data-i18n="cargo">Cargo</label>
-        <input id="cargoName">
-
-        <label data-i18n="votes">Votos permitidos</label>
-        <input id="maxVotes" type="number" min="1">
-
-        <label data-i18n="names">Arquivo com nomes (.txt)</label>
-        <input type="file" id="candidateNames" accept=".txt">
-
-        <label data-i18n="photos">Fotos dos candidatos</label>
-        <input type="file" id="candidatePhotos" accept="image/*" multiple>
-
-        <button onclick="addCargo()" data-i18n="add">Adicionar Cargo</button>
-        <button class="secondary" onclick="startVoting()" data-i18n="start">Iniciar Eleição</button>
-
-        <div id="cargoList"></div>
-    </div>
-</div>
-
-<!-- VOTAÇÃO -->
-<div id="voting" class="screen">
-    <h2 id="cargoTitle"></h2>
-    <div id="candidates" class="candidate-grid"></div>
-    <button onclick="confirmVote()" data-i18n="confirm">Confirmar Voto</button>
-</div>
-
-<!-- FINAL -->
-<div id="afterVote" class="screen">
-    <div class="card">
-        <h3 data-i18n="confirmed">Voto Confirmado</h3>
-        <button onclick="nextVoter()" data-i18n="next">Novo Eleitor</button>
-        <button class="danger" onclick="finishElection()" data-i18n="finish">Encerrar Eleição</button>
-    </div>
-</div>
-
-<!-- RESULTADOS -->
-<div id="results" class="screen">
-    <div class="card">
-        <h3 data-i18n="results">Resultado Final</h3>
-        <div id="resultContent"></div>
-        <button onclick="exportPDF()" data-i18n="pdf">Exportar PDF</button>
-        <button onclick="show('feedback')" data-i18n="feedback">Avaliar Sistema</button>
-    </div>
-</div>
-
-<!-- FEEDBACK -->
-<div id="feedback" class="screen">
-    <div class="card">
-        <h3 data-i18n="rate">Avalie o UrnaWeb Pro</h3>
-        <textarea id="feedbackText" placeholder="Sugestões ou críticas"></textarea>
-        <button onclick="sendFeedback()" data-i18n="send">Enviar</button>
-    </div>
-</div>
-
-<script>
-/* CONFIG */
-const ADMIN_PASSWORD="admin123";
-
-/* SISTEMA */
-let election={name:"",cargos:[]};
-let currentCargo=0;
-let selected=[];
-
-function show(id){
-    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-    document.getElementById(id).classList.add("active");
-}
-
-/* LOGIN */
-function login(){
-    const email=document.getElementById("userEmail").value.trim();
-    if(!email || !email.includes("@") || !email.includes(".")){
-        alert("Informe um e-mail válido");
-        return;
-    }
-    show("setup");
-}
-
-/* ADMIN */
-function adminLogin(){
-    const pass=prompt("Senha do administrador:");
-    if(pass===ADMIN_PASSWORD){
-        adminInfo.innerText=`Total de cargos cadastrados: ${election.cargos.length}`;
-        show("admin");
-    }else alert("Senha incorreta");
-}
-
-/* CARGOS */
-function addCargo(){
-    const cargo=cargoName.value.trim();
-    const max=parseInt(maxVotes.value);
-    const namesFile=candidateNames.files[0];
-    const photos=[...candidatePhotos.files];
-
-    if(!cargo||!max||!namesFile){
-        alert("Preencha todos os campos");
-        return;
-    }
-
-    const reader=new FileReader();
-    reader.onload=()=>{
-        const names=reader.result.split("\n").filter(n=>n.trim());
-        election.cargos.push({
-            cargo,max,
-            candidates:names.map((n,i)=>({
-                name:n.trim(),
-                photo:photos[i]?URL.createObjectURL(photos[i]):"",
-                votes:0
-            }))
-        });
-        cargoList.innerHTML+=`<p>✔ ${cargo}</p>`;
-    };
-    reader.readAsText(namesFile,"UTF-8");
-}
-
-/* VOTAÇÃO */
-function startVoting(){
-    if(!election.cargos.length){
-        alert("Adicione pelo menos um cargo");
-        return;
-    }
-    election.name=electionName.value;
-    currentCargo=0;
-    showCargo();
-}
-function showCargo(){
-    selected=[];
-    show("voting");
-    const c=election.cargos[currentCargo];
-    cargoTitle.innerText=c.cargo;
-    candidates.innerHTML="";
-    c.candidates.forEach((x,i)=>{
-        const d=document.createElement("div");
-        d.className="candidate";
-        d.innerHTML=`<img src="${x.photo}"><p>${x.name}</p>`;
-        d.onclick=()=>toggle(i,d);
-        candidates.appendChild(d);
-    });
-}
-function toggle(i,d){
-    const c=election.cargos[currentCargo];
-    if(selected.includes(i)){
-        selected=selected.filter(x=>x!==i);
-        d.classList.remove("selected");
-    }else if(selected.length<c.max){
-        selected.push(i);
-        d.classList.add("selected");
-    }
-}
-function confirmVote(){
-    const c=election.cargos[currentCargo];
-    selected.forEach(i=>c.candidates[i].votes++);
-    currentCargo<election.cargos.length-1?showCargo(++currentCargo):show("afterVote");
-}
-function nextVoter(){currentCargo=0;showCargo();}
-
-/* RESULTADOS */
-function finishElection(){
-    show("results");
-    let html=`<h3>${election.name}</h3>`;
-    election.cargos.forEach(c=>{
-        html+=`<h4>${c.cargo}</h4>`;
-        c.candidates.forEach(x=>html+=`<p>${x.name}: ${x.votes}</p>`);
-    });
-    resultContent.innerHTML=html;
-}
-function exportPDF(){
-    html2pdf().from(resultContent).set({filename:"resultado-urnaweb.pdf"}).save();
-}
-
-/* FEEDBACK */
-function sendFeedback(){
-    alert("Obrigado pela avaliação!");
-    show("login");
-}
-
-/* IDIOMAS */
-const translations={
-pt:{title:"UrnaWeb Pro",continue:"Continuar",admin:"Administrador",login_info:"Sistema de votação profissional",
-setup:"Configuração da Eleição",email:"Seu e-mail",election:"Nome da eleição",cargo:"Cargo",votes:"Votos permitidos",
-names:"Arquivo com nomes (.txt)",photos:"Fotos dos candidatos",add:"Adicionar Cargo",start:"Iniciar Eleição",
-confirm:"Confirmar Voto",confirmed:"Voto Confirmado",next:"Novo Eleitor",finish:"Encerrar Eleição",
-results:"Resultado Final",pdf:"Exportar PDF",feedback:"Avaliar Sistema",rate:"Avalie o UrnaWeb Pro",send:"Enviar",
-admin_panel:"Painel Administrativo"},
-en:{title:"UrnaWeb Pro",continue:"Continue",admin:"Admin",login_info:"Professional voting system",
-setup:"Election Setup",email:"Your email",election:"Election name",cargo:"Position",votes:"Allowed votes",
-names:"Candidates file (.txt)",photos:"Candidates photos",add:"Add Position",start:"Start Election",
-confirm:"Confirm Vote",confirmed:"Vote Confirmed",next:"Next Voter",finish:"Finish Election",
-results:"Final Results",pdf:"Export PDF",feedback:"Rate System",rate:"Rate UrnaWeb Pro",send:"Send",
-admin_panel:"Admin Panel"},
-es:{title:"UrnaWeb Pro",continue:"Continuar",admin:"Administrador",login_info:"Sistema de votación profesional",
-setup:"Configuración Electoral",email:"Tu correo",election:"Nombre de la elección",cargo:"Cargo",votes:"Votos permitidos",
-names:"Archivo de candidatos (.txt)",photos:"Fotos de candidatos",add:"Agregar Cargo",start:"Iniciar Elección",
-confirm:"Confirmar Voto",confirmed:"Voto Confirmado",next:"Nuevo Votante",finish:"Finalizar Elección",
-results:"Resultado Final",pdf:"Exportar PDF",feedback:"Evaluar Sistema",rate:"Evalúe UrnaWeb Pro",send:"Enviar",
-admin_panel:"Panel Administrativo"}
-};
-function setLang(l){
-    localStorage.lang=l;
-    document.querySelectorAll("[data-i18n]").forEach(el=>{
-        el.innerText=translations[l][el.dataset.i18n];
-    });
-}
-window.onload=()=>setLang(localStorage.lang||"pt");
-</script>
-
 </body>
 </html>
