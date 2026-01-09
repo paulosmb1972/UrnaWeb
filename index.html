@@ -7,381 +7,265 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
-body{
-    margin:0;
-    font-family:Segoe UI,Arial;
-    background:#0a2a66;
-    color:white;
-}
-.screen{display:none;padding:25px;min-height:100vh}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial;background:#0a2a66;color:white}
+.screen{display:none;padding:20px;min-height:100vh}
 .active{display:block}
-.card{
-    background:#122f5f;
-    border-radius:12px;
-    padding:20px;
-    max-width:560px;
-    margin:auto;
-}
-label{font-size:14px;opacity:.9}
-input,button,textarea{
-    width:100%;
-    padding:14px;
-    margin:6px 0 12px 0;
-    border-radius:8px;
-    border:none;
-    font-size:16px;
+h2,h3,h4{text-align:center}
+input,button,select,textarea{
+  width:100%;padding:12px;margin:6px 0;
+  font-size:16px;border-radius:6px;border:none
 }
 button{background:#1abc9c;font-weight:bold;cursor:pointer}
 .secondary{background:#f1c40f}
 .danger{background:#e74c3c;color:white}
-.admin{background:#9b59b6}
 .candidate-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-    gap:12px;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:10px
 }
 .candidate{
-    background:#163a75;
-    border-radius:10px;
-    padding:8px;
-    text-align:center;
-    cursor:pointer;
-    border:4px solid transparent;
+  background:#122f5f;border:4px solid transparent;
+  border-radius:8px;padding:8px;text-align:center;cursor:pointer
 }
 .candidate.selected{border-color:#2ecc71}
-.candidate img{
-    width:100%;
-    height:140px;
-    object-fit:cover;
-    border-radius:6px;
-}
-#resultContent{
-    background:white;
-    color:black;
-    padding:20px;
-}
-.lang{
-    position:fixed;
-    top:10px;
-    right:10px;
-}
-.lang button{
-    width:auto;
-    padding:6px 10px;
-    margin-left:4px;
-}
-small{opacity:.8}
+.candidate img{width:100%;height:140px;object-fit:cover;border-radius:6px}
+.lang-box{position:fixed;top:10px;right:10px}
+.lang-box button{width:auto;margin-left:4px}
+.result-box{background:white;color:black;padding:20px}
 </style>
 </head>
 
 <body>
 
-<!-- IDIOMAS -->
-<div class="lang">
-    <button onclick="setLang('pt')">🇧🇷</button>
-    <button onclick="setLang('en')">🇺🇸</button>
-    <button onclick="setLang('es')">🇪🇸</button>
+<div class="lang-box">
+  <button onclick="setLang('pt')">🇧🇷</button>
+  <button onclick="setLang('en')">🇺🇸</button>
+  <button onclick="setLang('es')">🇪🇸</button>
 </div>
 
-<!-- LOGIN -->
 <div id="login" class="screen active">
-    <div class="card">
-        <h2 data-i18n="title">UrnaWeb Pro</h2>
-
-        <label data-i18n="email">Seu e-mail</label>
-        <input id="userEmail" type="email" placeholder="exemplo@email.com">
-
-        <button onclick="login()" data-i18n="continue">Continuar</button>
-        <button class="admin" onclick="adminLogin()" data-i18n="admin">Administrador</button>
-
-        <small data-i18n="login_info">Sistema de votação profissional</small>
-    </div>
+  <h2 id="tLogin"></h2>
+  <input id="userEmail" placeholder="email@gmail.com">
+  <button id="btnContinue" onclick="loginUser()"></button>
 </div>
 
-<!-- ADMIN -->
-<div id="admin" class="screen">
-    <div class="card">
-        <h3 data-i18n="admin_panel">Painel Administrativo</h3>
-        <p id="adminInfo"></p>
-        <button onclick="show('login')">Voltar</button>
-    </div>
-</div>
-
-<!-- SETUP -->
 <div id="setup" class="screen">
-    <div class="card">
-        <h3 data-i18n="setup">Configuração da Eleição</h3>
-
-        <label data-i18n="election">Nome da eleição</label>
-        <input id="electionName">
-
-        <label data-i18n="cargo">Cargo</label>
-        <input id="cargoName">
-
-        <label data-i18n="votes">Votos permitidos</label>
-        <input id="maxVotes" type="number" min="1">
-
-        <label data-i18n="names">Arquivo com nomes (.txt)</label>
-        <input type="file" id="candidateNames" accept=".txt">
-
-        <label data-i18n="photos">Fotos dos candidatos</label>
-        <input type="file" id="candidatePhotos" accept="image/*" multiple>
-
-        <button onclick="addCargo()" data-i18n="add">Adicionar Cargo</button>
-        <button class="secondary" onclick="startVoting()" data-i18n="start">Iniciar Eleição</button>
-
-        <div id="cargoList"></div>
-    </div>
+  <h2 id="tConfig"></h2>
+  <input id="electionName">
+  <input id="cargoName">
+  <input id="maxVotes" type="number">
+  <label id="lblNames"></label>
+  <input type="file" id="candidateNames" accept=".txt">
+  <label id="lblPhotos"></label>
+  <input type="file" id="candidatePhotos" accept="image/*" multiple>
+  <button id="btnAddCargo" onclick="addCargo()"></button>
+  <button id="btnStart" class="secondary" onclick="startVoting()"></button>
+  <div id="cargoList"></div>
 </div>
 
-<!-- VOTAÇÃO -->
 <div id="voting" class="screen">
-    <h2 id="cargoTitle"></h2>
-    <div id="candidates" class="candidate-grid"></div>
-    <button onclick="confirmVote()" data-i18n="confirm">Confirmar Voto</button>
+  <h2 id="cargoTitle"></h2>
+  <div id="candidates" class="candidate-grid"></div>
+  <button id="btnConfirm" onclick="confirmVote()"></button>
 </div>
 
-<!-- FINAL -->
 <div id="afterVote" class="screen">
-    <div class="card">
-        <h3 data-i18n="confirmed">Voto Confirmado</h3>
-        <button onclick="nextVoter()" data-i18n="next">Novo Eleitor</button>
-        <button class="danger" onclick="finishElection()" data-i18n="finish">Encerrar Eleição</button>
-    </div>
+  <h2 id="tConfirmed"></h2>
+  <button id="btnNext" onclick="nextVoter()"></button>
+  <button id="btnFinish" class="danger" onclick="finishElection()"></button>
 </div>
 
-<!-- RESULTADOS -->
 <div id="results" class="screen">
-    <div class="card">
-        <h3 data-i18n="results">Resultado Final</h3>
-        <div id="resultContent"></div>
-        <button onclick="exportPDF()" data-i18n="pdf">Exportar PDF</button>
-    </div>
+  <h2 id="tResult"></h2>
+
+  <div id="resultContent"></div>
+
+  <button id="btnPDF" onclick="exportPDF()">📄 Exportar PDF</button>
+
+  <hr style="margin:20px 0">
+
+  <button onclick="showScreen('feedback')">⭐ Avaliar Sistema</button>
+  <button onclick="showScreen('feedback')">💡 Enviar Sugestão</button>
+  <button onclick="showScreen('payment')">🏷️ Cupons</button>
+  <button onclick="showScreen('payment')" class="secondary">💳 Pagamento</button>
+</div>
+
+<div id="payment" class="screen">
+  <h2 id="tPlan"></h2>
+  <p id="tPlanText" style="text-align:center"></p>
+  <h3 style="text-align:center">R$ 15,00</h3>
+  <input id="couponInput" placeholder="Cupom">
+  <button onclick="applyCoupon()" class="secondary">Aplicar Cupom</button>
+  <p id="couponMsg" style="text-align:center"></p>
+  <button onclick="goToPayment()">Pagar</button>
 </div>
 
 <script>
-const ADMIN_PASSWORD = "admin123";
-
+/* ================== SISTEMA ================== */
 let election={name:"",cargos:[]};
-let currentCargo=0;
-let selected=[];
+let currentCargo=0,selected=[];
+let lang=localStorage.getItem("lang")||"pt";
+const PAYMENT_LINK="https://mpago.la/1VakcdN";
 
-function show(id){
-    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-    document.getElementById(id).classList.add("active");
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
 }
 
-/* LOGIN */
-function login(){
-    const email=userEmail.value.trim();
-    const emailRegex=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if(!emailRegex.test(email)){
-        alert("E-mail inválido");
-        return;
-    }
-    show("setup");
+function loginUser(){
+  const email=userEmail.value.trim();
+  if(!email.endsWith("@gmail.com")){
+    alert(txt[lang].invalidEmail);return;
+  }
+  localStorage.setItem("email",email);
+  showScreen("setup");
 }
 
-/* ADMIN */
-function adminLogin(){
-    const pass=prompt("Senha do administrador:");
-    if(pass===ADMIN_PASSWORD){
-        adminInfo.innerText="Total de cargos: "+election.cargos.length;
-        show("admin");
-    }else{
-        alert("Senha incorreta");
-    }
-}
-
-/* CARGOS */
 function addCargo(){
-    const cargo=cargoName.value;
-    const max=+maxVotes.value;
-    const namesFile=candidateNames.files[0];
-    const photos=[...candidatePhotos.files];
-
-    if(!cargo||!max||!namesFile){
-        alert("Preencha todos os campos");
-        return;
-    }
-
-    const r=new FileReader();
-    r.onload=()=>{
-        const names=r.result.split("\n").filter(n=>n.trim());
-        election.cargos.push({
-            cargo,max,
-            candidates:names.map((n,i)=>({
-                name:n.trim(),
-                photo:photos[i]?URL.createObjectURL(photos[i]):"",
-                votes:0
-            }))
-        });
-        cargoList.innerHTML+=`<p>✔ ${cargo}</p>`;
-    };
-    r.readAsText(namesFile,"UTF-8");
+  const cargo=cargoName.value.trim();
+  const max=parseInt(maxVotes.value);
+  const file=candidateNames.files[0];
+  const photos=[...candidatePhotos.files];
+  if(!cargo||!max||!file){alert(txt[lang].fillAll);return;}
+  const r=new FileReader();
+  r.onload=()=>{
+    const names=r.result.split("\n").filter(n=>n.trim());
+    election.cargos.push({
+      cargo,max,
+      candidates:names.map((n,i)=>({
+        name:n.trim(),
+        photo:photos[i]?URL.createObjectURL(photos[i]):"",
+        votes:0
+      }))
+    });
+    cargoList.innerHTML+=`<p>✔ ${cargo}</p>`;
+    cargoName.value=maxVotes.value="";
+  };
+  r.readAsText(file,"UTF-8");
 }
 
-<script>
-/* ================= VOTAÇÃO ================= */
+function startVoting(){
+  election.name=electionName.value.trim();
+  if(!election.name||!election.cargos.length){
+    alert(txt[lang].configure);return;
+  }
+  currentCargo=0;showCargo();
+}
 
 function showCargo(){
-    selected = [];
-    show("voting");
-
-    const c = election.cargos[currentCargo];
-    cargoTitle.innerText = c.cargo;
-    candidates.innerHTML = "";
-
-    c.candidates.forEach((x, i) => {
-        const d = document.createElement("div");
-        d.className = "candidate";
-        d.innerHTML = `
-            <p>${x.name}</p>
-        `;
-        d.onclick = () => toggle(i, d);
-        candidates.appendChild(d);
-    });
+  selected=[];
+  showScreen("voting");
+  const c=election.cargos[currentCargo];
+  cargoTitle.innerText=c.cargo;
+  candidates.innerHTML="";
+  c.candidates.forEach((x,i)=>{
+    const d=document.createElement("div");
+    d.className="candidate";
+    d.innerHTML=`<img src="${x.photo}"><p>${x.name}</p>`;
+    d.onclick=()=>toggle(i,d);
+    candidates.appendChild(d);
+  });
 }
 
-function toggle(i, d){
-    const c = election.cargos[currentCargo];
-
-    if (selected.includes(i)) {
-        selected = selected.filter(x => x !== i);
-        d.classList.remove("selected");
-    } else if (selected.length < c.max) {
-        selected.push(i);
-        d.classList.add("selected");
-    }
+function toggle(i,d){
+  const c=election.cargos[currentCargo];
+  if(selected.includes(i)){
+    selected=selected.filter(x=>x!==i);d.classList.remove("selected");
+  }else{
+    if(selected.length>=c.max){alert(txt[lang].limit);return;}
+    selected.push(i);d.classList.add("selected");
+  }
 }
 
 function confirmVote(){
-    const c = election.cargos[currentCargo];
-
-    selected.forEach(i => {
-        c.candidates[i].votes++;
-    });
-
-    if (currentCargo < election.cargos.length - 1) {
-        currentCargo++;
-        showCargo();
-    } else {
-        show("afterVote");
-    }
+  selected.forEach(i=>election.cargos[currentCargo].candidates[i].votes++);
+  currentCargo<election.cargos.length-1?(currentCargo++,showCargo()):showScreen("afterVote");
 }
 
-function nextVoter(){
-    currentCargo = 0;
-    showCargo();
-}
-
-/* ================= RESULTADOS ================= */
+function nextVoter(){currentCargo=0;showCargo();}
 
 function finishElection(){
-    show("results");
-
-    let r = `<h3>${election.name}</h3>`;
-
-    election.cargos.forEach(c => {
-        r += `<h4>${c.cargo}</h4>`;
-        c.candidates.forEach(x => {
-            r += `<p>${x.name}: ${x.votes}</p>`;
-        });
+  showScreen("results");
+  resultContent.innerHTML=`<h3>${election.name}</h3>`;
+  election.cargos.forEach(c=>{
+    resultContent.innerHTML+=`<h4>${c.cargo}</h4>`;
+    c.candidates.forEach(x=>{
+      resultContent.innerHTML+=`<p>${x.name}: ${x.votes}</p>`;
     });
-
-    resultContent.innerHTML = r;
+  });
 }
 
 function exportPDF(){
-    html2pdf()
-        .from(resultContent)
-        .set({
-            filename: "resultado-urnaweb.pdf",
-            margin: 10,
-            html2canvas: { scale: 2 }
-        })
-        .save();
+  const box=document.createElement("div");
+  box.className="result-box";
+  box.innerHTML=resultContent.innerHTML;
+  document.body.appendChild(box);
+  html2pdf().from(box).save().then(()=>box.remove());
 }
 
-/* ================= IDIOMAS ================= */
+function goToPayment(){window.open(PAYMENT_LINK,"_blank");}
 
-const translations = {
-    pt:{
-        title:"UrnaWeb Pro",
-        continue:"Continuar",
-        admin:"Administrador",
-        login_info:"Sistema de votação profissional",
-        setup:"Configuração da Eleição",
-        email:"Seu e-mail",
-        election:"Nome da eleição",
-        cargo:"Cargo",
-        votes:"Votos permitidos",
-        names:"Arquivo com nomes (.txt)",
-        photos:"Fotos dos candidatos",
-        add:"Adicionar Cargo",
-        start:"Iniciar Eleição",
-        confirm:"Confirmar Voto",
-        confirmed:"Voto Confirmado",
-        next:"Novo Eleitor",
-        finish:"Encerrar Eleição",
-        results:"Resultado Final",
-        pdf:"Exportar PDF",
-        admin_panel:"Painel Administrativo"
-    },
-    en:{
-        title:"UrnaWeb Pro",
-        continue:"Continue",
-        admin:"Admin",
-        login_info:"Professional voting system",
-        setup:"Election Setup",
-        email:"Your email",
-        election:"Election name",
-        cargo:"Position",
-        votes:"Allowed votes",
-        names:"Candidates file (.txt)",
-        photos:"Candidates photos",
-        add:"Add Position",
-        start:"Start Election",
-        confirm:"Confirm Vote",
-        confirmed:"Vote Confirmed",
-        next:"Next Voter",
-        finish:"Finish Election",
-        results:"Final Results",
-        pdf:"Export PDF",
-        admin_panel:"Admin Panel"
-    },
-    es:{
-        title:"UrnaWeb Pro",
-        continue:"Continuar",
-        admin:"Administrador",
-        login_info:"Sistema de votación profesional",
-        setup:"Configuración Electoral",
-        email:"Tu correo",
-        election:"Nombre de la elección",
-        cargo:"Cargo",
-        votes:"Votos permitidos",
-        names:"Archivo de candidatos (.txt)",
-        photos:"Fotos de candidatos",
-        add:"Agregar Cargo",
-        start:"Iniciar Elección",
-        confirm:"Confirmar Voto",
-        confirmed:"Voto Confirmado",
-        next:"Nuevo Votante",
-        finish:"Finalizar Elección",
-        results:"Resultado Final",
-        pdf:"Exportar PDF",
-        admin_panel:"Panel Administrativo"
-    }
+/* ================== TEXTOS ================== */
+const txt={
+pt:{login:"Identificação",continue:"Continuar",config:"Configuração",
+election:"Nome da Eleição",cargo:"Cargo",votes:"Votos",
+names:"Arquivo de nomes (.txt)",photos:"Fotos",
+add:"Adicionar Cargo",start:"Iniciar",
+confirm:"Confirmar",confirmed:"Voto Confirmado",
+next:"Novo Eleitor",finish:"Encerrar",
+result:"Resultado",pdf:"Exportar PDF",
+plan:"Plano Premium",planText:"Primeira eleição grátis.",
+invalidEmail:"Informe um Gmail válido",
+fillAll:"Preencha tudo",configure:"Configure a eleição",
+limit:"Limite atingido"},
+en:{login:"Login",continue:"Continue",config:"Setup",
+election:"Election Name",cargo:"Position",votes:"Votes",
+names:"Names file",photos:"Photos",
+add:"Add Position",start:"Start",
+confirm:"Confirm",confirmed:"Vote Confirmed",
+next:"Next",finish:"Finish",
+result:"Results",pdf:"Export PDF",
+plan:"Premium Plan",planText:"First election is free.",
+invalidEmail:"Enter a valid Gmail",
+fillAll:"Fill all fields",configure:"Configure election",
+limit:"Limit reached"},
+es:{login:"Identificación",continue:"Continuar",config:"Configuración",
+election:"Nombre",cargo:"Cargo",votes:"Votos",
+names:"Archivo de nombres",photos:"Fotos",
+add:"Agregar Cargo",start:"Iniciar",
+confirm:"Confirmar",confirmed:"Voto Confirmado",
+next:"Nuevo",finish:"Finalizar",
+result:"Resultados",pdf:"Exportar PDF",
+plan:"Plan Premium",planText:"Primera elección gratis.",
+invalidEmail:"Ingrese Gmail válido",
+fillAll:"Complete todo",configure:"Configure elección",
+limit:"Límite alcanzado"}
 };
 
 function setLang(l){
-    localStorage.lang = l;
-    document.querySelectorAll("[data-i18n]").forEach(el => {
-        el.innerText = translations[l][el.dataset.i18n];
-    });
+  lang=l;localStorage.setItem("lang",l);
+  tLogin.innerText=txt[l].login;
+  btnContinue.innerText=txt[l].continue;
+  tConfig.innerText=txt[l].config;
+  electionName.placeholder=txt[l].election;
+  cargoName.placeholder=txt[l].cargo;
+  maxVotes.placeholder=txt[l].votes;
+  lblNames.innerText=txt[l].names;
+  lblPhotos.innerText=txt[l].photos;
+  btnAddCargo.innerText=txt[l].add;
+  btnStart.innerText=txt[l].start;
+  btnConfirm.innerText=txt[l].confirm;
+  tConfirmed.innerText=txt[l].confirmed;
+  btnNext.innerText=txt[l].next;
+  btnFinish.innerText=txt[l].finish;
+  tResult.innerText=txt[l].result;
+  btnPDF.innerText=txt[l].pdf;
+  tPlan.innerText=txt[l].plan;
+  tPlanText.innerHTML=txt[l].planText;
 }
-
-window.onload = () => setLang(localStorage.lang || "pt");
+setLang(lang);
 </script>
+
 </body>
 </html>
