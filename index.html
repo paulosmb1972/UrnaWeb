@@ -44,12 +44,14 @@ button{background:#1abc9c;font-weight:bold;cursor:pointer}
   <button onclick="setLang('es')">🇪🇸</button>
 </div>
 
+<!-- LOGIN -->
 <div id="login" class="screen active">
   <h2 id="tLogin"></h2>
   <input id="userEmail" placeholder="email@gmail.com">
   <button id="btnContinue" onclick="loginUser()"></button>
 </div>
 
+<!-- CONFIG -->
 <div id="setup" class="screen">
   <h2 id="tConfig"></h2>
   <input id="electionName">
@@ -64,24 +66,26 @@ button{background:#1abc9c;font-weight:bold;cursor:pointer}
   <div id="cargoList"></div>
 </div>
 
+<!-- VOTAÇÃO -->
 <div id="voting" class="screen">
   <h2 id="cargoTitle"></h2>
   <div id="candidates" class="candidate-grid"></div>
   <button id="btnConfirm" onclick="confirmVote()"></button>
 </div>
 
+<!-- CONFIRMAÇÃO -->
 <div id="afterVote" class="screen">
   <h2 id="tConfirmed"></h2>
   <button id="btnNext" onclick="nextVoter()"></button>
   <button id="btnFinish" class="danger" onclick="finishElection()"></button>
 </div>
 
+<!-- RESULTADOS -->
 <div id="results" class="screen">
   <h2 id="tResult"></h2>
-
   <div id="resultContent"></div>
 
-  <button id="btnPDF" onclick="exportPDF()">📄 Exportar PDF</button>
+  <button onclick="exportPDF()">📄 Exportar PDF</button>
 
   <hr style="margin:20px 0">
 
@@ -91,18 +95,38 @@ button{background:#1abc9c;font-weight:bold;cursor:pointer}
   <button onclick="showScreen('payment')" class="secondary">💳 Pagamento</button>
 </div>
 
+<!-- PAGAMENTO -->
 <div id="payment" class="screen">
   <h2 id="tPlan"></h2>
   <p id="tPlanText" style="text-align:center"></p>
   <h3 style="text-align:center">R$ 15,00</h3>
+
   <input id="couponInput" placeholder="Cupom">
   <button onclick="applyCoupon()" class="secondary">Aplicar Cupom</button>
   <p id="couponMsg" style="text-align:center"></p>
+
   <button onclick="goToPayment()">Pagar</button>
 </div>
 
+<!-- FEEDBACK -->
+<div id="feedback" class="screen">
+  <h2>Avaliação do Sistema</h2>
+
+  <select id="rate">
+    <option value="5">⭐⭐⭐⭐⭐</option>
+    <option value="4">⭐⭐⭐⭐</option>
+    <option value="3">⭐⭐⭐</option>
+    <option value="2">⭐⭐</option>
+    <option value="1">⭐</option>
+  </select>
+
+  <textarea id="feedbackText" rows="5" placeholder="Digite sua sugestão ou avaliação"></textarea>
+
+  <button onclick="sendFeedback()">Enviar</button>
+  <button class="secondary" onclick="showScreen('results')">Voltar</button>
+</div>
+
 <script>
-/* ================== SISTEMA ================== */
 let election={name:"",cargos:[]};
 let currentCargo=0,selected=[];
 let lang=localStorage.getItem("lang")||"pt";
@@ -114,11 +138,9 @@ function showScreen(id){
 }
 
 function loginUser(){
-  const email=userEmail.value.trim();
-  if(!email.endsWith("@gmail.com")){
-    alert(txt[lang].invalidEmail);return;
+  if(!userEmail.value.endsWith("@gmail.com")){
+    alert("Informe um Gmail válido"); return;
   }
-  localStorage.setItem("email",email);
   showScreen("setup");
 }
 
@@ -127,35 +149,27 @@ function addCargo(){
   const max=parseInt(maxVotes.value);
   const file=candidateNames.files[0];
   const photos=[...candidatePhotos.files];
-  if(!cargo||!max||!file){alert(txt[lang].fillAll);return;}
+  if(!cargo||!max||!file){alert("Preencha tudo");return;}
   const r=new FileReader();
   r.onload=()=>{
     const names=r.result.split("\n").filter(n=>n.trim());
     election.cargos.push({
       cargo,max,
-      candidates:names.map((n,i)=>({
-        name:n.trim(),
-        photo:photos[i]?URL.createObjectURL(photos[i]):"",
-        votes:0
-      }))
+      candidates:names.map((n,i)=>({name:n.trim(),photo:photos[i]?URL.createObjectURL(photos[i]):"",votes:0}))
     });
     cargoList.innerHTML+=`<p>✔ ${cargo}</p>`;
-    cargoName.value=maxVotes.value="";
   };
-  r.readAsText(file,"UTF-8");
+  r.readAsText(file);
 }
 
 function startVoting(){
-  election.name=electionName.value.trim();
-  if(!election.name||!election.cargos.length){
-    alert(txt[lang].configure);return;
-  }
+  if(!electionName.value||!election.cargos.length){alert("Configure a eleição");return;}
+  election.name=electionName.value;
   currentCargo=0;showCargo();
 }
 
 function showCargo(){
-  selected=[];
-  showScreen("voting");
+  selected=[];showScreen("voting");
   const c=election.cargos[currentCargo];
   cargoTitle.innerText=c.cargo;
   candidates.innerHTML="";
@@ -170,12 +184,8 @@ function showCargo(){
 
 function toggle(i,d){
   const c=election.cargos[currentCargo];
-  if(selected.includes(i)){
-    selected=selected.filter(x=>x!==i);d.classList.remove("selected");
-  }else{
-    if(selected.length>=c.max){alert(txt[lang].limit);return;}
-    selected.push(i);d.classList.add("selected");
-  }
+  if(selected.includes(i)){selected=selected.filter(x=>x!==i);d.classList.remove("selected");}
+  else{if(selected.length>=c.max)return;selected.push(i);d.classList.add("selected");}
 }
 
 function confirmVote(){
@@ -190,9 +200,7 @@ function finishElection(){
   resultContent.innerHTML=`<h3>${election.name}</h3>`;
   election.cargos.forEach(c=>{
     resultContent.innerHTML+=`<h4>${c.cargo}</h4>`;
-    c.candidates.forEach(x=>{
-      resultContent.innerHTML+=`<p>${x.name}: ${x.votes}</p>`;
-    });
+    c.candidates.forEach(x=>resultContent.innerHTML+=`<p>${x.name}: ${x.votes}</p>`);
   });
 }
 
@@ -206,64 +214,16 @@ function exportPDF(){
 
 function goToPayment(){window.open(PAYMENT_LINK,"_blank");}
 
-/* ================== TEXTOS ================== */
-const txt={
-pt:{login:"Identificação",continue:"Continuar",config:"Configuração",
-election:"Nome da Eleição",cargo:"Cargo",votes:"Votos",
-names:"Arquivo de nomes (.txt)",photos:"Fotos",
-add:"Adicionar Cargo",start:"Iniciar",
-confirm:"Confirmar",confirmed:"Voto Confirmado",
-next:"Novo Eleitor",finish:"Encerrar",
-result:"Resultado",pdf:"Exportar PDF",
-plan:"Plano Premium",planText:"Primeira eleição grátis.",
-invalidEmail:"Informe um Gmail válido",
-fillAll:"Preencha tudo",configure:"Configure a eleição",
-limit:"Limite atingido"},
-en:{login:"Login",continue:"Continue",config:"Setup",
-election:"Election Name",cargo:"Position",votes:"Votes",
-names:"Names file",photos:"Photos",
-add:"Add Position",start:"Start",
-confirm:"Confirm",confirmed:"Vote Confirmed",
-next:"Next",finish:"Finish",
-result:"Results",pdf:"Export PDF",
-plan:"Premium Plan",planText:"First election is free.",
-invalidEmail:"Enter a valid Gmail",
-fillAll:"Fill all fields",configure:"Configure election",
-limit:"Limit reached"},
-es:{login:"Identificación",continue:"Continuar",config:"Configuración",
-election:"Nombre",cargo:"Cargo",votes:"Votos",
-names:"Archivo de nombres",photos:"Fotos",
-add:"Agregar Cargo",start:"Iniciar",
-confirm:"Confirmar",confirmed:"Voto Confirmado",
-next:"Nuevo",finish:"Finalizar",
-result:"Resultados",pdf:"Exportar PDF",
-plan:"Plan Premium",planText:"Primera elección gratis.",
-invalidEmail:"Ingrese Gmail válido",
-fillAll:"Complete todo",configure:"Configure elección",
-limit:"Límite alcanzado"}
-};
-
-function setLang(l){
-  lang=l;localStorage.setItem("lang",l);
-  tLogin.innerText=txt[l].login;
-  btnContinue.innerText=txt[l].continue;
-  tConfig.innerText=txt[l].config;
-  electionName.placeholder=txt[l].election;
-  cargoName.placeholder=txt[l].cargo;
-  maxVotes.placeholder=txt[l].votes;
-  lblNames.innerText=txt[l].names;
-  lblPhotos.innerText=txt[l].photos;
-  btnAddCargo.innerText=txt[l].add;
-  btnStart.innerText=txt[l].start;
-  btnConfirm.innerText=txt[l].confirm;
-  tConfirmed.innerText=txt[l].confirmed;
-  btnNext.innerText=txt[l].next;
-  btnFinish.innerText=txt[l].finish;
-  tResult.innerText=txt[l].result;
-  btnPDF.innerText=txt[l].pdf;
-  tPlan.innerText=txt[l].plan;
-  tPlanText.innerHTML=txt[l].planText;
+function applyCoupon(){
+  const code=couponInput.value.trim().toUpperCase();
+  couponMsg.innerText = code==="FREE5" ? "Cupom válido!" : "Cupom inválido";
 }
+
+function sendFeedback(){
+  alert("Obrigado pela avaliação!");
+  showScreen("results");
+}
+
 setLang(lang);
 </script>
 
