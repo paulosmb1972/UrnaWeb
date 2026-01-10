@@ -229,13 +229,26 @@ async function finishElection(){
     html+=`<h4>${c.cargo}</h4>`;
     c.candidates.forEach(x=>html+=`<p>${x.name}: ${x.votes}</p>`);
   });
-  resultContent.innerHTML=html;
+  resultContent.innerHTML = html;
 
-  // Salvar Voto no Banco
-  fetch(WORKER_URL, {
-    method: 'POST',
-    body: JSON.stringify({ type: "voto", email: userEmail.value, data: election })
-  });
+  const dadosVoto = { 
+    type: "voto", 
+    email: document.getElementById("userEmail").value, 
+    data: election 
+  };
+
+  // FETCH CORRIGIDO COM MODO CORS
+  try {
+    await fetch(WORKER_URL, {
+      method: 'POST',
+      mode: 'cors', // Força o modo CORS
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dadosVoto)
+    });
+    console.log("Sucesso ao salvar voto.");
+  } catch (err) {
+    console.error("Erro no Worker:", err);
+  }
 }
 
 function applyCoupon(){
@@ -251,11 +264,32 @@ function applyCoupon(){
   }
 }
 
-function sendFeedback(){
-  const params={type: "feedback", email:userEmail.value, rating:rate.value, message:feedbackText.value};
-  fetch(WORKER_URL, { method: 'POST', body: JSON.stringify(params) });
-  emailjs.send("service_oqfbzrm","template_t3aio8f", params).then(()=>alert("Feedback Enviado!"));
-  showScreen('results');
+async function sendFeedback(){
+  const params = {
+    type: "feedback", 
+    email: document.getElementById("userEmail").value, 
+    rating: document.getElementById("rate").value, 
+    message: document.getElementById("feedbackText").value
+  };
+
+  try {
+    // Salvar no Banco via Worker
+    await fetch(WORKER_URL, {
+      method: 'POST',
+      mode: 'cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    });
+
+    // Enviar Email via EmailJS
+    await emailjs.send("service_oqfbzrm", "template_t3aio8f", params);
+    
+    alert("Feedback enviado com sucesso!");
+    showScreen('results');
+  } catch (err) {
+    console.error("Erro ao enviar feedback:", err);
+    alert("Erro ao enviar, mas seu voto foi registrado.");
+  }
 }
 
 function exportPDF(){ html2pdf().from(resultContent).save("resultado.pdf"); }
