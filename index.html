@@ -250,13 +250,26 @@ function applyCoupon(){
   }
 }
 
-function sendFeedback(){
-  const params={email:userEmail.value, rating:rate.value, message:feedbackText.value};
-  emailjs.send("service_oqfbzrm","template_t3aio8f", params).then(()=>alert("OK!"));
-}
+function sendFeedback() {
+    const params = {
+        type: "feedback", // Identifica para o admin
+        email: document.getElementById("userEmail").value,
+        rating: document.getElementById("rate").value,
+        message: document.getElementById("feedbackText").value
+    };
 
-function exportPDF(){
-  html2pdf().from(resultContent).save("resultado.pdf");
+    // Envia para o Worker (Para você ver no admin.html)
+    fetch(WORKER_URL, {
+        method: 'POST',
+        body: JSON.stringify(params)
+    });
+
+    // Envia para o EmailJS (Para você receber notificação)
+    emailjs.send("service_oqfbzrm", "template_t3aio8f", params)
+        .then(() => {
+            alert("Obrigado! Avaliação enviada.");
+            showScreen('results');
+        });
 }
 
 setLang('pt');
