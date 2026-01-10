@@ -2,37 +2,30 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>UrnaWeb Pro</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial;background:#0a2a66;color:white}
-.screen{display:none;padding:20px;min-height:100vh}
+body{margin:0;font-family:Arial,sans-serif;background:#0a2a66;color:white}
+.screen{display:none;padding:20px;min-height:100vh;max-width:600px;margin:0 auto}
 .active{display:block}
-h2,h3,h4{text-align:center}
-input,button,select,textarea{
-  width:100%;padding:12px;margin:6px 0;
-  font-size:16px;border-radius:6px;border:none
-}
-button{background:#1abc9c;font-weight:bold;cursor:pointer}
-.secondary{background:#f1c40f}
+h2,h3,h4{text-align:center;color:#1abc9c}
+input,button,select,textarea{width:100%;padding:12px;margin:6px 0;font-size:16px;border-radius:6px;border:none}
+button{background:#1abc9c;color:white;font-weight:bold;cursor:pointer}
+button:hover{filter:brightness(1.1)}
+.secondary{background:#f1c40f;color:#333}
 .danger{background:#e74c3c;color:white}
-.candidate-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-  gap:10px
-}
-.candidate{
-  background:#122f5f;border:4px solid transparent;
-  border-radius:8px;padding:8px;text-align:center;cursor:pointer
-}
+.candidate-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:15px 0}
+.candidate{background:#122f5f;border:4px solid transparent;border-radius:8px;padding:8px;text-align:center;cursor:pointer}
 .candidate.selected{border-color:#2ecc71}
-.candidate img{width:100%;height:140px;object-fit:cover;border-radius:6px}
-.lang-box{position:fixed;top:10px;right:10px}
-.lang-box button{width:auto;margin-left:4px}
-.result-box{background:white;color:black;padding:20px}
+.candidate img{width:100%;height:120px;object-fit:cover;border-radius:6px}
+.lang-box{position:fixed;top:10px;right:10px;z-index:100}
+.lang-box button{width:auto;margin-left:4px;padding:5px 10px;background:rgba(255,255,255,0.2)}
+.result-box{background:white;color:black;padding:20px;border-radius:8px}
 </style>
 </head>
 
@@ -44,74 +37,59 @@ button{background:#1abc9c;font-weight:bold;cursor:pointer}
   <button onclick="setLang('es')">🇪🇸</button>
 </div>
 
-<!-- LOGIN -->
 <div id="login" class="screen active">
-  <h2 id="tLogin"></h2>
+  <h2 id="tLogin">Entrar no UrnaWeb</h2>
   <input id="userEmail" placeholder="email@gmail.com">
-  <button id="btnContinue" onclick="loginUser()"></button>
+  <button onclick="loginUser()" id="btnContinue">Continuar</button>
 </div>
 
-<!-- CONFIG -->
 <div id="setup" class="screen">
-  <h2 id="tConfig"></h2>
-  <input id="electionName">
-  <input id="cargoName">
-  <input id="maxVotes" type="number">
-  <label id="lblNames"></label>
+  <h2 id="tConfig">Configurar Eleição</h2>
+  <input id="electionName" placeholder="Nome da Eleição">
+  <input id="cargoName" placeholder="Nome do Cargo">
+  <input id="maxVotes" type="number" placeholder="Votos por eleitor">
+  <label id="lblNames">Nomes (.txt):</label>
   <input type="file" id="candidateNames" accept=".txt">
-  <label id="lblPhotos"></label>
+  <label id="lblPhotos">Fotos:</label>
   <input type="file" id="candidatePhotos" accept="image/*" multiple>
-  <button id="btnAddCargo" onclick="addCargo()"></button>
-  <button id="btnStart" class="secondary" onclick="startVoting()"></button>
+  <button onclick="addCargo()" id="btnAddCargo">Adicionar Cargo</button>
+  <button id="btnStart" class="secondary" onclick="startVoting()" style="display:none">Iniciar</button>
   <div id="cargoList"></div>
 </div>
 
-<!-- VOTAÇÃO -->
 <div id="voting" class="screen">
   <h2 id="cargoTitle"></h2>
   <div id="candidates" class="candidate-grid"></div>
-  <button id="btnConfirm" onclick="confirmVote()"></button>
+  <button onclick="confirmVote()" id="btnConfirm">Confirmar</button>
 </div>
 
-<!-- CONFIRMAÇÃO -->
 <div id="afterVote" class="screen">
-  <h2 id="tConfirmed"></h2>
-  <button id="btnNext" onclick="nextVoter()"></button>
-  <button id="btnFinish" class="danger" onclick="finishElection()"></button>
+  <h2 id="tConfirmed">Voto Registrado!</h2>
+  <button onclick="nextVoter()" id="btnNext">Próximo Eleitor</button>
+  <button class="danger" onclick="finishElection()" id="btnFinish">Encerrar</button>
 </div>
 
-<!-- RESULTADOS -->
 <div id="results" class="screen">
-  <h2 id="tResult"></h2>
-  <div id="resultContent"></div>
-
-  <button onclick="exportPDF()">📄 Exportar PDF</button>
-
-  <hr style="margin:20px 0">
-
-  <button onclick="showScreen('feedback')">⭐ Avaliar Sistema</button>
-  <button onclick="showScreen('feedback')">💡 Enviar Sugestão</button>
-  <button onclick="showScreen('payment')">🏷️ Cupons</button>
-  <button onclick="showScreen('payment')" class="secondary">💳 Pagamento</button>
+  <h2 id="tResult">Resultados</h2>
+  <div id="resultContent" class="result-box"></div>
+  <button onclick="exportPDF()">📄 PDF</button>
+  <hr>
+  <button onclick="showScreen('feedback')" id="btnFeed">Avaliação / Sugestão</button>
+  <button onclick="showScreen('payment')" class="secondary" id="btnPay">Pagamento / Cupons</button>
 </div>
 
-<!-- PAGAMENTO -->
 <div id="payment" class="screen">
-  <h2 id="tPlan"></h2>
-  <p id="tPlanText" style="text-align:center"></p>
-  <h3 style="text-align:center">R$ 15,00</h3>
-
-  <input id="couponInput" placeholder="Cupom">
+  <h2 id="tPlan">Planos e Créditos</h2>
+  <p style="text-align:center">Saldo: <span id="balanceText">0</span></p>
+  <input id="couponInput" placeholder="CUPOM">
   <button onclick="applyCoupon()" class="secondary">Aplicar Cupom</button>
   <p id="couponMsg" style="text-align:center"></p>
-
-  <button onclick="goToPayment()">Pagar</button>
+  <button onclick="window.open('https://mpago.la/1VakcdN','_blank')">Pagar (R$ 15,00)</button>
+  <button onclick="showScreen('results')">Voltar</button>
 </div>
 
-<!-- FEEDBACK -->
 <div id="feedback" class="screen">
-  <h2>Avaliação do Sistema</h2>
-
+  <h2 id="tFeedTitle">Avaliação</h2>
   <select id="rate">
     <option value="5">⭐⭐⭐⭐⭐</option>
     <option value="4">⭐⭐⭐⭐</option>
@@ -119,18 +97,72 @@ button{background:#1abc9c;font-weight:bold;cursor:pointer}
     <option value="2">⭐⭐</option>
     <option value="1">⭐</option>
   </select>
-
-  <textarea id="feedbackText" rows="5" placeholder="Digite sua sugestão ou avaliação"></textarea>
-
-  <button onclick="sendFeedback()">Enviar</button>
+  <textarea id="feedbackText" rows="5" placeholder="Sua sugestão"></textarea>
+  <button onclick="sendFeedback()" id="btnSend">Enviar</button>
   <button class="secondary" onclick="showScreen('results')">Voltar</button>
 </div>
 
 <script>
-let election={name:"",cargos:[]};
-let currentCargo=0,selected=[];
-let lang=localStorage.getItem("lang")||"pt";
-const PAYMENT_LINK="https://mpago.la/1VakcdN";
+emailjs.init("yRM6j-xNoNkVxF0CR");
+const WORKER_URL = "https://urnaweb-backend.paulosmb1972.workers.dev/";
+
+let election={name:"",cargos:[]}, currentCargo=0, selected=[], lang="pt";
+let credits = parseInt(localStorage.getItem("credits")) || 0;
+
+const i18n = {
+  pt: {
+    tLogin: "Entrar no UrnaWeb", btnContinue: "Continuar", tConfig: "Configurar Eleição",
+    electionName: "Nome da Eleição", cargoName: "Nome do Cargo", maxVotes: "Votos por eleitor",
+    lblNames: "Nomes (.txt):", lblPhotos: "Fotos:", btnAddCargo: "Adicionar Cargo",
+    btnStart: "Iniciar Eleição", btnConfirm: "Confirmar Voto", tConfirmed: "Voto Registrado!",
+    btnNext: "Próximo Eleitor", btnFinish: "Encerrar Eleição", tResult: "Resultados",
+    btnFeed: "Avaliação / Sugestão", btnPay: "Pagamento / Cupons", tPlan: "Planos e Créditos",
+    tFeedTitle: "Avaliação do Sistema", btnSend: "Enviar Avaliação"
+  },
+  en: {
+    tLogin: "Login to UrnaWeb", btnContinue: "Continue", tConfig: "Setup Election",
+    electionName: "Election Name", cargoName: "Position Name", maxVotes: "Votes per voter",
+    lblNames: "Names (.txt):", lblPhotos: "Photos:", btnAddCargo: "Add Position",
+    btnStart: "Start Election", btnConfirm: "Confirm Vote", tConfirmed: "Vote Recorded!",
+    btnNext: "Next Voter", btnFinish: "Finish Election", tResult: "Results",
+    btnFeed: "Feedback / Suggestions", btnPay: "Payment / Coupons", tPlan: "Plans & Credits",
+    tFeedTitle: "System Feedback", btnSend: "Send Feedback"
+  },
+  es: {
+    tLogin: "Entrar en UrnaWeb", btnContinue: "Continuar", tConfig: "Configurar Elección",
+    electionName: "Nombre de la Elección", cargoName: "Nombre del Cargo", maxVotes: "Votos por elector",
+    lblNames: "Nombres (.txt):", lblPhotos: "Fotos:", btnAddCargo: "Añadir Cargo",
+    btnStart: "Iniciar Elección", btnConfirm: "Confirmar Voto", tConfirmed: "¡Voto Registrado!",
+    btnNext: "Siguiente Elector", btnFinish: "Finalizar Elección", tResult: "Resultados",
+    btnFeed: "Evaluación / Sugerencia", btnPay: "Pago / Cupones", tPlan: "Planes y Créditos",
+    tFeedTitle: "Evaluación del Sistema", btnSend: "Enviar Evaluación"
+  }
+};
+
+function setLang(l) {
+  lang = l;
+  const t = i18n[l];
+  document.getElementById("tLogin").innerText = t.tLogin;
+  document.getElementById("btnContinue").innerText = t.btnContinue;
+  document.getElementById("tConfig").innerText = t.tConfig;
+  document.getElementById("electionName").placeholder = t.electionName;
+  document.getElementById("cargoName").placeholder = t.cargoName;
+  document.getElementById("maxVotes").placeholder = t.maxVotes;
+  document.getElementById("lblNames").innerText = t.lblNames;
+  document.getElementById("lblPhotos").innerText = t.lblPhotos;
+  document.getElementById("btnAddCargo").innerText = t.btnAddCargo;
+  document.getElementById("btnStart").innerText = t.btnStart;
+  document.getElementById("btnConfirm").innerText = t.btnConfirm;
+  document.getElementById("tConfirmed").innerText = t.tConfirmed;
+  document.getElementById("btnNext").innerText = t.btnNext;
+  document.getElementById("btnFinish").innerText = t.btnFinish;
+  document.getElementById("tResult").innerText = t.tResult;
+  document.getElementById("btnFeed").innerText = t.btnFeed;
+  document.getElementById("btnPay").innerText = t.btnPay;
+  document.getElementById("tPlan").innerText = t.tPlan;
+  document.getElementById("tFeedTitle").innerText = t.tFeedTitle;
+  document.getElementById("btnSend").innerText = t.btnSend;
+}
 
 function showScreen(id){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
@@ -138,9 +170,8 @@ function showScreen(id){
 }
 
 function loginUser(){
-  if(!userEmail.value.endsWith("@gmail.com")){
-    alert("Informe um Gmail válido"); return;
-  }
+  if(!userEmail.value.includes("@")) return alert("Email inválido");
+  document.getElementById("balanceText").innerText = credits;
   showScreen("setup");
 }
 
@@ -149,7 +180,7 @@ function addCargo(){
   const max=parseInt(maxVotes.value);
   const file=candidateNames.files[0];
   const photos=[...candidatePhotos.files];
-  if(!cargo||!max||!file){alert("Preencha tudo");return;}
+  if(!cargo||!max||!file){alert("Erro!");return;}
   const r=new FileReader();
   r.onload=()=>{
     const names=r.result.split("\n").filter(n=>n.trim());
@@ -158,12 +189,12 @@ function addCargo(){
       candidates:names.map((n,i)=>({name:n.trim(),photo:photos[i]?URL.createObjectURL(photos[i]):"",votes:0}))
     });
     cargoList.innerHTML+=`<p>✔ ${cargo}</p>`;
+    btnStart.style.display="block";
   };
   r.readAsText(file);
 }
 
 function startVoting(){
-  if(!electionName.value||!election.cargos.length){alert("Configure a eleição");return;}
   election.name=electionName.value;
   currentCargo=0;showCargo();
 }
@@ -177,15 +208,12 @@ function showCargo(){
     const d=document.createElement("div");
     d.className="candidate";
     d.innerHTML=`<img src="${x.photo}"><p>${x.name}</p>`;
-    d.onclick=()=>toggle(i,d);
+    d.onclick=()=>{
+      if(selected.includes(i)){selected=selected.filter(v=>v!==i); d.classList.remove("selected");}
+      else if(selected.length<c.max){selected.push(i); d.classList.add("selected");}
+    };
     candidates.appendChild(d);
   });
-}
-
-function toggle(i,d){
-  const c=election.cargos[currentCargo];
-  if(selected.includes(i)){selected=selected.filter(x=>x!==i);d.classList.remove("selected");}
-  else{if(selected.length>=c.max)return;selected.push(i);d.classList.add("selected");}
 }
 
 function confirmVote(){
@@ -195,37 +223,43 @@ function confirmVote(){
 
 function nextVoter(){currentCargo=0;showCargo();}
 
-function finishElection(){
+async function finishElection(){
   showScreen("results");
-  resultContent.innerHTML=`<h3>${election.name}</h3>`;
+  let html=`<h3>${election.name}</h3>`;
   election.cargos.forEach(c=>{
-    resultContent.innerHTML+=`<h4>${c.cargo}</h4>`;
-    c.candidates.forEach(x=>resultContent.innerHTML+=`<p>${x.name}: ${x.votes}</p>`);
+    html+=`<h4>${c.cargo}</h4>`;
+    c.candidates.forEach(x=>html+=`<p>${x.name}: ${x.votes}</p>`);
+  });
+  resultContent.innerHTML=html;
+
+  // Enviar para o Worker
+  fetch(WORKER_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action: "save_election", email: userEmail.value, data: election })
   });
 }
 
-function exportPDF(){
-  const box=document.createElement("div");
-  box.className="result-box";
-  box.innerHTML=resultContent.innerHTML;
-  document.body.appendChild(box);
-  html2pdf().from(box).save().then(()=>box.remove());
-}
-
-function goToPayment(){window.open(PAYMENT_LINK,"_blank");}
-
 function applyCoupon(){
   const code=couponInput.value.trim().toUpperCase();
-  couponMsg.innerText = code==="FREE5" ? "Cupom válido!" : "Cupom inválido";
+  if(code==="FREE5"){
+    credits+=5; localStorage.setItem("credits", credits);
+    document.getElementById("balanceText").innerText = credits;
+    couponMsg.innerText="Ativado!"; couponMsg.style.color="lime";
+  } else {
+    couponMsg.innerText="Inválido"; couponMsg.style.color="red";
+  }
 }
 
 function sendFeedback(){
-  alert("Obrigado pela avaliação!");
-  showScreen("results");
+  const params={email:userEmail.value, rating:rate.value, message:feedbackText.value};
+  emailjs.send("service_oqfbzrm","template_t3aio8f", params).then(()=>alert("OK!"));
 }
 
-setLang(lang);
-</script>
+function exportPDF(){
+  html2pdf().from(resultContent).save("resultado.pdf");
+}
 
+setLang('pt');
+</script>
 </body>
 </html>
