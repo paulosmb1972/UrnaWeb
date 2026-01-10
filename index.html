@@ -114,9 +114,12 @@
 <div id="adminPanel" class="screen">
     <h2>Painel Admin (Orion)</h2>
     <div class="admin-card">
-        <h4>Resumo de Dados</h4>
-        <button onclick="loadAdminData()" class="secondary">Atualizar Votos e Feedbacks</button>
-        <div id="adminDataList" style="margin-top:10px"></div>
+        <h4 style="margin:0">Controle de Dados</h4>
+        <p style="color:#666; font-size:12px">Visualize votos e feedbacks salvos no KV</p>
+        <button onclick="loadAdminData()" class="secondary">🔄 Atualizar Lista</button>
+        
+        <div id="adminDataList" style="margin-top:15px; overflow-x:auto;">
+            </div>
     </div>
     <button class="danger" onclick="showScreen('login')">Sair do Painel</button>
 </div>
@@ -257,11 +260,13 @@ function sendFeedback(){
 
 function exportPDF(){ html2pdf().from(resultContent).save("resultado.pdf"); }
 
-// --- FUNÇÕES DO ADMINISTRADOR ---
+// --- FUNÇÕES DO ADMINISTRADOR (CORRIGIDAS) ---
 function accessAdmin() {
-    const pass = prompt("Senha do Administrador:");
+    const pass = prompt("Digite a Senha Orion:");
     if(pass === "orion001") {
+        console.log("Acessando painel..."); // Para teste no F12
         showScreen('adminPanel');
+        loadAdminData(); // Tenta carregar os dados automaticamente ao entrar
     } else {
         alert("Senha Incorreta!");
     }
@@ -269,18 +274,47 @@ function accessAdmin() {
 
 async function loadAdminData() {
     const div = document.getElementById("adminDataList");
-    div.innerHTML = "Carregando...";
+    div.innerHTML = "<p style='color:black'>Buscando dados no servidor...</p>";
+    
     try {
+        // Adicionamos a senha secret123 que configuramos no Worker
         const res = await fetch(WORKER_URL + "?admin=secret123");
+        
+        if (!res.ok) throw new Error("Erro na resposta do servidor");
+        
         const dados = await res.json();
+        
+        if (dados.length === 0) {
+            div.innerHTML = "<p style='color:black'>Nenhum dado encontrado no banco.</p>";
+            return;
+        }
+
         let html = "<table><tr><th>Tipo</th><th>Usuário</th><th>Detalhes</th></tr>";
+        
+        // Inverte para mostrar o mais recente primeiro
         dados.reverse().forEach(item => {
             const c = item.content;
-            let det = c.type === "voto" ? `Eleição: ${c.data.name}` : `Feedback: ${c.rating} estrelas`;
-            html += `<tr><td>${c.type}</td><td>${c.email}</td><td>${det}</td></tr>`;
+            const tipo = item.id.split("_")[0]; // Pega 'voto' ou 'feedback'
+            
+            let det = "";
+            if(tipo === "voto") {
+                det = `Eleição: ${c.data.name}`;
+            } else {
+                det = `Nota: ${c.rating}⭐ - Msg: ${c.message}`;
+            }
+
+            html += `<tr>
+                <td><strong>${tipo.toUpperCase()}</strong></td>
+                <td>${c.email}</td>
+                <td>${det}</td>
+            </tr>`;
         });
+        
         div.innerHTML = html + "</table>";
-    } catch(e) { div.innerHTML = "Erro ao conectar com Cloudflare KV."; }
+    } catch(e) { 
+        console.error(e);
+        div.innerHTML = "<p style='color:red'>Erro ao conectar com Cloudflare KV. Verifique se o Worker está ativo e o Binding (URNA_STORAGE) foi feito.</p>"; 
+    }
 }
 
 setLang('pt');
