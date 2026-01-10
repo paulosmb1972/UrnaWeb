@@ -1,35 +1,44 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UrnaWeb Pro</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UrnaWeb Pro - Admin Orion</title>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
-<style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;background:#0a2a66;color:white}
-.screen{display:none;padding:20px;min-height:100vh;max-width:600px;margin:0 auto}
-.active{display:block}
-h2,h3,h4{text-align:center;color:#1abc9c}
-input,button,select,textarea{width:100%;padding:12px;margin:6px 0;font-size:16px;border-radius:6px;border:none}
-button{background:#1abc9c;color:white;font-weight:bold;cursor:pointer}
-button:hover{filter:brightness(1.1)}
-.secondary{background:#f1c40f;color:#333}
-.danger{background:#e74c3c;color:white}
-.candidate-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:15px 0}
-.candidate{background:#122f5f;border:4px solid transparent;border-radius:8px;padding:8px;text-align:center;cursor:pointer}
-.candidate.selected{border-color:#2ecc71}
-.candidate img{width:100%;height:120px;object-fit:cover;border-radius:6px}
-.lang-box{position:fixed;top:10px;right:10px;z-index:100}
-.lang-box button{width:auto;margin-left:4px;padding:5px 10px;background:rgba(255,255,255,0.2)}
-.result-box{background:white;color:black;padding:20px;border-radius:8px}
-</style>
+    <style>
+        *{box-sizing:border-box}
+        body{margin:0;font-family:Arial,sans-serif;background:#0a2a66;color:white}
+        .screen{display:none;padding:20px;min-height:100vh;max-width:600px;margin:0 auto}
+        .active{display:block}
+        h2,h3,h4{text-align:center;color:#1abc9c}
+        input,button,select,textarea{width:100%;padding:12px;margin:6px 0;font-size:16px;border-radius:6px;border:none}
+        button{background:#1abc9c;color:white;font-weight:bold;cursor:pointer}
+        button:hover{filter:brightness(1.1)}
+        .secondary{background:#f1c40f;color:#333}
+        .danger{background:#e74c3c;color:white}
+        .candidate-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:15px 0}
+        .candidate{background:#122f5f;border:4px solid transparent;border-radius:8px;padding:8px;text-align:center;cursor:pointer}
+        .candidate.selected{border-color:#2ecc71}
+        .candidate img{width:100%;height:120px;object-fit:cover;border-radius:6px}
+        
+        /* Ícones Fixos */
+        .lang-box{position:fixed;top:10px;right:10px;z-index:100}
+        .lang-box button{width:auto;margin-left:4px;padding:5px 10px;background:rgba(255,255,255,0.2)}
+        .admin-lock{position:fixed;bottom:10px;right:10px;opacity:0.3;cursor:pointer;font-size:20px}
+        .admin-lock:hover{opacity:1}
+
+        .result-box, .admin-card{background:white;color:black;padding:20px;border-radius:8px;margin-bottom:10px}
+        table{width:100%;border-collapse:collapse;font-size:12px}
+        th,td{border:1px solid #ddd;padding:8px;text-align:left}
+        th{background:#0a2a66;color:white}
+    </style>
 </head>
-
 <body>
+
+<div class="admin-lock" onclick="accessAdmin()">🔒</div>
 
 <div class="lang-box">
   <button onclick="setLang('pt')">🇧🇷</button>
@@ -102,6 +111,16 @@ button:hover{filter:brightness(1.1)}
   <button class="secondary" onclick="showScreen('results')">Voltar</button>
 </div>
 
+<div id="adminPanel" class="screen">
+    <h2>Painel Admin (Orion)</h2>
+    <div class="admin-card">
+        <h4>Resumo de Dados</h4>
+        <button onclick="loadAdminData()" class="secondary">Atualizar Votos e Feedbacks</button>
+        <div id="adminDataList" style="margin-top:10px"></div>
+    </div>
+    <button class="danger" onclick="showScreen('login')">Sair do Painel</button>
+</div>
+
 <script>
 emailjs.init("yRM6j-xNoNkVxF0CR");
 const WORKER_URL = "https://urnaweb-backend.paulosmb1972.workers.dev/";
@@ -135,33 +154,13 @@ const i18n = {
     btnStart: "Iniciar Elección", btnConfirm: "Confirmar Voto", tConfirmed: "¡Voto Registrado!",
     btnNext: "Siguiente Elector", btnFinish: "Finalizar Elección", tResult: "Resultados",
     btnFeed: "Evaluación / Sugerencia", btnPay: "Pago / Cupones", tPlan: "Planes y Créditos",
-    tFeedTitle: "Evaluación del Sistema", btnSend: "Enviar Evaluación"
+    tFeedTitle: "Evaluación do Sistema", btnSend: "Enviar Evaluación"
   }
 };
 
 function setLang(l) {
-  lang = l;
-  const t = i18n[l];
-  document.getElementById("tLogin").innerText = t.tLogin;
-  document.getElementById("btnContinue").innerText = t.btnContinue;
-  document.getElementById("tConfig").innerText = t.tConfig;
-  document.getElementById("electionName").placeholder = t.electionName;
-  document.getElementById("cargoName").placeholder = t.cargoName;
-  document.getElementById("maxVotes").placeholder = t.maxVotes;
-  document.getElementById("lblNames").innerText = t.lblNames;
-  document.getElementById("lblPhotos").innerText = t.lblPhotos;
-  document.getElementById("btnAddCargo").innerText = t.btnAddCargo;
-  document.getElementById("btnStart").innerText = t.btnStart;
-  document.getElementById("btnConfirm").innerText = t.btnConfirm;
-  document.getElementById("tConfirmed").innerText = t.tConfirmed;
-  document.getElementById("btnNext").innerText = t.btnNext;
-  document.getElementById("btnFinish").innerText = t.btnFinish;
-  document.getElementById("tResult").innerText = t.tResult;
-  document.getElementById("btnFeed").innerText = t.btnFeed;
-  document.getElementById("btnPay").innerText = t.btnPay;
-  document.getElementById("tPlan").innerText = t.tPlan;
-  document.getElementById("tFeedTitle").innerText = t.tFeedTitle;
-  document.getElementById("btnSend").innerText = t.btnSend;
+  lang = l; const t = i18n[l];
+  document.querySelectorAll("[id]").forEach(el => { if(t[el.id]) el.innerText = t[el.id]; if(t[el.id] && el.placeholder !== undefined) el.placeholder = t[el.id]; });
 }
 
 function showScreen(id){
@@ -180,7 +179,7 @@ function addCargo(){
   const max=parseInt(maxVotes.value);
   const file=candidateNames.files[0];
   const photos=[...candidatePhotos.files];
-  if(!cargo||!max||!file){alert("Erro!");return;}
+  if(!cargo||!max||!file){alert("Preencha tudo");return;}
   const r=new FileReader();
   r.onload=()=>{
     const names=r.result.split("\n").filter(n=>n.trim());
@@ -194,13 +193,10 @@ function addCargo(){
   r.readAsText(file);
 }
 
-function startVoting(){
-  election.name=electionName.value;
-  currentCargo=0;showCargo();
-}
+function startVoting(){ election.name=electionName.value; currentCargo=0; showCargo(); }
 
 function showCargo(){
-  selected=[];showScreen("voting");
+  selected=[]; showScreen("voting");
   const c=election.cargos[currentCargo];
   cargoTitle.innerText=c.cargo;
   candidates.innerHTML="";
@@ -209,8 +205,8 @@ function showCargo(){
     d.className="candidate";
     d.innerHTML=`<img src="${x.photo}"><p>${x.name}</p>`;
     d.onclick=()=>{
-      if(selected.includes(i)){selected=selected.filter(v=>v!==i); d.classList.remove("selected");}
-      else if(selected.length<c.max){selected.push(i); d.classList.add("selected");}
+        if(selected.includes(i)){selected=selected.filter(v=>v!==i); d.classList.remove("selected");}
+        else if(selected.length<c.max){selected.push(i); d.classList.add("selected");}
     };
     candidates.appendChild(d);
   });
@@ -232,10 +228,10 @@ async function finishElection(){
   });
   resultContent.innerHTML=html;
 
-  // Enviar para o Worker
+  // Salvar Voto no Banco
   fetch(WORKER_URL, {
     method: 'POST',
-    body: JSON.stringify({ action: "save_election", email: userEmail.value, data: election })
+    body: JSON.stringify({ type: "voto", email: userEmail.value, data: election })
   });
 }
 
@@ -245,31 +241,46 @@ function applyCoupon(){
     credits+=5; localStorage.setItem("credits", credits);
     document.getElementById("balanceText").innerText = credits;
     couponMsg.innerText="Ativado!"; couponMsg.style.color="lime";
+  } else if(code==="PROMO50") {
+    couponMsg.innerText="Cupom de 50% aplicado no checkout!"; couponMsg.style.color="yellow";
   } else {
     couponMsg.innerText="Inválido"; couponMsg.style.color="red";
   }
 }
 
-function sendFeedback() {
-    const params = {
-        type: "feedback", // Identifica para o admin
-        email: document.getElementById("userEmail").value,
-        rating: document.getElementById("rate").value,
-        message: document.getElementById("feedbackText").value
-    };
+function sendFeedback(){
+  const params={type: "feedback", email:userEmail.value, rating:rate.value, message:feedbackText.value};
+  fetch(WORKER_URL, { method: 'POST', body: JSON.stringify(params) });
+  emailjs.send("service_oqfbzrm","template_t3aio8f", params).then(()=>alert("Feedback Enviado!"));
+  showScreen('results');
+}
 
-    // Envia para o Worker (Para você ver no admin.html)
-    fetch(WORKER_URL, {
-        method: 'POST',
-        body: JSON.stringify(params)
-    });
+function exportPDF(){ html2pdf().from(resultContent).save("resultado.pdf"); }
 
-    // Envia para o EmailJS (Para você receber notificação)
-    emailjs.send("service_oqfbzrm", "template_t3aio8f", params)
-        .then(() => {
-            alert("Obrigado! Avaliação enviada.");
-            showScreen('results');
+// --- FUNÇÕES DO ADMINISTRADOR ---
+function accessAdmin() {
+    const pass = prompt("Senha do Administrador:");
+    if(pass === "orion001") {
+        showScreen('adminPanel');
+    } else {
+        alert("Senha Incorreta!");
+    }
+}
+
+async function loadAdminData() {
+    const div = document.getElementById("adminDataList");
+    div.innerHTML = "Carregando...";
+    try {
+        const res = await fetch(WORKER_URL + "?admin=secret123");
+        const dados = await res.json();
+        let html = "<table><tr><th>Tipo</th><th>Usuário</th><th>Detalhes</th></tr>";
+        dados.reverse().forEach(item => {
+            const c = item.content;
+            let det = c.type === "voto" ? `Eleição: ${c.data.name}` : `Feedback: ${c.rating} estrelas`;
+            html += `<tr><td>${c.type}</td><td>${c.email}</td><td>${det}</td></tr>`;
         });
+        div.innerHTML = html + "</table>";
+    } catch(e) { div.innerHTML = "Erro ao conectar com Cloudflare KV."; }
 }
 
 setLang('pt');
