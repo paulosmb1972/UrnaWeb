@@ -3,149 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UrnaWeb Pro - Sistema de Votação</title>
-
+    <title>UrnaWeb Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-
     <style>
-        * { box-sizing: border-box; }
-        body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: #0a2a66; color: white; }
-        .screen { display: none; padding: 20px; min-height: 100vh; max-width: 600px; margin: 0 auto; }
-        .active { display: block; animation: fadeIn 0.4s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
-        h2, h3, h4 { text-align: center; color: #1abc9c; }
-        input, button, select, textarea { width: 100%; padding: 12px; margin: 8px 0; font-size: 16px; border-radius: 8px; border: none; outline: none; }
-        
-        button { background: #1abc9c; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #16a085; transform: translateY(-2px); }
-        .secondary { background: #f1c40f; color: #333; }
-        .danger { background: #e74c3c; color: white; }
-        
-        .candidate-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin: 20px 0; }
-        .candidate { background: #122f5f; border: 4px solid transparent; border-radius: 12px; padding: 10px; text-align: center; cursor: pointer; }
-        .candidate.selected { border-color: #2ecc71; background: #1a4a99; }
-        .candidate img { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; }
-        
-        .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
-        .lang-box button { width: auto; padding: 5px 10px; background: rgba(255,255,255,0.2); font-size: 14px; }
-        .admin-lock { position: fixed; bottom: 15px; right: 15px; opacity: 0.2; cursor: pointer; font-size: 24px; transition: 0.5s; z-index: 1000; }
-        .admin-lock:hover { opacity: 1; color: #f1c40f; }
-
-        .result-box, .admin-card { background: white; color: black; padding: 20px; border-radius: 10px; margin-top: 15px; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background: #0a2a66; color: white; }
+        *{box-sizing:border-box}
+        body{margin:0;font-family:Arial,sans-serif;background:#0a2a66;color:white;display:flex;justify-content:center}
+        .screen{display:none;padding:20px;width:100%;max-width:500px;min-height:100vh}
+        .active{display:block}
+        h2,h3{text-align:center;color:#1abc9c}
+        input,button{width:100%;padding:15px;margin:10px 0;border-radius:8px;border:none;font-size:16px}
+        button{background:#1abc9c;color:white;font-weight:bold;cursor:pointer}
+        .secondary{background:#f1c40f;color:#333}
+        .lang-box{position:fixed;top:10px;right:10px;z-index:100}
+        .lang-box button{width:auto;padding:5px 10px;background:rgba(255,255,255,0.2);margin-left:5px;color:white;border:1px solid white}
+        .result-box{background:white;color:black;padding:20px;border-radius:10px}
     </style>
 </head>
 <body>
 
-<div class="admin-lock" onclick="accessAdmin()">🔒</div>
-
 <div class="lang-box">
-    <button onclick="setLang('pt')">🇧🇷 PT</button>
-    <button onclick="setLang('en')">🇺🇸 EN</button>
-    <button onclick="setLang('es')">🇪🇸 ES</button>
+  <button onclick="setLang('pt')">🇧🇷</button>
+  <button onclick="setLang('en')">🇺🇸</button>
+  <button onclick="setLang('es')">🇪🇸</button>
 </div>
 
 <div id="login" class="screen active">
     <h2 id="tLogin">Entrar no UrnaWeb</h2>
-    <input id="userEmail" type="email" placeholder="Seu e-mail (Gmail)">
-    <button onclick="loginUser()" id="btnContinue">Continuar</button>
+    <input id="userEmail" type="email" placeholder="Seu e-mail">
+    <button onclick="enviarCodigo()" id="btnSendCode">Enviar Código</button>
+</div>
+
+<div id="verify" class="screen">
+    <h2 id="tVerify">Validar Código</h2>
+    <input id="inputCode" type="text" placeholder="000000" style="text-align:center;letter-spacing:5px">
+    <button onclick="validarCodigo()" class="secondary" id="btnVerify">Entrar</button>
 </div>
 
 <div id="setup" class="screen">
-    <h2 id="tConfig">Configurar Eleição</h2>
+    <h2 id="tConfig">Configuração</h2>
     <input id="electionName" placeholder="Nome da Eleição">
-    <input id="cargoName" placeholder="Nome do Cargo (Ex: Síndico)">
-    <input id="maxVotes" type="number" placeholder="Quantidade de votos permitidos">
-    
-    <label id="lblNames">Lista de Nomes (.txt):</label>
-    <input type="file" id="candidateNames" accept=".txt">
-    
-    <label id="lblPhotos">Fotos dos Candidatos:</label>
-    <input type="file" id="candidatePhotos" accept="image/*" multiple>
-    
-    <button onclick="addCargo()" id="btnAddCargo" class="secondary">Adicionar Cargo</button>
-    <div id="cargoList" style="margin:10px 0; font-weight:bold; color:#1abc9c"></div>
-    <button id="btnStart" onclick="startVoting()" style="display:none">Iniciar Votação</button>
-</div>
-
-<div id="voting" class="screen">
-    <h2 id="cargoTitle"></h2>
-    <div id="candidates" class="candidate-grid"></div>
-    <button onclick="confirmVote()" id="btnConfirm">Confirmar Voto</button>
-</div>
-
-<div id="afterVote" class="screen">
-    <h2 id="tConfirmed">Voto Registrado com Sucesso!</h2>
-    <button onclick="nextVoter()" id="btnNext">Próximo Eleitor</button>
-    <button class="danger" onclick="finishElection()" id="btnFinish">Encerrar e Ver Resultados</button>
+    <button onclick="showScreen('results')" class="secondary" id="btnSkip">Pular para Resultado</button>
 </div>
 
 <div id="results" class="screen">
-    <h2 id="tResult">Resultados Finais</h2>
-    <div id="resultContent" class="result-box"></div>
-    <button onclick="exportPDF()" style="margin-top:15px">📄 Exportar PDF</button>
-    <hr>
-    <button onclick="showScreen('feedback')" id="btnFeed" class="secondary">Avaliar / Sugestões</button>
-    <button onclick="showScreen('payment')" id="btnPay">Créditos / Cupons</button>
-</div>
-
-<div id="payment" class="screen">
-    <h2 id="tPlan">Planos e Créditos</h2>
-    <p style="text-align:center">Saldo atual: <strong id="balanceText">0</strong> eleições</p>
-    <input id="couponInput" placeholder="CUPOM">
-    <button onclick="applyCoupon()" class="secondary">Validar Cupom</button>
-    <p id="couponMsg" style="text-align:center; font-weight:bold"></p>
-    <button onclick="window.open('https://mpago.la/1VakcdN','_blank')">Mercado Pago (R$ 15,00)</button>
-    <button onclick="showScreen('results')" class="danger">Voltar</button>
-</div>
-
-<div id="feedback" class="screen">
-    <h2 id="tFeedTitle">Sua Opinião</h2>
-    <select id="rate">
-        <option value="5">⭐⭐⭐⭐⭐ (Excelente)</option>
-        <option value="4">⭐⭐⭐⭐ (Bom)</option>
-        <option value="3">⭐⭐⭐ (Regular)</option>
-        <option value="2">⭐⭐ (Ruim)</option>
-        <option value="1">⭐ (Péssimo)</option>
-    </select>
-    <textarea id="feedbackText" rows="4" placeholder="Deixe sua sugestão aqui..."></textarea>
-    <button onclick="sendFeedback()" id="btnSend">Enviar Feedback</button>
-    <button class="secondary" onclick="showScreen('results')">Voltar</button>
-</div>
-
-<div id="adminPanel" class="screen">
-    <h2>Painel Admin (Orion)</h2>
-    <div class="admin-card">
-        <button onclick="loadAdminData()" class="secondary">🔄 Atualizar Dados do Banco</button>
-        <div id="adminDataList" style="margin-top:15px; overflow-x:auto;"></div>
+    <h2 id="tResult">Resultados</h2>
+    <div id="resultContent" class="result-box">
+        <p id="pRes">Simulação de Resultado Concluída.</p>
     </div>
-    <button class="danger" onclick="showScreen('login')">Sair do Painel</button>
+    <button onclick="exportPDF()" id="btnPDF">Gerar PDF</button>
 </div>
 
 <script>
-// CONFIGURAÇÕES GERAIS
-emailjs.init("yRM6j-xNoNkVxF0CR");
-const WORKER_URL = "https://urnaweb-backend.paulosmb1972.workers.dev/";
+// --- CONFIGURAÇÃO ATUALIZADA ---
+const PUBLIC_KEY = "_PKL4Oj92o48KurSF"; 
+const SERVICE_ID = "service_oqfbzrm";
+const TEMPLATE_ID = "template_t3aio8f";
 
-let election = { name: "", cargos: [] };
-let currentCargo = 0, selected = [], lang = "pt";
-let credits = parseInt(localStorage.getItem("credits")) || 0;
+emailjs.init(PUBLIC_KEY);
 
+let codigoGerado = "";
+let emailUsuario = "";
+let lang = "pt";
+
+// --- DICIONÁRIO COMPLETO ---
 const i18n = {
-    pt: {
-        tLogin: "Entrar no UrnaWeb", btnContinue: "Continuar", tConfig: "Configurar Eleição",
-        electionName: "Nome da Eleição", cargoName: "Nome do Cargo", maxVotes: "Votos por eleitor",
-        lblNames: "Nomes (.txt):", lblPhotos: "Fotos:", btnAddCargo: "Adicionar Cargo",
-        btnStart: "Iniciar Eleição", btnConfirm: "Confirmar Voto", tConfirmed: "Voto Gravado!",
-        btnNext: "Próximo Eleitor", btnFinish: "Encerrar Eleição", tResult: "Resultados",
-        btnFeed: "Avaliação / Sugestão", btnPay: "Créditos / Cupons", tPlan: "Planos",
-        tFeedTitle: "Feedback", btnSend: "Enviar"
-    },
-    en: {
-        tLogin: "Login to UrnaWeb", btnContinue: "Continue", tConfig: "Setup Election",
-        electionName: "Election Name", cargoName: "Position Name", maxVotes: "Votes per voter",
-        lbl
+  pt: { tLogin: "Entrar no UrnaWeb", btnSendCode: "Enviar Código", userEmail: "Seu e-mail", tVerify: "Validar Código", btnVerify: "Entrar", tConfig: "Configuração", electionName: "Nome da Eleição", tResult: "Resultados", btnSkip: "Pular para Resultado", pRes: "Simulação Concluída.", btnPDF: "Gerar PDF" },
+  en: { tLogin: "Login to UrnaWeb", btnSendCode: "Send Code", userEmail: "Your email", tVerify: "Verify Code", btnVerify: "Enter", tConfig: "Setup", electionName: "Election Name", tResult: "Results", btnSkip: "Skip to Results", pRes: "Simulation Finished.", btnPDF: "Get PDF" },
+  es: { tLogin: "Entrar en UrnaWeb", btnSendCode: "Enviar Código", userEmail: "Tu correo", tVerify: "Validar Código", btnVerify: "Entrar", tConfig: "Configuración", electionName: "Nombre Elección", tResult: "Resultados", btnSkip: "Saltar a Resultados", pRes: "Simulación Finalizada.", btnPDF: "Generar PDF" }
+};
+
+// --- FUNÇÃO DE IDIOMA (CORRIGIDA) ---
+function setLang(l) {
+    lang = l;
+    const t = i18n[l];
+    Object.keys(t).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            // Se for INPUT, traduz o placeholder. Se for TEXTO, traduz o innerText.
+            if (el.tagName === "INPUT") el.placeholder = t[id];
+            else el.innerText = t[id];
+        }
+    });
+}
+
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+// --- ENVIO DE CÓDIGO ---
+function enviarCodigo() {
+    emailUsuario = document.getElementById("userEmail").value;
+    if(!emailUsuario.includes("@")) return alert("E-mail inválido");
+
+    codigoGerado = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log("DEBUG: Código gerado ->", codigoGerado);
+
+    const params = {
+        to_email: emailUsuario,
+        validation_code: codigoGerado 
+    };
+
+    emailjs.send(SERVICE_ID, TEMPLATE_ID, params)
+    .then(() => {
+        alert("Código enviado para: " + emailUsuario);
+        showScreen('verify');
+    })
+    .catch(err => {
+        console.error("Erro EmailJS:", err);
+        alert("Erro EmailJS: " + err.status + " - " + err.text);
+    });
+}
+
+function validarCodigo() {
+    const inputCode = document.getElementById("inputCode").value;
+    if(inputCode === codigoGerado && codigoGerado !== "") {
+        showScreen('setup');
+    } else {
+        alert("Código incorreto!");
+    }
+}
+
+function exportPDF() {
+    const content = document.getElementById("resultContent");
+    html2pdf().from(content).save("resultado-urna.pdf");
+}
+</script>
+</body>
+</html>
