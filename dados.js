@@ -1,6 +1,12 @@
+// Este arquivo fornece os dados que o script.js precisa
 window.eleicaoData = {
-    nomeEleicao: "Eleição 2024",
+    nomeEleicao: "ELEIÇÃO TESTE",
     candidatos: [
-        { numero: "10", nome: "Candidato Teste", partido: "P1", foto: "https://via.placeholder.com/150" }
+        {
+            numero: "10",
+            nome: "CANDIDATO UM",
+            partido: "PARTIDO TESTE",
+            foto: "https://via.placeholder.com/150"
+        }
     ]
 };
