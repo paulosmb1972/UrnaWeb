@@ -1,4 +1,3 @@
-// Este arquivo define quem são os candidatos
 let etapas = [
     {
         titulo: 'VEREADOR',
@@ -8,7 +7,9 @@ let etapas = [
                 numero: '38111',
                 nome: 'Candidato Teste',
                 partido: 'ABC',
-                fotos: [{url: 'https://via.placeholder.com/150', legenda: 'Vereador'}]
+                fotos: [
+                    {url: '38111.jpg', legenda: 'Vereador'}
+                ]
             }
         ]
     }
