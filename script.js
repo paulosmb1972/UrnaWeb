@@ -1,98 +1,123 @@
-let etapaAtual = 0;
-let numero = '';
-let votoBranco = false;
+// Inicialização
+emailjs.init("_PKL4Oj92o48KurSF");
 
-function comecarEtapa() {
-    let etapa = etapas[etapaAtual];
-    let numeroHtml = '';
-    numero = '';
-    votoBranco = false;
+let eleicaoData = [];
+let cargoTemp = null;
+let fotoBase64 = "";
+let votosSelecionados = [];
+let indiceCargoAtual = 0;
+let tituloEleicaoGlobal = "";
 
-    for(let i=0; i<etapa.numeros; i++) {
-        numeroHtml += i === 0 ? '<div class="numero pisca"></div>' : '<div class="numero"></div>';
-    }
-
-    // Ajustes de exibição inicial
-    document.querySelector('.d-1-2 span').style.display = 'none';
-    document.querySelector('.d-1-3 span').innerHTML = etapa.titulo;
-    document.querySelector('.d-1-info').innerHTML = ''; // Limpa info anterior
-    document.querySelector('.d-1-4').innerHTML = numeroHtml;
-    document.querySelector('.d-1-right').innerHTML = '';
-    document.querySelector('.d-2').style.display = 'none';
+function irPara(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
 }
 
-function atualizarInterface() {
-    let etapa = etapas[etapaAtual];
-    let candidato = etapa.candidatos.filter((item) => item.numero === numero)[0];
+function checkEmailBalance() {
+    // Simplificado para teste, já que o original dependia de servidor
+    irPara('setupGeral');
+}
 
-    if(candidato) {
-        document.querySelector('.d-1-2 span').style.display = 'block';
-        // AJUSTE: Usamos a div d-1-info para não bagunçar o layout
-        document.querySelector('.d-1-info').innerHTML = `Nome: ${candidato.nome}<br>Partido: ${candidato.partido}`;
-        
-        let fotosHtml = '';
-        for(let i in candidato.fotos) {
-            // AJUSTE: Verificamos se a foto é pequena (vice) ou grande
-            if(candidato.fotos[i].small) {
-                fotosHtml += `<div class="d-1-image small"><img src="${candidato.fotos[i].url}" alt="" />${candidato.fotos[i].legenda}</div>`;
-            } else {
-                fotosHtml += `<div class="d-1-image"><img src="${candidato.fotos[i].url}" alt="" />${candidato.fotos[i].legenda}</div>`;
+function irParaCargo() {
+    tituloEleicaoGlobal = document.getElementById("tituloEleicaoInput").value;
+    if(!tituloEleicaoGlobal) return alert("Digite o nome da eleição!");
+    irPara('setupCargo');
+}
+
+function proximoPassoCandidatos() {
+    const nome = document.getElementById("nomeCargo").value;
+    if(!nome) return alert("Digite o nome do cargo!");
+    cargoTemp = { nome, limite: parseInt(document.getElementById("qtdVotos").value), candidatos: [] };
+    document.getElementById("tituloCargoAtual").innerText = "Candidatos para: " + nome;
+    irPara('setupCandidatos');
+}
+
+// Converter imagem para Base64
+document.getElementById('fotoCand')?.addEventListener('change', (e) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => fotoBase64 = ev.target.result;
+    reader.readAsDataURL(e.target.files[0]);
+});
+
+function addCandidato() {
+    const nome = document.getElementById("nomeCand").value;
+    if(!nome) return;
+    cargoTemp.candidatos.push({ nome, foto: fotoBase64, votos: 0 });
+    document.getElementById("listaTemp").innerHTML += `<div>• ${nome}</div>`;
+    document.getElementById("nomeCand").value = "";
+    fotoBase64 = "";
+}
+
+function finalizarCargo() {
+    if(cargoTemp.candidatos.length === 0) return alert("Adicione ao menos um candidato!");
+    eleicaoData.push(cargoTemp);
+    document.getElementById("nomeCargo").value = "";
+    document.getElementById("listaTemp").innerHTML = "";
+    irPara('setupCargo');
+}
+
+function iniciarUrna() {
+    if(cargoTemp && !eleicaoData.includes(cargoTemp)) eleicaoData.push(cargoTemp);
+    if(eleicaoData.length === 0) return alert("Configure os cargos primeiro!");
+    indiceCargoAtual = 0;
+    carregarCargoNaUrna();
+    irPara('urnaVisual');
+}
+
+function carregarCargoNaUrna() {
+    const cargo = eleicaoData[indiceCargoAtual];
+    document.getElementById("votoCargoTitulo").innerText = "Vote para: " + cargo.nome;
+    const grid = document.getElementById("gridVotacao");
+    grid.innerHTML = "";
+    votosSelecionados = [];
+
+    cargo.candidatos.forEach((cand, i) => {
+        const card = document.createElement("div");
+        card.className = "card-candidato";
+        card.innerHTML = `<img src="${cand.foto || 'https://via.placeholder.com/150'}" class="foto-cand"><br><strong>${cand.nome}</strong>`;
+        card.onclick = () => {
+            if(votosSelecionados.includes(i)) {
+                votosSelecionados = votosSelecionados.filter(v => v !== i);
+                card.classList.remove("selected");
+            } else if(votosSelecionados.length < cargo.limite) {
+                votosSelecionados.push(i);
+                card.classList.add("selected");
             }
-        }
-        document.querySelector('.d-1-right').innerHTML = fotosHtml;
-        document.querySelector('.d-2').style.display = 'block';
+        };
+        grid.appendChild(card);
+    });
+}
+
+function confirmarVotoVisual() {
+    if(votosSelecionados.length === 0) return alert("Selecione um candidato!");
+    votosSelecionados.forEach(idx => eleicaoData[indiceCargoAtual].candidatos[idx].votos++);
+    
+    indiceCargoAtual++;
+    if(indiceCargoAtual < eleicaoData.length) {
+        carregarCargoNaUrna();
     } else {
-        document.querySelector('.d-1-2 span').style.display = 'block';
-        document.querySelector('.d-1-info').innerHTML = '<div class="aviso--grande pisca">VOTO NULO</div>';
-        document.querySelector('.d-2').style.display = 'block';
+        alert("Todos os votos registrados!");
+        indiceCargoAtual = 0; 
+        carregarCargoNaUrna(); // Reinicia para o próximo eleitor
     }
 }
 
-function clicou(n) {
-    let elNumero = document.querySelector('.numero.pisca');
-    if(elNumero !== null) {
-        elNumero.innerHTML = n;
-        numero = `${numero}${n}`;
-        elNumero.classList.remove('pisca');
-        if(elNumero.nextElementSibling !== null) {
-            elNumero.nextElementSibling.classList.add('pisca');
-        } else {
-            atualizarInterface();
-        }
-    }
+function exibirResultados() {
+    document.getElementById("pdfTituloEleicao").innerText = tituloEleicaoGlobal;
+    const container = document.getElementById("containerResultados");
+    container.innerHTML = "";
+
+    eleicaoData.forEach(cargo => {
+        let html = `<h3>${cargo.nome}</h3>`;
+        cargo.candidatos.sort((a,b) => b.votos - a.votos).forEach(c => {
+            html += `<p>${c.nome}: ${c.votos} votos</p>`;
+        });
+        container.innerHTML += html;
+    });
+    irPara('resultadosScreen');
 }
 
-function branco() {
-    if(numero === '') {
-        votoBranco = true;
-        document.querySelector('.d-1-2 span').style.display = 'block';
-        document.querySelector('.d-1-4').innerHTML = '';
-        document.querySelector('.d-1-info').innerHTML = '<div class="aviso--grande pisca">VOTO EM BRANCO</div>';
-        document.querySelector('.d-2').style.display = 'block';
-    }
+function gerarPDF() {
+    const element = document.getElementById('areaImpressao');
+    html2pdf().from(element).save('resultado_eleicao.pdf');
 }
-
-function corrige() { comecarEtapa(); }
-
-function confirma() {
-    let etapa = etapas[etapaAtual];
-    let votoConfirmado = false;
-
-    if(votoBranco === true) {
-        votoConfirmado = true;
-    } else if(numero.length === etapa.numeros) {
-        votoConfirmado = true;
-    }
-
-    if(votoConfirmado) {
-        etapaAtual++;
-        if(etapas[etapaAtual] !== undefined) {
-            comecarEtapa();
-        } else {
-            document.querySelector('.tela').innerHTML = '<div class="aviso--gigante">FIM</div>';
-        }
-    }
-}
-
-// Inicializa a urna
-comecarEtapa();
