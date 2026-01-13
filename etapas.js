@@ -10,12 +10,17 @@ let etapas = [
                 fotos: [{url: 'https://via.placeholder.com/150', legenda: 'Vereador'}]
             }
         ]
+    },
+    {
+        titulo: 'PREFEITO',
+        numeros: 2,
+        candidatos: [
+            {
+                numero: '99',
+                nome: 'PREFEITO TESTE',
+                partido: 'ABC',
+                fotos: [{url: 'https://via.placeholder.com/150', legenda: 'Prefeito'}]
+            }
+        ]
     }
 ];
-
-// Isso força o sistema a iniciar e ignora o nome do sistema antigo
-window.onload = () => {
-    if (typeof comecarEtapa === 'function') {
-        comecarEtapa();
-    }
-};
