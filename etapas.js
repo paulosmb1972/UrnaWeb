@@ -1,20 +1,32 @@
-window.config = {
-    nomeSistema: "UrnaWeb",
-    etapas: [
-        {
-            titulo: 'VEREADOR',
-            numeros: 5,
-            candidatos: [
-                {
-                    numero: '38111',
-                    nome: 'CANDIDATO TESTE',
-                    partido: 'PARTIDO TESTE',
-                    fotos: [{url: 'https://via.placeholder.com/150', legenda: 'Vereador'}]
-                }
-            ]
-        }
-    ]
-};
-
-// Por garantia, se o script procurar por 'etapas' diretamente:
-let etapas = window.config.etapas;
+let etapas = [
+    {
+        titulo: 'VEREADOR',
+        numeros: 5,
+        candidatos: [
+            {
+                numero: '38111',
+                nome: 'CANDIDATO TESTE',
+                partido: 'ABC',
+                fotos: [
+                    {url: 'https://via.placeholder.com/150', legenda: 'Vereador'}
+                ]
+            }
+        ]
+    },
+    {
+        titulo: 'PREFEITO',
+        numeros: 2,
+        candidatos: [
+            {
+                numero: '99',
+                nome: 'PREFEITO TESTE',
+                partido: 'XYZ',
+                vice: 'VICE TESTE',
+                fotos: [
+                    {url: 'https://via.placeholder.com/150', legenda: 'Prefeito'},
+                    {url: 'https://via.placeholder.com/150', legenda: 'Vice-Prefeito', small: true}
+                ]
+            }
+        ]
+    }
+];
