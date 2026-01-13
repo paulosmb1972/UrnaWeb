@@ -12,21 +12,5 @@ let etapas = [
                 ]
             }
         ]
-    },
-    {
-        titulo: 'PREFEITO',
-        numeros: 2,
-        candidatos: [
-            {
-                numero: '99',
-                nome: 'PREFEITO TESTE',
-                partido: 'XYZ',
-                vice: 'VICE TESTE',
-                fotos: [
-                    {url: 'https://via.placeholder.com/150', legenda: 'Prefeito'},
-                    {url: 'https://via.placeholder.com/150', legenda: 'Vice-Prefeito', small: true}
-                ]
-            }
-        ]
     }
 ];
