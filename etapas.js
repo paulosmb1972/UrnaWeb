@@ -5,10 +5,26 @@ let etapas = [
         candidatos: [
             {
                 numero: '38111',
-                nome: 'Candidato Teste',
+                nome: 'CANDIDATO TESTE',
                 partido: 'ABC',
                 fotos: [
-                    {url: '38111.jpg', legenda: 'Vereador'}
+                    {url: 'https://via.placeholder.com/150', legenda: 'Vereador'}
+                ]
+            }
+        ]
+    },
+    {
+        titulo: 'PREFEITO',
+        numeros: 2,
+        candidatos: [
+            {
+                numero: '99',
+                nome: 'PREFEITO TESTE',
+                partido: 'XYZ',
+                vice: 'VICE TESTE',
+                fotos: [
+                    {url: 'https://via.placeholder.com/150', legenda: 'Prefeito'},
+                    {url: 'https://via.placeholder.com/150', legenda: 'Vice-Prefeito', small: true}
                 ]
             }
         ]
