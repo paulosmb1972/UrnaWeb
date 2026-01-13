@@ -5,38 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UrnaWeb - Sistema de Votação</title>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <style>
-        /* Estilo básico para garantir que a urna apareça centralizada */
-        body { 
-            font-family: Arial, sans-serif; 
-            background-color: #f4f4f4; 
-            margin: 0; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh; 
-        }
-        #container { 
-            width: 100%; 
-            max-width: 800px; 
-            background: white; 
-            padding: 20px; 
-            border-radius: 8px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
-            text-align: center;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #e5e5e5; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        #urna-container { background-color: #fff; padding: 40px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 100%; max-width: 900px; min-height: 500px; }
     </style>
 </head>
 <body>
 
-    <div id="container">
-        <h1>Carregando UrnaWeb...</h1>
-        <p>Por favor, aguarde o carregamento do sistema.</p>
+    <div id="urna-container">
+        <div id="root">Carregando sistema de votação...</div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="./script.js"></script>
 </body>
 </html>
