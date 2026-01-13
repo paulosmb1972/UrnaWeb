@@ -1,4 +1,3 @@
-// Definindo os dados da UrnaWeb
 let etapas = [
     {
         titulo: 'VEREADOR',
@@ -7,19 +6,15 @@ let etapas = [
             {
                 numero: '38111',
                 nome: 'CANDIDATO TESTE',
-                partido: 'ABC',
+                partido: 'PARTIDO DA URNA',
                 fotos: [{url: 'https://via.placeholder.com/150', legenda: 'Vereador'}]
             }
         ]
     }
 ];
 
-// Comandos para trocar o nome e iniciar o sistema
-window.onload = function() {
-    // Muda o título na aba do navegador
-    document.title = "UrnaWeb";
-    
-    // Tenta forçar o início do sistema se a função existir
+// Isso força o sistema a iniciar e ignora o nome do sistema antigo
+window.onload = () => {
     if (typeof comecarEtapa === 'function') {
         comecarEtapa();
     }
