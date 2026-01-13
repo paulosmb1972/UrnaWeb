@@ -14,61 +14,86 @@
         .screen { display: none; padding: 20px; width: 100%; max-width: 800px; min-height: 90vh; box-sizing: border-box; }
         .active { display: block; }
         h2 { text-align: center; color: var(--primary); }
-        input, button, textarea { width: 100%; padding: 15px; margin: 5px 0 15px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
+        input, button, textarea { width: 100%; padding: 15px; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; margin-bottom: 10px; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
+        .lang-box { position: fixed; top: 10px; right: 10px; display: flex; gap: 5px; z-index: 100; }
+        .lang-box button { width: auto; padding: 8px; background: rgba(0,0,0,0.8); font-size: 12px; border: 1px solid var(--primary); }
         .grid-urna { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
         .card-candidato { background: white; color: #333; padding: 10px; border-radius: 10px; text-align: center; border: 4px solid transparent; }
         .card-candidato.selected { border-color: var(--accent); background: #fdf2a7; }
-        .foto-cand { width: 100%; height: 140px; object-fit: cover; border-radius: 5px; background: #eee; }
-        #areaImpressao { background: white; color: black; padding: 20px; border-radius: 10px; }
+        .foto-cand { width: 100%; height: 140px; object-fit: cover; border-radius: 5px; }
+        #areaImpressao { background: white; color: black; padding: 30px; border-radius: 10px; width: 100%; box-sizing: border-box; }
+        .pdf-header { text-align: center; border-bottom: 2px solid #333; margin-bottom: 20px; }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
+
+<div class="lang-box">
+    <button onclick="setLang('pt')">PT</button>
+    <button onclick="setLang('en')">EN</button>
+    <button onclick="setLang('es')">ES</button>
+</div>
 
 <div id="login" class="screen active">
-    <h2>Acesso ao Sistema</h2>
-    <input id="userEmail" type="email" placeholder="Seu Gmail...">
-    <button onclick="checkEmailBalance()">Entrar</button>
+    <h2 data-i18n="tLogin">Acesso ao Sistema</h2>
+    <input id="userEmail" type="email" data-i18n="pEmail" placeholder="Seu Gmail...">
+    <button onclick="checkEmailBalance()" data-i18n="btnVerifyEmail">Entrar</button>
+</div>
+
+<div id="paymentScreen" class="screen">
+    <h2 data-i18n="tLimit">Créditos Esgotados</h2>
+    <input id="inputCupom" type="text" data-i18n="pCoupon" placeholder="Código do Cupom">
+    <button onclick="aplicarCupom()" style="background: var(--accent); color:#333;" data-i18n="btnCoupon">Validar Cupom</button>
+    <button onclick="irPara('login')" data-i18n="btnBack">Voltar</button>
 </div>
 
 <div id="setupGeral" class="screen">
-    <h2>Início da Eleição</h2>
-    <input id="tituloEleicaoInput" type="text" placeholder="Nome da eleição: Ex Condomínio Orion">
-    <button onclick="irParaCargo()">Configurar Cargos</button>
+    <h2 data-i18n="tGeneral">Início da Eleição</h2>
+    <input id="tituloEleicaoInput" type="text" data-i18n="pElectionName" placeholder="Nome da Eleição">
+    <button onclick="irParaCargo()" data-i18n="btnNextStep">Próximo</button>
 </div>
 
 <div id="setupCargo" class="screen">
-    <h2>Configurar Cargo</h2>
-    <input id="nomeCargo" type="text" placeholder="Ex: Síndico">
+    <h2 data-i18n="tCargo">Configurar Cargo</h2>
+    <input id="nomeCargo" type="text" data-i18n="pCargoName" placeholder="Ex: Síndico">
     <input id="qtdVotos" type="number" value="1" min="1">
-    <button onclick="proximoPassoCandidatos()">Adicionar Candidatos</button>
+    <button onclick="proximoPassoCandidatos()" data-i18n="btnAddCand">Adicionar Candidatos</button>
 </div>
 
 <div id="setupCandidatos" class="screen">
     <h2 id="tituloCargoAtual">Candidatos</h2>
-    <input id="nomeCand" type="text" placeholder="Nome completo">
+    <input id="nomeCand" type="text" data-i18n="pCandName" placeholder="Nome Completo">
     <input id="fotoCand" type="file" accept="image/*">
-    <button onclick="addCandidato()">Adicionar à Lista</button>
+    <button onclick="addCandidato()" data-i18n="btnToList">Adicionar</button>
     <div id="listaTemp"></div>
-    <button onclick="finalizarCargo()">Salvar Cargo e Adicionar Outro</button>
-    <button onclick="iniciarUrna()" style="background:var(--success)">INICIAR VOTAÇÃO 🗳️</button>
+    <button onclick="finalizarCargo()" data-i18n="btnSaveCargo">Salvar Cargo</button>
+    <button onclick="iniciarUrna()" data-i18n="btnStartVote">INICIAR VOTAÇÃO</button>
 </div>
 
 <div id="urnaVisual" class="screen">
     <h2 id="votoCargoTitulo">Urna</h2>
     <div id="gridVotacao" class="grid-urna"></div>
-    <button onclick="confirmarVotoVisual()" style="background:var(--success); height:60px;">CONFIRMAR VOTO</button>
-    <button onclick="exibirResultados()" style="background:var(--danger)">ENCERRAR ELEIÇÃO</button>
+    <button onclick="confirmarVotoVisual()" style="background:var(--success); height:60px;" data-i18n="btnConfirmVote">CONFIRMAR VOTO</button>
+    <button onclick="exibirResultados()" style="background:var(--danger)" data-i18n="btnEndElection">ENCERRAR ELEIÇÃO</button>
 </div>
 
 <div id="resultadosScreen" class="screen">
-    <h2>Resultado Final</h2>
+    <h2 data-i18n="tResults">Resultado</h2>
     <div id="areaImpressao">
-        <h1 id="pdfTituloEleicao"></h1>
+        <div class="pdf-header">
+            <h1 id="pdfTituloEleicao"></h1>
+            <p id="pdfDataHora"></p>
+        </div>
         <div id="containerResultados"></div>
     </div>
-    <button onclick="gerarPDF()">Baixar PDF 📄</button>
-    <button onclick="location.reload()">Nova Eleição</button>
+    <button onclick="gerarPDF()" style="background:var(--success)" data-i18n="btnDownload">Baixar PDF 📄</button>
+    
+    <div style="margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px;">
+        <h3 data-i18n="tFeedback">Sugestões</h3>
+        <textarea id="textoFeedback" placeholder="Sua sugestão..."></textarea>
+        <button onclick="enviarSugestao()" data-i18n="btnSendFeedback">Enviar Sugestão</button>
+    </div>
+    <button onclick="location.reload()" data-i18n="btnFinish">Finalizar</button>
 </div>
 
 <script src="script.js"></script>
