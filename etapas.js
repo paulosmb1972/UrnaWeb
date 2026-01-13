@@ -1,4 +1,4 @@
-// 1. Definimos os candidatos
+// Definindo os dados da UrnaWeb
 let etapas = [
     {
         titulo: 'VEREADOR',
@@ -14,15 +14,13 @@ let etapas = [
     }
 ];
 
-// 2. Comando para trocar o nome "votafacil-pro" por "UrnaWeb" na tela
+// Comandos para trocar o nome e iniciar o sistema
 window.onload = function() {
-    // Tenta trocar qualquer texto que fale do outro sistema
-    document.body.innerHTML = document.body.innerHTML.replace(/votafacil-pro/g, 'UrnaWeb');
+    // Muda o título na aba do navegador
+    document.title = "UrnaWeb";
     
-    // 3. COMANDO DE INICIALIZAÇÃO (O que faz o sistema sair do 'parado')
+    // Tenta forçar o início do sistema se a função existir
     if (typeof comecarEtapa === 'function') {
         comecarEtapa();
-    } else if (typeof init === 'function') {
-        init();
     }
 };
