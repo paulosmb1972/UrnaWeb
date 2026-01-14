@@ -1,4 +1,4 @@
-// CONFIGURAÇÕES DE API
+// CONFIGURAÇÕES DE API E CHAVES DO USUÁRIO
 const CONFIG = {
     EMAIL_JS_PUBLIC_KEY: "_PKL4Oj92o48KurSF",
     EMAIL_JS_SERVICE: "service_oqfbzrm",
@@ -7,6 +7,7 @@ const CONFIG = {
     CUPOM_MESTRE: "MAIS3GRATIS"
 };
 
+// Inicialização EmailJS
 emailjs.init(CONFIG.EMAIL_JS_PUBLIC_KEY);
 
 let lang = 'pt';
@@ -24,7 +25,7 @@ const i18n = {
     es: { tLogin: "Acceso al Sistema", pEmail: "Su Gmail...", btnVerifyEmail: "Entrar", tLimit: "Créditos Agotados", pCoupon: "Código", btnCoupon: "Validar", btnBack: "Volver", tGeneral: "Configuración", pElectionName: "Nombre de Elección", btnNextStep: "Siguiente", tCargo: "Cargo", pCargoName: "Ej: Síndico", btnAddCand: "Candidatos", pCandName: "Nombre Completo", btnToList: "Agregar", btnSaveCargo: "Guardar Cargo", btnStartVote: "VOTAR 🗳️", btnConfirmVote: "CONFIRMAR VOTO", btnEndElection: "FINALIZAR", tResults: "Resultado", btnDownload: "Descargar PDF 📄", tFeedback: "Sugerencias", btnSendFeedback: "Enviar", btnFinish: "Salir" }
 };
 
-// Funções de Interface
+// --- FUNÇÕES DE NAVEGAÇÃO E IDIOMA ---
 function setLang(l) {
     lang = l;
     document.querySelectorAll("[data-i18n]").forEach(el => {
@@ -39,8 +40,10 @@ function setLang(l) {
 function irPara(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
 }
 
+// --- LÓGICA DE LOGIN, CÓDIGO E SALDO ---
 async function checkEmailBalance() {
     const btn = document.querySelector('button[data-i18n="btnVerifyEmail"]');
     userEmail = document.getElementById("userEmail").value.trim().toLowerCase();
@@ -51,83 +54,59 @@ async function checkEmailBalance() {
     btn.disabled = true;
 
     try {
-        // 1. Chamada ao Worker
+        // 1. Consulta o Worker (GET)
         const res = await fetch(`${CONFIG.BACKEND_URL}?email=${userEmail}`);
-        if (!res.ok) throw new Error("Erro na resposta do servidor");
-        
+        if (!res.ok) throw new Error("Erro ao conectar com o servidor.");
         const data = await res.json();
-        console.log("Dados recebidos do Worker:", data); // Para você ver no F12 do navegador
 
-        // 2. Se não tiver saldo, para aqui
+        // 2. Verifica se atingiu o limite de 3
         if (data.saldo <= 0) {
+            alert("Limite de 3 eleições gratuitas atingido.");
             irPara('paymentScreen');
             return;
         }
 
-        // 3. Tenta enviar o e-mail (O sistema SÓ avança se o e-mail for enviado)
-        console.log("Tentando enviar e-mail para:", userEmail);
-        const emailRes = await emailjs.send(CONFIG.EMAIL_JS_SERVICE, CONFIG.EMAIL_JS_TEMPLATE, {
+        // 3. Envia e-mail de verificação (O sistema SÓ avança se o envio for 200 OK)
+        const emailStatus = await emailjs.send(CONFIG.EMAIL_JS_SERVICE, CONFIG.EMAIL_JS_TEMPLATE, {
             to_email: userEmail,
-            validation_code: data.codigo 
+            validation_code: data.codigo
         });
 
-        if(emailRes.status !== 200) throw new Error("EmailJS falhou");
+        if (emailStatus.status !== 200) throw new Error("Erro ao disparar e-mail.");
 
-        // 4. Pergunta o código
-        const inputCodigo = prompt("CÓDIGO ENVIADO! Verifique sua caixa de entrada ou spam e digite o código de 6 dígitos:");
+        // 4. Validação do Código
+        const inputCodigo = prompt("Digite o código de 6 dígitos enviado ao seu e-mail:");
         
         if (inputCodigo === data.codigo) {
-            alert("Acesso Autorizado!");
+            alert("Acesso autorizado! Eleições realizadas: " + data.usado);
             irPara('setupGeral');
         } else {
             alert("Código incorreto. Acesso negado.");
         }
 
     } catch (e) {
-        console.error("ERRO CRÍTICO:", e);
-        alert("Falha técnica: Verifique se o Worker está configurado e se o EmailJS tem saldo.");
+        console.error(e);
+        alert("Falha: " + e.message);
     } finally {
         btn.innerText = "Entrar";
         btn.disabled = false;
     }
 }
-// LÓGICA DE INCREMENTO DE USO (A 4ª Eleição trava aqui)
-async function registrarFimDeEleicao() {
+
+// --- ATUALIZAÇÃO DO SALDO (POST) ---
+async function registrarUsoNoBanco() {
     try {
         await fetch(`${CONFIG.BACKEND_URL}?email=${userEmail}`, { method: 'POST' });
-    } catch (e) { console.error("Erro ao computar uso."); }
+        console.log("Uso contabilizado no banco.");
+    } catch (e) {
+        console.error("Erro ao atualizar saldo.");
+    }
 }
 
-function exibirResultados() {
-    registrarFimDeEleicao(); // Avisa o banco que essa eleição foi concluída
-    
-    const agora = new Date();
-    document.getElementById("pdfTituloEleicao").innerText = tituloEleicaoGlobal;
-    document.getElementById("pdfDataHora").innerText = agora.toLocaleString();
-    const container = document.getElementById("containerResultados");
-    container.innerHTML = "";
-
-    eleicaoData.forEach(cargo => {
-        let html = `<h3 style="border-bottom: 2px solid #1abc9c; margin-top:20px;">${cargo.nome}</h3>`;
-        cargo.candidatos.sort((a,b) => b.votos - a.votos).forEach((c, i) => {
-            html += `<p><strong>${i+1}º ${c.nome}</strong>: ${c.votos} votos</p>`;
-        });
-        container.innerHTML += html;
-    });
-    irPara('resultadosScreen');
-}
-
-// --- Restante das funções de configuração (Candidatos, Urna, PDF) ---
-function aplicarCupom() {
-    if (document.getElementById("inputCupom").value.trim().toUpperCase() === CONFIG.CUPOM_MESTRE) {
-        alert("Cupom validado!");
-        irPara('setupGeral');
-    } else alert("Inválido.");
-}
-
+// --- CONFIGURAÇÃO DA ELEIÇÃO ---
 function irParaCargo() {
     tituloEleicaoGlobal = document.getElementById("tituloEleicaoInput").value;
-    if(!tituloEleicaoGlobal) return alert("Dê um nome");
+    if(!tituloEleicaoGlobal) return alert("Dê um nome à eleição");
     irPara('setupCargo');
 }
 
@@ -161,6 +140,7 @@ function finalizarCargo() {
     irPara('setupCargo');
 }
 
+// --- URNA E VOTAÇÃO ---
 function iniciarUrna() {
     if(cargoTemp && !eleicaoData.includes(cargoTemp)) eleicaoData.push(cargoTemp);
     if(eleicaoData.length === 0) return;
@@ -197,18 +177,64 @@ function confirmarVotoVisual() {
     if(votosSelecionados.length === 0) return alert("Selecione um candidato");
     votosSelecionados.forEach(idx => eleicaoData[indiceCargoAtual].candidatos[idx].votos++);
     indiceCargoAtual++;
-    if(indiceCargoAtual < eleicaoData.length) carregarCargoNaUrna();
-    else { alert("Voto Confirmado!"); indiceCargoAtual = 0; carregarCargoNaUrna(); }
+    
+    if(indiceCargoAtual < eleicaoData.length) {
+        carregarCargoNaUrna();
+    } else {
+        alert("Voto Confirmado!");
+        indiceCargoAtual = 0;
+        carregarCargoNaUrna();
+    }
+}
+
+// --- RESULTADOS E PDF ---
+async function exibirResultados() {
+    // AQUI É O MOMENTO QUE DESCONTA O SALDO
+    await registrarUsoNoBanco();
+
+    const agora = new Date();
+    document.getElementById("pdfTituloEleicao").innerText = tituloEleicaoGlobal;
+    document.getElementById("pdfDataHora").innerText = agora.toLocaleString();
+    const container = document.getElementById("containerResultados");
+    container.innerHTML = "";
+
+    eleicaoData.forEach(cargo => {
+        let html = `<h3 style="border-bottom: 2px solid #1abc9c; margin-top:20px;">${cargo.nome}</h3>`;
+        cargo.candidatos.sort((a,b) => b.votos - a.votos).forEach((c, i) => {
+            html += `<p><strong>${i+1}º ${c.nome}</strong>: ${c.votos} votos</p>`;
+        });
+        container.innerHTML += html;
+    });
+    irPara('resultadosScreen');
 }
 
 function gerarPDF() {
     const element = document.getElementById('areaImpressao');
-    html2pdf().set({ margin: 15, filename: 'Relatorio.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(element).save();
+    const opt = {
+        margin: 15,
+        filename: `Resultado_${tituloEleicaoGlobal}.pdf`,
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(element).save();
 }
 
 function enviarSugestao() {
     const texto = document.getElementById("textoFeedback").value;
     if(!texto) return;
-    emailjs.send(CONFIG.EMAIL_JS_SERVICE, CONFIG.EMAIL_JS_TEMPLATE, { to_email: "paulosmb1972@gmail.com", validation_code: "SUGESTÃO: " + texto })
-    .then(() => { alert("Sugestão enviada!"); document.getElementById("textoFeedback").value = ""; });
+    emailjs.send(CONFIG.EMAIL_JS_SERVICE, CONFIG.EMAIL_JS_TEMPLATE, {
+        to_email: "paulosmb1972@gmail.com",
+        validation_code: "SUGESTÃO URNA: " + texto
+    }).then(() => {
+        alert("Sugestão enviada!");
+        document.getElementById("textoFeedback").value = "";
+    });
+}
+
+function aplicarCupom() {
+    const cupom = document.getElementById("inputCupom").value.trim().toUpperCase();
+    if (cupom === CONFIG.CUPOM_MESTRE) {
+        alert("Cupom validado!");
+        irPara('setupGeral');
+    } else alert("Cupom inválido.");
 }
