@@ -43,48 +43,48 @@ function irPara(id) {
     window.scrollTo(0,0);
 }
 
-// Ajuste na chamada da URL dentro da função
 async function checkEmailBalance() {
     const btn = document.querySelector('button[data-i18n="btnVerifyEmail"]');
     userEmail = document.getElementById("userEmail").value.trim().toLowerCase();
     
-    if(!userEmail.includes("@") || userEmail.length < 5) {
-        alert(lang === 'pt' ? "Por favor, insira um e-mail válido." : "Please enter a valid email.");
-        return;
-    }
+    if(!userEmail.includes("@")) return alert("E-mail inválido");
 
-    const originalText = btn.innerText;
     btn.innerText = "...";
     btn.disabled = true;
 
     try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-        // CORREÇÃO AQUI: De CONFIG.BACK para CONFIG.BACKEND_URL
-        const res = await fetch(`${CONFIG.BACKEND_URL}?email=${userEmail}`, {
-            signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
+        // 1. Consulta o Worker para ver o saldo e pegar um código novo
+        const res = await fetch(`${CONFIG.BACKEND_URL}?email=${userEmail}`);
         const data = await res.json();
 
-        if(data && data.saldo > 0) {
-            irPara('setupGeral');
+        if(data.saldo > 0) {
+            // 2. Envia o e-mail de verificação usando seu EmailJS
+            await emailjs.send(CONFIG.EMAIL_JS_SERVICE, CONFIG.EMAIL_JS_TEMPLATE, {
+                to_email: userEmail,
+                validation_code: data.codigo // O código gerado pelo Worker
+            });
+
+            // 3. Pede o código ao usuário
+            const inputCodigo = prompt("Digite o código de verificação enviado para o seu e-mail:");
+            
+            if(inputCodigo === data.codigo) {
+                alert("Acesso liberado!");
+                irPara('setupGeral');
+            } else {
+                alert("Código incorreto.");
+            }
         } else {
+            // Se já usou 3 vezes, vai para cobrança
             irPara('paymentScreen');
         }
-    } catch(e) { 
-        console.error("Erro na validação:", e);
-        // Fallback para não travar o usuário enquanto o Worker propaga
-        alert("Modo de segurança ativado.");
-        irPara('setupGeral'); 
+    } catch(e) {
+        console.error(e);
+        alert("Erro ao validar. Tente novamente.");
     } finally {
-        btn.innerText = originalText;
+        btn.innerText = "Entrar";
         btn.disabled = false;
     }
 }
-
 function aplicarCupom() {
     const cupom = document.getElementById("inputCupom").value.trim().toUpperCase();
     if (cupom === CONFIG.CUPOM_MESTRE) {
