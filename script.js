@@ -41,46 +41,56 @@ function irPara(id) {
     document.getElementById(id).classList.add('active');
 }
 
-// LÓGICA DE LOGIN E SALDO
 async function checkEmailBalance() {
     const btn = document.querySelector('button[data-i18n="btnVerifyEmail"]');
     userEmail = document.getElementById("userEmail").value.trim().toLowerCase();
     
     if(!userEmail.includes("@")) return alert("E-mail inválido");
 
-    btn.innerText = "...";
+    btn.innerText = "Verificando...";
     btn.disabled = true;
 
     try {
+        // 1. Chamada ao Worker
         const res = await fetch(`${CONFIG.BACKEND_URL}?email=${userEmail}`);
+        if (!res.ok) throw new Error("Erro na resposta do servidor");
+        
         const data = await res.json();
+        console.log("Dados recebidos do Worker:", data); // Para você ver no F12 do navegador
 
-        if (data.saldo > 0) {
-            // Envia e-mail com código de verificação via EmailJS
-            await emailjs.send(CONFIG.EMAIL_JS_SERVICE, CONFIG.EMAIL_JS_TEMPLATE, {
-                to_email: userEmail,
-                validation_code: data.codigo
-            });
-
-            const inputCodigo = prompt(lang === 'pt' ? "Digite o código de verificação enviado ao seu e-mail:" : "Enter the verification code sent to your email:");
-            
-            if (inputCodigo === data.codigo) {
-                irPara('setupGeral');
-            } else {
-                alert("Código inválido.");
-            }
-        } else {
+        // 2. Se não tiver saldo, para aqui
+        if (data.saldo <= 0) {
             irPara('paymentScreen');
+            return;
         }
+
+        // 3. Tenta enviar o e-mail (O sistema SÓ avança se o e-mail for enviado)
+        console.log("Tentando enviar e-mail para:", userEmail);
+        const emailRes = await emailjs.send(CONFIG.EMAIL_JS_SERVICE, CONFIG.EMAIL_JS_TEMPLATE, {
+            to_email: userEmail,
+            validation_code: data.codigo 
+        });
+
+        if(emailRes.status !== 200) throw new Error("EmailJS falhou");
+
+        // 4. Pergunta o código
+        const inputCodigo = prompt("CÓDIGO ENVIADO! Verifique sua caixa de entrada ou spam e digite o código de 6 dígitos:");
+        
+        if (inputCodigo === data.codigo) {
+            alert("Acesso Autorizado!");
+            irPara('setupGeral');
+        } else {
+            alert("Código incorreto. Acesso negado.");
+        }
+
     } catch (e) {
-        console.error(e);
-        alert("Erro de conexão. Tente novamente.");
+        console.error("ERRO CRÍTICO:", e);
+        alert("Falha técnica: Verifique se o Worker está configurado e se o EmailJS tem saldo.");
     } finally {
         btn.innerText = "Entrar";
         btn.disabled = false;
     }
 }
-
 // LÓGICA DE INCREMENTO DE USO (A 4ª Eleição trava aqui)
 async function registrarFimDeEleicao() {
     try {
