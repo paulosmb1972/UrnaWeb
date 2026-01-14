@@ -3,7 +3,8 @@ const CONFIG = {
     EMAIL_JS_PUBLIC_KEY: "_PKL4Oj92o48KurSF",
     EMAIL_JS_SERVICE: "service_oqfbzrm",
     EMAIL_JS_TEMPLATE: "template_t3aio8f",
-    BACKEND_URL: "https://urnaweb-backend.paulosmb1972.workers.dev/",
+    // Backend sem barra final para evitar erro de concatenação
+    BACKEND_URL: "https://urnaweb-backend.paulosmb1972.workers.dev", 
     CUPOM_MESTRE: "MAIS3GRATIS"
 };
 
@@ -25,7 +26,7 @@ const i18n = {
     es: { tLogin: "Acceso al Sistema", pEmail: "Su Gmail...", btnVerifyEmail: "Entrar", tLimit: "Créditos Agotados", pCoupon: "Código", btnCoupon: "Validar", btnBack: "Volver", tGeneral: "Configuración", pElectionName: "Nombre de Elección", btnNextStep: "Siguiente", tCargo: "Cargo", pCargoName: "Ej: Síndico", btnAddCand: "Candidatos", pCandName: "Nombre Completo", btnToList: "Agregar", btnSaveCargo: "Guardar Cargo", btnStartVote: "VOTAR 🗳️", btnConfirmVote: "CONFIRMAR VOTO", btnEndElection: "FINALIZAR", tResults: "Resultado", btnDownload: "Descargar PDF 📄", tFeedback: "Sugerencias", btnSendFeedback: "Enviar", btnFinish: "Salir" }
 };
 
-// --- FUNÇÕES DE NAVEGAÇÃO E IDIOMA ---
+// --- NAVEGAÇÃO E IDIOMA ---
 function setLang(l) {
     lang = l;
     document.querySelectorAll("[data-i18n]").forEach(el => {
@@ -43,63 +44,71 @@ function irPara(id) {
     window.scrollTo(0,0);
 }
 
-// --- LÓGICA DE LOGIN, CÓDIGO E SALDO ---
+// --- LOGIN, SALDO E ENVIO DE CÓDIGO ---
 async function checkEmailBalance() {
     const btn = document.querySelector('button[data-i18n="btnVerifyEmail"]');
     userEmail = document.getElementById("userEmail").value.trim().toLowerCase();
     
-    if(!userEmail.includes("@")) return alert("E-mail inválido");
+    if(!userEmail.includes("@")) return alert("Por favor, insira um e-mail válido.");
 
-    btn.innerText = "Verificando...";
+    btn.innerText = "Aguarde...";
     btn.disabled = true;
 
     try {
-        // 1. Consulta o Worker (GET)
-        const res = await fetch(`${CONFIG.BACKEND_URL}?email=${userEmail}`);
-        if (!res.ok) throw new Error("Erro ao conectar com o servidor.");
-        const data = await res.json();
+        // Chamada ao Worker com tratamento de CORS e URL limpa
+        const response = await fetch(`${CONFIG.BACKEND_URL}/?email=${encodeURIComponent(userEmail)}`, {
+            method: 'GET',
+            mode: 'cors'
+        });
 
-        // 2. Verifica se atingiu o limite de 3
+        if (!response.ok) throw new Error("Erro na comunicação com o servidor.");
+        
+        const data = await response.json();
+
+        // 1. Verifica se tem saldo (usos < 3 ou pago)
         if (data.saldo <= 0) {
-            alert("Limite de 3 eleições gratuitas atingido.");
+            alert("Limite de 3 eleições grátis atingido para este e-mail.");
             irPara('paymentScreen');
             return;
         }
 
-        // 3. Envia e-mail de verificação (O sistema SÓ avança se o envio for 200 OK)
+        // 2. Envia o e-mail via EmailJS
         const emailStatus = await emailjs.send(CONFIG.EMAIL_JS_SERVICE, CONFIG.EMAIL_JS_TEMPLATE, {
             to_email: userEmail,
             validation_code: data.codigo
         });
 
-        if (emailStatus.status !== 200) throw new Error("Erro ao disparar e-mail.");
+        if (emailStatus.status !== 200) throw new Error("Falha ao enviar e-mail de verificação.");
 
-        // 4. Validação do Código
-        const inputCodigo = prompt("Digite o código de 6 dígitos enviado ao seu e-mail:");
+        // 3. Validação do código por Prompt
+        const inputCodigo = prompt("CÓDIGO ENVIADO! Verifique seu e-mail e digite o código de 6 dígitos:");
         
-        if (inputCodigo === data.codigo) {
-            alert("Acesso autorizado! Eleições realizadas: " + data.usado);
+        if (inputCodigo && inputCodigo.trim() === data.codigo.toString()) {
+            alert("Acesso autorizado!");
             irPara('setupGeral');
         } else {
-            alert("Código incorreto. Acesso negado.");
+            alert("Código incorreto ou cancelado.");
         }
 
-    } catch (e) {
-        console.error(e);
-        alert("Falha: " + e.message);
+    } catch (error) {
+        console.error("Erro Crítico:", error);
+        alert("Erro: " + error.message);
     } finally {
         btn.innerText = "Entrar";
         btn.disabled = false;
     }
 }
 
-// --- ATUALIZAÇÃO DO SALDO (POST) ---
+// --- ATUALIZAÇÃO DO BANCO (CHAMADA POST) ---
 async function registrarUsoNoBanco() {
     try {
-        await fetch(`${CONFIG.BACKEND_URL}?email=${userEmail}`, { method: 'POST' });
-        console.log("Uso contabilizado no banco.");
+        await fetch(`${CONFIG.BACKEND_URL}/?email=${encodeURIComponent(userEmail)}`, { 
+            method: 'POST',
+            mode: 'cors'
+        });
+        console.log("Uso registrado com sucesso.");
     } catch (e) {
-        console.error("Erro ao atualizar saldo.");
+        console.error("Não foi possível atualizar o saldo no banco.");
     }
 }
 
@@ -113,27 +122,34 @@ function irParaCargo() {
 function proximoPassoCandidatos() {
     const nome = document.getElementById("nomeCargo").value;
     if(!nome) return alert("Defina o cargo");
-    cargoTemp = { nome, limite: parseInt(document.getElementById("qtdVotos").value), candidatos: [] };
+    cargoTemp = { 
+        nome, 
+        limite: parseInt(document.getElementById("qtdVotos").value) || 1, 
+        candidatos: [] 
+    };
     document.getElementById("tituloCargoAtual").innerText = nome;
     irPara('setupCandidatos');
 }
 
+// TRATAMENTO DE IMAGEM
 document.getElementById('fotoCand')?.addEventListener('change', (e) => {
     const reader = new FileReader();
     reader.onload = (ev) => fotoBase64 = ev.target.result;
-    reader.readAsDataURL(e.target.files[0]);
+    if(e.target.files[0]) reader.readAsDataURL(e.target.files[0]);
 });
 
 function addCandidato() {
     const nome = document.getElementById("nomeCand").value;
-    if(!nome) return;
+    if(!nome) return alert("Digite o nome do candidato");
     cargoTemp.candidatos.push({ nome, foto: fotoBase64, votos: 0 });
     document.getElementById("listaTemp").innerHTML += `<div>• ${nome}</div>`;
     document.getElementById("nomeCand").value = "";
+    document.getElementById("fotoCand").value = "";
     fotoBase64 = "";
 }
 
 function finalizarCargo() {
+    if(cargoTemp.candidatos.length === 0) return alert("Adicione ao menos um candidato");
     eleicaoData.push(cargoTemp);
     document.getElementById("nomeCargo").value = "";
     document.getElementById("listaTemp").innerHTML = "";
@@ -143,7 +159,7 @@ function finalizarCargo() {
 // --- URNA E VOTAÇÃO ---
 function iniciarUrna() {
     if(cargoTemp && !eleicaoData.includes(cargoTemp)) eleicaoData.push(cargoTemp);
-    if(eleicaoData.length === 0) return;
+    if(eleicaoData.length === 0) return alert("Configure ao menos um cargo");
     indiceCargoAtual = 0;
     carregarCargoNaUrna();
     irPara('urnaVisual');
@@ -156,85 +172,4 @@ function carregarCargoNaUrna() {
     grid.innerHTML = "";
     votosSelecionados = [];
 
-    cargo.candidatos.forEach((cand, i) => {
-        const card = document.createElement("div");
-        card.className = "card-candidato";
-        card.innerHTML = `<img src="${cand.foto || ''}" class="foto-cand"><br><strong>${cand.nome}</strong>`;
-        card.onclick = () => {
-            if(votosSelecionados.includes(i)) {
-                votosSelecionados = votosSelecionados.filter(v => v !== i);
-                card.classList.remove("selected");
-            } else if(votosSelecionados.length < cargo.limite) {
-                votosSelecionados.push(i);
-                card.classList.add("selected");
-            }
-        };
-        grid.appendChild(card);
-    });
-}
-
-function confirmarVotoVisual() {
-    if(votosSelecionados.length === 0) return alert("Selecione um candidato");
-    votosSelecionados.forEach(idx => eleicaoData[indiceCargoAtual].candidatos[idx].votos++);
-    indiceCargoAtual++;
-    
-    if(indiceCargoAtual < eleicaoData.length) {
-        carregarCargoNaUrna();
-    } else {
-        alert("Voto Confirmado!");
-        indiceCargoAtual = 0;
-        carregarCargoNaUrna();
-    }
-}
-
-// --- RESULTADOS E PDF ---
-async function exibirResultados() {
-    // AQUI É O MOMENTO QUE DESCONTA O SALDO
-    await registrarUsoNoBanco();
-
-    const agora = new Date();
-    document.getElementById("pdfTituloEleicao").innerText = tituloEleicaoGlobal;
-    document.getElementById("pdfDataHora").innerText = agora.toLocaleString();
-    const container = document.getElementById("containerResultados");
-    container.innerHTML = "";
-
-    eleicaoData.forEach(cargo => {
-        let html = `<h3 style="border-bottom: 2px solid #1abc9c; margin-top:20px;">${cargo.nome}</h3>`;
-        cargo.candidatos.sort((a,b) => b.votos - a.votos).forEach((c, i) => {
-            html += `<p><strong>${i+1}º ${c.nome}</strong>: ${c.votos} votos</p>`;
-        });
-        container.innerHTML += html;
-    });
-    irPara('resultadosScreen');
-}
-
-function gerarPDF() {
-    const element = document.getElementById('areaImpressao');
-    const opt = {
-        margin: 15,
-        filename: `Resultado_${tituloEleicaoGlobal}.pdf`,
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-    html2pdf().set(opt).from(element).save();
-}
-
-function enviarSugestao() {
-    const texto = document.getElementById("textoFeedback").value;
-    if(!texto) return;
-    emailjs.send(CONFIG.EMAIL_JS_SERVICE, CONFIG.EMAIL_JS_TEMPLATE, {
-        to_email: "paulosmb1972@gmail.com",
-        validation_code: "SUGESTÃO URNA: " + texto
-    }).then(() => {
-        alert("Sugestão enviada!");
-        document.getElementById("textoFeedback").value = "";
-    });
-}
-
-function aplicarCupom() {
-    const cupom = document.getElementById("inputCupom").value.trim().toUpperCase();
-    if (cupom === CONFIG.CUPOM_MESTRE) {
-        alert("Cupom validado!");
-        irPara('setupGeral');
-    } else alert("Cupom inválido.");
-}
+    cargo
