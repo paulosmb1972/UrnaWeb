@@ -1,14 +1,12 @@
-// CONFIGURAÇÕES DE API E CHAVES DO USUÁRIO
+// CONFIGURAÇÕES DE API
 const CONFIG = {
     EMAIL_JS_PUBLIC_KEY: "_PKL4Oj92o48KurSF",
     EMAIL_JS_SERVICE: "service_oqfbzrm",
     EMAIL_JS_TEMPLATE: "template_t3aio8f",
     BACKEND_URL: "https://urnaweb-backend.paulosmb1972.workers.dev/",
-    CUPOM_MESTRE: "MAIS3GRATIS",
-    PIX_ID: "c1141701-199d-4487-b0ec-e95a7a3f3915"
+    CUPOM_MESTRE: "MAIS3GRATIS"
 };
 
-// Inicialização EmailJS
 emailjs.init(CONFIG.EMAIL_JS_PUBLIC_KEY);
 
 let lang = 'pt';
@@ -26,6 +24,7 @@ const i18n = {
     es: { tLogin: "Acceso al Sistema", pEmail: "Su Gmail...", btnVerifyEmail: "Entrar", tLimit: "Créditos Agotados", pCoupon: "Código", btnCoupon: "Validar", btnBack: "Volver", tGeneral: "Configuración", pElectionName: "Nombre de Elección", btnNextStep: "Siguiente", tCargo: "Cargo", pCargoName: "Ej: Síndico", btnAddCand: "Candidatos", pCandName: "Nombre Completo", btnToList: "Agregar", btnSaveCargo: "Guardar Cargo", btnStartVote: "VOTAR 🗳️", btnConfirmVote: "CONFIRMAR VOTO", btnEndElection: "FINALIZAR", tResults: "Resultado", btnDownload: "Descargar PDF 📄", tFeedback: "Sugerencias", btnSendFeedback: "Enviar", btnFinish: "Salir" }
 };
 
+// Funções de Interface
 function setLang(l) {
     lang = l;
     document.querySelectorAll("[data-i18n]").forEach(el => {
@@ -40,9 +39,9 @@ function setLang(l) {
 function irPara(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
-    window.scrollTo(0,0);
 }
 
+// LÓGICA DE LOGIN E SALDO
 async function checkEmailBalance() {
     const btn = document.querySelector('button[data-i18n="btnVerifyEmail"]');
     userEmail = document.getElementById("userEmail").value.trim().toLowerCase();
@@ -53,52 +52,72 @@ async function checkEmailBalance() {
     btn.disabled = true;
 
     try {
-        // 1. Consulta o Worker para ver o saldo e pegar um código novo
         const res = await fetch(`${CONFIG.BACKEND_URL}?email=${userEmail}`);
         const data = await res.json();
 
-        if(data.saldo > 0) {
-            // 2. Envia o e-mail de verificação usando seu EmailJS
+        if (data.saldo > 0) {
+            // Envia e-mail com código de verificação via EmailJS
             await emailjs.send(CONFIG.EMAIL_JS_SERVICE, CONFIG.EMAIL_JS_TEMPLATE, {
                 to_email: userEmail,
-                validation_code: data.codigo // O código gerado pelo Worker
+                validation_code: data.codigo
             });
 
-            // 3. Pede o código ao usuário
-            const inputCodigo = prompt("Digite o código de verificação enviado para o seu e-mail:");
+            const inputCodigo = prompt(lang === 'pt' ? "Digite o código de verificação enviado ao seu e-mail:" : "Enter the verification code sent to your email:");
             
-            if(inputCodigo === data.codigo) {
-                alert("Acesso liberado!");
+            if (inputCodigo === data.codigo) {
                 irPara('setupGeral');
             } else {
-                alert("Código incorreto.");
+                alert("Código inválido.");
             }
         } else {
-            // Se já usou 3 vezes, vai para cobrança
             irPara('paymentScreen');
         }
-    } catch(e) {
+    } catch (e) {
         console.error(e);
-        alert("Erro ao validar. Tente novamente.");
+        alert("Erro de conexão. Tente novamente.");
     } finally {
         btn.innerText = "Entrar";
         btn.disabled = false;
     }
 }
-function aplicarCupom() {
-    const cupom = document.getElementById("inputCupom").value.trim().toUpperCase();
-    if (cupom === CONFIG.CUPOM_MESTRE) {
-        alert("Cupom validado com sucesso!");
-        irPara('setupGeral');
-    } else {
-        alert("Cupom inválido.");
-    }
+
+// LÓGICA DE INCREMENTO DE USO (A 4ª Eleição trava aqui)
+async function registrarFimDeEleicao() {
+    try {
+        await fetch(`${CONFIG.BACKEND_URL}?email=${userEmail}`, { method: 'POST' });
+    } catch (e) { console.error("Erro ao computar uso."); }
 }
 
-// Configuração da Eleição
+function exibirResultados() {
+    registrarFimDeEleicao(); // Avisa o banco que essa eleição foi concluída
+    
+    const agora = new Date();
+    document.getElementById("pdfTituloEleicao").innerText = tituloEleicaoGlobal;
+    document.getElementById("pdfDataHora").innerText = agora.toLocaleString();
+    const container = document.getElementById("containerResultados");
+    container.innerHTML = "";
+
+    eleicaoData.forEach(cargo => {
+        let html = `<h3 style="border-bottom: 2px solid #1abc9c; margin-top:20px;">${cargo.nome}</h3>`;
+        cargo.candidatos.sort((a,b) => b.votos - a.votos).forEach((c, i) => {
+            html += `<p><strong>${i+1}º ${c.nome}</strong>: ${c.votos} votos</p>`;
+        });
+        container.innerHTML += html;
+    });
+    irPara('resultadosScreen');
+}
+
+// --- Restante das funções de configuração (Candidatos, Urna, PDF) ---
+function aplicarCupom() {
+    if (document.getElementById("inputCupom").value.trim().toUpperCase() === CONFIG.CUPOM_MESTRE) {
+        alert("Cupom validado!");
+        irPara('setupGeral');
+    } else alert("Inválido.");
+}
+
 function irParaCargo() {
     tituloEleicaoGlobal = document.getElementById("tituloEleicaoInput").value;
-    if(!tituloEleicaoGlobal) return alert("Dê um nome à eleição");
+    if(!tituloEleicaoGlobal) return alert("Dê um nome");
     irPara('setupCargo');
 }
 
@@ -110,7 +129,6 @@ function proximoPassoCandidatos() {
     irPara('setupCandidatos');
 }
 
-// Tratamento de Imagem
 document.getElementById('fotoCand')?.addEventListener('change', (e) => {
     const reader = new FileReader();
     reader.onload = (ev) => fotoBase64 = ev.target.result;
@@ -169,55 +187,18 @@ function confirmarVotoVisual() {
     if(votosSelecionados.length === 0) return alert("Selecione um candidato");
     votosSelecionados.forEach(idx => eleicaoData[indiceCargoAtual].candidatos[idx].votos++);
     indiceCargoAtual++;
-    
-    if(indiceCargoAtual < eleicaoData.length) {
-        carregarCargoNaUrna();
-    } else {
-        alert("Voto Confirmado!");
-        indiceCargoAtual = 0;
-        carregarCargoNaUrna();
-    }
-}
-
-// Resultados e PDF
-function exibirResultados() {
-    const agora = new Date();
-    document.getElementById("pdfTituloEleicao").innerText = tituloEleicaoGlobal;
-    document.getElementById("pdfDataHora").innerText = agora.toLocaleString();
-    const container = document.getElementById("containerResultados");
-    container.innerHTML = "";
-
-    eleicaoData.forEach(cargo => {
-        let html = `<h3 style="border-bottom: 2px solid #1abc9c; margin-top:20px;">${cargo.nome}</h3>`;
-        cargo.candidatos.sort((a,b) => b.votos - a.votos).forEach((c, i) => {
-            html += `<p><strong>${i+1}º ${c.nome}</strong>: ${c.votos} votos</p>`;
-        });
-        container.innerHTML += html;
-    });
-    irPara('resultadosScreen');
+    if(indiceCargoAtual < eleicaoData.length) carregarCargoNaUrna();
+    else { alert("Voto Confirmado!"); indiceCargoAtual = 0; carregarCargoNaUrna(); }
 }
 
 function gerarPDF() {
     const element = document.getElementById('areaImpressao');
-    const opt = {
-        margin: 15,
-        filename: `Relatorio_${tituloEleicaoGlobal}.pdf`,
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-    html2pdf().set(opt).from(element).save();
+    html2pdf().set({ margin: 15, filename: 'Relatorio.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(element).save();
 }
 
-// Feedback via EmailJS
 function enviarSugestao() {
     const texto = document.getElementById("textoFeedback").value;
     if(!texto) return;
-
-    emailjs.send(CONFIG.EMAIL_JS_SERVICE, CONFIG.EMAIL_JS_TEMPLATE, {
-        to_email: "paulosmb1972@gmail.com",
-        validation_code: "SUGESTÃO URNAWEB: " + texto
-    }).then(() => {
-        alert("Sugestão enviada! Obrigado.");
-        document.getElementById("textoFeedback").value = "";
-    });
+    emailjs.send(CONFIG.EMAIL_JS_SERVICE, CONFIG.EMAIL_JS_TEMPLATE, { to_email: "paulosmb1972@gmail.com", validation_code: "SUGESTÃO: " + texto })
+    .then(() => { alert("Sugestão enviada!"); document.getElementById("textoFeedback").value = ""; });
 }
