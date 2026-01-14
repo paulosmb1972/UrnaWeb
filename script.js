@@ -45,22 +45,46 @@ function irPara(id) {
 
 // Lógica de Saldo e Créditos (Cloudflare Backend)
 async function checkEmailBalance() {
+    const btn = document.querySelector('button[data-i18n="btnVerifyEmail"]');
     userEmail = document.getElementById("userEmail").value.trim().toLowerCase();
-    if(!userEmail.includes("@")) return alert("E-mail inválido");
+    
+    // Validação básica de e-mail
+    if(!userEmail.includes("@") || userEmail.length < 5) {
+        alert(lang === 'pt' ? "Por favor, insira um e-mail válido." : "Please enter a valid email.");
+        return;
+    }
+
+    // Feedback visual de carregamento
+    const originalText = btn.innerText;
+    btn.innerText = "...";
+    btn.disabled = true;
 
     try {
-        const response = await fetch(`${CONFIG.BACKEND_URL}?email=${userEmail}`);
-        const data = await response.json();
+        // Adicionamos um Timeout para a requisição não ficar "eterna"
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos de limite
+
+        const res = await fetch(`${CONFIG.BACKEND}?email=${userEmail}`, {
+            signal: controller.signal
+        });
         
-        if (data.saldo > 0) {
+        clearTimeout(timeoutId);
+        const data = await res.json();
+
+        if(data && data.saldo > 0) {
             irPara('setupGeral');
         } else {
             irPara('paymentScreen');
         }
-    } catch (e) {
-        // Se o worker falhar, permite acesso para teste ou redireciona
-        console.error("Erro ao validar saldo:", e);
+    } catch(e) { 
+        console.error("Erro na validação:", e);
+        // Fallback: Se o seu backend estiver offline ou bloqueando o acesso, 
+        // liberamos o acesso para não travar o seu sistema.
+        alert("Sistema em modo offline/demonstração.");
         irPara('setupGeral'); 
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
     }
 }
 
