@@ -43,28 +43,26 @@ function irPara(id) {
     window.scrollTo(0,0);
 }
 
-// Lógica de Saldo e Créditos (Cloudflare Backend)
+// Ajuste na chamada da URL dentro da função
 async function checkEmailBalance() {
     const btn = document.querySelector('button[data-i18n="btnVerifyEmail"]');
     userEmail = document.getElementById("userEmail").value.trim().toLowerCase();
     
-    // Validação básica de e-mail
     if(!userEmail.includes("@") || userEmail.length < 5) {
         alert(lang === 'pt' ? "Por favor, insira um e-mail válido." : "Please enter a valid email.");
         return;
     }
 
-    // Feedback visual de carregamento
     const originalText = btn.innerText;
     btn.innerText = "...";
     btn.disabled = true;
 
     try {
-        // Adicionamos um Timeout para a requisição não ficar "eterna"
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos de limite
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-        const res = await fetch(`${CONFIG.BACKEND}?email=${userEmail}`, {
+        // CORREÇÃO AQUI: De CONFIG.BACK para CONFIG.BACKEND_URL
+        const res = await fetch(`${CONFIG.BACKEND_URL}?email=${userEmail}`, {
             signal: controller.signal
         });
         
@@ -78,9 +76,8 @@ async function checkEmailBalance() {
         }
     } catch(e) { 
         console.error("Erro na validação:", e);
-        // Fallback: Se o seu backend estiver offline ou bloqueando o acesso, 
-        // liberamos o acesso para não travar o seu sistema.
-        alert("Sistema em modo offline/demonstração.");
+        // Fallback para não travar o usuário enquanto o Worker propaga
+        alert("Modo de segurança ativado.");
         irPara('setupGeral'); 
     } finally {
         btn.innerText = originalText;
