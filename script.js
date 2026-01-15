@@ -82,9 +82,10 @@ async function checkEmailBalance() {
     const emailInput = document.getElementById("userEmail").value.trim().toLowerCase();
     if (!emailInput.includes("@")) return alert("E-mail inválido");
     
-    userEmail = emailInput;
+    userEmail = emailInput; // Salva na variável global
     const btn = document.querySelector('button[data-i18n="btnVerifyEmail"]');
     btn.disabled = true;
+    btn.innerText = "...";
 
     try {
         const response = await fetch(`${CONFIG.BACKEND_URL}/?email=${encodeURIComponent(userEmail)}`);
@@ -93,21 +94,24 @@ async function checkEmailBalance() {
         if (data.saldo <= 0) {
             irPara('paymentScreen');
         } else {
-            codigoVerificacao = data.codigo;
+            // MUITO IMPORTANTE: Garante que o código do banco seja usado
+            codigoVerificacao = data.codigo.toString(); 
+            
             await emailjs.send(CONFIG.EMAIL_SERVICE, CONFIG.EMAIL_TEMPLATE, {
                 to_email: userEmail,
                 validation_code: codigoVerificacao
             });
-            alert("Código de verificação enviado!");
+            
+            alert("Código de verificação enviado para seu e-mail!");
             irPara('verify');
         }
     } catch (e) {
-        alert("Erro de conexão com o servidor.");
+        alert("Erro ao conectar com o servidor. Verifique sua internet.");
     } finally {
         btn.disabled = false;
+        btn.innerText = "Entrar";
     }
 }
-
 function validar() {
     const input = document.getElementById("inCode").value.trim();
     if (input === codigoVerificacao.toString() || input === CONFIG.ADMIN_KEY) {
