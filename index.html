@@ -199,4 +199,43 @@
                 document.getElementById('nomeCand').value=''; fB='';
             };
             window.finalizarCargo = function(){ eD.push(cT); window.irPara('setupCargo'); document.getElementById('nomeCargo').value=''; document.getElementById('listaTemp').innerHTML=''; };
-            window.iniciarVotacaoFinal = function(){ if(cT && !
+            window.iniciarVotacaoFinal = function(){ if(cT && !eD.includes(cT)) eD.push(cT); iA = 0; window.carregarCargoNaUrna(); window.irPara('urnaVisual'); };
+            window.carregarCargoNaUrna = function(){
+                let cg = eD[iA]; document.getElementById('votoCargoTitulo').innerText = cg.nome;
+                let gr = document.getElementById('gridVotacao'); gr.innerHTML=''; vS=[];
+                cg.candidatos.forEach((c, idx) => {
+                    let d = document.createElement('div'); d.className='card-candidato';
+                    d.innerHTML = (c.foto ? '<img src="'+c.foto+'" class="foto-cand"><br>' : '') + '<strong>'+c.nome+'</strong>';
+                    d.onclick = () => {
+                        if(vS.includes(idx)) { d.classList.remove('selected'); vS = vS.filter(v=>v!==idx); }
+                        else { if(vS.length < cg.limite) { vS.push(idx); d.classList.add('selected'); } }
+                    };
+                    gr.appendChild(d);
+                });
+            };
+            window.confirmarVotoVisual = function(){
+                if(vS.length === 0) return alert("Selecione um candidato");
+                vS.forEach(x => eD[iA].candidatos[x].votos++); iA++;
+                if(iA < eD.length) window.carregarCargoNaUrna();
+                else { alert("Voto Registrado!"); iA=0; window.carregarCargoNaUrna(); }
+            };
+            window.exibirResultados = async function(){
+                document.getElementById('pdfHeaderTitle').innerText = tG;
+                let c = document.getElementById('containerResultados'); c.innerHTML='';
+                eD.forEach(cg => {
+                    let h = '<h2 style="color:#1abc9c; border-bottom:1px solid #eee; margin-top:20px;">'+cg.nome+'</h2>';
+                    let ord = [...cg.candidatos].sort((a,b)=>b.votos - a.votos);
+                    ord.forEach(can => { h += '<div class="res-item"><span>'+can.nome+'</span><strong>'+can.votos+' Votos</strong></div>'; });
+                    c.innerHTML += h;
+                });
+                window.irPara('resultadosScreen');
+                try { await fetch(_0xKeys.u + '/?email=' + uE, { method: 'POST' }); } catch(e){}
+            };
+            window.gerarPDF = function(){
+                let el = document.getElementById('areaImpressao');
+                html2pdf().set({ margin: 10, filename: tG+'.pdf', html2canvas:{scale:2} }).from(el).save();
+            };
+        })();
+    </script>
+</body>
+</html>
