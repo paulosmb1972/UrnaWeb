@@ -17,13 +17,14 @@
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
         .pay-card { background: white; color: #333; padding: 15px; border-radius: 12px; text-align: center; border-top: 5px solid var(--danger); margin-bottom: 15px; }
         .grid-urna { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
-        .card-candidato { background: white; color: #333; padding: 10px; border-radius: 10px; text-align: center; border: 4px solid transparent; }
+        .card-candidato { background: white; color: #333; padding: 10px; border-radius: 10px; text-align: center; border: 4px solid transparent; cursor:pointer; }
         .card-candidato.selected { border-color: var(--accent); background: #fdf2a7; }
         .foto-cand { width: 100%; height: 140px; object-fit: cover; border-radius: 5px; }
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
         .lang-box button { width: auto; padding: 5px 10px; background: #000; font-size: 11px; border: 1px solid var(--primary); }
-        #areaImpressao { background: white; color: #000; padding: 40px; border-radius: 5px; }
+        #areaImpressao { background: white; color: #000; padding: 40px; border-radius: 5px; width: 100%; }
         footer { font-size: 10px; opacity: 0.5; padding: 20px; text-align: center; }
+        .res-item { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 10px 0; font-size: 18px; }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -62,180 +63,4 @@
 
     <div id="setupGeral" class="screen">
         <h2 data-i18n="tGeneral">Início</h2>
-        <input id="tituloEleicaoInput" type="text" data-i18n="pElectionName" placeholder="Nome da Eleição">
-        <button onclick="window.irParaCargo()" data-i18n="btnNextStep">Próximo</button>
-    </div>
-
-    <div id="setupCargo" class="screen">
-        <h2 data-i18n="tCargo">Cargo</h2>
-        <input id="nomeCargo" type="text" data-i18n="pCargoName" placeholder="Ex: Síndico">
-        <input id="qtdVotos" type="number" value="1">
-        <button onclick="window.proximoPassoCandidatos()" data-i18n="btnNextStep">Candidatos</button>
-    </div>
-
-    <div id="setupCandidatos" class="screen">
-        <h2 id="tituloCargoAtual"></h2>
-        <input id="nomeCand" type="text" data-i18n="pCandName" placeholder="Nome do Candidato">
-        <input id="fotoCand" type="file">
-        <button onclick="window.addCandidato()" data-i18n="btnAdd">Adicionar</button>
-        <div id="listaTemp"></div>
-        <button onclick="window.finalizarCargo()" data-i18n="btnSave">Salvar</button>
-        <button onclick="window.iniciarUrna()" data-i18n="btnUrna">URNA</button>
-    </div>
-
-    <div id="urnaVisual" class="screen">
-        <h2 id="votoCargoTitulo"></h2>
-        <div id="gridVotacao" class="grid-urna"></div>
-        <button onclick="window.confirmarVotoVisual()" data-i18n="btnVote">CONFIRMAR VOTO</button>
-        <button onclick="window.exibirResultados()" data-i18n="btnEnd">ENCERRAR</button>
-    </div>
-
-    <div id="resultadosScreen" class="screen">
-        <div id="areaImpressao">
-            <h1 id="pdfTituloEleicao" style="text-align:center; color:#0a2a66;"></h1>
-            <hr>
-            <div id="containerResultados"></div>
-        </div>
-        <button onclick="window.gerarPDF()" data-i18n="btnDownload">Baixar PDF</button>
-        <button onclick="location.reload()" data-i18n="btnExit">Sair</button>
-    </div>
-
-    <footer>&copy; 2026 - UrnaWeb Digital</footer>
-
-    <script>
-        (function(){
-            // CONFIGURAÇÕES OCULTAS
-            var _0xsec = { 'a': 'ORION001', 'b': 'ORION002', 'c': 'MAIS3GRATIS', 'd': 'MAIS6GRATIS', 'e': 'MAIS10GRATIS' };
-            var _0xids = { 's': 'service_oqfbzrm', 't': 'template_t3aio8f', 'k': '_PKL4Oj92o48KurSF' };
-            
-            emailjs.init(_0xids.k);
-            let lang = 'pt', uE = '', cV = '', eD = [], cT = null, fB = '', vS = [], iA = 0, tG = '';
-
-            const i18n = {
-                pt: { tLogin:"Acesso", pEmail:"Seu Gmail...", btnVerifyEmail:"Entrar", tLimit:"Créditos Esgotados", tPayOption:"Eleição Individual", tPayOption20:"Pacote 20 Eleições", pCoupon:"Cupom", btnCoupon:"Validar", btnBack:"Voltar", tConfirm:"Validar E-mail", pCode:"Código", btnConfirm:"Confirmar", tGeneral:"Nome da Eleição", pElectionName:"Ex: Eleição 2026", btnNextStep:"Próximo", tCargo:"Nome do Cargo", pCargoName:"Ex: Presidente", pCandName:"Nome do Candidato", btnAdd:"Adicionar", btnSave:"Salvar Cargo", btnUrna:"Iniciar Urna", btnVote:"Confirmar Voto", btnEnd:"Encerrar", btnDownload:"Baixar PDF", btnExit:"Sair" },
-                en: { tLogin:"Access", pEmail:"Your Gmail...", btnVerifyEmail:"Enter", tLimit:"No Credits", tPayOption:"Single Election", tPayOption20:"20 Pack", pCoupon:"Coupon", btnCoupon:"Validate", btnBack:"Back", tConfirm:"Verify Email", pCode:"Code", btnConfirm:"Confirm", tGeneral:"Election Title", pElectionName:"Ex: 2026 Election", btnNextStep:"Next", tCargo:"Position", pCargoName:"Ex: Manager", pCandName:"Candidate Name", btnAdd:"Add", btnSave:"Save Position", btnUrna:"Start Urna", btnVote:"Confirm Vote", btnEnd:"Finish", btnDownload:"Download PDF", btnExit:"Exit" },
-                es: { tLogin:"Acceso", pEmail:"Su Gmail...", btnVerifyEmail:"Entrar", tLimit:"Sin Créditos", tPayOption:"Elección Individual", tPayOption20:"Paquete 20", pCoupon:"Cupón", btnCoupon:"Validar", btnBack:"Volver", tConfirm:"Verificar Email", pCode:"Código", btnConfirm:"Confirmar", tGeneral:"Título de Elección", pElectionName:"Ex: Elección 2026", btnNextStep:"Siguiente", tCargo:"Cargo", pCargoName:"Ex: Director", pCandName:"Nombre Candidato", btnAdd:"Añadir", btnSave:"Guardar Cargo", btnUrna:"Iniciar Urna", btnVote:"Confirmar Voto", btnEnd:"Finalizar", btnDownload:"Bajar PDF", btnExit:"Salir" }
-            };
-
-            window.setLang = function(l) {
-                lang = l;
-                document.querySelectorAll('[data-i18n]').forEach(el => {
-                    let k = el.getAttribute('data-i18n');
-                    if (i18n[lang][k]) {
-                        if (el.tagName === 'INPUT') el.placeholder = i18n[lang][k];
-                        else el.innerText = i18n[lang][k];
-                    }
-                });
-            };
-
-            window.irPara = function(id) {
-                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                document.getElementById(id).classList.add('active');
-            };
-
-            window.checkEmailBalance = async function() {
-                let val = document.getElementById('userEmail').value.trim().toUpperCase();
-                if (val === _0xsec.a) { window.irPara('setupGeral'); return; }
-                if (val === _0xsec.b) { window.irPara('paymentScreen'); return; }
-                uE = val.toLowerCase();
-                let bt = document.getElementById('btnEntrar'); bt.disabled = true;
-                try {
-                    let res = await fetch('https://urnaweb-backend.paulosmb1972.workers.dev/?email=' + uE);
-                    let da = await res.json();
-                    if (da.saldo <= 0) window.irPara('paymentScreen');
-                    else {
-                        cV = da.codigo.toString();
-                        await emailjs.send(_0xids.s, _0xids.t, { to_email: uE, validation_code: cV });
-                        alert('Código Enviado!'); window.irPara('verify');
-                    }
-                } catch (e) { alert('Erro'); }
-                bt.disabled = false;
-            };
-
-            window.validar = function() {
-                let i = document.getElementById('inCode').value;
-                if (i === cV || i.toUpperCase() === _0xsec.a) window.irPara('setupGeral');
-                else alert('Erro');
-            };
-
-            window.aplicarCupom = function() {
-                let c = document.getElementById('inputCupom').value.toUpperCase();
-                if (c === _0xsec.c || c === _0xsec.d || c === _0xsec.e || c === _0xsec.a) {
-                    alert('Cupom Ativado!'); window.irPara('setupGeral');
-                } else alert('Inválido');
-            };
-
-            window.irParaCargo = function() {
-                tG = document.getElementById('tituloEleicaoInput').value;
-                window.irPara('setupCargo');
-            };
-
-            window.proximoPassoCandidatos = function() {
-                let n = document.getElementById('nomeCargo').value;
-                cT = { nome: n, limite: document.getElementById('qtdVotos').value, candidatos: [] };
-                document.getElementById('tituloCargoAtual').innerText = n;
-                window.irPara('setupCandidatos');
-            };
-
-            document.getElementById('fotoCand').addEventListener('change', e => {
-                let r = new FileReader();
-                r.onload = ev => fB = ev.target.result;
-                r.readAsDataURL(e.target.files[0]);
-            });
-
-            window.addCandidato = function() {
-                let n = document.getElementById('nomeCand').value;
-                cT.candidatos.push({ nome: n, foto: fB, votos: 0 });
-                document.getElementById('listaTemp').innerHTML += '<div>• ' + n + '</div>';
-                document.getElementById('nomeCand').value = '';
-            };
-
-            window.finalizarCargo = function() { eD.push(cT); window.irPara('setupCargo'); document.getElementById('nomeCargo').value=''; };
-            window.iniciarUrna = function() { iA = 0; window.carregarCargoNaUrna(); window.irPara('urnaVisual'); };
-
-            window.carregarCargoNaUrna = function() {
-                let cg = eD[iA]; document.getElementById('votoCargoTitulo').innerText = cg.nome;
-                let gr = document.getElementById('gridVotacao'); gr.innerHTML = ''; vS = [];
-                cg.candidatos.forEach((c, idx) => {
-                    let d = document.createElement('div'); d.className = 'card-candidato';
-                    d.innerHTML = '<img src="' + c.foto + '" class="foto-cand"><br><strong>' + c.nome + '</strong>';
-                    d.onclick = () => {
-                        if (vS.includes(idx)) d.classList.remove('selected');
-                        else { if(vS.length < cg.limite){ vS.push(idx); d.classList.add('selected'); } }
-                    };
-                    gr.appendChild(d);
-                });
-            };
-
-            window.confirmarVotoVisual = function() {
-                if(vS.length == 0) return;
-                vS.forEach(x => eD[iA].candidatos[x].votos++); iA++;
-                if (iA < eD.length) window.carregarCargoNaUrna();
-                else { alert('Voto Confirmado!'); iA = 0; window.carregarCargoNaUrna(); }
-            };
-
-            window.exibirResultados = async function() {
-                try { await fetch('https://urnaweb-backend.paulosmb1972.workers.dev/?email=' + uE, { method: 'POST' }); } catch (e) {}
-                document.getElementById('pdfTituloEleicao').innerText = tG;
-                let c = document.getElementById('containerResultados'); c.innerHTML = '';
-                eD.forEach(cg => {
-                    let h = '<h2 style="color:#1abc9c; margin-top:20px;">' + cg.nome + '</h2>';
-                    // ORDENAÇÃO POR VOTOS (DO MAIOR PARA O MENOR)
-                    let ordenados = [...cg.candidatos].sort((a,b) => b.votos - a.votos);
-                    ordenados.forEach(can => { 
-                        h += '<div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding:5px 0;">' +
-                             '<span>' + can.nome + '</span><strong>' + can.votos + ' Votos</strong></div>';
-                    });
-                    c.innerHTML += h;
-                });
-                window.irPara('resultadosScreen');
-            };
-
-            window.gerarPDF = function() {
-                let el = document.getElementById('areaImpressao');
-                html2pdf().set({ margin: 10, filename: tG + '.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(el).save();
-            };
-        })();
-    </script>
-</body>
-</html>
+        <input id="tituloEleicao
