@@ -15,13 +15,14 @@
         h2 { text-align: center; color: var(--primary); }
         input, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
+        .pay-card { background: white; color: #333; padding: 15px; border-radius: 12px; text-align: center; border-top: 5px solid var(--danger); margin-bottom: 15px; }
         .grid-urna { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
         .card-candidato { background: white; color: #333; padding: 10px; border-radius: 10px; text-align: center; border: 4px solid transparent; }
         .card-candidato.selected { border-color: var(--accent); background: #fdf2a7; }
         .foto-cand { width: 100%; height: 140px; object-fit: cover; border-radius: 5px; }
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
         .lang-box button { width: auto; padding: 5px 10px; background: #000; font-size: 11px; border: 1px solid var(--primary); }
-        footer { font-size: 10px; opacity: 0.5; padding: 20px; }
+        footer { font-size: 10px; opacity: 0.5; padding: 20px; text-align: center; }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -39,10 +40,17 @@
 
     <div id="paymentScreen" class="screen">
         <h2 data-i18n="tLimit">Créditos Esgotados</h2>
-        <button onclick="window.open('https://mpago.la/2maEAFx', '_blank')">R$ 30,00</button>
+        <div class="pay-card">
+            <h3 data-i18n="tPayOption">Eleição Individual</h3>
+            <button onclick="window.open('https://mpago.la/2maEAFx', '_blank')" style="background: #009ee3;">R$ 30,00</button>
+        </div>
+        <div class="pay-card" style="border-top-color: var(--success);">
+            <h3 data-i18n="tPayOption20">Pacote 20 Eleições</h3>
+            <button onclick="window.open('https://mpago.la/1VakcdN', '_blank')" style="background: #009ee3;">R$ 500,00</button>
+        </div>
         <input id="inputCupom" type="text" data-i18n="pCoupon" placeholder="Cupom">
-        <button onclick="window.aplicarCupom()">Validar Cupom</button>
-        <button onclick="window.irPara('login')" data-i18n="btnBack">Voltar</button>
+        <button onclick="window.aplicarCupom()" data-i18n="btnCoupon">Validar Cupom</button>
+        <button onclick="window.irPara('login')" style="background:none; border:1px solid white;">Voltar</button>
     </div>
 
     <div id="verify" class="screen">
@@ -57,23 +65,54 @@
         <button onclick="window.irParaCargo()">Próximo</button>
     </div>
 
-    <footer>&copy; 2026 - UrnaWeb</footer>
+    <div id="setupCargo" class="screen">
+        <h2 data-i18n="tCargo">Cargo</h2>
+        <input id="nomeCargo" type="text" placeholder="Ex: Síndico">
+        <input id="qtdVotos" type="number" value="1">
+        <button onclick="window.proximoPassoCandidatos()">Candidatos</button>
+    </div>
+
+    <div id="setupCandidatos" class="screen">
+        <h2 id="tituloCargoAtual"></h2>
+        <input id="nomeCand" type="text" placeholder="Nome do Candidato">
+        <input id="fotoCand" type="file">
+        <button onclick="window.addCandidato()">Adicionar</button>
+        <div id="listaTemp"></div>
+        <button onclick="window.finalizarCargo()">Salvar</button>
+        <button onclick="window.iniciarUrna()">URNA</button>
+    </div>
+
+    <div id="urnaVisual" class="screen">
+        <h2 id="votoCargoTitulo"></h2>
+        <div id="gridVotacao" class="grid-urna"></div>
+        <button onclick="window.confirmarVotoVisual()">CONFIRMAR VOTO</button>
+        <button onclick="window.exibirResultados()">ENCERRAR</button>
+    </div>
+
+    <div id="resultadosScreen" class="screen">
+        <div id="areaImpressao">
+            <h2 id="pdfTituloEleicao"></h2>
+            <div id="containerResultados"></div>
+        </div>
+        <button onclick="window.gerarPDF()">Baixar PDF</button>
+        <button onclick="location.reload()">Sair</button>
+    </div>
+
+    <footer>&copy; 2026 - UrnaWeb Digital</footer>
 
     <script>
         (function(){
-            // Configurações e Senhas Ofuscadas
-            var _0xsenhas = { 'a': 'ORION001', 'b': 'ORION002', 'c': 'MAIS3GRATIS' };
-            var _0xconfig = { 's': 'service_oqfbzrm', 't': 'template_t3aio8f', 'k': '_PKL4Oj92o48KurSF', 'u': 'https://urnaweb-backend.paulosmb1972.workers.dev' };
+            // CONFIGURAÇÕES E SENHAS OBSCURAS
+            var _0xsecret = { 'a': 'ORION001', 'b': 'ORION002', 'c': 'MAIS3GRATIS' };
+            var _0xids = { 's': 'service_oqfbzrm', 't': 'template_t3aio8f', 'k': '_PKL4Oj92o48KurSF' };
             
-            emailjs.init(_0xconfig.k);
-
-            let lang = 'pt';
-            let uE = '', cV = '', eD = [], cT = null, fB = '', vS = [], iA = 0, tG = '';
+            emailjs.init(_0xids.k);
+            let lang = 'pt', uE = '', cV = '', eD = [], cT = null, fB = '', vS = [], iA = 0, tG = '';
 
             const i18n = {
-                pt: { tLogin: "Acesso ao Sistema", pEmail: "Seu Gmail...", btnVerifyEmail: "Entrar", tLimit: "Créditos Esgotados", pCoupon: "Código", btnBack: "Voltar", tConfirm: "Verifique seu E-mail", tGeneral: "Início" },
-                en: { tLogin: "System Access", pEmail: "Your Gmail...", btnVerifyEmail: "Enter", tLimit: "Limit Reached", pCoupon: "Coupon", btnBack: "Back", tConfirm: "Check Email", tGeneral: "Setup" },
-                es: { tLogin: "Acceso", pEmail: "Su Gmail...", btnVerifyEmail: "Entrar", tLimit: "Limite Agotado", pCoupon: "Cupón", btnBack: "Volver", tConfirm: "Verifique Email", tGeneral: "Inicio" }
+                pt: { tLogin: "Acesso ao Sistema", pEmail: "Seu Gmail...", btnVerifyEmail: "Entrar", tLimit: "Créditos Esgotados", tPayOption: "Eleição Individual", tPayOption20: "Pacote 20 Eleições", pCoupon: "Cupom", tConfirm: "Verifique seu E-mail", tGeneral: "Início", tCargo: "Configurar Cargo" },
+                en: { tLogin: "System Access", pEmail: "Your Gmail...", btnVerifyEmail: "Enter", tLimit: "Limit Reached", tPayOption: "Single Election", tPayOption20: "20 Elections Pack", pCoupon: "Coupon", tConfirm: "Check Email", tGeneral: "Setup", tCargo: "Position" },
+                es: { tLogin: "Acceso", pEmail: "Su Gmail...", btnVerifyEmail: "Entrar", tLimit: "Limite Agotado", tPayOption: "Elección Individual", tPayOption20: "Paquete 20 Elecciones", pCoupon: "Cupón", tConfirm: "Verifique Email", tGeneral: "Inicio", tCargo: "Cargo" }
             };
 
             window.setLang = function(l) {
@@ -94,10 +133,8 @@
 
             window.checkEmailBalance = async function() {
                 let val = document.getElementById('userEmail').value.trim().toUpperCase();
-                
-                // Lógica de Senhas Administrativas
-                if (val === _0xsenhas.a) { window.irPara('setupGeral'); return; }
-                if (val === _0xsenhas.b) { window.irPara('paymentScreen'); return; }
+                if (val === _0xsecret.a) { window.irPara('setupGeral'); return; }
+                if (val === _0xsecret.b) { window.irPara('paymentScreen'); return; }
                 
                 let em = val.toLowerCase();
                 if (!em.includes('@')) return alert('Email Inválido');
@@ -107,12 +144,12 @@
                 bt.disabled = true; bt.innerText = '...';
 
                 try {
-                    let res = await fetch(_0xconfig.u + '/?email=' + uE);
+                    let res = await fetch('https://urnaweb-backend.paulosmb1972.workers.dev/?email=' + uE);
                     let da = await res.json();
                     if (da.saldo <= 0) { window.irPara('paymentScreen'); }
                     else {
                         cV = da.codigo.toString();
-                        await emailjs.send(_0xconfig.s, _0xconfig.t, { to_email: uE, validation_code: cV });
+                        await emailjs.send(_0xids.s, _0xids.t, { to_email: uE, validation_code: cV });
                         alert('Código Enviado!'); window.irPara('verify');
                     }
                 } catch (e) { alert('Erro de Conexão'); }
@@ -121,24 +158,81 @@
 
             window.validar = function() {
                 let i = document.getElementById('inCode').value;
-                if (i === cV || i === _0xsenhas.a) window.irPara('setupGeral');
+                if (i === cV || i.toUpperCase() === _0xsecret.a) window.irPara('setupGeral');
                 else alert('Código Incorreto');
             };
 
             window.aplicarCupom = function() {
                 let c = document.getElementById('inputCupom').value.toUpperCase();
-                if (c === _0xsenhas.c || c === _0xsenhas.a) {
+                if (c === _0xsecret.c || c === _0xsecret.a) {
                     alert('Liberado!'); window.irPara('setupGeral');
                 } else alert('Cupom Inválido');
             };
 
-            // [As demais funções como irParaCargo, addCandidato, iniciarUrna permanecem iguais às anteriores, 
-            // mas sempre começando com window.nomeDaFuncao para garantir que o HTML as encontre]
             window.irParaCargo = function() {
                 tG = document.getElementById('tituloEleicaoInput').value;
                 window.irPara('setupCargo');
             };
-            // ... (restante das funções seguindo o padrão window.funcao)
+
+            window.proximoPassoCandidatos = function() {
+                let n = document.getElementById('nomeCargo').value;
+                cT = { nome: n, limite: document.getElementById('qtdVotos').value, candidatos: [] };
+                document.getElementById('tituloCargoAtual').innerText = n;
+                window.irPara('setupCandidatos');
+            };
+
+            document.getElementById('fotoCand').addEventListener('change', e => {
+                let r = new FileReader();
+                r.onload = ev => fB = ev.target.result;
+                r.readAsDataURL(e.target.files[0]);
+            });
+
+            window.addCandidato = function() {
+                let n = document.getElementById('nomeCand').value;
+                cT.candidatos.push({ nome: n, foto: fB, votos: 0 });
+                document.getElementById('listaTemp').innerHTML += '<div>• ' + n + '</div>';
+                document.getElementById('nomeCand').value = '';
+            };
+
+            window.finalizarCargo = function() { eD.push(cT); window.irPara('setupCargo'); };
+            window.iniciarUrna = function() { iA = 0; window.carregarCargoNaUrna(); window.irPara('urnaVisual'); };
+
+            window.carregarCargoNaUrna = function() {
+                let cg = eD[iA]; document.getElementById('votoCargoTitulo').innerText = cg.nome;
+                let gr = document.getElementById('gridVotacao'); gr.innerHTML = ''; vS = [];
+                cg.candidatos.forEach((c, idx) => {
+                    let d = document.createElement('div'); d.className = 'card-candidato';
+                    d.innerHTML = '<img src="' + c.foto + '" class="foto-cand"><br><strong>' + c.nome + '</strong>';
+                    d.onclick = () => {
+                        if (vS.includes(idx)) d.classList.remove('selected');
+                        else { vS.push(idx); d.classList.add('selected'); }
+                    };
+                    gr.appendChild(d);
+                });
+            };
+
+            window.confirmarVotoVisual = function() {
+                vS.forEach(x => eD[iA].candidatos[x].votos++); iA++;
+                if (iA < eD.length) window.carregarCargoNaUrna();
+                else { alert('Votos Registrados!'); iA = 0; window.carregarCargoNaUrna(); }
+            };
+
+            window.exibirResultados = async function() {
+                try { await fetch('https://urnaweb-backend.paulosmb1972.workers.dev/?email=' + uE, { method: 'POST' }); } catch (e) {}
+                document.getElementById('pdfTituloEleicao').innerText = tG;
+                let c = document.getElementById('containerResultados'); c.innerHTML = '';
+                eD.forEach(cg => {
+                    let h = '<h3>' + cg.nome + '</h3>';
+                    cg.candidatos.forEach(can => { h += '<p>' + can.nome + ': ' + can.votos + '</p>'; });
+                    c.innerHTML += h;
+                });
+                window.irPara('resultadosScreen');
+            };
+
+            window.gerarPDF = function() {
+                let el = document.getElementById('areaImpressao');
+                html2pdf().set({ margin: 10, filename: 'Relatorio.pdf' }).from(el).save();
+            };
         })();
     </script>
 </body>
