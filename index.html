@@ -7,125 +7,78 @@
     <meta name="google" content="notranslate">
     <meta http-equiv="Content-Language" content="pt-br">
     <title>Sistema de Votação Digital</title>
-    
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
     <style>
         :root { --primary: #1abc9c; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; }
         body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; -webkit-user-select: none; user-select: none; }
         .screen { display: none; padding: 20px; width: 100%; max-width: 800px; min-height: 90vh; box-sizing: border-box; }
         .active { display: block; }
         h2 { text-align: center; color: var(--primary); margin-bottom: 10px; }
-        p.help-text { font-size: 14px; color: #bdc3c7; margin-bottom: 5px; margin-top: 15px; font-style: italic; }
         input, button, textarea { width: 100%; padding: 15px; margin: 5px 0 15px 0; border-radius: 8px; border: none; font-size: 16px; display: block; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-        textarea { height: 100px; resize: none; background: #fff; color: #333; }
-        #areaImpressao { background: white !important; color: black !important; padding: 40px; border-radius: 10px; width: 100%; box-sizing: border-box; }
-        .pdf-header { border-bottom: 3px solid #333; margin-bottom: 30px; padding-bottom: 15px; text-align: center; }
-        .pdf-header h1 { margin: 0; color: #000; font-size: 26px; text-transform: uppercase; font-weight: bold; }
         .grid-urna { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
         .card-candidato { background: white; color: #333; padding: 10px; border-radius: 10px; text-align: center; cursor: pointer; border: 4px solid transparent; }
         .card-candidato.selected { border-color: var(--accent); background: #fdf2a7; }
-        .foto-cand { width: 100%; height: 140px; object-fit: cover; border-radius: 5px; background: #eee; }
-        .lang-box { position: fixed; top: 10px; right: 10px; display: flex; gap: 5px; z-index: 100; }
-        .lang-box button { width: auto; padding: 6px 12px; background: rgba(0,0,0,0.8); font-size: 11px; margin: 0; border: 1px solid var(--primary); }
-        .pay-card { background: white; color: #333; padding: 15px; border-radius: 12px; text-align: center; border-top: 5px solid var(--danger); margin-bottom: 15px; }
-        .feedback-section { margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 20px; }
+        .foto-cand { width: 100%; height: 140px; object-fit: cover; border-radius: 5px; }
         footer { font-size: 10px; opacity: 0.5; padding: 20px; text-align: center; }
     </style>
 </head>
 <body oncontextmenu="return false;">
-    <div class="lang-box">
-        <button onclick="setLang('pt')">Português</button>
-        <button onclick="setLang('en')">English</button>
-        <button onclick="setLang('es')">Español</button>
-    </div>
-
     <div id="login" class="screen active">
-        <h2 data-i18n="tLogin">Acesso ao Sistema</h2>
-        <p class="help-text" data-i18n="hEmail">E-mail para validar créditos:</p>
-        <input id="userEmail" type="email" data-i18n="pEmail" placeholder="Seu Gmail...">
-        <button onclick="checkEmailBalance()" data-i18n="btnVerifyEmail">Entrar</button>
-        <p style="text-align: center; font-size: 12px; opacity: 0.7;" data-i18n="pInfo">3 eleições iniciais gratuitas.</p>
+        <h2>Acesso ao Sistema</h2>
+        <input id="userEmail" type="email" placeholder="Seu Gmail...">
+        <button onclick="checkEmailBalance()">Entrar</button>
     </div>
-
     <div id="paymentScreen" class="screen">
-        <h2 style="color: var(--danger);" data-i18n="tLimit">Créditos Esgotados</h2>
-        <div class="pay-card">
-            <h3 data-i18n="tPayOption">Eleição Individual</h3>
-            <button onclick="window.open('https://mpago.la/2maEAFx', '_blank')" style="background: #009ee3;" data-i18n="btnPay">Pagar R$ 30,00</button>
-        </div>
-        <div class="pay-card" style="border-top-color: var(--success);">
-            <h3 data-i18n="tPayOption20">Pacote 20 Eleições</h3>
-            <button onclick="window.open('https://mpago.la/1VakcdN', '_blank')" style="background: #009ee3;" data-i18n="btnPay20">Pagar R$ 500,00</button>
-        </div>
-        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; border: 1px dashed var(--accent);">
-            <p class="help-text" data-i18n="hCoupon">Possui um cupom?</p>
-            <input id="inputCupom" type="text" data-i18n="pCoupon" placeholder="Código">
-            <button onclick="aplicarCupom()" style="background: var(--accent); color: #333;" data-i18n="btnCoupon">Validar</button>
-        </div>
-        <button onclick="irPara('login')" style="background:none; border:1px solid white;" data-i18n="btnBack">Voltar</button>
+        <h2 style="color: var(--danger);">Créditos Esgotados</h2>
+        <button onclick="window.open('https://mpago.la/2maEAFx', '_blank')">Pagar R$ 30,00</button>
+        <input id="inputCupom" type="text" placeholder="Cupom">
+        <button onclick="aplicarCupom()">Validar</button>
     </div>
-
     <div id="verify" class="screen">
-        <h2 data-i18n="tConfirm">Verifique seu E-mail</h2>
-        <p class="help-text" data-i18n="hCode">Código de 6 dígitos enviado:</p>
-        <input id="inCode" type="text" data-i18n="pCode" placeholder="Código">
-        <button onclick="validar()" data-i18n="btnConfirm">Confirmar</button>
+        <h2>Verifique seu E-mail</h2>
+        <input id="inCode" type="text" placeholder="Código">
+        <button onclick="validar()">Confirmar</button>
     </div>
-
     <div id="setupGeral" class="screen">
-        <h2 data-i18n="tGeneral">Início da Eleição</h2>
-        <input id="tituloEleicaoInput" type="text" placeholder="Ex: Condomínio Orion">
-        <button onclick="irParaCargo()" style="background:var(--success);">Configurar Cargos</button>
+        <h2>Início da Eleição</h2>
+        <input id="tituloEleicaoInput" type="text" placeholder="Nome da Eleição">
+        <button onclick="irParaCargo()">Configurar Cargos</button>
     </div>
-
     <div id="setupCargo" class="screen">
-        <h2 data-i18n="tCargo">Configurar Cargo</h2>
-        <input id="nomeCargo" type="text" placeholder="Ex: Síndico">
+        <h2>Configurar Cargo</h2>
+        <input id="nomeCargo" type="text" placeholder="Nome do Cargo">
         <input id="qtdVotos" type="number" value="1">
-        <button onclick="proximoPassoCandidatos()">Adicionar Candidatos</button>
+        <button onclick="proximoPassoCandidatos()">Candidatos</button>
     </div>
-
     <div id="setupCandidatos" class="screen">
-        <h2 id="tituloCargoAtual">Candidatos</h2>
-        <input id="nomeCand" type="text" placeholder="Nome completo">
-        <input id="fotoCand" type="file" accept="image/*">
+        <h2 id="tituloCargoAtual"></h2>
+        <input id="nomeCand" type="text" placeholder="Nome">
+        <input id="fotoCand" type="file">
         <button onclick="addCandidato()">Adicionar</button>
         <div id="listaTemp"></div>
-        <button onclick="finalizarCargo()">Salvar Cargo</button>
-        <button onclick="iniciarUrna()">INICIAR VOTAÇÃO 🗳️</button>
+        <button onclick="finalizarCargo()">Salvar</button>
+        <button onclick="iniciarUrna()">INICIAR VOTAÇÃO</button>
     </div>
-
     <div id="urnaVisual" class="screen">
-        <h2 id="votoCargoTitulo">Urna</h2>
+        <h2 id="votoCargoTitulo"></h2>
         <div id="gridVotacao" class="grid-urna"></div>
-        <button onclick="confirmarVotoVisual()" style="background:var(--success); height:60px;">CONFIRMAR VOTO</button>
-        <button onclick="exibirResultados()" style="background:var(--danger); margin-top:20px;">ENCERRAR ELEIÇÃO</button>
+        <button onclick="confirmarVotoVisual()">CONFIRMAR VOTO</button>
+        <button onclick="exibirResultados()">ENCERRAR</button>
     </div>
-
     <div id="resultadosScreen" class="screen">
-        <h2 data-i18n="tResults">Resultado</h2>
         <div id="areaImpressao">
-            <div class="pdf-header">
-                <h1 id="pdfTituloEleicao">NOME DA ELEIÇÃO</h1>
-                <p id="pdfDataHora"></p>
-            </div>
+            <h1 id="pdfTituloEleicao"></h1>
             <div id="containerResultados"></div>
         </div>
-        <button onclick="gerarPDF()" style="background:var(--success);">Baixar PDF 📄</button>
-        <div class="feedback-section">
-            <textarea id="textoFeedback" placeholder="Sugestão..."></textarea>
-            <button onclick="enviarSugestao()">Enviar Sugestão</button>
-        </div>
-        <button onclick="registrarFimEleicao()">Nova Eleição / Sair</button>
+        <button onclick="gerarPDF()">Baixar PDF</button>
+        <button onclick="location.reload()">Sair</button>
     </div>
-
     <footer>&copy; 2024 - Sistema de Votação Digital</footer>
 
     <script>
-        (function(_0x18e88e,_0x4466b0){const _0x16006f=_0x2619,_0x10f769=_0x18e88e();while(!![]){try{const _0x1539e0=-parseInt(_0x16006f(0x199))/0x1*(parseInt(_0x16006f(0x192))/0x2)+parseInt(_0x16006f(0x1a1))/0x3+-parseInt(_0x16006f(0x187))/0x4+parseInt(_0x16006f(0x18e))/0x5*(-parseInt(_0x16006f(0x189))/0x6)+parseInt(_0x16006f(0x196))/0x7+parseInt(_0x16006f(0x18f))/0x8+parseInt(_0x16006f(0x1a3))/0x9;if(_0x1539e0===_0x4466b0)break;else _0x10f769['push'](_0x10f769['shift']());}catch(_0x599026){_0x10f769['push'](_0x10f769['shift']());}}}(_0x553d,0x39389));function _0x2619(_0x19080b,_0x247444){const _0x553d02=_0x553d();return _0x2619=function(_0x261937,_0x205364){_0x261937=_0x261937-0x185;let _0x24ef4b=_0x553d02[_0x261937];return _0x24ef4b;},_0x2619(_0x19080b,_0x247444);}const _0x272445=(function(){let _0x535205=!![];return function(_0x228646,_0x27d288){const _0x33441a=_0x535205?function(){if(_0x27d288){const _0x157521=_0x27d288['apply'](_0x228646,arguments);return _0x27d288=null,_0x157521;}}:function(){};return _0x535205=![],_0x33441a;};}()),_0x26046e=_0x272445(this,function(){const _0x13388c=_0x2619;return _0x26046e[_0x13388c(0x19b)]()[_0x13388c(0x197)](_0x13388c(0x191))[_0x13388c(0x19b)]()[_0x13388c(0x18c)](_0x26046e)[_0x13388c(0x197)](_0x13388c(0x191));});_0x26046e();emailjs['init'](_0x2619(0x186));const CONFIG={'BACKEND_URL':_0x2619(0x19d),'EMAIL_SERVICE':_0x2619(0x19c),'EMAIL_TEMPLATE':'template_t3aio8f','CUPOM_MESTRE':_0x2619(0x190),'ADMIN_KEY':'ORION001'};let lang='pt',userEmail='',codigoVerificacao='',eleicaoData=[],cargoTemp=null,fotoBase64='',votosSelecionados=[],indiceCargoAtual=0,tituloEleicaoGlobal='';const i18n={'pt':{'tLogin':'Acesso\x20ao\x20Sistema','pEmail':_0x2619(0x18a),'btnVerifyEmail':'Entrar','tLimit':_0x2619(0x188),'pCoupon':'Código','btnCoupon':'Validar','btnBack':'Voltar','tConfirm':_0x2619(0x185),'pCode':'Código','btnConfirm':'Confirmar','tGeneral':'Início\x20da\x20Eleição','pElectionName':'Ex:\x20Condomínio\x20Orion','btnNextStep':'Próximo','tCargo':_0x2619(0x19a),'pCargoName':'Ex:\x20Síndico','btnAddCand':'Candidatos','pCandName':_0x2619(0x193),'btnToList':'Adicionar','btnSaveCargo':_0x2619(0x1a0),'btnStartVote':_0x2619(0x18d),'btnConfirmVote':_0x2619(0x1a4),'btnEndElection':_0x2619(0x1a5),'tResults':'Resultado','btnDownload':_0x2619(0x194),'btnFinish':_0x2619(0x19f),'tFeedback':'Sugestões\x20ou\x20Pedidos','btnSendFeedback':'Enviar','msgSelect':_0x2619(0x19e),'msgVoteOk':_0x2619(0x195),'msgErr':'Erro\x20técnico.','msgFeedOk':'Enviado!'},'en':{'tLogin':'System\x20Access','pEmail':'Your\x20Gmail...','btnVerifyEmail':'Enter','tLimit':'Credits\x20Exhausted','pCoupon':'Code','btnCoupon':'Validate','btnBack':'Back','tConfirm':'Check\x20Email','pCode':'Code','btnConfirm':'Confirm','tGeneral':'Election\x20Setup','pElectionName':'e.g.\x20Orion\x20Condo','btnNextStep':'Next','tCargo':'Position\x20Setup','pCargoName':'e.g.\x20Trustee','btnAddCand':'Add\x20Candidates','pCandName':'Full\x20name','btnToList':'Add','btnSaveCargo':'Save\x20Position','btnStartVote':'START\x20VOTING\x20🗳️','btnConfirmVote':'CONFIRM\x20VOTE','btnEndElection':'END\x20ELECTION','tResults':'Results','btnDownload':_0x2619(0x194),'btnFinish':'Finish\x20and\x20Exit','tFeedback':'Suggestions','btnSendFeedback':'Send','msgSelect':'Select\x20a\x20candidate.','msgVoteOk':'Vote\x20recorded!','msgErr':'Technical\x20error.','msgFeedOk':'Sent!'},'es':{'tLogin':'Acceso\x20al\x20Sistema','pEmail':'Su\x20Gmail...','btnVerifyEmail':'Entrar','tLimit':'Créditos\x20Agotados','pCoupon':'Código','btnCoupon':'Validar','btnBack':'Volver','tConfirm':'Verifique\x20Email','pCode':'Código','btnConfirm':'Confirmar','tGeneral':'Configuración','pElectionName':'Ej:\x20Condominio\x20Orion','btnNextStep':'Siguiente','tCargo':'Cargo','pCargoName':'Ej:\x20Síndico','btnAddCand':'Agregar\x20Candidatos','pCandName':'Nombre\x20completo','btnToList':'Agregar','btnSaveCargo':'Guardar\x20Cargo','btnStartVote':'VOTAR\x20🗳️','btnConfirmVote':'CONFIRMAR\x20VOTO','btnEndElection':'FINALIZAR','tResults':'Resultado','btnDownload':_0x2619(0x194),'btnFinish':'Finalizar','tFeedback':'Sugerencias','btnSendFeedback':'Enviar','msgSelect':'Seleccione\x20un\x20candidato.','msgVoteOk':'¡Votado!','msgErr':'Error\x20técnico.','msgFeedOk':'¡Enviado!'}};function irPara(_0x181057){const _0x2289c0=_0x2619;document[_0x2289c0(0x1a2)]('.screen')[_0x2289c0(0x190)](_0x4c278f=>_0x4c278f['classList']['remove'](_0x2289c0(0x18b))),document[_0x2289c0(0x198)](_0x181057)['classList']['add']('active'),window['scrollTo'](0x0,0x0);}function setLang(_0x3df0a2){const _0x51ef05=_0x2619;lang=_0x3df0a2,document[_0x51ef05(0x1a2)](_0x51ef05(0x185))[_0x51ef05(0x190)](_0x4c330c=>{const _0x81561a=_0x51ef05,_0x367fdf=_0x4c330c[_0x81561a(0x1a7)](_0x81561a(0x185));if(i18n[lang][_0x367fdf]){if(_0x4c330c['tagName']==='INPUT'||_0x4c330c['tagName']===_0x81561a(0x191))_0x4c330c['placeholder']=i18n[lang][_0x367fdf];else _0x4c330c['innerText']=i18n[lang][_0x367fdf];}});}async function checkEmailBalance(){const _0x3b07ce=_0x2619,_0x19927d=document[_0x3b07ce(0x198)](_0x3b07ce(0x193))['value'][_0x3b07ce(0x1a6)]()[_0x3b07ce(0x1a8)]();if(!_0x19927d['includes']('@'))return alert('E-mail\x20inválido');userEmail=_0x19927d;const _0x1a4687=document['querySelector'](_0x3b07ce(0x1a9));_0x1a4687['disabled']=!![],_0x1a4687['innerText']='...';try{const _0x18206d=await fetch(CONFIG[_0x3b07ce(0x1a5)]+'/?email='+encodeURIComponent(userEmail)),_0x45a5d1=await _0x18206d['json']();if(_0x45a5d1['saldo']<=0x0)irPara(_0x3b07ce(0x18a));else{codigoVerificacao=_0x45a5d1['codigo'][_0x3b07ce(0x19b)]();await emailjs['send'](CONFIG[_0x3b07ce(0x1a7)],CONFIG['EMAIL_TEMPLATE'],{'to_email':userEmail,'validation_code':codigoVerificacao}),alert(_0x3b07ce(0x1aa)),irPara('verify');}}catch(_0x228723){alert(_0x3b07ce(0x1ab));}finally{_0x1a4687['disabled']=![],_0x1a4687['innerText']='Entrar';}}function validar(){const _0x4d4c38=_0x2619,_0x24755d=document[_0x4d4c38(0x198)]('inCode')['value']['trim']();if(_0x24755d===codigoVerificacao||_0x24755d===CONFIG['ADMIN_KEY'])irPara(_0x4d4c38(0x1ac));else alert('Código\x20incorreto.');}function aplicarCupom(){const _0x4dfb24=_0x2619,_0x257088=document[_0x4dfb24(0x198)](_0x4dfb24(0x1ad))['value'][_0x4dfb24(0x1a6)]()['toUpperCase']();if(_0x257088===CONFIG[_0x4dfb24(0x190)])alert('Cupom\x20validado!'),irPara(_0x4dfb24(0x1ac));else alert('Cupom\x20inválido.');}function irParaCargo(){const _0x277a0b=_0x2619;tituloEleicaoGlobal=document[_0x277a0b(0x198)](_0x277a0b(0x1ae))['value'];if(!tituloEleicaoGlobal)return alert(i18n[lang]['msgErr']);irPara(_0x277a0b(0x1af));}function proximoPassoCandidatos(){const _0x3b9b9c=_0x2619,_0x2f9012=document[_0x3b9b9c(0x198)](_0x3b9b9c(0x1b0))['value'];if(!_0x2f9012)return alert(i18n[lang]['msgErr']);cargoTemp={'nome':_0x2f9012,'limite':parseInt(document[_0x3b9b9c(0x198)](_0x3b9b9c(0x1b1))['value']),'candidatos':[]},document[_0x3b9b9c(0x198)](_0x3b9b9c(0x1b2))[_0x3b9b9c(0x1b3)]=_0x2f9012,irPara(_0x3b9b9c(0x1b4));}document[_0x2619(0x198)](_0x2619(0x1b5))?.['addEventListener']('change',_0x37648f=>{const _0x456c6c=_0x2619,_0x23a35f=new FileReader();_0x23a35f['onload']=_0x3ec82e=>fotoBase64=_0x3ec82e['target']['result'];if(_0x37648f['target']['files'][0x0])_0x23a35f[_0x456c6c(0x1b6)](_0x37648f['target']['files'][0x0]);});function addCandidato(){const _0x276662=_0x2619,_0x446979=document[_0x276662(0x198)]('nomeCand')['value'];if(!_0x446979)return;cargoTemp['candidatos']['push']({'nome':_0x446979,'foto':fotoBase64,'votos':0x0}),document[_0x276662(0x198)](_0x276662(0x1b7))['innerHTML']+=_0x276662(0x1b8)+_0x446979+'</div>',document['getElementById']('nomeCand')[_0x276662(0x1b9)]='',fotoBase64='';}function finalizarCargo(){const _0x26079c=_0x2619;eleicaoData['push'](cargoTemp),document['getElementById'](_0x26079c(0x1b0))[_0x26079c(0x1b9)]='',document[_0x26079c(0x198)](_0x26079c(0x1b7))['innerHTML']='',irPara(_0x26079c(0x1af));}function iniciarUrna(){const _0x4e6b2d=_0x2619;if(cargoTemp&&!eleicaoData['includes'](cargoTemp))eleicaoData['push'](cargoTemp);if(eleicaoData['length']===0x0)return;indiceCargoAtual=0x0,carregarCargoNaUrna(),irPara(_0x4e6b2d(0x1ba));}function carregarCargoNaUrna(){const _0x1a879a=_0x2619,_0x5735cb=eleicaoData[indiceCargoAtual];document[_0x1a879a(0x198)](_0x1a879a(0x1bb))['innerText']=_0x5735cb['nome'];const _0x411e74=document[_0x1a879a(0x198)](_0x1a879a(0x1bc));_0x411e74['innerHTML']='',votosSelecionados=[];_0x5735cb['candidatos'][_0x1a879a(0x190)]((_0x5f0c07,_0x24d471)=>{const _0x51065c=_0x1a879a,_0x546c1f=document['createElement']('div');_0x546c1f['className']=_0x51065c(0x1bd),_0x546c1f['innerHTML']='<img\x20src=\x22'+(_0x5f0c07['foto']||'')+'\x22\x20class=\x22foto-cand\x22><br><strong>'+_0x5f0c07['nome']+'</strong>',_0x546c1f[_0x51065c(0x1be)]=()=>{const _0x4763ed=_0x51065c;if(votosSelecionados['includes'](_0x24d471))votosSelecionados=votosSelecionados['filter'](_0x599607=>_0x599607!==_0x24d471),_0x546c1f['classList']['remove']('selected');else votosSelecionados['length']<_0x5735cb['limite']&&(votosSelecionados['push'](_0x24d471),_0x546c1f['classList']['add']('selected'));},_0x411e74['appendChild'](_0x546c1f);});}function confirmarVotoVisual(){const _0x474938=_0x2619;if(votosSelecionados['length']===0x0)return alert(i18n[lang]['msgSelect']);votosSelecionados[_0x474938(0x190)](_0x272da9=>eleicaoData[indiceCargoAtual]['candidatos'][_0x272da9]['votos']++),indiceCargoAtual++;if(indiceCargoAtual<eleicaoData['length'])carregarCargoNaUrna();else alert(i18n[lang][_0x474938(0x195)]),indiceCargoAtual=0x0,carregarCargoNaUrna();}async function exibirResultados(){const _0x27d532=_0x2619;try{await fetch(CONFIG['BACKEND_URL']+'/?email='+encodeURIComponent(userEmail),{'method':'POST'});}catch(_0x589578){console['error']('Erro\x20ao\x20registrar\x20uso.');}const _0x261794=new Date();document['getElementById'](_0x27d532(0x1bf))['innerText']=tituloEleicaoGlobal,document[_0x27d532(0x198)](_0x27d532(0x1c0))['innerText']=_0x261794[_0x27d532(0x1c1)]();const _0x12c49e=document[_0x27d532(0x198)](_0x27d532(0x1c2));_0x12c49e['innerHTML']='';eleicaoData['forEach'](_0x447781=>{const _0x1a868f=_0x27d532;let _0x4642cb='<div><h3\x20style=\x22border-bottom:\x202px\x20solid\x20#1abc9c;\x20padding-bottom:\x205px;\x20margin-top:\x2025px;\x22>'+_0x447781['nome']+'</h3>';const _0x4d7541=[..._0x447781['candidatos']]['sort']((_0x3e7ef9,_0x122501)=>_0x122501['votos']-_0x3e7ef9['votos']);_0x4d7541['forEach']((_0x20775d,_0x415276)=>{_0x4642cb+='<p\x20style=\x22margin:\x2010px\x200;\x20border-bottom:\x201px\x20solid\x20#eee;\x20padding-bottom:\x205px;\x22><strong>'+(_0x415276+0x1)+'º\x20'+_0x20775d['nome']+'</strong>\x20—\x20'+_0x20775d['votos']+'\x20votos</p>';}),_0x12c49e['innerHTML']+=_0x4642cb+'</div>';}),irPara(_0x27d532(0x1c3));}function gerarPDF(){const _0x536109=_0x2619,_0x450978=document['getElementById']('areaImpressao'),_0x49f3e9={'margin':0xf,'filename':'Relatorio_'+tituloEleicaoGlobal+'.pdf','html2canvas':{'scale':0x2},'jsPDF':{'unit':'mm','format':'a4','orientation':'portrait'}};html2pdf()[_0x536109(0x1c4)](_0x49f3e9)['from'](_0x450978)['save']();}function enviarSugestao(){const _0x3e012e=_0x2619,_0x4016b3=document[_0x3e012e(0x198)](_0x3e012e(0x1c5))['value'];if(!_0x4016b3)return;emailjs['send'](CONFIG['EMAIL_SERVICE'],CONFIG['EMAIL_TEMPLATE'],{'to_email':_0x3e012e(0x1c6),'validation_code':'SUGESTÃO:\x20'+_0x4016b3})['then'](()=>{const _0x438686=_0x3e012e;alert(i18n[lang][_0x438686(0x1c7)]),document['getElementById'](_0x438686(0x1c5))['value']='';});}function registrarFimEleicao(){location['reload']();}document['onkeydown']=_0x2f1504=>{if(_0x2f1504['keyCode']==0x7b||_0x2f1504['ctrlKey']&&_0x2f1504['shiftKey']&&_0x2f1504['keyCode']==0x49||_0x2f1504['ctrlKey']&&_0x2f1504['keyCode']==0x55)return![];};function _0x553d(){const _0x16b04e=['Créditos\x20Esgotados','1863582VImvIe','Seu\x20Gmail...','active','toString','INICIAR\x20VOTAÇÃO\x20🗳️','2036570mOIKqS','3056008SjGisW','forEach','notranslate','1911470hFmYyY','Seu\x20Gmail...','3815048NalYOn','constructor','value','Baixar\x20PDF\x20📄','msgVoteOk','3001306CqPihg','search','getElementById','733604fWhLhO','Configurar\x20Cargo','trim','service_oqfbzrm','https://urnaweb-backend.paulosmb1972.workers.dev','msgSelect','Finalizar\x20e\x20Sair','Salvar\x20Cargo','apply','querySelectorAll','12181500ZSTvXG','CONFIRMAR\x20VOTO','ENCERRAR\x20ELEIÇÃO','toLowerCase','data-i18n','toUpperCase','button[data-i18n=\x22btnVerifyEmail\x22]','Código\x20enviado!\x20Verifique\x20sua\x20caixa\x20de\x20entrada.','Erro\x20ao\x20conectar\x20com\x20o\x20servidor.','setupGeral','inputCupom','tituloEleicaoInput','setupCargo','nomeCargo','qtdVotos','tituloCargoAtual','innerText','setupCandidatos','fotoCand','readAsDataURL','listaTemp','<div>•\x20','value','urnaVisual','votoCargoTitulo','gridVotacao','card-candidato','onclick','pdfTituloEleicao','pdfDataHora','toLocaleString','containerResultados','resultadosScreen','set','textoFeedback','paulosmb1972@gmail.com','msgFeedOk','Verifique\x20seu\x20E-mail','_PKL4Oj92o48KurSF'];_0x553d=function(){return _0x16b04e;};return _0x553d();}
+    var _0x5352=['init','_PKL4Oj92o48KurSF','BACKEND_URL','https://urnaweb-backend.paulosmb1972.workers.dev','EMAIL_SERVICE','service_oqfbzrm','EMAIL_TEMPLATE','template_t3aio8f','CUPOM_MESTRE','MAIS3GRATIS','ADMIN_KEY','ORION001','pt','active','userEmail','value','trim','toLowerCase','@','button[data-i18n="btnVerifyEmail"]','disabled','innerText','...','/?email=','json','saldo','paymentScreen','codigo','toString','send','to_email','validation_code','Código\x20enviado!','verify','Erro\x20de\x20conexão.','Entrar','inCode','setupGeral','Código\x20incorreto.','inputCupom','toUpperCase','Cupom\x20validado!','Cupom\x20inválido.','tituloEleicaoInput','setupCargo','nomeCargo','qtdVotos','tituloCargoAtual','setupCandidatos','fotoCand','addEventListener','change','onload','target','result','readAsDataURL','nomeCand','candidatos','push','listaTemp','innerHTML','<div>•\x20','urnaVisual','votoCargoTitulo','gridVotacao','createElement','card-candidato','foto-cand','selected','confirmarVotoVisual','exibirResultados','POST','pdfTituloEleicao','pdfDataHora','toLocaleString','containerResultados','resultadosScreen','areaImpressao','Relatorio_','html2pdf','mm','a4','portrait','textoFeedback','paulosmb1972@gmail.com','onkeydown','keyCode','ctrlKey','shiftKey'];(function(_0x2d4a,_0x5352e){var _0x1600=function(_0x10f769){while(--_0x10f769){_0x2d4a['push'](_0x2d4a['shift']());}};_0x1600(++_0x5352e);}(_0x5352,0x1b3));var _0x1600=function(_0x2d4a,_0x5352e){_0x2d4a=_0x2d4a-0x0;var _0x10f769=_0x5352[_0x2d4a];return _0x10f769;};emailjs[_0x1600(0x0)](_0x1600(0x1));const CONFIG={BACKEND_URL:_0x1600(0x3),EMAIL_SERVICE:_0x1600(0x5),EMAIL_TEMPLATE:_0x1600(0x7),CUPOM_MESTRE:_0x1600(0x9),ADMIN_KEY:_0x1600(0xb)};let lang=_0x1600(0xc),userEmail='',codigoVerificacao='',eleicaoData=[],cargoTemp=null,fotoBase64='',votosSelecionados=[],indiceCargoAtual=0,tituloEleicaoGlobal='';function irPara(_0x181057){document['querySelectorAll']('.screen')['forEach'](_0x4c278f=>_0x4c278f['classList']['remove'](_0x1600(0xd))),document['getElementById'](_0x181057)['classList']['add'](_0x1600(0xd)),window['scrollTo'](0,0);}async function checkEmailBalance(){const _0x19927d=document['getElementById'](_0x1600(0xe))[_0x1600(0xf)][_0x1600(0x10)]()[_0x1600(0x11)]();if(!_0x19927d['includes'](_0x1600(0x12)))return alert('E-mail\x20inválido');userEmail=_0x19927d;const _0x1a4687=document['querySelector'](_0x1600(0x13));_0x1a4687[_0x1600(0x14)]=!![],_0x1a4687[_0x1600(0x15)]=_0x1600(0x16);try{const _0x18206d=await fetch(CONFIG['BACKEND_URL']+_0x1600(0x17)+encodeURIComponent(userEmail)),_0x45a5d1=await _0x18206d[_0x1600(0x18)]();if(_0x45a5d1[_0x1600(0x19)]<=0)irPara(_0x1600(0x1a));else{codigoVerificacao=_0x45a5d1[_0x1600(0x1b)][_0x1600(0x1c)]();await emailjs[_0x1600(0x1d)](CONFIG['EMAIL_SERVICE'],CONFIG['EMAIL_TEMPLATE'],{to_email:userEmail,validation_code:codigoVerificacao});alert(_0x1600(0x20));irPara(_0x1600(0x21));}}catch(_0x228723){alert(_0x1600(0x22));}finally{_0x1a4687[_0x1600(0x14)]=![],_0x1a4687[_0x1600(0x15)]=_0x1600(0x23);}}function validar(){const _0x24755d=document['getElementById'](_0x1600(0x24))['value'][_0x1600(0x10)]();if(_0x24755d===codigoVerificacao||_0x24755d===CONFIG['ADMIN_KEY'])irPara(_0x1600(0x25));else alert(_0x1600(0x26));}function aplicarCupom(){const _0x257088=document['getElementById'](_0x1600(0x27))['value'][_0x1600(0x10)]()[_0x1600(0x28)]();if(_0x257088===CONFIG['CUPOM_MESTRE']){alert(_0x1600(0x29));irPara(_0x1600(0x25));}else alert(_0x1600(0x2a));}function irParaCargo(){tituloEleicaoGlobal=document['getElementById'](_0x1600(0x2b))['value'];if(!tituloEleicaoGlobal)return;irPara(_0x1600(0x2c));}function proximoPassoCandidatos(){const _0x2f9012=document['getElementById'](_0x1600(0x2d))['value'];if(!_0x2f9012)return;cargoTemp={nome:_0x2f9012,limite:parseInt(document['getElementById'](_0x1600(0x2e))['value']),candidatos:[]};document['getElementById'](_0x1600(0x2f))['innerText']=_0x2f9012;irPara(_0x1600(0x30));}document['getElementById'](_0x1600(0x31))?.[_0x1600(0x32)](_0x1600(0x33),_0x37648f=>{const _0x23a35f=new FileReader();_0x23a35f[_0x1600(0x34)]=(_0x3ec82e)=>fotoBase64=_0x3ec82e[_0x1600(0x35)][_0x1600(0x36)];if(_0x37648f[_0x1600(0x35)]['files'][0])_0x23a35f[_0x1600(0x37)](_0x37648f[_0x1600(0x35)]['files'][0]);});function addCandidato(){const _0x446979=document['getElementById'](_0x1600(0x38))['value'];if(!_0x446979)return;cargoTemp[_0x1600(0x39)][_0x1600(0x3a)]({nome:_0x446979,foto:fotoBase64,votos:0});document['getElementById'](_0x1600(0x3b))[_0x1600(0x3c)]+=_0x1600(0x3d)+_0x446979+'</div>';document['getElementById'](_0x1600(0x38))['value']='';fotoBase64='';}function finalizarCargo(){eleicaoData['push'](cargoTemp);document['getElementById'](_0x1600(0x2d))['value']='';document['getElementById'](_0x1600(0x3b))['innerHTML']='';irPara(_0x1600(0x2c));}function iniciarUrna(){if(cargoTemp&&!eleicaoData['includes'](cargoTemp))eleicaoData['push'](cargoTemp);if(eleicaoData['length']===0)return;indiceCargoAtual=0;carregarCargoNaUrna();irPara(_0x1600(0x3e));}function carregarCargoNaUrna(){const _0x5735cb=eleicaoData[indiceCargoAtual];document['getElementById'](_0x1600(0x3f))['innerText']=_0x5735cb['nome'];const _0x411e74=document['getElementById'](_0x1600(0x40));_0x411e74['innerHTML']='';votosSelecionados=[];_0x5735cb['candidatos']['forEach']((_0x5f0c07,_0x24d471)=>{const _0x546c1f=document[_0x1600(0x41)]('div');_0x546c1f['className']=_0x1600(0x42);_0x546c1f['innerHTML']='<img\x20src=\x22'+(_0x5f0c07['foto']||'')+'\x22\x20class=\x22'+_0x1600(0x43)+'\x22><br><strong>'+_0x5f0c07['nome']+'</strong>';_0x546c1f['onclick']=()=>{if(votosSelecionados['includes'](_0x24d471)){votosSelecionados=votosSelecionados['filter'](_0x599607=>_0x599607!==_0x24d471);_0x546c1f['classList']['remove'](_0x1600(0x44));}else if(votosSelecionados['length']<_0x5735cb['limite']){votosSelecionados['push'](_0x24d471);_0x546c1f['classList']['add'](_0x1600(0x44));}};_0x411e74['appendChild'](_0x546c1f);});}function confirmarVotoVisual(){if(votosSelecionados['length']===0)return;votosSelecionados['forEach'](_0x272da9=>eleicaoData[indiceCargoAtual]['candidatos'][_0x272da9]['votos']++);indiceCargoAtual++;if(indiceCargoAtual<eleicaoData['length'])carregarCargoNaUrna();else{alert('Voto\x20Confirmado!');indiceCargoAtual=0;carregarCargoNaUrna();}}async function exibirResultados(){try{await fetch(CONFIG['BACKEND_URL']+'/?email='+encodeURIComponent(userEmail),{method:_0x1600(0x47)});}catch(_0x589578){}const _0x261794=new Date();document['getElementById'](_0x1600(0x48))['innerText']=tituloEleicaoGlobal;document['getElementById'](_0x1600(0x49))['innerText']=_0x261794[_0x1600(0x4a)]();const _0x12c49e=document['getElementById'](_0x1600(0x4b));_0x12c49e['innerHTML']='';eleicaoData['forEach'](_0x447781=>{let _0x4642cb='<div><h3>'+_0x447781['nome']+'</h3>';_0x447781['candidatos']['forEach'](_0x20775d=>{_0x4642cb+='<p>'+_0x20775d['nome']+':\x20'+_0x20775d['votos']+'</p>';});_0x12c49e['innerHTML']+=_0x4642cb+'</div>';});irPara(_0x1600(0x4c));}function gerarPDF(){const _0x450978=document['getElementById'](_0x1600(0x4d));const _0x49f3e9={margin:15,filename:_0x1600(0x4e)+tituloEleicaoGlobal+'.pdf',jsPDF:{unit:_0x1600(0x50),format:_0x1600(0x51),orientation:_0x1600(0x52)}};html2pdf()[_0x1600(0x4f)](_0x49f3e9)['from'](_0x450978)['save']();}document[_0x1600(0x55)]=function(_0x2f1504){if(_0x2f1504[_0x1600(0x56)]==123||(_0x2f1504[_0x1600(0x57)]&&_0x2f1504[_0x1600(0x58)]&&_0x2f1504[_0x1600(0x56)]==73))return![];};
     </script>
 </body>
 </html>
