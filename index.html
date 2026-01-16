@@ -22,6 +22,7 @@
         .foto-cand { width: 100%; height: 140px; object-fit: cover; border-radius: 5px; }
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
         .lang-box button { width: auto; padding: 5px 10px; background: #000; font-size: 11px; border: 1px solid var(--primary); }
+        #areaImpressao { background: white; color: #000; padding: 40px; border-radius: 5px; }
         footer { font-size: 10px; opacity: 0.5; padding: 20px; text-align: center; }
     </style>
 </head>
@@ -50,69 +51,70 @@
         </div>
         <input id="inputCupom" type="text" data-i18n="pCoupon" placeholder="Cupom">
         <button onclick="window.aplicarCupom()" data-i18n="btnCoupon">Validar Cupom</button>
-        <button onclick="window.irPara('login')" style="background:none; border:1px solid white;">Voltar</button>
+        <button onclick="window.irPara('login')" data-i18n="btnBack">Voltar</button>
     </div>
 
     <div id="verify" class="screen">
         <h2 data-i18n="tConfirm">Verifique seu E-mail</h2>
-        <input id="inCode" type="text" placeholder="Código">
-        <button onclick="window.validar()">Confirmar Código</button>
+        <input id="inCode" type="text" data-i18n="pCode" placeholder="Código">
+        <button onclick="window.validar()" data-i18n="btnConfirm">Confirmar Código</button>
     </div>
 
     <div id="setupGeral" class="screen">
         <h2 data-i18n="tGeneral">Início</h2>
-        <input id="tituloEleicaoInput" type="text" placeholder="Nome da Eleição">
-        <button onclick="window.irParaCargo()">Próximo</button>
+        <input id="tituloEleicaoInput" type="text" data-i18n="pElectionName" placeholder="Nome da Eleição">
+        <button onclick="window.irParaCargo()" data-i18n="btnNextStep">Próximo</button>
     </div>
 
     <div id="setupCargo" class="screen">
         <h2 data-i18n="tCargo">Cargo</h2>
-        <input id="nomeCargo" type="text" placeholder="Ex: Síndico">
+        <input id="nomeCargo" type="text" data-i18n="pCargoName" placeholder="Ex: Síndico">
         <input id="qtdVotos" type="number" value="1">
-        <button onclick="window.proximoPassoCandidatos()">Candidatos</button>
+        <button onclick="window.proximoPassoCandidatos()" data-i18n="btnNextStep">Candidatos</button>
     </div>
 
     <div id="setupCandidatos" class="screen">
         <h2 id="tituloCargoAtual"></h2>
-        <input id="nomeCand" type="text" placeholder="Nome do Candidato">
+        <input id="nomeCand" type="text" data-i18n="pCandName" placeholder="Nome do Candidato">
         <input id="fotoCand" type="file">
-        <button onclick="window.addCandidato()">Adicionar</button>
+        <button onclick="window.addCandidato()" data-i18n="btnAdd">Adicionar</button>
         <div id="listaTemp"></div>
-        <button onclick="window.finalizarCargo()">Salvar</button>
-        <button onclick="window.iniciarUrna()">URNA</button>
+        <button onclick="window.finalizarCargo()" data-i18n="btnSave">Salvar</button>
+        <button onclick="window.iniciarUrna()" data-i18n="btnUrna">URNA</button>
     </div>
 
     <div id="urnaVisual" class="screen">
         <h2 id="votoCargoTitulo"></h2>
         <div id="gridVotacao" class="grid-urna"></div>
-        <button onclick="window.confirmarVotoVisual()">CONFIRMAR VOTO</button>
-        <button onclick="window.exibirResultados()">ENCERRAR</button>
+        <button onclick="window.confirmarVotoVisual()" data-i18n="btnVote">CONFIRMAR VOTO</button>
+        <button onclick="window.exibirResultados()" data-i18n="btnEnd">ENCERRAR</button>
     </div>
 
     <div id="resultadosScreen" class="screen">
         <div id="areaImpressao">
-            <h2 id="pdfTituloEleicao"></h2>
+            <h1 id="pdfTituloEleicao" style="text-align:center; color:#0a2a66;"></h1>
+            <hr>
             <div id="containerResultados"></div>
         </div>
-        <button onclick="window.gerarPDF()">Baixar PDF</button>
-        <button onclick="location.reload()">Sair</button>
+        <button onclick="window.gerarPDF()" data-i18n="btnDownload">Baixar PDF</button>
+        <button onclick="location.reload()" data-i18n="btnExit">Sair</button>
     </div>
 
     <footer>&copy; 2026 - UrnaWeb Digital</footer>
 
     <script>
         (function(){
-            // CONFIGURAÇÕES E SENHAS OBSCURAS
-            var _0xsecret = { 'a': 'ORION001', 'b': 'ORION002', 'c': 'MAIS3GRATIS' };
+            // CONFIGURAÇÕES OCULTAS
+            var _0xsec = { 'a': 'ORION001', 'b': 'ORION002', 'c': 'MAIS3GRATIS', 'd': 'MAIS6GRATIS', 'e': 'MAIS10GRATIS' };
             var _0xids = { 's': 'service_oqfbzrm', 't': 'template_t3aio8f', 'k': '_PKL4Oj92o48KurSF' };
             
             emailjs.init(_0xids.k);
             let lang = 'pt', uE = '', cV = '', eD = [], cT = null, fB = '', vS = [], iA = 0, tG = '';
 
             const i18n = {
-                pt: { tLogin: "Acesso ao Sistema", pEmail: "Seu Gmail...", btnVerifyEmail: "Entrar", tLimit: "Créditos Esgotados", tPayOption: "Eleição Individual", tPayOption20: "Pacote 20 Eleições", pCoupon: "Cupom", tConfirm: "Verifique seu E-mail", tGeneral: "Início", tCargo: "Configurar Cargo" },
-                en: { tLogin: "System Access", pEmail: "Your Gmail...", btnVerifyEmail: "Enter", tLimit: "Limit Reached", tPayOption: "Single Election", tPayOption20: "20 Elections Pack", pCoupon: "Coupon", tConfirm: "Check Email", tGeneral: "Setup", tCargo: "Position" },
-                es: { tLogin: "Acceso", pEmail: "Su Gmail...", btnVerifyEmail: "Entrar", tLimit: "Limite Agotado", tPayOption: "Elección Individual", tPayOption20: "Paquete 20 Elecciones", pCoupon: "Cupón", tConfirm: "Verifique Email", tGeneral: "Inicio", tCargo: "Cargo" }
+                pt: { tLogin:"Acesso", pEmail:"Seu Gmail...", btnVerifyEmail:"Entrar", tLimit:"Créditos Esgotados", tPayOption:"Eleição Individual", tPayOption20:"Pacote 20 Eleições", pCoupon:"Cupom", btnCoupon:"Validar", btnBack:"Voltar", tConfirm:"Validar E-mail", pCode:"Código", btnConfirm:"Confirmar", tGeneral:"Nome da Eleição", pElectionName:"Ex: Eleição 2026", btnNextStep:"Próximo", tCargo:"Nome do Cargo", pCargoName:"Ex: Presidente", pCandName:"Nome do Candidato", btnAdd:"Adicionar", btnSave:"Salvar Cargo", btnUrna:"Iniciar Urna", btnVote:"Confirmar Voto", btnEnd:"Encerrar", btnDownload:"Baixar PDF", btnExit:"Sair" },
+                en: { tLogin:"Access", pEmail:"Your Gmail...", btnVerifyEmail:"Enter", tLimit:"No Credits", tPayOption:"Single Election", tPayOption20:"20 Pack", pCoupon:"Coupon", btnCoupon:"Validate", btnBack:"Back", tConfirm:"Verify Email", pCode:"Code", btnConfirm:"Confirm", tGeneral:"Election Title", pElectionName:"Ex: 2026 Election", btnNextStep:"Next", tCargo:"Position", pCargoName:"Ex: Manager", pCandName:"Candidate Name", btnAdd:"Add", btnSave:"Save Position", btnUrna:"Start Urna", btnVote:"Confirm Vote", btnEnd:"Finish", btnDownload:"Download PDF", btnExit:"Exit" },
+                es: { tLogin:"Acceso", pEmail:"Su Gmail...", btnVerifyEmail:"Entrar", tLimit:"Sin Créditos", tPayOption:"Elección Individual", tPayOption20:"Paquete 20", pCoupon:"Cupón", btnCoupon:"Validar", btnBack:"Volver", tConfirm:"Verificar Email", pCode:"Código", btnConfirm:"Confirmar", tGeneral:"Título de Elección", pElectionName:"Ex: Elección 2026", btnNextStep:"Siguiente", tCargo:"Cargo", pCargoName:"Ex: Director", pCandName:"Nombre Candidato", btnAdd:"Añadir", btnSave:"Guardar Cargo", btnUrna:"Iniciar Urna", btnVote:"Confirmar Voto", btnEnd:"Finalizar", btnDownload:"Bajar PDF", btnExit:"Salir" }
             };
 
             window.setLang = function(l) {
@@ -133,40 +135,34 @@
 
             window.checkEmailBalance = async function() {
                 let val = document.getElementById('userEmail').value.trim().toUpperCase();
-                if (val === _0xsecret.a) { window.irPara('setupGeral'); return; }
-                if (val === _0xsecret.b) { window.irPara('paymentScreen'); return; }
-                
-                let em = val.toLowerCase();
-                if (!em.includes('@')) return alert('Email Inválido');
-                uE = em;
-                
-                let bt = document.getElementById('btnEntrar');
-                bt.disabled = true; bt.innerText = '...';
-
+                if (val === _0xsec.a) { window.irPara('setupGeral'); return; }
+                if (val === _0xsec.b) { window.irPara('paymentScreen'); return; }
+                uE = val.toLowerCase();
+                let bt = document.getElementById('btnEntrar'); bt.disabled = true;
                 try {
                     let res = await fetch('https://urnaweb-backend.paulosmb1972.workers.dev/?email=' + uE);
                     let da = await res.json();
-                    if (da.saldo <= 0) { window.irPara('paymentScreen'); }
+                    if (da.saldo <= 0) window.irPara('paymentScreen');
                     else {
                         cV = da.codigo.toString();
                         await emailjs.send(_0xids.s, _0xids.t, { to_email: uE, validation_code: cV });
                         alert('Código Enviado!'); window.irPara('verify');
                     }
-                } catch (e) { alert('Erro de Conexão'); }
-                bt.disabled = false; bt.innerText = 'Entrar';
+                } catch (e) { alert('Erro'); }
+                bt.disabled = false;
             };
 
             window.validar = function() {
                 let i = document.getElementById('inCode').value;
-                if (i === cV || i.toUpperCase() === _0xsecret.a) window.irPara('setupGeral');
-                else alert('Código Incorreto');
+                if (i === cV || i.toUpperCase() === _0xsec.a) window.irPara('setupGeral');
+                else alert('Erro');
             };
 
             window.aplicarCupom = function() {
                 let c = document.getElementById('inputCupom').value.toUpperCase();
-                if (c === _0xsecret.c || c === _0xsecret.a) {
-                    alert('Liberado!'); window.irPara('setupGeral');
-                } else alert('Cupom Inválido');
+                if (c === _0xsec.c || c === _0xsec.d || c === _0xsec.e || c === _0xsec.a) {
+                    alert('Cupom Ativado!'); window.irPara('setupGeral');
+                } else alert('Inválido');
             };
 
             window.irParaCargo = function() {
@@ -194,7 +190,7 @@
                 document.getElementById('nomeCand').value = '';
             };
 
-            window.finalizarCargo = function() { eD.push(cT); window.irPara('setupCargo'); };
+            window.finalizarCargo = function() { eD.push(cT); window.irPara('setupCargo'); document.getElementById('nomeCargo').value=''; };
             window.iniciarUrna = function() { iA = 0; window.carregarCargoNaUrna(); window.irPara('urnaVisual'); };
 
             window.carregarCargoNaUrna = function() {
@@ -205,16 +201,17 @@
                     d.innerHTML = '<img src="' + c.foto + '" class="foto-cand"><br><strong>' + c.nome + '</strong>';
                     d.onclick = () => {
                         if (vS.includes(idx)) d.classList.remove('selected');
-                        else { vS.push(idx); d.classList.add('selected'); }
+                        else { if(vS.length < cg.limite){ vS.push(idx); d.classList.add('selected'); } }
                     };
                     gr.appendChild(d);
                 });
             };
 
             window.confirmarVotoVisual = function() {
+                if(vS.length == 0) return;
                 vS.forEach(x => eD[iA].candidatos[x].votos++); iA++;
                 if (iA < eD.length) window.carregarCargoNaUrna();
-                else { alert('Votos Registrados!'); iA = 0; window.carregarCargoNaUrna(); }
+                else { alert('Voto Confirmado!'); iA = 0; window.carregarCargoNaUrna(); }
             };
 
             window.exibirResultados = async function() {
@@ -222,8 +219,13 @@
                 document.getElementById('pdfTituloEleicao').innerText = tG;
                 let c = document.getElementById('containerResultados'); c.innerHTML = '';
                 eD.forEach(cg => {
-                    let h = '<h3>' + cg.nome + '</h3>';
-                    cg.candidatos.forEach(can => { h += '<p>' + can.nome + ': ' + can.votos + '</p>'; });
+                    let h = '<h2 style="color:#1abc9c; margin-top:20px;">' + cg.nome + '</h2>';
+                    // ORDENAÇÃO POR VOTOS (DO MAIOR PARA O MENOR)
+                    let ordenados = [...cg.candidatos].sort((a,b) => b.votos - a.votos);
+                    ordenados.forEach(can => { 
+                        h += '<div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding:5px 0;">' +
+                             '<span>' + can.nome + '</span><strong>' + can.votos + ' Votos</strong></div>';
+                    });
                     c.innerHTML += h;
                 });
                 window.irPara('resultadosScreen');
@@ -231,7 +233,7 @@
 
             window.gerarPDF = function() {
                 let el = document.getElementById('areaImpressao');
-                html2pdf().set({ margin: 10, filename: 'Relatorio.pdf' }).from(el).save();
+                html2pdf().set({ margin: 10, filename: tG + '.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(el).save();
             };
         })();
     </script>
