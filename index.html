@@ -21,7 +21,7 @@
         .foto-cand { width: 100%; height: 140px; object-fit: cover; border-radius: 5px; }
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
         .lang-box button { width: auto; padding: 5px 10px; background: #000; font-size: 11px; border: 1px solid var(--primary); }
-        #areaImpressao { background: white; color: #000; padding: 40px; }
+        #areaImpressao { background: white; color: #000; padding: 40px; width: 100%; box-sizing: border-box; }
         footer { font-size: 10px; opacity: 0.5; padding: 20px; text-align: center; }
         .res-item { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 10px 0; }
     </style>
@@ -86,7 +86,7 @@
 
     <div id="resultadosScreen" class="screen">
         <div id="areaImpressao">
-            <h1 id="pdfHeaderTitle" style="text-align:center;"></h1>
+            <h1 id="pdfHeaderTitle" style="text-align:center; color:#0a2a66;"></h1>
             <div id="containerResultados"></div>
         </div>
         <button onclick="window.gerarPDF()">Baixar PDF</button>
@@ -95,17 +95,18 @@
 
     <script>
         (function(){
+            // LOGICA OBSCURA
             const _0xAdmin = { 'r': 'RESET3', 'a': 'ORION001', 'b': 'ORION002' };
-            const _0xCups = ['MAIS3GRATIS', 'MAIS6GRATIS', 'MAIS10GRATIS'];
+            const _0xCups = { 'c3': 'MAIS3GRATIS', 'c6': 'MAIS6GRATIS', 'c10': 'MAIS10GRATIS' };
             const _0xI = { 's': 'service_oqfbzrm', 't': 'template_t3aio8f', 'k': '_PKL4Oj92o48KurSF', 'u': 'https://urnaweb-backend.paulosmb1972.workers.dev' };
             
             emailjs.init(_0xI.k);
             let lang='pt', uE='', cV='', eD=[], cT=null, fB='', vS=[], iA=0, tG='';
 
             const i18n = {
-                pt: { tLogin:"Acesso", pEmail:"E-mail...", btnVerifyEmail:"Entrar", tLimit:"Créditos Esgotados", pCoupon:"Cupom", btnCoupon:"Validar", tConfirm:"Validar Código", tGeneral:"Eleição", tCargo:"Cargo" },
-                en: { tLogin:"Login", pEmail:"Email...", btnVerifyEmail:"Enter", tLimit:"No Credits", pCoupon:"Coupon", btnCoupon:"Validate", tConfirm:"Check Code", tGeneral:"Election", tCargo:"Position" },
-                es: { tLogin:"Acceso", pEmail:"Email...", btnVerifyEmail:"Entrar", tLimit:"Sin Créditos", pCoupon:"Cupón", btnCoupon:"Validar", tConfirm:"Validar Código", tGeneral:"Elección", tCargo:"Cargo" }
+                pt: { tLogin:"Acesso", pEmail:"E-mail...", btnVerifyEmail:"Entrar", tLimit:"Créditos Esgotados", pCoupon:"Cupom", btnCoupon:"Validar", tConfirm:"Código de Validação", tGeneral:"Nome da Eleição", tCargo:"Cargo" },
+                en: { tLogin:"Access", pEmail:"Email...", btnVerifyEmail:"Enter", tLimit:"No Credits", pCoupon:"Coupon", btnCoupon:"Validate", tConfirm:"Check Code", tGeneral:"Election Name", tCargo:"Position" },
+                es: { tLogin:"Acceso", pEmail:"Email...", btnVerifyEmail:"Entrar", tLimit:"Sin Créditos", pCoupon:"Cupón", btnCoupon:"Validar", tConfirm:"Validar Código", tGeneral:"Nombre Elección", tCargo:"Cargo" }
             };
 
             window.setLang = function(l){
@@ -121,107 +122,4 @@
             };
 
             window.checkEmailBalance = async function(){
-                let val = document.getElementById('userEmail').value.trim().toUpperCase();
-                if(val === _0xAdmin.r) { alert("Reset Efetuado para paulosmb1972@gmail.com!"); uE="paulosmb1972@gmail.com"; window.irPara('setupGeral'); return; }
-                if(val === _0xAdmin.a) { window.irPara('setupGeral'); return; }
-                if(val === _0xAdmin.b) { window.irPara('paymentScreen'); return; }
-                
-                uE = val.toLowerCase();
-                let bt = document.getElementById('btnEntrar'); bt.disabled=true;
-                try {
-                    let res = await fetch(_0xI.u + '/?email=' + uE);
-                    let da = await res.json();
-                    if(da.saldo <= 0) window.irPara('paymentScreen');
-                    else {
-                        cV = da.codigo.toString();
-                        await emailjs.send(_0xI.s, _0xI.t, { to_email: uE, validation_code: cV });
-                        alert("Código enviado!"); window.irPara('verify');
-                    }
-                } catch(e){ alert("Erro de conexão"); }
-                bt.disabled=false;
-            };
-
-            window.validar = function(){
-                let i = document.getElementById('inCode').value;
-                if(i === cV || i.toUpperCase() === _0xAdmin.a) window.irPara('setupGeral');
-                else alert("Código Incorreto");
-            };
-
-            window.aplicarCupom = function(){
-                let c = document.getElementById('inputCupom').value.toUpperCase();
-                if(localStorage.getItem('cupom_'+c)) { alert("Este cupom já foi usado neste navegador."); return; }
-                if(_0xCups.includes(c) || c === _0xAdmin.a){
-                    localStorage.setItem('cupom_'+c, 'true');
-                    alert("Cupom Validado!"); window.irPara('setupGeral');
-                } else alert("Cupom Inválido");
-            };
-
-            window.irParaCargo = function(){ tG = document.getElementById('tituloEleicaoInput').value; window.irPara('setupCargo'); };
-
-            window.proximoPassoCandidatos = function(){
-                let n = document.getElementById('nomeCargo').value;
-                cT = { nome: n, limite: document.getElementById('qtdVotos').value, candidatos: [] };
-                document.getElementById('tituloCargoAtual').innerText = n;
-                window.irPara('setupCandidatos');
-            };
-
-            document.getElementById('fotoCand').addEventListener('change', e => {
-                let r = new FileReader(); r.onload = ev => fB = ev.target.result;
-                r.readAsDataURL(e.target.files[0]);
-            });
-
-            window.addCandidato = function(){
-                let n = document.getElementById('nomeCand').value;
-                cT.candidatos.push({ nome: n, foto: fB, votos: 0 });
-                document.getElementById('listaTemp').innerHTML += '<div>• '+n+'</div>';
-                document.getElementById('nomeCand').value=''; fB='';
-            };
-
-            window.finalizarCargo = function(){ eD.push(cT); window.irPara('setupCargo'); document.getElementById('nomeCargo').value=''; document.getElementById('listaTemp').innerHTML=''; };
-
-            window.iniciarVotacaoFinal = function(){
-                if(cT && !eD.includes(cT)) eD.push(cT);
-                iA = 0; window.carregarCargoNaUrna(); window.irPara('urnaVisual');
-            };
-
-            window.carregarCargoNaUrna = function(){
-                let cg = eD[iA]; document.getElementById('votoCargoTitulo').innerText = cg.nome;
-                let gr = document.getElementById('gridVotacao'); gr.innerHTML=''; vS=[];
-                cg.candidatos.forEach((c, idx) => {
-                    let d = document.createElement('div'); d.className='card-candidato';
-                    d.innerHTML = (c.foto ? '<img src="'+c.foto+'" class="foto-cand"><br>' : '') + '<strong>'+c.nome+'</strong>';
-                    d.onclick = () => {
-                        if(vS.includes(idx)) { d.classList.remove('selected'); vS = vS.filter(v=>v!==idx); }
-                        else { if(vS.length < cg.limite) { vS.push(idx); d.classList.add('selected'); } }
-                    };
-                    gr.appendChild(d);
-                });
-            };
-
-            window.confirmarVotoVisual = function(){
-                vS.forEach(x => eD[iA].candidatos[x].votos++); iA++;
-                if(iA < eD.length) window.carregarCargoNaUrna();
-                else { alert("Voto Registrado!"); iA=0; window.carregarCargoNaUrna(); }
-            };
-
-            window.exibirResultados = async function(){
-                document.getElementById('pdfHeaderTitle').innerText = tG;
-                let c = document.getElementById('containerResultados'); c.innerHTML='';
-                eD.forEach(cg => {
-                    let h = '<h3>'+cg.nome+'</h3>';
-                    let ord = [...cg.candidatos].sort((a,b)=>b.votos - a.votos);
-                    ord.forEach(can => { h += '<div class="res-item"><span>'+can.nome+'</span><strong>'+can.votos+' Votos</strong></div>'; });
-                    c.innerHTML += h;
-                });
-                window.irPara('resultadosScreen');
-                try { await fetch(_0xI.u + '/?email=' + uE, { method: 'POST' }); } catch(e){}
-            };
-
-            window.gerarPDF = function(){
-                let el = document.getElementById('areaImpressao');
-                html2pdf().set({ margin: 10, filename: tG+'.pdf', html2canvas:{scale:2} }).from(el).save();
-            };
-        })();
-    </script>
-</body>
-</html>
+                let val = document.getElementById('userEmail').value.trim().toUpperCase
