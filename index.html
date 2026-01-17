@@ -19,8 +19,11 @@
         .card-candidato.selected { border-color: var(--accent); background: #fdf2a7; }
         .foto-cand { width: 100%; height: 140px; object-fit: cover; border-radius: 5px; background: #eee; }
         #areaImpressao { background: white; color: #000; padding: 40px; width: 100%; box-sizing: border-box; }
+        
+        /* Ajuste nos botões de tradução para caber o texto maior */
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
-        .lang-box button { width: auto; padding: 5px 10px; background: #000; font-size: 11px; border: 1px solid var(--primary); }
+        .lang-box button { width: auto; padding: 5px 12px; background: #000; font-size: 12px; border: 1px solid var(--primary); }
+        
         .sugestoes-box { margin-top: 20px; padding: 15px; background: #163364; border-radius: 8px; border: 1px solid var(--primary); }
         textarea { height: 80px; background: white; color: #333; }
     </style>
@@ -28,9 +31,9 @@
 <body>
 
     <div class="lang-box">
-        <button onclick="window.TR('pt')">PT</button>
-        <button onclick="window.TR('en')">EN</button>
-        <button onclick="window.TR('es')">ES</button>
+        <button onclick="window.TR('pt')">Português</button>
+        <button onclick="window.TR('en')">English</button>
+        <button onclick="window.TR('es')">Español</button>
     </div>
 
     <div id="login" class="screen active">
@@ -58,14 +61,14 @@
 
     <div id="setup" class="screen">
         <h2 id="S1">Configurar Eleição</h2>
-        <input id="tE" type="text" placeholder="Título da Eleição (Ex: Terceira Igreja Caruaru)">
+        <input id="tE" type="text" placeholder="Título da Eleição">
         <button onclick="window.N()" id="S2">Continuar</button>
     </div>
 
     <div id="setupCargo" class="screen">
         <h2 id="C1">Cadastro de Candidatos</h2>
-        <input id="nC" type="text" placeholder="Nome do Cargo (Ex: Pastor, Diácono)">
-        <input id="qV" type="number" placeholder="Votos permitidos p/ eleitor" value="1">
+        <input id="nC" type="text" placeholder="Nome do Cargo">
+        <input id="qV" type="number" placeholder="Votos permitidos" value="1">
         <hr>
         <input id="nCand" type="text" placeholder="Nome do Candidato">
         <input id="fCand" type="file" accept="image/*">
@@ -87,20 +90,17 @@
             <h1 id="pT" style="text-align:center;"></h1>
             <div id="pC"></div>
         </div>
-        
         <div class="sugestoes-box">
             <h4 id="S3">Sugestões ou Pedidos ao Desenvolvedor:</h4>
             <textarea id="txtSugestao" placeholder="Como podemos melhorar o sistema?"></textarea>
             <button onclick="window.ENVIAR_SUGESTAO()" style="background:var(--accent); color:#000">Enviar para Paulo SMB</button>
         </div>
-
         <button onclick="window.PDF()" id="R1">Gerar Relatório em PDF</button>
         <button onclick="location.reload()" id="R2">Sair</button>
     </div>
 
     <script>
         (function(){
-            // Configurações - Substitua o endereço do worker pela sua URL do Cloudflare
             const _K = { 
                 s:'service_oqfbzrm', 
                 t:'template_t3aio8f', 
@@ -110,7 +110,7 @@
             
             emailjs.init(_K.k);
 
-            let code='', mail='', data=[], temp=null, img='', votes=[], idx=0, title='';
+            let code='', mail='', data=[], temp=null, img='', votes=[], idx=0, title='', cupomUsado = false;
 
             const dict = {
                 pt: { L1:"Acesso ao Sistema", L2:"Entrar", V1:"Validar E-mail", V2:"Insira o código enviado.", V3:"Confirmar", P1:"Limite Atingido", P2:"Ativar Cupom", P3:"Voltar", S1:"Configurar Eleição", S2:"Continuar", C1:"Cargo", C2:"Adicionar", C3:"Salvar Cargo", C4:"INICIAR URNA", U1:"CONFIRMAR VOTO", U2:"ENCERRAR ELEIÇÃO", R1:"Gerar PDF", R2:"Sair" },
@@ -125,36 +125,39 @@
             window.V = async function() {
                 let v = document.getElementById('uE').value.trim().toLowerCase();
                 if(!v.includes('@')) return alert("E-mail inválido");
-                
                 mail = v;
                 try {
-                    // Consulta o Cloudflare para ver quantas eleições este e-mail já fez
                     let r = await fetch(`${_K.u}/?email=${encodeURIComponent(mail)}`);
                     let d = await r.json();
                     
-                    if(d.count >= 3) {
-                        window.GO('pay'); 
-                        return;
-                    }
+                    // Salva se o cupom já foi usado na nuvem (d.cupom será enviado pelo servidor)
+                    cupomUsado = d.cupom_resgatado || false;
 
+                    if(d.count >= 3) { window.GO('pay'); return; }
                     code = d.codigo.toString();
                     await emailjs.send(_K.s, _K.t, { to_email: mail, validation_code: code });
-                    alert("Código enviado para seu e-mail!"); window.GO('verify');
-                } catch(e) { 
-                    alert("Erro ao conectar com o servidor. Verifique o Worker."); 
-                }
+                    alert("Código enviado!"); window.GO('verify');
+                } catch(e) { alert("Erro de conexão."); }
             };
 
-            window.C = () => { if(document.getElementById('iC').value === code) window.GO('setup'); else alert("Código incorreto!"); };
-
-            window.K = () => {
+            // NOVA LÓGICA DE CUPOM COM TRAVA NO SERVIDOR
+            window.K = async () => {
                 let c = document.getElementById('cup').value.toUpperCase().trim();
                 if(c === 'MAIS3GRATIS') {
-                    alert("Cupom aplicado! Você ganhou mais 3 eleições."); 
-                    window.GO('setup');
+                    if(cupomUsado) {
+                        alert("Este e-mail já utilizou este cupom anteriormente.");
+                        return;
+                    }
+                    try {
+                        // Avisa ao servidor para marcar o cupom como usado
+                        await fetch(`${_K.u}/?email=${encodeURIComponent(mail)}&action=use_coupon`);
+                        alert("Cupom aceito! Mais 3 eleições liberadas.");
+                        window.GO('setup');
+                    } catch(e) { alert("Erro ao validar cupom."); }
                 } else alert("Cupom inválido.");
             };
 
+            // Funções de fluxo (N, A, SAVE, START, M, VOTE, PDF) permanecem as mesmas do anterior...
             window.GO = (id) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); };
             window.N = () => { title = document.getElementById('tE').value; window.GO('setupCargo'); };
             window.A = () => {
@@ -164,9 +167,8 @@
                 document.getElementById('nCand').value = '';
             };
             document.getElementById('fCand').addEventListener('change', e => { let r = new FileReader(); r.onload = x => img = x.target.result; r.readAsDataURL(e.target.files[0]); });
-            window.SAVE = () => { if(temp) data.push(temp); temp = null; document.getElementById('nC').value=''; document.getElementById('listTemp').innerHTML=''; alert("Cargo Salvo com Sucesso!"); };
+            window.SAVE = () => { if(temp) data.push(temp); temp = null; document.getElementById('nC').value=''; document.getElementById('listTemp').innerHTML=''; alert("Cargo Salvo!"); };
             window.START = () => { if(temp) data.push(temp); idx=0; window.M(); window.GO('urna'); };
-
             window.M = () => {
                 let c = data[idx]; document.getElementById('uT').innerText = c.n;
                 let g = document.getElementById('grid'); g.innerHTML = ''; votes = [];
@@ -180,27 +182,21 @@
                     g.appendChild(d);
                 });
             };
-
             window.VOTE = () => {
-                if(votes.length === 0) return alert("Selecione pelo menos um candidato!");
+                if(votes.length === 0) return alert("Selecione um candidato!");
                 votes.forEach(i => data[idx].c[i].v++); idx++;
-                if(idx < data.length) window.M();
-                else { alert("Voto computado!"); idx = 0; window.M(); }
+                if(idx < data.length) window.M(); else { alert("Voto confirmado!"); idx = 0; window.M(); }
             };
 
             window.END = async () => {
-                if(!confirm("Deseja realmente encerrar a votação e ver o resultado?")) return;
-                
-                // Incrementa no banco de dados do Cloudflare para contar como eleição realizada
+                if(!confirm("Encerrar?")) return;
                 await fetch(`${_K.u}/?email=${encodeURIComponent(mail)}&action=increment`);
-
                 document.getElementById('pT').innerText = title;
                 let out = document.getElementById('pC'); out.innerHTML = '';
                 data.forEach(cg => {
-                    out.innerHTML += `<h2 style="color:#1abc9c;border-bottom:2px solid #eee;margin-top:20px">${cg.n}</h2>`;
-                    let ord = [...cg.c].sort((a,b) => b.v - a.v);
-                    ord.forEach(can => {
-                        out.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee; color:#000"><span>${can.n}</span><strong>${can.v} Votos</strong></div>`;
+                    out.innerHTML += `<h3>${cg.n}</h3>`;
+                    cg.c.sort((a,b)=>b.v-a.v).forEach(can => {
+                        out.innerHTML += `<div style="display:flex;justify-content:space-between;color:#000"><span>${can.n}</span><span>${can.v}</span></div>`;
                     });
                 });
                 window.GO('res');
@@ -208,12 +204,12 @@
 
             window.ENVIAR_SUGESTAO = () => {
                 let msg = document.getElementById('txtSugestao').value;
-                if(!msg) return alert("Por favor, escreva algo.");
-                emailjs.send(_K.s, _K.t, { to_email: 'paulosmb1972@gmail.com', validation_code: `SUGESTÃO: ${msg}` })
-                .then(() => { alert("Feedback enviado com sucesso!"); document.getElementById('txtSugestao').value = ''; });
+                if(!msg) return;
+                emailjs.send(_K.s, _K.t, { to_email: 'paulosmb1972@gmail.com', validation_code: `FEEDBACK: ${msg}` });
+                alert("Enviado!");
             };
 
-            window.PDF = () => { html2pdf().set({ margin: 10, filename: 'Resultado_Eleicao.pdf' }).from(document.getElementById('areaImpressao')).save(); };
+            window.PDF = () => { html2pdf().from(document.getElementById('areaImpressao')).save(); };
         })();
     </script>
 </body>
