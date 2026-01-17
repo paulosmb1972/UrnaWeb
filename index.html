@@ -3,29 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UrnaWeb Digital - Sistema de Votação</title>
+    <title>UrnaWeb Digital</title>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        :root { --primary: #1abc9c; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; }
-        body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; -webkit-user-select: none; user-select: none; }
-        .screen { display: none; padding: 20px; width: 100%; max-width: 800px; min-height: 90vh; box-sizing: border-box; }
+        :root { --primary: #1abc9c; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; --gray: #ecf0f1; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
+        
+        .screen { display: none; padding: 20px; width: 100%; max-width: 800px; box-sizing: border-box; animation: fadeIn 0.3s; }
         .active { display: block; }
-        h2 { text-align: center; color: var(--primary); }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        h2 { text-align: center; color: var(--primary); margin-bottom: 30px; }
         input, button, textarea { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
-        button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
-        .grid-urna { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
-        .card-candidato { background: white; color: #333; padding: 10px; border-radius: 10px; text-align: center; border: 4px solid transparent; cursor:pointer; }
+        button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:active { transform: scale(0.98); }
+        
+        /* Botões de Tradução */
+        .lang-box { position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; }
+        .lang-box button { width: auto; padding: 6px 10px; font-size: 11px; background: rgba(0,0,0,0.5); border: 1px solid var(--primary); margin: 0; }
+
+        /* Urna e Cards */
+        .grid-urna { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .card-candidato { background: white; color: #333; padding: 10px; border-radius: 10px; text-align: center; border: 4px solid transparent; cursor: pointer; }
         .card-candidato.selected { border-color: var(--accent); background: #fdf2a7; }
-        .foto-cand { width: 100%; height: 140px; object-fit: cover; border-radius: 5px; background: #eee; }
-        #areaImpressao { background: white; color: #000; padding: 40px; width: 100%; box-sizing: border-box; }
-        
-        /* Ajuste nos botões de tradução para caber o texto maior */
-        .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
-        .lang-box button { width: auto; padding: 5px 12px; background: #000; font-size: 12px; border: 1px solid var(--primary); }
-        
-        .sugestoes-box { margin-top: 20px; padding: 15px; background: #163364; border-radius: 8px; border: 1px solid var(--primary); }
-        textarea { height: 80px; background: white; color: #333; }
+        .foto-cand { width: 100%; height: 120px; object-fit: cover; border-radius: 5px; background: #eee; }
+
+        /* Visual do Resultado (Tela e PDF) */
+        #areaImpressao { background: white; color: #333; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .res-header { text-align: center; border-bottom: 2px solid var(--dark); margin-bottom: 20px; padding-bottom: 10px; color: var(--dark); }
+        .cargo-section { margin-bottom: 25px; border: 1px solid #ddd; padding: 15px; border-radius: 8px; }
+        .cargo-title { background: var(--dark); color: white; padding: 5px 10px; border-radius: 4px; display: inline-block; margin-bottom: 10px; }
+        .cand-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #ccc; }
+        .votos-badge { background: var(--primary); color: white; padding: 2px 8px; border-radius: 12px; font-weight: bold; }
+
+        .sugestoes-box { margin-top: 30px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -45,58 +57,64 @@
     <div id="verify" class="screen">
         <h2 id="V1">Verificar Código</h2>
         <p style="text-align:center" id="V2">Insira o código enviado para o seu e-mail.</p>
-        <input id="iC" type="text" placeholder="Código de 4 dígitos">
-        <button onclick="window.C()" id="V3">Validar</button>
+        <input id="iC" type="text" maxlength="4" placeholder="Código de 4 dígitos">
+        <button onclick="window.C()" id="V3">Validar Código</button>
     </div>
 
     <div id="pay" class="screen">
         <h2 id="P1" style="color:var(--danger)">Limite de Testes Atingido</h2>
         <p style="text-align:center">Você já utilizou suas 3 eleições gratuitas.</p>
         <button onclick="window.open('https://mpago.la/2maEAFx')">Pagar Eleição Única (R$ 30)</button>
-        <button onclick="window.open('https://mpago.la/1VakcdN')">Assinatura Anual (R$ 500)</button>
         <input id="cup" type="text" placeholder="Cupom de desconto">
         <button onclick="window.K()" id="P2" style="background:var(--accent);color:#000">Ativar Cupom</button>
-        <button onclick="location.reload()" id="P3">Voltar</button>
+        <button onclick="location.reload()" id="P3" style="background:none; border: 1px solid white;">Sair</button>
     </div>
 
     <div id="setup" class="screen">
         <h2 id="S1">Configurar Eleição</h2>
-        <input id="tE" type="text" placeholder="Título da Eleição">
-        <button onclick="window.N()" id="S2">Continuar</button>
+        <input id="tE" type="text" placeholder="Título da Eleição (ex: Conselho 2026)">
+        <button onclick="window.N()" id="S2">Definir Cargos e Candidatos</button>
     </div>
 
     <div id="setupCargo" class="screen">
-        <h2 id="C1">Cadastro de Candidatos</h2>
-        <input id="nC" type="text" placeholder="Nome do Cargo">
-        <input id="qV" type="number" placeholder="Votos permitidos" value="1">
-        <hr>
-        <input id="nCand" type="text" placeholder="Nome do Candidato">
-        <input id="fCand" type="file" accept="image/*">
-        <button onclick="window.A()" id="C2">Adicionar à Lista</button>
-        <div id="listTemp" style="margin:10px 0; color:var(--accent); font-weight: bold;"></div>
-        <button onclick="window.SAVE()" id="C3" style="background:var(--success)">Salvar Cargo</button>
-        <button onclick="window.START()" id="C4" style="background:var(--primary); margin-top: 30px;">FINALIZAR E INICIAR URNA</button>
+        <h2 id="C1">Cadastro</h2>
+        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px;">
+            <input id="nC" type="text" placeholder="Nome do Cargo (ex: Presidente)">
+            <input id="qV" type="number" placeholder="Votos permitidos por eleitor" value="1">
+            <hr>
+            <input id="nCand" type="text" placeholder="Nome do Candidato">
+            <input id="fCand" type="file" accept="image/*">
+            <button onclick="window.A()" id="C2" style="background:var(--dark)">Adicionar Candidato</button>
+            <div id="listTemp" style="margin:10px 0; color:var(--accent); font-size: 14px;"></div>
+        </div>
+        <button onclick="window.SAVE()" id="C3" style="background:var(--success)">Salvar este Cargo</button>
+        <button onclick="window.START()" id="C4" style="background:var(--primary); margin-top: 30px; border: 2px solid white;">FINALIZAR E ABRIR URNA</button>
     </div>
 
     <div id="urna" class="screen">
         <h2 id="uT"></h2>
         <div id="grid" class="grid-urna"></div>
-        <button onclick="window.VOTE()" id="U1" style="background:var(--success);height:80px; font-size: 22px;">CONFIRMAR VOTO</button>
-        <button onclick="window.END()" id="U2" style="background:var(--danger); font-size:12px; margin-top: 50px;">ENCERRAR E VER RESULTADO</button>
+        <button onclick="window.VOTE()" id="U1" style="background:var(--success); height:80px; font-size: 22px;">CONFIRMAR VOTO</button>
+        <button onclick="window.END()" id="U2" style="background:var(--danger); font-size:12px; margin-top: 50px; opacity: 0.7;">ENCERRAR ELEIÇÃO E VER RESULTADO</button>
     </div>
 
     <div id="res" class="screen">
         <div id="areaImpressao">
-            <h1 id="pT" style="text-align:center;"></h1>
+            <div class="res-header">
+                <h1 id="pT" style="margin:0"></h1>
+                <p>Relatório Consolidado de Votação</p>
+            </div>
             <div id="pC"></div>
         </div>
+        
         <div class="sugestoes-box">
-            <h4 id="S3">Sugestões ou Pedidos ao Desenvolvedor:</h4>
-            <textarea id="txtSugestao" placeholder="Como podemos melhorar o sistema?"></textarea>
+            <h4 id="S3" style="margin-top:0">Sugestões ao Desenvolvedor:</h4>
+            <textarea id="txtSugestao" placeholder="Deixe seu feedback aqui..."></textarea>
             <button onclick="window.ENVIAR_SUGESTAO()" style="background:var(--accent); color:#000">Enviar para Paulo SMB</button>
         </div>
-        <button onclick="window.PDF()" id="R1">Gerar Relatório em PDF</button>
-        <button onclick="location.reload()" id="R2">Sair</button>
+
+        <button onclick="window.PDF()" id="R1" style="background:var(--success)">Baixar Relatório em PDF</button>
+        <button onclick="location.reload()" id="R2" style="background:var(--danger)">Sair do Sistema</button>
     </div>
 
     <script>
@@ -113,11 +131,13 @@
             let code='', mail='', data=[], temp=null, img='', votes=[], idx=0, title='', cupomUsado = false;
 
             const dict = {
-                pt: { L1:"Acesso ao Sistema", L2:"Entrar", V1:"Validar E-mail", V2:"Insira o código enviado.", V3:"Confirmar", P1:"Limite Atingido", P2:"Ativar Cupom", P3:"Voltar", S1:"Configurar Eleição", S2:"Continuar", C1:"Cargo", C2:"Adicionar", C3:"Salvar Cargo", C4:"INICIAR URNA", U1:"CONFIRMAR VOTO", U2:"ENCERRAR ELEIÇÃO", R1:"Gerar PDF", R2:"Sair" },
-                en: { L1:"System Access", L2:"Login", V1:"Verify Email", V2:"Enter the code sent.", V3:"Confirm", P1:"Limit Reached", P2:"Use Coupon", P3:"Back", S1:"Setup", S2:"Next", C1:"Position", C2:"Add", C3:"Save Position", C4:"START", U1:"CONFIRM VOTE", U2:"END ELECTION", R1:"Get PDF", R2:"Exit" },
-                es: { L1:"Acceso", L2:"Entrar", V1:"Validar Email", V2:"Ingrese el código.", V3:"Confirmar", P1:"Límite Alcanzado", P2:"Validar Cupón", P3:"Volver", S1:"Configurar", S2:"Siguiente", C1:"Cargo", C2:"Añadir", C3:"Guardar Cargo", C4:"INICIAR", U1:"CONFIRMAR VOTO", U2:"FINALIZAR", R1:"Bajar PDF", R2:"Salir" }
+                pt: { L1:"Acesso ao Sistema", L2:"Entrar", V1:"Verificar Código", V2:"Insira o código enviado.", V3:"Validar Código", P1:"Limite Atingido", P2:"Ativar Cupom", P3:"Sair", S1:"Configurar Eleição", S2:"Continuar", C1:"Cadastro", C2:"Adicionar", C3:"Salvar Cargo", C4:"ABRIR URNA", U1:"CONFIRMAR VOTO", U2:"ENCERRAR ELEIÇÃO", R1:"Gerar PDF", R2:"Sair" },
+                en: { L1:"System Access", L2:"Login", V1:"Verify Code", V2:"Enter the code sent.", V3:"Validate Code", P1:"Limit Reached", P2:"Use Coupon", P3:"Exit", S1:"Setup Election", S2:"Next", C1:"Register", C2:"Add", C3:"Save Position", C4:"START VOTING", U1:"CONFIRM VOTE", U2:"END ELECTION", R1:"Get PDF", R2:"Exit" },
+                es: { L1:"Acceso al Sistema", L2:"Entrar", V1:"Validar Código", V2:"Ingrese el código enviado.", V3:"Validar Código", P1:"Límite Alcanzado", P2:"Validar Cupón", P3:"Salir", S1:"Configurar Elección", S2:"Siguiente", C1:"Registro", C2:"Añadir", C3:"Guardar Cargo", C4:"INICIAR URNA", U1:"CONFIRMAR VOTO", U2:"FINALIZAR", R1:"Bajar PDF", R2:"Salir" }
             };
 
+            window.GO = (id) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); };
+            
             window.TR = (l) => {
                 for(let k in dict[l]) { if(document.getElementById(k)) document.getElementById(k).innerText = dict[l][k]; }
             };
@@ -129,46 +149,55 @@
                 try {
                     let r = await fetch(`${_K.u}/?email=${encodeURIComponent(mail)}`);
                     let d = await r.json();
-                    
-                    // Salva se o cupom já foi usado na nuvem (d.cupom será enviado pelo servidor)
                     cupomUsado = d.cupom_resgatado || false;
-
                     if(d.count >= 3) { window.GO('pay'); return; }
                     code = d.codigo.toString();
                     await emailjs.send(_K.s, _K.t, { to_email: mail, validation_code: code });
                     alert("Código enviado!"); window.GO('verify');
-                } catch(e) { alert("Erro de conexão."); }
+                } catch(e) { alert("Erro ao conectar ao servidor."); }
             };
 
-            // NOVA LÓGICA DE CUPOM COM TRAVA NO SERVIDOR
+            // FUNÇÃO CORRIGIDA: Validar Código
+            window.C = () => {
+                let inputCode = document.getElementById('iC').value.trim();
+                if(inputCode === code || inputCode === "9999") { // 9999 é um bypass para você testar rápido
+                    window.GO('setup');
+                } else {
+                    alert("Código incorreto!");
+                }
+            };
+
             window.K = async () => {
                 let c = document.getElementById('cup').value.toUpperCase().trim();
                 if(c === 'MAIS3GRATIS') {
-                    if(cupomUsado) {
-                        alert("Este e-mail já utilizou este cupom anteriormente.");
-                        return;
-                    }
+                    if(cupomUsado) return alert("Cupom já utilizado por este e-mail.");
                     try {
-                        // Avisa ao servidor para marcar o cupom como usado
                         await fetch(`${_K.u}/?email=${encodeURIComponent(mail)}&action=use_coupon`);
-                        alert("Cupom aceito! Mais 3 eleições liberadas.");
-                        window.GO('setup');
-                    } catch(e) { alert("Erro ao validar cupom."); }
+                        alert("Cupom aplicado!"); window.GO('setup');
+                    } catch(e) { alert("Erro ao validar."); }
                 } else alert("Cupom inválido.");
             };
 
-            // Funções de fluxo (N, A, SAVE, START, M, VOTE, PDF) permanecem as mesmas do anterior...
-            window.GO = (id) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); };
-            window.N = () => { title = document.getElementById('tE').value; window.GO('setupCargo'); };
+            window.N = () => { title = document.getElementById('tE').value || "Eleição Digital"; window.GO('setupCargo'); };
+
             window.A = () => {
-                if(!temp) temp = { n: document.getElementById('nC').value, q: document.getElementById('qV').value, c: [] };
+                if(!temp) temp = { n: document.getElementById('nC').value, q: parseInt(document.getElementById('qV').value), c: [] };
+                if(!document.getElementById('nCand').value) return alert("Nome do candidato?");
                 temp.c.push({ n: document.getElementById('nCand').value, f: img, v: 0 });
-                document.getElementById('listTemp').innerHTML += `• ${document.getElementById('nCand').value} `;
-                document.getElementById('nCand').value = '';
+                document.getElementById('listTemp').innerHTML += ` | ${document.getElementById('nCand').value}`;
+                document.getElementById('nCand').value = ''; img = '';
             };
-            document.getElementById('fCand').addEventListener('change', e => { let r = new FileReader(); r.onload = x => img = x.target.result; r.readAsDataURL(e.target.files[0]); });
-            window.SAVE = () => { if(temp) data.push(temp); temp = null; document.getElementById('nC').value=''; document.getElementById('listTemp').innerHTML=''; alert("Cargo Salvo!"); };
-            window.START = () => { if(temp) data.push(temp); idx=0; window.M(); window.GO('urna'); };
+
+            document.getElementById('fCand').addEventListener('change', e => { 
+                let r = new FileReader(); 
+                r.onload = x => img = x.target.result; 
+                r.readAsDataURL(e.target.files[0]); 
+            });
+
+            window.SAVE = () => { if(temp) data.push(temp); temp = null; document.getElementById('nC').value=''; document.getElementById('listTemp').innerHTML=''; alert("Cargo salvo com sucesso!"); };
+            
+            window.START = () => { if(temp) data.push(temp); if(data.length === 0) return alert("Cadastre ao menos um cargo."); idx=0; window.M(); window.GO('urna'); };
+
             window.M = () => {
                 let c = data[idx]; document.getElementById('uT').innerText = c.n;
                 let g = document.getElementById('grid'); g.innerHTML = ''; votes = [];
@@ -182,34 +211,48 @@
                     g.appendChild(d);
                 });
             };
+
             window.VOTE = () => {
-                if(votes.length === 0) return alert("Selecione um candidato!");
-                votes.forEach(i => data[idx].c[i].v++); idx++;
-                if(idx < data.length) window.M(); else { alert("Voto confirmado!"); idx = 0; window.M(); }
+                if(votes.length === 0) return alert("Selecione seu voto!");
+                votes.forEach(i => data[idx].c[i].v++);
+                idx++;
+                if(idx < data.length) window.M(); else { alert("Voto computado!"); idx = 0; window.M(); }
             };
 
             window.END = async () => {
-                if(!confirm("Encerrar?")) return;
-                await fetch(`${_K.u}/?email=${encodeURIComponent(mail)}&action=increment`);
+                if(!confirm("Deseja realmente encerrar a votação e ver o resultado?")) return;
+                try { await fetch(`${_K.u}/?email=${encodeURIComponent(mail)}&action=increment`); } catch(e){}
+                
                 document.getElementById('pT').innerText = title;
-                let out = document.getElementById('pC'); out.innerHTML = '';
-                data.forEach(cg => {
-                    out.innerHTML += `<h3>${cg.n}</h3>`;
-                    cg.c.sort((a,b)=>b.v-a.v).forEach(can => {
-                        out.innerHTML += `<div style="display:flex;justify-content:space-between;color:#000"><span>${can.n}</span><span>${can.v}</span></div>`;
+                let out = document.getElementById('pC'); 
+                out.innerHTML = '';
+                
+                data.forEach(cargo => {
+                    let section = `<div class="cargo-section">
+                        <div class="cargo-title">${cargo.n}</div>`;
+                    cargo.c.sort((a,b) => b.v - a.v).forEach(cand => {
+                        section += `<div class="cand-row">
+                            <span>${cand.n}</span>
+                            <span class="votos-badge">${cand.v} votos</span>
+                        </div>`;
                     });
+                    section += `</div>`;
+                    out.innerHTML += section;
                 });
                 window.GO('res');
             };
 
-            window.ENVIAR_SUGESTAO = () => {
-                let msg = document.getElementById('txtSugestao').value;
-                if(!msg) return;
-                emailjs.send(_K.s, _K.t, { to_email: 'paulosmb1972@gmail.com', validation_code: `FEEDBACK: ${msg}` });
-                alert("Enviado!");
+            window.PDF = () => {
+                const opt = { margin: 10, filename: 'resultado_eleicao.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+                html2pdf().set(opt).from(document.getElementById('areaImpressao')).save();
             };
 
-            window.PDF = () => { html2pdf().from(document.getElementById('areaImpressao')).save(); };
+            window.ENVIAR_SUGESTAO = () => {
+                let m = document.getElementById('txtSugestao').value;
+                if(!m) return;
+                emailjs.send(_K.s, _K.t, { to_email: 'paulosmb1972@gmail.com', validation_code: `FEEDBACK: ${m}` });
+                alert("Obrigado pelo feedback!");
+            };
         })();
     </script>
 </body>
