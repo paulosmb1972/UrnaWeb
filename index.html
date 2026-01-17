@@ -77,3 +77,185 @@
         <button onclick="window.finalizarCargo()" style="background:var(--success)" id="btn_salvar_novo">Salvar e Novo Cargo</button>
         <button onclick="window.iniciarVotacaoFinal()" style="background:var(--accent); color:black;" id="btn_concluir">CONCLUIR E INICIAR URNA</button>
     </div>
+
+    <div id="urnaVisual" class="screen">
+        <h2 id="votoCargoTitulo"></h2>
+        <div id="gridVotacao" class="grid-urna"></div>
+        <button onclick="window.confirmarVotoVisual()" id="btn_confirma_voto">CONFIRMAR VOTO</button>
+        <button onclick="window.exibirResultados()" id="btn_encerrar">ENCERRAR VOTAÇÃO</button>
+    </div>
+
+    <div id="resultadosScreen" class="screen">
+        <div id="areaImpressao">
+            <h1 id="pdfHeaderTitle" style="text-align:center; color:#0a2a66;"></h1>
+            <p style="text-align:center; color:#666;" id="txt_relatorio">Relatório Oficial de Apuração</p>
+            <hr>
+            <div id="containerResultados"></div>
+        </div>
+        <button onclick="window.gerarPDF()" id="btn_pdf">Baixar PDF</button>
+        <button onclick="location.reload()" id="btn_sair">Sair</button>
+    </div>
+
+    <script>
+        (function(){
+            // CONFIGURAÇÕES OCULTAS
+            const _0xAD = { 'r': 'RESET3', 'a': 'ORION001', 'b': 'ORION002' };
+            const _0xCU = { 'c3': 'MAIS3GRATIS', 'c6': 'MAIS6GRATIS', 'c10': 'MAIS10GRATIS' };
+            const _0xID = { 's': 'service_oqfbzrm', 't': 'template_t3aio8f', 'k': '_PKL4Oj92o48KurSF', 'u': 'https://urnaweb-backend.paulosmb1972.workers.dev' };
+            
+            emailjs.init(_0xID.k);
+
+            let currentLang='pt', uE='', cV='', eD=[], cT=null, fB='', vS=[], iA=0, tG='';
+
+            // DICIONÁRIO DE TRADUÇÃO TOTAL
+            const dicionario = {
+                pt: {
+                    txt_titulo_login: "Acesso ao Sistema", userEmail: "Seu E-mail...", btnEntrar: "Entrar",
+                    txt_titulo_pagto: "Créditos Esgotados", inputCupom: "Código do Cupom", btn_validar_cupom: "Validar Cupom", btn_voltar: "Voltar",
+                    txt_titulo_verify: "Verifique seu E-mail", inCode: "Digite o código enviado...", btn_confirmar_cod: "Confirmar Código",
+                    txt_titulo_eleicao: "Configurar Eleição", tituloEleicaoInput: "Nome da Eleição", btn_proximo: "Próximo Passo",
+                    txt_titulo_cargo: "Nome do Cargo", nomeCargo: "Ex: Síndico", btn_add_cand: "Adicionar Candidatos",
+                    nomeCand: "Nome do Candidato", btn_incluir: "Adicionar", btn_salvar_novo: "Salvar e Novo Cargo", btn_concluir: "CONCLUIR E INICIAR URNA",
+                    btn_confirma_voto: "CONFIRMAR VOTO", btn_encerrar: "ENCERRAR VOTAÇÃO",
+                    txt_relatorio: "Relatório Oficial de Apuração", btn_pdf: "Baixar PDF", btn_sair: "Sair do Sistema"
+                },
+                en: {
+                    txt_titulo_login: "System Access", userEmail: "Your Email...", btnEntrar: "Enter",
+                    txt_titulo_pagto: "Credits Exhausted", inputCupom: "Coupon Code", btn_validar_cupom: "Validate Coupon", btn_voltar: "Back",
+                    txt_titulo_verify: "Check your Email", inCode: "Enter the code sent...", btn_confirmar_cod: "Confirm Code",
+                    txt_titulo_eleicao: "Setup Election", tituloEleicaoInput: "Election Name", btn_proximo: "Next Step",
+                    txt_titulo_cargo: "Position Name", nomeCargo: "Ex: Manager", btn_add_cand: "Add Candidates",
+                    nomeCand: "Candidate Name", btn_incluir: "Add", btn_salvar_novo: "Save and New Position", btn_concluir: "FINISH AND START URNA",
+                    btn_confirma_voto: "CONFIRM VOTE", btn_encerrar: "END ELECTION",
+                    txt_relatorio: "Official Results Report", btn_pdf: "Download PDF", btn_sair: "Exit System"
+                },
+                es: {
+                    txt_titulo_login: "Acceso al Sistema", userEmail: "Su Email...", btnEntrar: "Entrar",
+                    txt_titulo_pagto: "Créditos Agotados", inputCupom: "Código del Cupón", btn_validar_cupom: "Validar Cupón", btn_voltar: "Volver",
+                    txt_titulo_verify: "Verifique su Email", inCode: "Ingrese el código enviado...", btn_confirmar_cod: "Confirmar Código",
+                    txt_titulo_eleicao: "Configurar Elección", tituloEleicaoInput: "Nombre de Elección", btn_proximo: "Siguiente Paso",
+                    txt_titulo_cargo: "Nombre del Cargo", nomeCargo: "Ex: Director", btn_add_cand: "Añadir Candidatos",
+                    nomeCand: "Nombre del Candidato", btn_incluir: "Añadir", btn_salvar_novo: "Guardar y Nuevo Cargo", btn_concluir: "CONCLUIR E INICIAR URNA",
+                    btn_confirma_voto: "CONFIRMAR VOTO", btn_encerrar: "FINALIZAR ELECCIÓN",
+                    txt_relatorio: "Informe Oficial de Resultados", btn_pdf: "Descargar PDF", btn_sair: "Salir del Sistema"
+                }
+            };
+
+            window.traduzir = function(lang) {
+                currentLang = lang;
+                const trad = dicionario[lang];
+                // Traduz títulos e botões
+                for (let id in trad) {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        if (el.tagName === "INPUT") el.placeholder = trad[id];
+                        else el.innerText = trad[id];
+                    }
+                }
+            };
+
+            window.irPara = (id) => {
+                document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+                document.getElementById(id).classList.add('active');
+            };
+
+            window.checkEmailBalance = async function(){
+                let val = document.getElementById('userEmail').value.trim().toUpperCase();
+                if(val === _0xAD.r) { uE="paulosmb1972@gmail.com"; alert("Acesso Master Liberado!"); window.irPara('setupGeral'); return; }
+                if(val === _0xAD.a) { window.irPara('setupGeral'); return; }
+                if(val === _0xAD.b) { window.irPara('paymentScreen'); return; }
+                
+                uE = val.toLowerCase();
+                if(!uE.includes('@')) return alert("Email Inválido");
+                
+                let bt = document.getElementById('btnEntrar'); bt.disabled=true; bt.innerText="...";
+                try {
+                    let res = await fetch(_0xID.u + '/?email=' + encodeURIComponent(uE));
+                    let da = await res.json();
+                    if(da.saldo <= 0) window.irPara('paymentScreen');
+                    else {
+                        cV = da.codigo.toString();
+                        await emailjs.send(_0xID.s, _0xID.t, { to_email: uE, validation_code: cV });
+                        alert("Código enviado!"); window.irPara('verify');
+                    }
+                } catch(e){ alert("Erro de envio. Verifique se o Worker e o EmailJS estão ativos."); }
+                bt.disabled=false; bt.innerText="Entrar";
+            };
+
+            window.validar = () => {
+                let i = document.getElementById('inCode').value.trim();
+                if(i === cV || i.toUpperCase() === _0xAD.a) window.irPara('setupGeral');
+                else alert("Código Incorreto");
+            };
+
+            window.aplicarCupom = () => {
+                let c = document.getElementById('inputCupom').value.toUpperCase().trim();
+                if(localStorage.getItem('cupom_' + c)) return alert("Cupom já utilizado.");
+                if(Object.values(_0xCU).includes(c) || c === _0xAD.a){
+                    localStorage.setItem('cupom_' + c, '1');
+                    alert("Cupom Ativado!"); window.irPara('setupGeral');
+                } else alert("Cupom Inválido");
+            };
+
+            window.irParaCargo = () => { tG = document.getElementById('tituloEleicaoInput').value || "Eleição"; window.irPara('setupCargo'); };
+            window.proximoPassoCandidatos = () => {
+                let n = document.getElementById('nomeCargo').value;
+                cT = { nome: n, limite: document.getElementById('qtdVotos').value, candidatos: [] };
+                document.getElementById('tituloCargoAtual').innerText = n;
+                window.irPara('setupCandidatos');
+            };
+            document.getElementById('fotoCand').addEventListener('change', e => {
+                let r = new FileReader(); r.onload = ev => fB = ev.target.result;
+                r.readAsDataURL(e.target.files[0]);
+            });
+            window.addCandidato = () => {
+                let n = document.getElementById('nomeCand').value; if(!n) return;
+                cT.candidatos.push({ nome: n, foto: fB, votos: 0 });
+                document.getElementById('listaTemp').innerHTML += '<div>• '+n+'</div>';
+                document.getElementById('nomeCand').value=''; fB='';
+            };
+            window.finalizarCargo = () => { eD.push(cT); window.irPara('setupCargo'); document.getElementById('nomeCargo').value=''; document.getElementById('listaTemp').innerHTML=''; };
+            window.iniciarVotacaoFinal = () => { if(cT && !eD.includes(cT)) eD.push(cT); iA = 0; window.carregarCargoNaUrna(); window.irPara('urnaVisual'); };
+            
+            window.carregarCargoNaUrna = () => {
+                let cg = eD[iA]; document.getElementById('votoCargoTitulo').innerText = cg.nome;
+                let gr = document.getElementById('gridVotacao'); gr.innerHTML=''; vS=[];
+                cg.candidatos.forEach((c, idx) => {
+                    let d = document.createElement('div'); d.className='card-candidato';
+                    d.innerHTML = (c.foto ? '<img src="'+c.foto+'" class="foto-cand"><br>' : '') + '<strong>'+c.nome+'</strong>';
+                    d.onclick = () => {
+                        if(vS.includes(idx)) { d.classList.remove('selected'); vS = vS.filter(v=>v!==idx); }
+                        else { if(vS.length < cg.limite) { vS.push(idx); d.classList.add('selected'); } }
+                    };
+                    gr.appendChild(d);
+                });
+            };
+
+            window.confirmarVotoVisual = () => {
+                if(vS.length === 0) return alert("Vote em alguém!");
+                vS.forEach(x => eD[iA].candidatos[x].votos++); iA++;
+                if(iA < eD.length) window.carregarCargoNaUrna();
+                else { alert("Voto Registrado!"); iA=0; window.carregarCargoNaUrna(); }
+            };
+
+            window.exibirResultados = async function(){
+                document.getElementById('pdfHeaderTitle').innerText = tG;
+                let c = document.getElementById('containerResultados'); c.innerHTML='';
+                eD.forEach(cg => {
+                    let h = '<h2 style="color:#1abc9c; border-bottom:1px solid #eee; margin-top:20px;">'+cg.nome+'</h2>';
+                    let ord = [...cg.candidatos].sort((a,b)=>b.votos - a.votos);
+                    ord.forEach(can => { h += '<div class="res-item"><span>'+can.nome+'</span><strong>'+can.votos+' Votos</strong></div>'; });
+                    c.innerHTML += h;
+                });
+                window.irPara('resultadosScreen');
+                try { await fetch(_0xID.u + '/?email=' + uE, { method: 'POST' }); } catch(e){}
+            };
+
+            window.gerarPDF = function(){
+                let el = document.getElementById('areaImpressao');
+                html2pdf().set({ margin: 10, filename: tG+'.pdf', html2canvas:{scale:2} }).from(el).save();
+            };
+        })();
+    </script>
+</body>
+</html>
