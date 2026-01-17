@@ -27,12 +27,12 @@
         .card-candidato.selected { border-color: var(--accent); background: #fdf2a7; }
         .foto-cand { width: 100%; height: 130px; object-fit: cover; border-radius: 5px; background: #eee; }
 
-        /* Ajustes para o PDF não quebrar */
-        #areaImpressao { background: white; color: #333 !important; padding: 30px; width: 100%; box-sizing: border-box; border-radius: 10px; }
-        .cargo-container { margin-bottom: 20px; border: 1px solid #333; page-break-inside: avoid; }
-        .cargo-header { background: #0a2a66; color: white !important; padding: 8px; font-weight: bold; }
+        /* Ajustes de Impressão e PDF */
+        #areaImpressao { background: white !important; color: #333 !important; padding: 30px; width: 100%; box-sizing: border-box; border-radius: 10px; display: block !important; }
+        .cargo-container { margin-bottom: 20px; border: 1px solid #333; page-break-inside: avoid; display: block; clear: both; }
+        .cargo-header { background: #0a2a66 !important; color: white !important; padding: 8px; font-weight: bold; -webkit-print-color-adjust: exact; }
         .candidato-linha { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; color: #000 !important; }
-        .votos-tag { font-weight: bold; color: #1abc9c; }
+        .votos-tag { font-weight: bold; color: #1abc9c !important; }
 
         .sugestoes-box { margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px; border: 1px solid var(--primary); }
     </style>
@@ -97,11 +97,10 @@
     <div id="res" class="screen">
         <div id="areaImpressao">
             <div class="res-header">
-                <h1 id="pT"></h1>
-                <p>Relatório de Apuração Final</p>
+                <h1 id="pT" style="color: #0a2a66 !important;"></h1>
+                <p style="color: #333 !important;">Relatório de Apuração Final</p>
             </div>
-            <div id="pC"></div>
-        </div>
+            <div id="pC"></div> </div>
         <div class="sugestoes-box">
             <h4 id="S3" style="margin:0 0 10px 0">Feedback:</h4>
             <textarea id="txtSugestao" placeholder="Dúvidas ou sugestões..."></textarea>
@@ -151,16 +150,13 @@
                 else alert("Código incorreto!");
             };
 
-            // CUPOM E SENHA ADMIN orion001
             window.K = async () => {
                 let c = document.getElementById('cup').value.trim();
-                // Senha Admin: orion001 (Indefinido)
                 if(c === 'orion001') {
                     alert("Acesso Administrador Liberado!");
                     window.GO('setup');
                     return;
                 }
-                // Cupom Único: MAIS3GRATIS
                 if(c.toUpperCase() === 'MAIS3GRATIS') {
                     if(cupomUsado) return alert("Cupom já utilizado.");
                     try {
@@ -222,16 +218,22 @@
                 window.GO('res');
             };
 
-            // CORREÇÃO DO PDF: Força cores e escala
+            // AJUSTE FINAL PDF: Captura o container inteiro e garante a visibilidade
             window.PDF = () => {
                 const element = document.getElementById('areaImpressao');
                 const opt = { 
-                    margin: [10, 10, 10, 10], 
+                    margin: 10, 
                     filename: 'Resultado_Eleicao.pdf', 
                     image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+                    html2canvas: { 
+                        scale: 2, 
+                        useCORS: true, 
+                        letterRendering: true,
+                        scrollY: 0
+                    },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
                 };
+                // Gera o PDF a partir do elemento 'areaImpressao' que agora contém todos os cargos
                 html2pdf().set(opt).from(element).save();
             };
 
