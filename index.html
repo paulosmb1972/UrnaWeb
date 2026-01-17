@@ -27,56 +27,57 @@
 </head>
 <body oncontextmenu="return false;">
     <div class="lang-box">
-        <button onclick="window.L('pt')">Português</button>
-        <button onclick="window.L('en')">English</button>
-        <button onclick="window.L('es')">Español</button>
+        <button onclick="window.TR('pt')">Português</button>
+        <button onclick="window.TR('en')">English</button>
+        <button onclick="window.TR('es')">Español</button>
     </div>
 
     <div id="login" class="screen active">
-        <h2 id="t1">Acesso ao Sistema</h2>
-        <input id="uE" type="email" placeholder="Seu E-mail de Identificação...">
-        <button onclick="window.V()">Entrar</button>
+        <h2 id="L1">Acesso ao Sistema</h2>
+        <input id="uE" type="email" placeholder="E-mail de Identificação...">
+        <button onclick="window.V()" id="L2">Entrar</button>
     </div>
 
     <div id="verify" class="screen">
-        <h2 id="t2">Validar Acesso</h2>
-        <p style="text-align:center">Enviamos um código para seu e-mail.</p>
-        <input id="iC" type="text" placeholder="Código de 6 dígitos">
-        <button onclick="window.C()">Validar Código</button>
+        <h2 id="V1">Validar E-mail</h2>
+        <p style="text-align:center" id="V2">Insira o código enviado.</p>
+        <input id="iC" type="text" placeholder="Código">
+        <button onclick="window.C()" id="V3">Confirmar</button>
     </div>
 
     <div id="pay" class="screen">
-        <h2 style="color:var(--danger)">Créditos Esgotados</h2>
-        <button onclick="window.open('https://mpago.la/2maEAFx')">Pagar R$ 30,00</button>
-        <button onclick="window.open('https://mpago.la/1VakcdN')">Pagar R$ 500,00</button>
+        <h2 id="P1" style="color:var(--danger)">Créditos Esgotados</h2>
+        <button onclick="window.open('https://mpago.la/2maEAFx')">R$ 30,00</button>
+        <button onclick="window.open('https://mpago.la/1VakcdN')">R$ 500,00</button>
         <input id="cup" type="text" placeholder="Cupom">
-        <button onclick="window.K()" style="background:var(--accent);color:#000">Validar Cupom</button>
+        <button onclick="window.K()" id="P2" style="background:var(--accent);color:#000">Validar Cupom</button>
+        <button onclick="window.GO('login')" id="P3">Voltar</button>
     </div>
 
     <div id="setup" class="screen">
-        <h2>Início da Eleição</h2>
+        <h2 id="S1">Configurar Eleição</h2>
         <input id="tE" type="text" placeholder="Nome da Eleição">
-        <button onclick="window.N()">Próximo Passo</button>
+        <button onclick="window.N()" id="S2">Próximo</button>
     </div>
 
     <div id="setupCargo" class="screen">
-        <h2>Configurar Cargo</h2>
+        <h2 id="C1">Configurar Cargo</h2>
         <input id="nC" type="text" placeholder="Nome do Cargo">
         <input id="qV" type="number" value="1">
         <hr>
-        <input id="nCand" type="text" placeholder="Candidato">
+        <input id="nCand" type="text" placeholder="Nome do Candidato">
         <input id="fCand" type="file" accept="image/*">
-        <button onclick="window.A()" style="background:var(--accent);color:#000">Incluir</button>
-        <div id="listTemp" style="color:var(--accent)"></div>
-        <button onclick="window.S()" style="background:var(--success)">Salvar e Novo Cargo</button>
-        <button onclick="window.G()" style="background:var(--primary)">CONCLUIR E INICIAR URNA</button>
+        <button onclick="window.A()" id="C2">Adicionar</button>
+        <div id="listTemp"></div>
+        <button onclick="window.SAVE()" id="C3" style="background:var(--success)">Salvar Cargo</button>
+        <button onclick="window.START()" id="C4" style="background:var(--primary)">INICIAR URNA</button>
     </div>
 
     <div id="urna" class="screen">
         <h2 id="uT"></h2>
         <div id="grid" class="grid-urna"></div>
-        <button onclick="window.CO()" style="background:var(--success);height:80px">CONFIRMAR VOTO</button>
-        <button onclick="window.R()" style="background:var(--danger);font-size:10px">ENCERRAR</button>
+        <button onclick="window.VOTE()" id="U1" style="background:var(--success);height:80px">CONFIRMAR VOTO</button>
+        <button onclick="window.END()" id="U2" style="background:var(--danger)">ENCERRAR</button>
     </div>
 
     <div id="res" class="screen">
@@ -84,56 +85,65 @@
             <h1 id="pT" style="text-align:center"></h1>
             <div id="pC"></div>
         </div>
-        <button onclick="window.PDF()">Baixar PDF</button>
-        <button onclick="location.reload()">Sair</button>
+        <button onclick="window.PDF()" id="R1">Baixar PDF</button>
+        <button onclick="location.reload()" id="R2">Sair</button>
     </div>
 
     <script>
         (function(){
-            const _K = { s: 'service_oqfbzrm', t: 'template_t3aio8f', k: '_PKL4Oj92o48KurSF', u: 'https://urnaweb-backend.paulosmb1972.workers.dev' };
-            const _A = { r: 'RESET3', a: 'ORION001' };
+            const _K = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
+            const _A = { r:'RESET3', a:'ORION001' };
             emailjs.init(_K.k);
 
-            let code = '', mail = '', data = [], temp = null, img = '', votes = [], idx = 0, title = '';
+            let code='', mail='', data=[], temp=null, img='', votes=[], idx=0, title='';
+
+            const dict = {
+                pt: { L1:"Acesso ao Sistema", L2:"Entrar", V1:"Validar E-mail", V2:"Insira o código enviado.", V3:"Confirmar", P1:"Créditos Esgotados", P2:"Validar Cupom", P3:"Voltar", S1:"Configurar Eleição", S2:"Próximo", C1:"Cargo", C2:"Adicionar", C3:"Salvar Cargo", C4:"INICIAR URNA", U1:"CONFIRMAR VOTO", U2:"ENCERRAR", R1:"Baixar PDF", R2:"Sair" },
+                en: { L1:"System Access", L2:"Enter", V1:"Verify Email", V2:"Enter sent code.", V3:"Confirm", P1:"No Credits", P2:"Validate Coupon", P3:"Back", S1:"Setup Election", S2:"Next", C1:"Position", C2:"Add", C3:"Save Position", C4:"START URNA", U1:"CONFIRM VOTE", U2:"FINISH", R1:"Download PDF", R2:"Exit" },
+                es: { L1:"Acceso al Sistema", L2:"Entrar", V1:"Validar Email", V2:"Ingrese el código.", V3:"Confirmar", P1:"Sin Créditos", P2:"Validar Cupón", P3:"Volver", S1:"Configurar Elección", S2:"Siguiente", C1:"Cargo", C2:"Añadir", C3:"Guardar Cargo", C4:"INICIAR URNA", U1:"CONFIRMAR VOTO", U2:"FINALIZAR", R1:"Bajar PDF", R2:"Salir" }
+            };
+
+            window.TR = (l) => {
+                for(let k in dict[l]) { if(document.getElementById(k)) document.getElementById(k).innerText = dict[l][k]; }
+            };
 
             window.V = async function() {
-                let v = document.getElementById('uE').value.trim();
-                if(v.toUpperCase() === _A.r) { mail="paulosmb1972@gmail.com"; alert("Reset Paulo!"); window.P('setup'); return; }
-                if(v.toUpperCase() === _A.a) { window.P('setup'); return; }
-                
+                let v = document.getElementById('uE').value.trim().toUpperCase();
+                if(v === _A.r) { mail="paulosmb1972@gmail.com"; alert("Olá Paulo!"); window.GO('setup'); return; }
                 mail = v.toLowerCase();
                 try {
                     let r = await fetch(_K.u + '/?email=' + encodeURIComponent(mail));
                     let d = await r.json();
-                    if(d.saldo <= 0) window.P('pay');
+                    if(d.saldo <= 0) window.GO('pay');
                     else {
                         code = d.codigo.toString();
                         await emailjs.send(_K.s, _K.t, { to_email: mail, validation_code: code });
-                        alert("Código enviado!"); window.P('verify');
+                        alert("Código enviado!"); window.GO('verify');
                     }
                 } catch(e) { alert("Erro de conexão."); }
             };
 
-            window.C = () => { if(document.getElementById('iC').value === code) window.P('setup'); else alert("Incorreto"); };
+            window.C = () => { if(document.getElementById('iC').value === code) window.GO('setup'); else alert("Incorreto"); };
             window.K = () => {
-                let c = document.getElementById('cup').value.toUpperCase();
-                if(localStorage.getItem('u_'+c)) return alert("Cupom já usado.");
+                let c = document.getElementById('cup').value.toUpperCase().trim();
+                if(localStorage.getItem('used_'+c)) return alert("Cupom já utilizado.");
                 if(['MAIS3GRATIS','MAIS6GRATIS','MAIS10GRATIS'].includes(c)) {
-                    localStorage.setItem('u_'+c, '1'); alert("Ativado!"); window.P('setup');
+                    localStorage.setItem('used_'+c, '1'); 
+                    alert("Cupom Ativado! +3 Eleições."); window.GO('setup');
                 } else alert("Inválido");
             };
 
-            window.P = (id) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); };
-            window.N = () => { title = document.getElementById('tE').value; window.P('setupCargo'); };
+            window.GO = (id) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); };
+            window.N = () => { title = document.getElementById('tE').value; window.GO('setupCargo'); };
             window.A = () => {
                 if(!temp) temp = { n: document.getElementById('nC').value, q: document.getElementById('qV').value, c: [] };
                 temp.c.push({ n: document.getElementById('nCand').value, f: img, v: 0 });
-                document.getElementById('listTemp').innerHTML += document.getElementById('nCand').value + " | ";
+                document.getElementById('listTemp').innerHTML += `• ${document.getElementById('nCand').value} `;
                 document.getElementById('nCand').value = '';
             };
             document.getElementById('fCand').addEventListener('change', e => { let r = new FileReader(); r.onload = x => img = x.target.result; r.readAsDataURL(e.target.files[0]); });
-            window.S = () => { data.push(temp); temp = null; document.getElementById('nC').value=''; document.getElementById('listTemp').innerHTML=''; window.P('setupCargo'); };
-            window.G = () => { if(temp) data.push(temp); idx=0; window.M(); window.P('urna'); };
+            window.SAVE = () => { if(temp) data.push(temp); temp = null; document.getElementById('nC').value=''; document.getElementById('listTemp').innerHTML=''; alert("Cargo Salvo!"); };
+            window.START = () => { if(temp) data.push(temp); idx=0; window.M(); window.GO('urna'); };
 
             window.M = () => {
                 let c = data[idx]; document.getElementById('uT').innerText = c.n;
@@ -149,26 +159,27 @@
                 });
             };
 
-            window.CO = () => {
+            window.VOTE = () => {
+                if(votes.length === 0) return alert("Selecione!");
                 votes.forEach(i => data[idx].c[i].v++); idx++;
                 if(idx < data.length) window.M();
-                else { alert("Voto OK!"); idx = 0; window.M(); }
+                else { alert("Voto Confirmado!"); idx = 0; window.M(); }
             };
 
-            window.R = async () => {
+            window.END = async () => {
                 document.getElementById('pT').innerText = title;
                 let out = document.getElementById('pC'); out.innerHTML = '';
                 data.forEach(cg => {
-                    out.innerHTML += `<h2 style="color:#1abc9c;border-bottom:1px solid #eee">${cg.n}</h2>`;
+                    out.innerHTML += `<h2 style="color:#1abc9c;border-bottom:1px solid #eee;margin-top:20px">${cg.n}</h2>`;
                     let ord = [...cg.c].sort((a,b) => b.v - a.v);
                     ord.forEach(can => {
-                        out.innerHTML += `<div style="display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #eee">
+                        out.innerHTML += `<div style="display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #eee;color:black">
                             <span>${can.n}</span><strong>${can.v} Votos</strong>
                         </div>`;
                     });
                 });
-                window.P('res');
-                await fetch(_K.u + '/?email=' + mail, { method: 'POST' });
+                window.GO('res');
+                try { await fetch(_K.u + '/?email=' + mail, { method: 'POST' }); } catch(e){}
             };
 
             window.PDF = () => { html2pdf().set({ margin: 10, filename: title+'.pdf' }).from(document.getElementById('areaImpressao')).save(); };
