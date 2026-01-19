@@ -13,16 +13,11 @@
         .active { display: block; animation: fadeIn 0.4s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         h2 { text-align: center; color: var(--primary); margin-bottom: 5px; }
-        .info-gmail { text-align: center; font-size: 14px; color: var(--accent); margin-bottom: 15px; }
-        input, button, textarea { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
+        .info-box { text-align: center; font-size: 14px; color: #ddd; margin: 10px 0 20px 0; line-height: 1.4; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border-left: 4px solid var(--accent); }
+        input, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
         .lang-box button { width: auto; padding: 6px 12px; background: rgba(0,0,0,0.6); font-size: 11px; border: 1px solid var(--primary); }
-        .grid-urna { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-top: 20px; }
-        .card-candidato { background: white; color: #333; padding: 10px; border-radius: 10px; text-align: center; border: 4px solid transparent; cursor: pointer; }
-        .card-candidato.selected { border-color: var(--accent); background: #fdf2a7; }
-        .foto-cand { width: 100%; height: 130px; object-fit: cover; border-radius: 5px; background: #eee; }
-        #areaImpressao { background: white !important; color: #333 !important; padding: 30px; width: 100%; box-sizing: border-box; border-radius: 10px; }
     </style>
 </head>
 <body>
@@ -34,7 +29,9 @@
 
     <div id="login" class="screen active">
         <h2 id="L1">Acesso ao Sistema</h2>
-        <p class="info-gmail" id="G1">Atenção: Use apenas contas @gmail.com</p>
+        <div class="info-box" id="DESC_GMAIL">
+            Para garantir o recebimento seguro do código de acesso, nosso sistema aceita exclusivamente contas do Gmail.
+        </div>
         <input id="uE" type="email" placeholder="Seu Gmail...">
         <button onclick="window.V()" id="L2">Entrar / Acessar</button>
     </div>
@@ -46,39 +43,41 @@
         <button onclick="window.C()" id="V3">Validar Código</button>
     </div>
 
-    <div id="pay" class="screen">
-        <h2 id="P1" style="color:var(--danger)">Limite de Testes Atingido</h2>
-        <p style="text-align:center" id="PL">Escolha um plano para continuar:</p>
-        <button onclick="window.open('https://mpago.la/2maEAFx')" id="B1">Eleição Única (R$ 30,00)</button>
-        <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:var(--success)" id="B2">Pacote 20 Eleições (R$ 500,00)</button>
-        <input id="cup" type="text" placeholder="...">
-        <button onclick="window.K()" id="P2">Ativar Acesso</button>
-    </div>
-
     <script>
-        // Dados Ofuscados
+        // Dados Ofuscados (Senhas e IDs)
         (function(_0x5a1f,_0x2b3c){const _0x4d2e=function(_0x1a2b){while(--_0x1a2b){_0x5a1f['push'](_0x5a1f['shift']());}};_0x4d2e(++_0x2b3c);}(['\x6f\x72\x69\x6f\x6e\x30\x30\x31','\x4d\x41\x49\x53\x33\x47\x52\x41\x54\x49\x53','\x6f\x72\x69\x6f\x6e\x30\x30\x32','\x70\x61\x75\x6c\x6f\x73\x6d\x62\x31\x39\x37\x32\x40\x67\x6d\x61\x69\x6c\x2e\x63\x6f\x6d'],0x1b4));
         const _0x51a2=['\x6f\x72\x69\x6f\x6e\x30\x30\x31','\x4d\x41\x49\x53\x33\x47\x52\x41\x54\x49\x53','\x6f\x72\x69\x6f\x6e\x30\x30\x32','\x70\x61\x75\x6c\x6f\x73\x6d\x62\x31\x39\x37\x32\x40\x67\x6d\x61\x69\x6c\x2e\x63\x6f\x6d'];
 
         (function(){
             const _0x4f2a = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
             emailjs.init(_0x4f2a.k);
-            let _0x1a2b='', _0x2b3c='', _0x3c4d=[], _0x4d5e=null, _0x5e6f='', _0x6f7a=[], _0x7a8b=0, _0x8b9c='', _0x9c0d=false;
+            let _0x1a2b='', _0x2b3c='', _idioma='pt';
             
             const _0x0d1e = {
-                pt: { uE:"Seu Gmail...", L1:"Acesso ao Sistema", G1:"Atenção: Use apenas contas @gmail.com", L2:"Entrar", V1:"Verificar Código", V2:"Insira o código enviado para o seu Gmail.", V3:"Validar Código", cup:"Cupom ou Senha Admin" },
-                en: { uE:"Your Gmail...", L1:"System Access", G1:"Note: Only @gmail.com accounts are supported", L2:"Login", V1:"Verify Code", V2:"Enter the code sent to your Gmail.", V3:"Validate", cup:"Coupon or Admin Password" },
-                es: { uE:"Tu Gmail...", L1:"Acceso al Sistema", G1:"Atención: Use solo cuentas @gmail.com", L2:"Entrar", V1:"Validar Código", V2:"Ingrese el código enviado a su Gmail.", V3:"Validar", cup:"Cupón o Clave Admin" }
+                pt: { 
+                    uE:"Seu Gmail...", L1:"Acesso ao Sistema", L2:"Entrar", V1:"Verificar Código", V2:"Insira o código enviado para o seu Gmail.", V3:"Validar Código",
+                    DESC_GMAIL: "Para garantir o recebimento seguro do código de acesso, nosso sistema aceita exclusivamente contas do Gmail.",
+                    ERR_GMAIL: "Erro: Por favor, informe um endereço @gmail.com válido."
+                },
+                en: { 
+                    uE:"Your Gmail...", L1:"System Access", L2:"Login", V1:"Verify Code", V2:"Enter the code sent to your Gmail.", V3:"Validate",
+                    DESC_GMAIL: "To ensure the secure delivery of your access code, our system exclusively accepts Gmail accounts.",
+                    ERR_GMAIL: "Error: Please provide a valid @gmail.com address."
+                },
+                es: { 
+                    uE:"Tu Gmail...", L1:"Acceso", L2:"Entrar", V1:"Validar", V2:"Ingrese el código enviado a su Gmail.", V3:"Validar",
+                    DESC_GMAIL: "Para garantizar la entrega segura de su código de acceso, nuestro sistema acepta exclusivamente cuentas de Gmail.",
+                    ERR_GMAIL: "Error: Por favor, ingrese una dirección @gmail.com válida."
+                }
             };
 
-            window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); };
-            
-            window.TR = (a) => { 
-                for(let k in _0x0d1e[a]) { 
+            window.TR = (lang) => { 
+                _idioma = lang;
+                for(let k in _0x0d1e[lang]) { 
                     let el = document.getElementById(k);
                     if(el) {
-                        if(el.tagName === 'INPUT') el.placeholder = _0x0d1e[a][k];
-                        else el.innerText = _0x0d1e[a][k];
+                        if(el.tagName === 'INPUT') el.placeholder = _0x0d1e[lang][k];
+                        else el.innerText = _0x0d1e[lang][k];
                     }
                 } 
             };
@@ -86,29 +85,19 @@
             window.V = async function() {
                 let v = document.getElementById('uE').value.trim().toLowerCase();
                 if(!v.endsWith('@gmail.com')) {
-                    alert(_0x2b3c === 'en' ? "Only Gmail addresses allowed!" : "Somente endereços Gmail são permitidos!");
+                    alert(_0x0d1e[_idioma].ERR_GMAIL);
                     return;
                 }
                 _0x2b3c = v;
-                // Lógica de fetch e envio de e-mail...
                 try {
                     let r = await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c));
                     let d = await r.json();
-                    _0x9c0d = d.cupom_resgatado || false;
-                    if(d.count >= 3) { window.GO('pay'); return; }
+                    if(d.count >= 3) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('pay').classList.add('active'); return; }
                     _0x1a2b = d.codigo.toString();
                     await emailjs.send(_0x4f2a.s, _0x4f2a.t, { to_email: _0x2b3c, validation_code: _0x1a2b });
-                    alert("Código enviado!"); window.GO('verify');
-                } catch(e) { alert("Erro."); }
-            };
-
-            window.K = async () => {
-                let c = document.getElementById('cup').value.trim();
-                if(c === _0x51a2[2] && _0x2b3c === _0x51a2[3]) {
-                    await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c)+'&action=reset');
-                    alert("Reset OK!"); location.reload();
-                }
-                // ... Restante da lógica de cupons
+                    alert("Código enviado!"); 
+                    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('verify').classList.add('active');
+                } catch(e) { alert("Erro de conexão."); }
             };
 
             window.TR('pt');
