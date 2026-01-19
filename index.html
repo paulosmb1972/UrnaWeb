@@ -19,15 +19,16 @@
         input, button, textarea { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
         
-        /* Área de Pagamento Estilizada */
-        .pay-box { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid var(--primary); margin-top: 15px; }
-        .btn-pay { background: var(--success); margin: 8px 0; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        /* Estilo da Tela de Pagamento */
+        .pay-box { background: rgba(255,255,255,0.05); padding: 25px; border-radius: 15px; border: 1px solid var(--primary); margin-top: 15px; text-align: center; }
+        .btn-pay { background: var(--success); margin: 10px 0; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 18px; }
+        .admin-area { margin-top: 25px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
         
-        /* Estilo do PDF A4 */
+        /* PDF e Urna */
         #areaImpressao { background: white !important; color: black !important; padding: 20px; width: 760px; margin: 0 auto; border-radius: 5px; }
-        .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #000; table-layout: fixed; }
-        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; border: 1px solid #000; }
-        .pdf-table td { border: 1px solid #ccc; padding: 10px; color: black !important; font-size: 14px; word-wrap: break-word; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #000; }
+        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; }
+        .pdf-table td { border: 1px solid #ccc; padding: 10px; color: black !important; }
         
         .grid-urna { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-top: 20px; }
         .card-candidato { background: white; color: #333; padding: 10px; border-radius: 12px; text-align: center; border: 4px solid transparent; }
@@ -55,47 +56,35 @@
 
     <div id="pay" class="screen">
         <h2 id="P1" style="color:var(--danger)">Limite de Testes Atingido</h2>
-        <div class="info-box" id="P_MSG">Você já realizou 3 eleições gratuitas. Escolha uma opção para continuar:</div>
+        <div class="info-box" id="P_MSG">Você já utilizou suas 3 eleições gratuitas. Para continuar criando eleições profissionais, escolha uma das opções abaixo:</div>
         
         <div class="pay-box">
             <button class="btn-pay" onclick="window.open('https://mpago.la/2maEAFx')">
-                🛒 Eleição Única (R$ 30,00)
+                🎟️ <span id="B1">Eleição Única (R$ 30,00)</span>
             </button>
             <button class="btn-pay" onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9">
-                💎 Pacote 20 Eleições (R$ 500,00)
+                🚀 <span id="B2">Pacote 20 Eleições (R$ 500,00)</span>
             </button>
             
-            <hr style="margin:20px 0; opacity:0.2">
-            
-            <p style="text-align:center; font-size:14px;" id="P_CUP">Possui um cupom de acesso?</p>
-            <input id="cup" type="text" placeholder="Insira seu cupom aqui...">
-            <button onclick="window.K()" id="P2" style="background:var(--accent); color:#000">Ativar Acesso</button>
+            <div class="admin-area">
+                <p style="font-size:14px; margin-bottom: 5px;" id="P_CUP">Possui um cupom ou código de acesso?</p>
+                <input id="cup" type="text" placeholder="Insira o código...">
+                <button onclick="window.K()" id="P2" style="background:var(--accent); color:#000">Ativar Acesso</button>
+            </div>
         </div>
-        <button onclick="location.reload()" style="background:none; border:1px solid white; font-size:12px; margin-top:15px;">Sair</button>
+        <button onclick="location.reload()" style="background:none; border:1px solid white; font-size:12px; margin-top:20px;">Sair</button>
     </div>
 
     <div id="verify" class="screen"><h2 id="V1">Verificar Código</h2><input id="iC" type="text" maxlength="4"><button onclick="window.C()" id="V3">Validar</button></div>
-    <div id="setup" class="screen"><h2 id="S1">Configurar Eleição</h2><input id="tE" type="text" placeholder="Título..."><button onclick="window.N()" id="S2">Próximo</button></div>
-    
+    <div id="setup" class="screen"><h2 id="S1">Configurar</h2><input id="tE" type="text" placeholder="Título..."><button onclick="window.N()" id="S2">Próximo</button></div>
     <div id="setupCargo" class="screen">
-        <h2 id="C1">Cadastro</h2>
-        <input id="nC" type="text" placeholder="Nome do Cargo">
-        <input id="qV" type="number" value="1">
-        <hr>
-        <input id="nCand" type="text" placeholder="Nome do Candidato">
-        <input id="fCand" type="file" accept="image/*">
-        <button onclick="window.A()" id="C2">Adicionar Candidato</button>
-        <div id="listTemp" style="text-align:center; color:var(--accent); margin:10px 0;"></div>
+        <h2 id="C1">Cadastro</h2><input id="nC" type="text" placeholder="Cargo"><input id="qV" type="number" value="1">
+        <hr><input id="nCand" type="text" placeholder="Candidato"><input id="fCand" type="file" accept="image/*">
+        <button onclick="window.A()" id="C2">Adicionar</button><div id="listTemp"></div>
         <button onclick="window.SAVE()" id="C3" style="background:var(--success)">Salvar Cargo</button>
-        <button onclick="window.START()" id="C4" style="background:var(--primary); margin-top:30px; border: 2px solid white">INICIAR VOTAÇÃO</button>
+        <button onclick="window.START()" id="C4" style="background:var(--primary); margin-top:30px">INICIAR VOTAÇÃO</button>
     </div>
-
-    <div id="urna" class="screen">
-        <h2 id="uT"></h2>
-        <div id="grid" class="grid-urna"></div>
-        <button onclick="window.VOTE()" id="U1" style="background:var(--success); height:80px; margin-top:20px;">CONFIRMAR VOTO</button>
-        <button onclick="window.END()" id="U2" style="background:var(--danger); font-size:12px; opacity:0.7">ENCERRAR ELEIÇÃO</button>
-    </div>
+    <div id="urna" class="screen"><h2 id="uT"></h2><div id="grid" class="grid-urna"></div><button onclick="window.VOTE()" id="U1" style="background:var(--success); height:80px;">CONFIRMAR VOTO</button><button onclick="window.END()" id="U2" style="background:var(--danger)">ENCERRAR</button></div>
 
     <div id="res" class="screen">
         <div id="areaImpressao">
@@ -103,7 +92,6 @@
             <p style="text-align:center; font-weight:bold; margin: 15px 0; color: #333 !important;" id="RT">Relatório de Apuração Final</p>
             <div id="pC"></div>
         </div>
-        <div id="containerSugestao"></div>
         <button onclick="window.PDF()" id="R1" style="background:var(--success); margin-top:20px">Baixar PDF Completo (A4)</button>
         <button onclick="location.reload()" id="R2" style="background:var(--danger)">Sair</button>
     </div>
@@ -116,13 +104,35 @@
             let _0x1a2b='', _0x2b3c='', _idioma='pt', _3c4d=[], _4d5e=null, _5e6f='', _6f7a=[], _7a8b=0, _8b9c='';
             
             const _0x0d1e = {
-                pt: { L1: "Acesso ao Sistema", L2: "Entrar", INFO_GMAIL: "Para acesso ao sistema, deve ser informado apenas o Gmail.", P1: "Limite de Testes Atingido", P2: "Ativar Acesso", C4: "INICIAR VOTAÇÃO", RT: "Relatório de Apuração Final", R1: "Baixar PDF Completo (A4)" },
-                en: { L1: "System Access", L2: "Login", INFO_GMAIL: "To access the system, only Gmail must be informed.", P1: "Test Limit Reached", P2: "Activate Access", C4: "START VOTING", RT: "Final Tally Report", R1: "Download Full PDF (A4)" },
-                es: { L1: "Acceso al Sistema", L2: "Entrar", INFO_GMAIL: "Para acceder al sistema, solo se deve informar Gmail.", P1: "Límite de Pruebas Alcanzado", P2: "Activar Acceso", C4: "INICIAR VOTACIÓN", RT: "Reporte Final", R1: "Bajar PDF Completo (A4)" }
+                pt: { 
+                    L1: "Acesso ao Sistema", L2: "Entrar / Acessar", INFO_GMAIL: "Para acesso ao sistema, deve ser informado apenas o Gmail.",
+                    P1: "Limite de Testes Atingido", P_MSG: "Você já utilizou suas 3 eleições gratuitas. Para continuar criando eleições profissionais, escolha uma das opções abaixo:",
+                    B1: "Eleição Única (R$ 30,00)", B2: "Pacote 20 Eleições (R$ 500,00)", P_CUP: "Possui um cupom ou código de acesso?", P2: "Ativar Acesso",
+                    RT: "Relatório de Apuração Final", R1: "Baixar PDF Completo (A4)" 
+                },
+                en: { 
+                    L1: "System Access", L2: "Login", INFO_GMAIL: "To access the system, only Gmail must be informed.",
+                    P1: "Test Limit Reached", P_MSG: "You have used your 3 free elections. To continue creating professional elections, choose one of the options below:",
+                    B1: "Single Election ($30.00)", B2: "20 Elections Pack ($500.00)", P_CUP: "Do you have a coupon or access code?", P2: "Activate Access",
+                    RT: "Final Tally Report", R1: "Download Full PDF (A4)" 
+                },
+                es: { 
+                    L1: "Acceso al Sistema", L2: "Entrar", INFO_GMAIL: "Para acceder al sistema, solo se deve informar Gmail.",
+                    P1: "Límite de Pruebas Alcanzado", P_MSG: "Ya has agotado tus 3 elecciones gratuitas. Para continuar creando elecciones profesionales, elige una opción:",
+                    B1: "Elección Única (R$ 30.00)", B2: "Paquete de 20 Elecciones (R$ 500.00)", P_CUP: "¿Tienes un cupón o código de acceso?", P2: "Activar Acceso",
+                    RT: "Reporte Final", R1: "Bajar PDF Completo (A4)" 
+                }
             };
 
             window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); };
-            window.TR = (lang) => { _idioma = lang; for(let k in _0x0d1e[lang]){ let el=document.getElementById(k); if(el) el.innerText=_0x0d1e[lang][k]; } };
+            
+            window.TR = (lang) => { 
+                _idioma = lang; 
+                for(let k in _0x0d1e[lang]){ 
+                    let el=document.getElementById(k); 
+                    if(el) el.innerText=_0x0d1e[lang][k]; 
+                } 
+            };
             
             window.V = async function() {
                 let v = document.getElementById('uE').value.trim().toLowerCase();
@@ -131,7 +141,11 @@
                 try {
                     let r = await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c));
                     let d = await r.json();
-                    if(d.count >= 3) { window.GO('pay'); window.TR(_idioma); return; }
+                    if(d.count >= 3) { 
+                        window.GO('pay'); 
+                        window.TR(_idioma); // Traduz a tela de pagamento ao carregar
+                        return; 
+                    }
                     _0x1a2b = d.codigo.toString();
                     await emailjs.send(_0x4f2a.s, _0x4f2a.t, { to_email: _0x2b3c, validation_code: _0x1a2b });
                     window.GO('verify');
@@ -141,11 +155,11 @@
             window.C = () => { if(document.getElementById('iC').value === _0x1a2b || document.getElementById('iC').value === "9999") window.GO('setup'); };
             window.K = async () => {
                 let c = document.getElementById('cup').value.trim();
-                if(c === 'orion001' || c.toUpperCase() === 'MAIS3GRATIS') { window.GO('setup'); }
+                if(c === 'orion001' || c.toUpperCase() === 'MAIS3GRATIS') window.GO('setup');
                 else if(c === 'orion002' && _0x2b3c === _MY_MAIL) { 
                     await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c)+'&action=reset'); 
                     location.reload(); 
-                } else { alert("Cupom inválido."); }
+                } else { alert("Código inválido."); }
             };
 
             window.N = () => { _8b9c = document.getElementById('tE').value || "Urna"; window.GO('setupCargo'); };
@@ -159,9 +173,8 @@
             document.getElementById('fCand').addEventListener('change', e => { 
                 let r = new FileReader(); r.onload = x => _5e6f = x.target.result; r.readAsDataURL(e.target.files[0]); 
             });
-            window.SAVE = () => { if(_4d5e) _3c4d.push(_4d5e); _4d5e = null; alert("Cargo Salvo!"); };
+            window.SAVE = () => { if(_4d5e) _3c4d.push(_4d5e); _4d5e = null; alert("OK"); };
             window.START = () => { if(_4d5e) _3c4d.push(_4d5e); _7a8b=0; window.M(); window.GO('urna'); };
-            
             window.M = () => {
                 let c = _3c4d[_7a8b]; document.getElementById('uT').innerText = c.n;
                 let g = document.getElementById('grid'); g.innerHTML = '';
@@ -187,17 +200,15 @@
 
             window.END = async () => {
                 if(!confirm("Encerrar?")) return;
-                try { await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c)+'&action=increment'); } catch(e){}
                 document.getElementById('pT').innerText = _8b9c;
                 let out = document.getElementById('pC'); out.innerHTML = '';
                 _3c4d.forEach(cargo => {
                     let html = `<div style="page-break-inside: avoid; margin-bottom: 25px;">
-                        <table class="pdf-table">
-                            <thead><tr><th style="background:#0a2a66; color:white; padding:12px; border:1px solid #000;">${cargo.n.toUpperCase()}</th><th style="background:#0a2a66; color:white; padding:12px; border:1px solid #000; width:120px;">VOTOS</th></tr></thead>
+                        <table class="pdf-table" style="width:100%; border-collapse: collapse; border: 1px solid black;">
+                            <thead><tr><th style="background:#0a2a66; color:white; padding:10px;">${cargo.n.toUpperCase()}</th><th style="background:#0a2a66; color:white; padding:10px; width:100px;">VOTOS</th></tr></thead>
                             <tbody>`;
                     cargo.c.sort((a,b) => b.v - a.v).forEach(cand => {
-                        html += `<tr><td style="border:1px solid #ccc; padding:10px; color:black;">${cand.n}</td>
-                        <td style="border:1px solid #ccc; padding:10px; text-align:right; font-weight:bold; color:black;">${cand.v} votos</td></tr>`;
+                        html += `<tr><td style="border:1px solid #ccc; padding:10px; color:black;">${cand.n}</td><td style="border:1px solid #ccc; padding:10px; text-align:right; font-weight:bold; color:black;">${cand.v}</td></tr>`;
                     });
                     html += `</tbody></table></div>`;
                     out.innerHTML += html;
@@ -207,15 +218,12 @@
 
             window.PDF = () => {
                 const element = document.getElementById('areaImpressao');
-                const opt = {
-                    margin: 10,
-                    filename: 'resultado_urna.pdf',
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true, width: 800, windowWidth: 800 },
+                html2pdf().set({
+                    margin: 10, filename: 'resultado.pdf',
+                    html2canvas: { scale: 2, useCORS: true, windowWidth: 800 },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-                };
-                html2pdf().set(opt).from(element).save();
+                    pagebreak: { mode: 'avoid-all' }
+                }).from(element).save();
             };
             window.TR('pt');
         })();
