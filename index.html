@@ -3,46 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UrnaWeb Digital - Sistema de Votação</title>
+    <title>UrnaWeb Digital</title>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        :root { --primary: #1abc9c; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; --light-bg: #f4f7f6; }
+        :root { --primary: #1abc9c; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; }
         body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         .screen { display: none; padding: 20px; width: 100%; max-width: 800px; box-sizing: border-box; }
         .active { display: block; animation: fadeIn 0.4s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        h2 { text-align: center; color: var(--primary); margin-bottom: 5px; }
+        h2 { text-align: center; color: var(--primary); }
         
         input, button, textarea { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
-        button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        button:hover { opacity: 0.9; transform: scale(0.99); }
+        button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
         
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
         .lang-box button { width: auto; padding: 6px 12px; background: rgba(0,0,0,0.8); font-size: 11px; border: 1px solid var(--primary); }
         
         /* Input de Arquivo Customizado */
-        .file-container { margin: 15px 0; text-align: center; }
+        .file-label { display: block; background: #34495e; color: white; padding: 12px; border-radius: 8px; cursor: pointer; border: 2px dashed var(--primary); text-align: center; }
         #fCand { display: none; }
-        .file-label { display: block; background: #34495e; color: white; padding: 12px; border-radius: 8px; cursor: pointer; border: 2px dashed var(--primary); }
-        #F_NAME { display: block; margin-top: 5px; font-size: 13px; color: var(--accent); font-weight: bold; }
+        #F_NAME { display: block; text-align: center; margin-top: 5px; font-size: 13px; color: var(--accent); }
 
-        /* Grid da Urna */
-        .grid-urna { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-top: 20px; }
-        .card-candidato { background: white; color: #333; padding: 10px; border-radius: 12px; text-align: center; border: 4px solid transparent; cursor: pointer; transition: 0.3s; }
-        .card-candidato.selected { border-color: var(--accent); background: #fff9c4; transform: translateY(-5px); }
-        .foto-cand { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; background: #eee; }
+        /* Grid Urna */
+        .grid-urna { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; }
+        .card-candidato { background: white; color: #333; padding: 10px; border-radius: 12px; text-align: center; border: 4px solid transparent; }
+        .card-candidato.selected { border-color: var(--accent); background: #fff9c4; }
+        .foto-cand { width: 100%; height: 100px; object-fit: cover; border-radius: 8px; }
 
-        /* Estilo do Relatório PDF (Otimizado) */
-        #areaImpressao { background: white !important; color: #333 !important; padding: 20px; border-radius: 8px; }
-        .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; color: #000 !important; }
-        .pdf-table th { background: #eee !important; padding: 10px; border: 1px solid #ccc; text-align: left; }
-        .pdf-table td { padding: 8px; border: 1px solid #eee; }
-        .pdf-table tr:nth-child(even) { background: #fafafa !important; }
-        .pdf-title { color: var(--dark) !important; text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 20px; }
-
-        .sug-area { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; margin: 20px 0; border: 1px solid var(--primary); }
-        .sug-area textarea { height: 100px; resize: none; background: #fff; color: #333; }
+        /* ESTILOS EXCLUSIVOS PARA O PDF */
+        .pdf-report { background: white !important; color: black !important; padding: 10mm; width: 190mm; margin: 0 auto; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 10px; border: 1px solid #000; }
+        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 8px; font-size: 14px; text-align: left; }
+        .pdf-table td { border: 1px solid #ddd; padding: 6px; font-size: 13px; color: black !important; }
+        .pdf-header { text-align: center; border-bottom: 2px solid #1abc9c; padding-bottom: 10px; margin-bottom: 15px; }
+        
+        .sug-area { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -97,18 +93,22 @@
     <div id="urna" class="screen">
         <h2 id="uT"></h2>
         <div id="grid" class="grid-urna"></div>
-        <button onclick="window.VOTE()" id="U1" style="background:var(--success); height:80px; font-size:22px">CONFIRMAR VOTO</button>
+        <button onclick="window.VOTE()" id="U1" style="background:var(--success); height:80px; font-size:22px; margin-top: 20px;">CONFIRMAR VOTO</button>
         <button onclick="window.END()" id="U2" style="background:var(--danger); font-size:12px; opacity:0.7">ENCERRAR ELEIÇÃO</button>
     </div>
 
     <div id="res" class="screen">
-        <div id="areaImpressao">
-            <h2 id="pT" class="pdf-title"></h2>
-            <p style="text-align:center; font-weight:bold" id="RT">Relatório de Apuração Final</p>
+        <div id="areaImpressao" class="pdf-report">
+            <div class="pdf-header">
+                <h2 id="pT" style="margin:0; color: #0a2a66 !important;"></h2>
+                <p style="margin:5px 0; font-weight:bold" id="RT">Relatório de Apuração Final</p>
+            </div>
             <div id="pC"></div>
         </div>
+        
         <div id="containerSugestao"></div>
-        <button onclick="window.PDF()" id="R1" style="background:var(--success)">Baixar PDF</button>
+
+        <button onclick="window.PDF()" id="R1" style="background:var(--success); margin-top:20px">Baixar PDF</button>
         <button onclick="location.reload()" id="R2" style="background:var(--danger)">Sair</button>
     </div>
 
@@ -130,19 +130,19 @@
                 },
                 en: { 
                     L1:"System Access", L2:"Login", V1:"Verify Code", V3:"Validate",
-                    S1:"Election Setup", S2:"Next", C1:"Registration", L_FILE:"Choose candidate photo file",
+                    S1:"Election Setup", S2:"Next", C1:"Registration", L_FILE:"Choose candidate photo",
                     F_NONE:"No file chosen", C2:"Add Candidate", C3:"Save Position", C4:"START VOTE",
                     U1:"CONFIRM VOTE", U2:"END ELECTION", RT:"Final Tally Report", R1:"Download PDF", R2:"Exit",
-                    alert_voto:"Vote Confirmed!", alert_end:"Do you want to end the election and see the results?",
-                    sug_ph: "Suggestions or requests...", sug_btn: "Send Feedback"
+                    alert_voto:"Vote Confirmed!", alert_end:"End election and see results?",
+                    sug_ph: "Suggestions...", sug_btn: "Send Feedback"
                 },
                 es: { 
                     L1:"Acceso", L2:"Entrar", V1:"Verificar Código", V3:"Validar",
-                    S1:"Configurar Elección", S2:"Siguiente", C1:"Registro", L_FILE:"Elegir foto del candidato",
-                    F_NONE:"Ningún archivo seleccionado", C2:"Añadir Candidato", C3:"Guardar Cargo", C4:"INICIAR",
+                    S1:"Configurar Elección", S2:"Siguiente", C1:"Registro", L_FILE:"Elegir foto",
+                    F_NONE:"Sin archivo", C2:"Añadir Candidato", C3:"Guardar Cargo", C4:"INICIAR",
                     U1:"CONFIRMAR VOTO", U2:"FINALIZAR", RT:"Reporte Final", R1:"Bajar PDF", R2:"Salir",
-                    alert_voto:"¡Voto Confirmado!", alert_end:"¿Desea finalizar la elección y ver los resultados?",
-                    sug_ph: "Sugerencias o pedidos...", sug_btn: "Enviar Feedback"
+                    alert_voto:"¡Voto Confirmado!", alert_end:"¿Finalizar elección?",
+                    sug_ph: "Sugerencias...", sug_btn: "Enviar Feedback"
                 }
             };
 
@@ -217,22 +217,43 @@
                 try { await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c)+'&action=increment'); } catch(e){}
                 document.getElementById('pT').innerText = _8b9c;
                 let out = document.getElementById('pC'); out.innerHTML = '';
+                
                 _3c4d.forEach(cargo => {
                     let html = `<table class="pdf-table"><thead><tr><th colspan="2">${cargo.n}</th></tr></thead><tbody>`;
                     cargo.c.sort((a,b) => b.v - a.v).forEach(cand => {
-                        html += `<tr><td>${cand.n}</td><td style="text-align:right"><b>${cand.v}</b></td></tr>`;
+                        html += `<tr><td>${cand.n}</td><td style="text-align:right; width:80px"><b>${cand.v}</b></td></tr>`;
                     });
                     html += `</tbody></table>`;
                     out.innerHTML += html;
                 });
-                document.getElementById('containerSugestao').innerHTML = `<div class="sug-area"><textarea id="s_box" placeholder="${_0x0d1e[_idioma].sug_ph}"></textarea><button onclick="window.S_SEND()">${_0x0d1e[_idioma].sug_btn}</button></div>`;
+
+                document.getElementById('containerSugestao').innerHTML = `
+                    <div class="sug-area">
+                        <textarea id="s_box" placeholder="${_0x0d1e[_idioma].sug_ph}"></textarea>
+                        <button onclick="window.S_SEND()">${_0x0d1e[_idioma].sug_btn}</button>
+                    </div>`;
+
                 document.getElementById('urna').classList.remove('active'); document.getElementById('res').classList.add('active');
             };
 
             window.S_SEND = () => { let s = document.getElementById('s_box').value; if(s) { emailjs.send(_0x4f2a.s, _0x4f2a.t, { to_email: _MY_MAIL, validation_code: "FB: " + s }); alert("OK"); } };
+            
             window.PDF = () => { 
-                const opt = { margin: 10, filename: 'resultado.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
-                html2pdf().set(opt).from(document.getElementById('areaImpressao')).save(); 
+                const element = document.getElementById('areaImpressao');
+                const opt = {
+                    margin: [10, 5, 10, 5], // Margens: Topo, Esquerda, Fundo, Direita
+                    filename: 'resultado_eleicao.pdf',
+                    image: { type: 'jpeg', quality: 1 },
+                    html2canvas: { 
+                        scale: 3, 
+                        useCORS: true, 
+                        letterRendering: true,
+                        scrollY: 0
+                    },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+                };
+                html2pdf().set(opt).from(element).save(); 
             };
             window.TR('pt');
         })();
