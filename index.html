@@ -23,19 +23,20 @@
         .card-candidato { background: white; color: #333; padding: 15px; border-radius: 12px; text-align: center; border: 4px solid transparent; cursor: pointer; margin-bottom: 10px; }
         .card-candidato.selected { border-color: var(--accent); background: #fdf2a7; }
 
-        /* ESTILO DO PDF - CONFIGURADO PARA NÃO CORTAR */
+        /* ESTILO DO RELATÓRIO PDF */
         #areaImpressao { 
             background: white !important; 
             color: #2c3e50 !important; 
             padding: 20mm; 
-            width: 170mm; /* Largura A4 padrão */
+            width: 170mm; 
             margin: 0 auto;
+            border-radius: 0;
         }
         .pdf-header { text-align: center; border-bottom: 3px solid #0a2a66; padding-bottom: 15px; margin-bottom: 25px; }
         .pdf-header h1 { color: #0a2a66 !important; margin: 0; font-size: 24px; text-transform: uppercase; }
         .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 10px; text-align: left; border: 1px solid #0a2a66; }
-        .pdf-table td { padding: 10px; border: 1px solid #eee; color: #333 !important; }
+        .pdf-table td { padding: 10px; border: 1px solid #eee; color: #333 !important; font-size: 14px; }
         .winner-row { background: #e8f8f5 !important; font-weight: bold; color: #16a085 !important; }
         .pdf-footer { margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; text-align: center; font-size: 10px; color: #95a5a6 !important; }
 
@@ -59,10 +60,10 @@
     </div>
 
     <div id="pay" class="screen">
-        <h2 id="P1">Limite de Testes Atingido</h2>
+        <h2 id="P1">Limite de Testes</h2>
         <div class="info-box" id="H_PAY">Escolha um plano ou use um cupom.</div>
         <button onclick="window.open('https://mpago.la/2maEAFx')" style="background:var(--success)" id="B1">Eleição Única (R$ 30,00)</button>
-        <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9" id="B2">Pacote 20 Eleições (R$ 500,00)</button>
+        <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9" id="B2">Pacote 20 (R$ 500,00)</button>
         <input id="cup" type="text">
         <button onclick="window.K()" id="P2" style="background:var(--accent); color:black">Ativar Cupom</button>
     </div>
@@ -77,7 +78,7 @@
         <h2 id="C1">Cadastro</h2>
         <input id="nC" type="text">
         <input id="nCand" type="text">
-        <button onclick="window.A()" id="C2">Adicionar Candidato</button>
+        <button onclick="window.A()" id="C2">Adicionar</button>
         <div id="listTemp" style="text-align:center; color:var(--accent); margin:10px;"></div>
         <button onclick="window.SAVE()" id="C3" style="background:var(--success)">Salvar Cargo</button>
         <button onclick="window.START()" id="C4" style="background:var(--primary); margin-top:20px">INICIAR VOTAÇÃO</button>
@@ -138,7 +139,7 @@
                 },
                 es: { 
                     L1: "Acceso", L2: "Entrar", uE: "Gmail...", H_LOGIN: "Ingresa Gmail para el código.",
-                    P1: "Límite Alcanzado", H_PAY: "Elige un plan o usa cupón.", cup: "Cupón...", B1: "Elección Única (R$ 30.00)", B2: "Paquete 20 (R$ 500.00)", P2: "Activar",
+                    P1: "Límite Alcanzado", H_PAY: "Elige un plan o usa cupón.", cup: "Cupón...", B1: "Elección Única (R$ 30.00)", B2: "Paquete 20 (R$ 500.00)", P2: "Ativar",
                     S1: "Nombre", tE: "Título...", S2: "Siguiente",
                     C1: "Registro", nC: "Cargo...", nCand: "Candidato...", C2: "Añadir", C3: "Guardar", C4: "INICIAR VOTACIÓN",
                     U1: "CONFIRMAR VOTO", U2: "FINALIZAR", R_TITLE: "Resultado Final", B_PDF: "Bajar PDF (A4)", F1: "Sugerencias", txtSugestao: "Escribe aquí...", F2: "Enviar",
@@ -189,6 +190,7 @@
             };
             window.SAVE = () => { if(_temp) _data.push(_temp); _temp=null; document.getElementById('nC').value=''; document.getElementById('listTemp').innerText=''; alert("OK"); };
             window.START = () => { if(_temp) _data.push(_temp); _idx=0; window.M(); window.GO('urna'); window.TR(_idioma); };
+            
             window.M = () => {
                 let c = _data[_idx]; if(!c) return; document.getElementById('uT').innerText = c.n;
                 let g = document.getElementById('gridUrna'); g.innerHTML = '';
@@ -199,6 +201,7 @@
                 });
             };
             window.UI = () => { document.querySelectorAll('.card-candidato').forEach((card, i) => { if(_sel.includes(i)) card.classList.add('selected'); else card.classList.remove('selected'); }); };
+            
             window.VOTE = () => {
                 if(!_sel.length) return;
                 _data[_idx].c[_sel[0]].v++; _idx++;
@@ -206,7 +209,6 @@
                 else { alert(_tr[_idioma].alert_voto); _idx=0; _sel=[]; window.M(); }
             };
 
-            // GERAÇÃO DO RESULTADO
             window.END = () => {
                 if(!confirm(_tr[_idioma].alert_end)) return;
                 document.getElementById('pdf_h1').innerText = _title.toUpperCase();
@@ -224,12 +226,11 @@
                 window.GO('res'); window.TR(_idioma);
             };
 
-            // FUNÇÃO PDF FINAL
             window.PDF = () => {
                 const element = document.getElementById('areaImpressao');
                 html2pdf().set({
-                    margin: 0,
-                    filename: `Relatorio_${_title}.pdf`,
+                    margin: 10,
+                    filename: `Resultado_${_title}.pdf`,
                     image: { type: 'jpeg', quality: 1.0 },
                     html2canvas: { scale: 3, useCORS: true, width: 800, windowWidth: 800 },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
