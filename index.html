@@ -3,42 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UrnaWeb Digital - Relatório Profissional</title>
+    <title>UrnaWeb Digital - Resultado Profissional</title>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        :root { --primary: #1abc9c; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; --soft-grey: #f4f7f6; }
-        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        :root { --primary: #1abc9c; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; }
+        body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         .screen { display: none; padding: 20px; width: 100%; max-width: 800px; box-sizing: border-box; }
         .active { display: block; animation: fadeIn 0.4s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
         .info-box { text-align: center; font-size: 14px; color: #eee; margin: 15px 0; background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 8px; border-left: 5px solid var(--accent); }
         input, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
-        button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { filter: brightness(1.1); }
+        button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
 
-        /* --- ESTILO DO RELATÓRIO PROFISSIONAL (20x27cm) --- */
+        /* ESTILO EXCLUSIVO DO PDF - FUNDO BRANCO / TEXTO PRETO */
         #areaImpressao { 
             background: white !important; 
-            color: #2c3e50 !important; 
-            padding: 20mm; 
-            width: 160mm; /* Ajustado para margens no papel de 200mm */
+            color: black !important; 
+            padding: 40px; 
+            width: 750px; /* Largura ideal para A4 */
             margin: 0 auto;
-            box-sizing: border-box;
+            display: block;
         }
-        .pdf-header { border-bottom: 3px solid var(--dark); padding-bottom: 10px; margin-bottom: 25px; text-align: center; }
-        .pdf-header h1 { color: var(--dark) !important; margin: 0; font-size: 24pt; text-transform: uppercase; }
-        .pdf-header p { color: #7f8c8d !important; font-size: 10pt; margin: 5px 0; }
-        
-        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; }
-        .pdf-table th { background: var(--soft-grey) !important; color: var(--dark) !important; padding: 12px; border: 1px solid #dcdde1; text-align: left; font-size: 11pt; }
-        .pdf-table td { padding: 12px; border: 1px solid #dcdde1; color: #2f3640 !important; font-size: 12pt; }
-        .row-winner { background-color: #e8f8f5 !important; font-weight: bold; }
-        .vote-badge { background: var(--dark); color: white; padding: 4px 8px; border-radius: 4px; float: right; }
+        .pdf-header { text-align: center; border-bottom: 2px solid var(--dark); padding-bottom: 10px; margin-bottom: 30px; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        .pdf-table th { background: #eee !important; color: #333 !important; padding: 12px; border: 1px solid #ccc; text-align: left; }
+        .pdf-table td { padding: 12px; border: 1px solid #ccc; color: black !important; }
+        .winner { background: #e8f8f5 !important; font-weight: bold; }
 
-        .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
-        .lang-box button { width: auto; padding: 5px 12px; font-size: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--primary); }
+        .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; }
+        .lang-box button { width: auto; padding: 5px 10px; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -51,49 +46,46 @@
 
     <div id="login" class="screen active">
         <h2 id="L1">Acesso ao Sistema</h2>
-        <div class="info-box" id="H_L">Acesso exclusivo via Gmail para garantir a segurança dos dados.</div>
-        <input id="uE" type="email" placeholder="Seu Gmail...">
+        <div class="info-box" id="H_L">Acesso exclusivo via Gmail.</div>
+        <input id="uE" type="email" placeholder="Gmail...">
         <button onclick="window.V()" id="L2">Entrar</button>
     </div>
 
     <div id="setupCargo" class="screen">
-        <h2 id="C1">Configuração de Cargos</h2>
-        <div class="info-box" id="H_C">Cadastre os cargos e seus respectivos candidatos.</div>
-        <input id="nC" type="text" placeholder="Cargo (Ex: Presbítero)">
+        <h2 id="C1">Configurar Cargos</h2>
+        <div class="info-box" id="H_C">Cadastre os cargos e candidatos.</div>
+        <input id="nC" type="text" placeholder="Cargo">
         <hr>
-        <input id="nCand" type="text" placeholder="Nome do Candidato">
+        <input id="nCand" type="text" placeholder="Candidato">
         <button onclick="window.A()" id="C2">Adicionar Candidato</button>
-        <div id="listTemp" style="margin: 10px 0; text-align: center; color: var(--accent);"></div>
+        <div id="listTemp" style="margin: 10px 0; text-align: center;"></div>
         <button onclick="window.SAVE()" id="C3" style="background:var(--success)">Salvar Cargo</button>
         <button onclick="window.START()" id="C4" style="background:var(--primary); margin-top:20px">INICIAR VOTAÇÃO</button>
     </div>
 
     <div id="urna" class="screen">
         <h2 id="uT"></h2>
-        <div id="grid" style="display:grid; grid-template-columns:1fr 1fr; gap:15px;"></div>
-        <button onclick="window.VOTE()" id="U1" style="height:90px; background:var(--success); margin-top:30px; font-size:20px;">CONFIRMAR VOTO</button>
-        <button onclick="window.END()" style="background:var(--danger); font-size:12px; opacity:0.8">ENCERRAR ELEIÇÃO</button>
+        <div id="grid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;"></div>
+        <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success); margin-top:20px;">CONFIRMAR VOTO</button>
+        <button onclick="window.END()" style="background:var(--danger)">ENCERRAR</button>
     </div>
 
     <div id="res" class="screen">
         <div id="areaImpressao">
             <div class="pdf-header">
-                <h1 id="pT_title"></h1>
-                <p id="RT_subtitle"></p>
-                <p id="pdfDate"></p>
+                <h1 id="pT" style="margin:0; font-size: 24px;"></h1>
+                <p id="RT" style="margin:5px 0; font-weight:bold; color:#666 !important;"></p>
+                <small id="pdfDate"></small>
             </div>
             <div id="pC"></div>
-            <div style="margin-top: 40px; text-align: center; font-size: 9pt; color: #95a5a6 !important;">
-                Relatório gerado por UrnaWeb Digital - Sistema de Auditoria Eletrônica
-            </div>
         </div>
-        <button onclick="window.PDF()" id="R1" style="background:var(--success); margin-top:20px">GERAR PDF PROFISSIONAL (20x27cm)</button>
+        <button onclick="window.PDF()" id="R1" style="background:var(--success); margin-top:20px">GERAR PDF A4</button>
         <button onclick="location.reload()" style="background:var(--danger)">SAIR</button>
     </div>
 
-    <div id="verify" class="screen"><h2>Validar Código</h2><input id="iC" type="text" maxlength="4"><button onclick="window.C()">Validar</button></div>
-    <div id="setup" class="screen"><h2>Configuração Inicial</h2><input id="tE" type="text" placeholder="Nome da Instituição/Eleição"><button onclick="window.N()">Próximo</button></div>
-    <div id="pay" class="screen"><h2>Limite Atingido</h2><button onclick="window.open('https://mpago.la/2maEAFx')">Pagar Taxa Única</button><input id="cup" type="text" placeholder="Cupom..."><button onclick="window.K()">Ativar</button></div>
+    <div id="verify" class="screen"><h2>Código</h2><input id="iC" type="text"><button onclick="window.C()">Validar</button></div>
+    <div id="setup" class="screen"><h2>Título</h2><input id="tE" type="text"><button onclick="window.N()">Próximo</button></div>
+    <div id="pay" class="screen"><h2>Limite</h2><button onclick="window.open('https://mpago.la/2maEAFx')">Pagar R$ 30</button><input id="cup" type="text"><button onclick="window.K()">Ativar</button></div>
 
     <script>
         (function(){
@@ -102,9 +94,9 @@
             let _0x1a2b='', _0x2b3c='', _idioma='pt', _3c4d=[], _4d5e=null, _6f7a=[], _7a8b=0, _8b9c='';
             
             const _0x0d1e = {
-                pt: { L1:"Acesso ao Sistema", H_L:"Acesso exclusivo via Gmail.", C4:"INICIAR VOTAÇÃO", RT_subtitle:"Relatório de Apuração Oficial", R1:"GERAR PDF PROFISSIONAL (20x27cm)" },
-                en: { L1:"System Access", H_L:"Gmail access only.", C4:"START VOTING", RT_subtitle:"Official Tally Report", R1:"GENERATE PROFESSIONAL PDF" },
-                es: { L1:"Acceso al Sistema", H_L:"Acceso solo por Gmail.", C4:"INICIAR VOTACIÓN", RT_subtitle:"Reporte Oficial de Escrutinio", R1:"GENERAR PDF PROFESIONAL" }
+                pt: { L1:"Acesso ao Sistema", H_L:"Acesso exclusivo via Gmail.", C4:"INICIAR VOTAÇÃO", RT:"Relatório de Apuração Final", R1:"GERAR PDF A4" },
+                en: { L1:"System Access", H_L:"Gmail access only.", C4:"START VOTING", RT:"Final Tally Report", R1:"GENERATE A4 PDF" },
+                es: { L1:"Acceso", H_L:"Solo acceso via Gmail.", C4:"INICIAR VOTACIÓN", RT:"Reporte de Escrutinio", R1:"GENERAR PDF A4" }
             };
 
             window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); };
@@ -121,7 +113,7 @@
                     _0x1a2b = d.codigo.toString();
                     await emailjs.send(_0x4f2a.s, _0x4f2a.t, { to_email: _0x2b3c, validation_code: _0x1a2b });
                     window.GO('verify');
-                } catch(e) { alert("Erro de conexão."); }
+                } catch(e) { alert("Erro."); }
             };
 
             window.K = async () => {
@@ -130,8 +122,8 @@
             };
 
             window.C = () => { if(document.getElementById('iC').value === _0x1a2b || document.getElementById('iC').value === "9999") window.GO('setup'); };
-            window.N = () => { _8b9c = document.getElementById('tE').value || "Eleição Digital"; window.GO('setupCargo'); };
-            window.A = () => { if(!_4d5e) _4d5e={n:document.getElementById('nC').value, c:[]}; _4d5e.c.push({n:document.getElementById('nCand').value, v:0}); document.getElementById('listTemp').innerText += " [✔]"; document.getElementById('nCand').value=''; };
+            window.N = () => { _8b9c = document.getElementById('tE').value || "Urna"; window.GO('setupCargo'); };
+            window.A = () => { if(!_4d5e) _4d5e={n:document.getElementById('nC').value, c:[]}; _4d5e.c.push({n:document.getElementById('nCand').value, v:0}); document.getElementById('listTemp').innerText += " [OK]"; document.getElementById('nCand').value=''; };
             window.SAVE = () => { if(_4d5e) _3c4d.push(_4d5e); _4d5e=null; alert("Salvo"); document.getElementById('nC').value=''; document.getElementById('listTemp').innerText=''; };
             window.START = () => { _7a8b=0; window.M(); window.GO('urna'); };
             
@@ -140,23 +132,21 @@
                 let g=document.getElementById('grid'); g.innerHTML='';
                 c.c.forEach((can,i)=>{
                     let d=document.createElement('button'); d.innerText=can.n;
-                    d.style.height="100px"; d.style.background="white"; d.style.color="#333";
-                    d.onclick=()=>{ _6f7a=[i]; document.querySelectorAll('#grid button').forEach(b=>b.style.border="none"); d.style.border="5px solid var(--accent)"; }; g.appendChild(d);
+                    d.onclick=()=>{ _6f7a=[i]; }; g.appendChild(d);
                 });
             };
-            window.VOTE = () => { _3c4d[_7a8b].c[_6f7a[0]].v++; _7a8b++; if(_7a8b < _3c4d.length) window.M(); else { alert("Voto Confirmado"); _7a8b=0; window.M(); } };
+            window.VOTE = () => { _3c4d[_7a8b].c[_6f7a[0]].v++; _7a8b++; if(_7a8b < _3c4d.length) window.M(); else { alert("Voto OK"); _7a8b=0; window.M(); } };
 
             window.END = () => {
-                document.getElementById('pT_title').innerText = _8b9c;
-                document.getElementById('RT_subtitle').innerText = _0x0d1e[_idioma].RT_subtitle;
-                document.getElementById('pdfDate').innerText = "Data da Apuração: " + new Date().toLocaleString();
+                document.getElementById('pT').innerText = _8b9c;
+                document.getElementById('pdfDate').innerText = new Date().toLocaleString();
                 let out = document.getElementById('pC'); out.innerHTML = '';
                 _3c4d.forEach(cargo => {
-                    let h = `<div style="page-break-inside: avoid; margin-bottom: 20px;"><table class="pdf-table"><thead><tr><th colspan="2">${cargo.n.toUpperCase()}</th></tr></thead><tbody>`;
+                    let h = `<table class="pdf-table"><thead><tr><th colspan="2">${cargo.n}</th></tr></thead><tbody>`;
                     cargo.c.sort((a,b)=>b.v-a.v).forEach((can,idx)=>{
-                        h += `<tr class="${idx===0?'row-winner':''}"><td>${idx===0?'⭐ ':''}${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`;
+                        h += `<tr class="${idx===0?'winner':''}"><td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`;
                     });
-                    h += `</tbody></table></div>`;
+                    h += `</tbody></table>`;
                     out.innerHTML += h;
                 });
                 window.GO('res');
@@ -166,11 +156,11 @@
             window.PDF = () => {
                 const element = document.getElementById('areaImpressao');
                 const opt = {
-                    margin: 0,
-                    filename: 'resultado_oficial.pdf',
+                    margin: 10,
+                    filename: 'resultado_urna.pdf',
                     image: { type: 'jpeg', quality: 1 },
-                    html2canvas: { scale: 3, useCORS: true, width: 756 }, // Largura calculada para papel de 20cm
-                    jsPDF: { unit: 'mm', format: [200, 270], orientation: 'portrait' }
+                    html2canvas: { scale: 3, useCORS: true, width: 750 },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                 };
                 html2pdf().set(opt).from(element).save();
             };
