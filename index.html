@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UrnaWeb Digital - Sistema de Votação</title>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { --primary: #1abc9c; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; }
         body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
@@ -18,38 +17,24 @@
         
         input, button, textarea { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
-
-        /* CONFIGURAÇÃO PARA IMPRESSÃO A4 */
-        #areaImpressao { 
-            background: white !important; 
-            color: black !important; 
-            padding: 15mm; 
-            width: 180mm; /* Largura segura para A4 descontando margens */
-            margin: 0 auto;
-            min-height: 250mm;
-        }
-        .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid black; }
-        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 10px; text-align: left; border: 1px solid black; }
-        .pdf-table td { border: 1px solid #ccc; padding: 8px; color: black !important; font-size: 14px; }
-
-        @media print {
-            body { background: white; }
-            .screen { display: none; }
-            #res.active { display: block; }
-            .no-print { display: none; }
-        }
-
-        .grid-urna { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; }
+        
+        /* Grid Urna */
+        .grid-urna { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-top: 20px; }
         .card-candidato { background: white; color: #333; padding: 10px; border-radius: 12px; text-align: center; border: 4px solid transparent; }
         .card-candidato.selected { border-color: var(--accent); background: #fdf2a7; }
         .foto-cand { width: 100%; height: 110px; object-fit: cover; border-radius: 8px; }
+        
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
         .lang-box button { width: auto; padding: 6px 12px; background: rgba(0,0,0,0.6); font-size: 11px; border: 1px solid var(--primary); }
+
+        /* Área de visualização do resultado antes de baixar */
+        #areaImpressao { background: white; color: black; padding: 20px; border-radius: 8px; margin-top: 20px; width: 100%; box-sizing: border-box; display: none; }
+        .active #areaImpressao { display: block; }
     </style>
 </head>
 <body>
 
-    <div class="lang-box no-print">
+    <div class="lang-box">
         <button onclick="window.TR('pt')">Português</button>
         <button onclick="window.TR('en')">English</button>
         <button onclick="window.TR('es')">Español</button>
@@ -59,63 +44,59 @@
         <h2 id="L1">Acesso ao Sistema</h2>
         <div class="info-box" id="INFO_GMAIL">Para acesso ao sistema, deve ser informado apenas o Gmail.</div>
         <input id="uE" type="email" placeholder="Seu e-mail...">
-        <button onclick="window.V()" id="L2">Entrar</button>
+        <button onclick="window.V()" id="L2">Entrar / Acessar</button>
     </div>
 
     <div id="pay" class="screen">
-        <h2 id="P1">Limite Atingido</h2>
-        <div class="info-box" id="P_MSG">Você atingiu o limite de 3 eleições gratuitas. Escolha um plano:</div>
-        <button onclick="window.open('https://mpago.la/2maEAFx')" style="background:var(--success)" id="B1">Eleição Única (R$ 30,00)</button>
-        <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9" id="B2">Pacote 20 Eleições (R$ 500,00)</button>
-        <div class="info-box" id="P_CUP">Ou insira um cupom de acesso:</div>
-        <input id="cup" type="text" placeholder="Código...">
-        <button onclick="window.K()" id="P2" style="background:var(--accent); color:black">Ativar</button>
+        <h2 id="P1">Limite de Testes Atingido</h2>
+        <div class="info-box" id="P_MSG">Escolha um plano ou insira um cupom:</div>
+        <button onclick="window.open('https://mpago.la/2maEAFx')">R$ 30,00</button>
+        <button onclick="window.open('https://mpago.la/1VakcdN')">R$ 500,00</button>
+        <input id="cup" type="text" placeholder="Cupom...">
+        <button onclick="window.K()" id="P2">Ativar</button>
     </div>
 
     <div id="setupCargo" class="screen">
         <h2 id="C1">Cadastro</h2>
-        <div class="info-box" id="C_MSG">Cadastre os cargos e candidatos da sua eleição.</div>
+        <div class="info-box" id="C_MSG">Defina os cargos e candidatos.</div>
         <input id="nC" type="text" placeholder="Cargo">
-        <input id="qV" type="number" value="1">
-        <hr>
         <input id="nCand" type="text" placeholder="Candidato">
-        <input id="fCand" type="file" accept="image/*">
         <button onclick="window.A()" id="C2">Adicionar</button>
-        <div id="listTemp" style="text-align:center; color:var(--accent); margin:10px 0;"></div>
-        <button onclick="window.SAVE()" id="C3" style="background:var(--success)">Salvar Cargo</button>
-        <button onclick="window.START()" id="C4" style="background:var(--primary); margin-top:30px">INICIAR VOTAÇÃO</button>
+        <div id="listTemp"></div>
+        <button onclick="window.SAVE()" id="C3">Salvar Cargo</button>
+        <button onclick="window.START()" id="C4">INICIAR VOTAÇÃO</button>
+    </div>
+
+    <div id="urna" class="screen"><h2 id="uT"></h2><div id="grid" class="grid-urna"></div><button onclick="window.VOTE()" id="U1">CONFIRMAR VOTO</button><button onclick="window.END()" id="U2">ENCERRAR</button></div>
+
+    <div id="res" class="screen">
+        <div id="areaImpressao">
+            <h2 id="pT" style="text-align: center;"></h2>
+            <div id="pC"></div>
+        </div>
+        <button onclick="window.WORD()" id="R1" style="background:var(--success); margin-top:20px">Baixar Arquivo Word (A4)</button>
+        <button onclick="location.reload()" style="background:var(--danger)">Sair</button>
     </div>
 
     <div id="verify" class="screen"><h2 id="V1">Verificar</h2><input id="iC" type="text"><button onclick="window.C()">OK</button></div>
     <div id="setup" class="screen"><h2 id="S1">Configurar</h2><input id="tE" type="text"><button onclick="window.N()">Próximo</button></div>
-    <div id="urna" class="screen"><h2 id="uT"></h2><div id="grid"></div><button onclick="window.VOTE()" id="U1">VOTAR</button><button onclick="window.END()" id="U2">ENCERRAR</button></div>
-
-    <div id="res" class="screen">
-        <div id="areaImpressao">
-            <h2 id="pT" style="text-align: center; border-bottom: 2px solid #1abc9c;"></h2>
-            <p id="RT" style="text-align:center; font-weight:bold;"></p>
-            <div id="pC"></div>
-        </div>
-        <button onclick="window.PDF()" id="R1" class="no-print" style="background:var(--success); margin-top:20px">Baixar PDF (A4)</button>
-        <button onclick="location.reload()" class="no-print" style="background:var(--danger)">Sair</button>
-    </div>
 
     <script>
         const _MY_MAIL = 'paulosmv1972@gmail.com';
         (function(){
             const _0x4f2a = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
             emailjs.init(_0x4f2a.k);
-            let _0x1a2b='', _0x2b3c='', _idioma='pt', _3c4d=[], _4d5e=null, _5e6f='', _6f7a=[], _7a8b=0, _8b9c='';
+            let _0x1a2b='', _0x2b3c='', _idioma='pt', _3c4d=[], _4d5e=null, _6f7a=[], _7a8b=0, _8b9c='';
             
             const _0x0d1e = {
-                pt: { L1:"Acesso ao Sistema", INFO_GMAIL:"Para acesso ao sistema, deve ser informado apenas o Gmail.", P1:"Limite Atingido", B1:"Eleição Única (R$ 30,00)", B2:"Pacote 20 Eleições (R$ 500,00)", C4:"INICIAR VOTAÇÃO", RT:"Relatório de Apuração Final", R1:"Baixar PDF (A4)" },
-                en: { L1:"System Access", INFO_GMAIL:"To access the system, only Gmail must be informed.", P1:"Limit Reached", B1:"Single Election ($30.00)", B2:"20 Elections Pack ($500.00)", C4:"START VOTING", RT:"Final Tally Report", R1:"Download PDF (A4)" },
-                es: { L1:"Acceso", INFO_GMAIL:"Para acceder al sistema, solo se deve informar Gmail.", P1:"Límite", B1:"Elección Única (R$ 30.00)", B2:"Paquete 20 (R$ 500.00)", C4:"INICIAR VOTACIÓN", RT:"Reporte Final", R1:"Bajar PDF (A4)" }
+                pt: { L1: "Acesso ao Sistema", L2: "Entrar", INFO_GMAIL: "Para acesso ao sistema, deve ser informado apenas o Gmail.", C4: "INICIAR VOTAÇÃO", R1: "Baixar Arquivo Word (A4)", RT: "Relatório de Apuração" },
+                en: { L1: "System Access", L2: "Login", INFO_GMAIL: "To access the system, only Gmail must be informed.", C4: "START VOTING", R1: "Download Word File (A4)", RT: "Tally Report" },
+                es: { L1: "Acceso", L2: "Entrar", INFO_GMAIL: "Para acceder al sistema, solo se deve informar Gmail.", C4: "INICIAR VOTACIÓN", R1: "Bajar Word (A4)", RT: "Reporte Final" }
             };
 
             window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); };
-            window.TR = (l) => { _idioma=l; for(let k in _0x0d1e[l]){ let el=document.getElementById(k); if(el) el.innerText=_0x0d1e[l][k]; } };
-
+            window.TR = (lang) => { _idioma = lang; for(let k in _0x0d1e[lang]){ let el=document.getElementById(k); if(el) el.innerText=_0x0d1e[lang][k]; } };
+            
             window.V = async function() {
                 let v = document.getElementById('uE').value.trim().toLowerCase();
                 if(!v.endsWith('@gmail.com')) return alert("Use Gmail.");
@@ -123,53 +104,63 @@
                 try {
                     let r = await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c));
                     let d = await r.json();
-                    if(d.count >= 3) { window.GO('pay'); window.TR(_idioma); return; }
+                    if(d.count >= 3) { window.GO('pay'); return; }
                     _0x1a2b = d.codigo.toString();
                     await emailjs.send(_0x4f2a.s, _0x4f2a.t, { to_email: _0x2b3c, validation_code: _0x1a2b });
                     window.GO('verify');
                 } catch(e) { alert("Erro."); }
             };
 
-            // Funções de sistema simplificadas para o exemplo
             window.C = () => { if(document.getElementById('iC').value === _0x1a2b || document.getElementById('iC').value === "9999") window.GO('setup'); };
             window.N = () => { _8b9c = document.getElementById('tE').value || "Urna"; window.GO('setupCargo'); };
-            window.A = () => { if(!_4d5e) _4d5e={n:document.getElementById('nC').value, q:1, c:[]}; _4d5e.c.push({n:document.getElementById('nCand').value, v:0}); document.getElementById('listTemp').innerText += " [OK]"; };
-            window.SAVE = () => { if(_4d5e) _3c4d.push(_4d5e); _4d5e=null; alert("Cargo Salvo"); };
-            window.START = () => { window.GO('urna'); window.M(); };
-            window.M = () => { let c=_3c4d[0]; document.getElementById('uT').innerText=c.n; let g=document.getElementById('grid'); g.innerHTML=''; c.c.forEach((can,i)=>{ let d=document.createElement('div'); d.className='card-candidato'; d.innerHTML='<strong>'+can.n+'</strong>'; d.onclick=()=>{ _6f7a=[i]; window.UI(); }; g.appendChild(d); }); };
+            window.A = () => { if(!_4d5e) _4d5e={n:document.getElementById('nC').value, c:[]}; _4d5e.c.push({n:document.getElementById('nCand').value, v:0}); document.getElementById('listTemp').innerText += " [OK]"; };
+            window.SAVE = () => { if(_4d5e) _3c4d.push(_4d5e); _4d5e=null; alert("Salvo"); };
+            window.START = () => { _7a8b=0; window.M(); window.GO('urna'); };
+            
+            window.M = () => {
+                let c=_3c4d[_7a8b]; document.getElementById('uT').innerText=c.n;
+                let g=document.getElementById('grid'); g.innerHTML='';
+                c.c.forEach((can,i)=>{
+                    let d=document.createElement('div'); d.className='card-candidato';
+                    d.innerHTML='<strong>'+can.n+'</strong>'; d.onclick=()=>{ _6f7a=[i]; window.UI(); }; g.appendChild(d);
+                });
+            };
             window.UI = () => { document.querySelectorAll('.card-candidato').forEach((card,i)=>{ if(_6f7a.includes(i)) card.classList.add('selected'); else card.classList.remove('selected'); }); };
-            window.VOTE = () => { _3c4d[0].c[_6f7a[0]].v++; alert("Voto OK"); };
+            window.VOTE = () => { _3c4d[_7a8b].c[_6f7a[0]].v++; _7a8b++; if(_7a8b < _3c4d.length) window.M(); else { alert("OK"); _7a8b=0; window.M(); } };
 
             window.END = () => {
                 document.getElementById('pT').innerText = _8b9c;
                 let out = document.getElementById('pC'); out.innerHTML = '';
                 _3c4d.forEach(cargo => {
-                    let h = `<div style="page-break-inside: avoid;"><table class="pdf-table"><thead><tr><th colspan="2">${cargo.n}</th></tr></thead><tbody>`;
-                    cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr><td>${can.n}</td><td style="text-align:right">${can.v}</td></tr>`; });
-                    h += `</tbody></table></div>`;
+                    let h = `<div style="margin-bottom:20px; border:1px solid black; padding:10px;">
+                        <h3 style="background:#0a2a66; color:white; padding:5px;">${cargo.n}</h3>`;
+                    cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<p style="color:black;">${can.n}: <b>${can.v} votos</b></p>`; });
+                    h += `</div>`;
                     out.innerHTML += h;
                 });
                 window.GO('res');
                 window.TR(_idioma);
             };
 
-            // NOVA CONFIGURAÇÃO PDF A4
-            window.PDF = () => {
-                const element = document.getElementById('areaImpressao');
-                const opt = {
-                    margin: 0,
-                    filename: 'resultado_A4.pdf',
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { 
-                        scale: 2, 
-                        useCORS: true, 
-                        width: 794, // 210mm em pixels (96 DPI)
-                        windowWidth: 794 
-                    },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                };
-                html2pdf().set(opt).from(element).save();
+            // FUNÇÃO PARA GERAR ARQUIVO WORD EM A4
+            window.WORD = () => {
+                const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' "+
+                               "xmlns:w='urn:schemas-microsoft-com:office:word' "+
+                               "xmlns='http://www.w3.org/TR/REC-html40'>"+
+                               "<head><meta charset='utf-8'><title>Resultado</title>"+
+                               "<style>@page { size: 21cm 29.7cm; margin: 2cm; } body { font-family: Arial; }</style></head><body>";
+                const footer = "</body></html>";
+                const sourceHTML = header + document.getElementById("areaImpressao").innerHTML + footer;
+                
+                const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+                const fileDownload = document.createElement("a");
+                document.body.appendChild(fileDownload);
+                fileDownload.href = source;
+                fileDownload.download = 'Resultado_Eleicao.doc';
+                fileDownload.click();
+                document.body.removeChild(fileDownload);
             };
+
             window.TR('pt');
         })();
     </script>
