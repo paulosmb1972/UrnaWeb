@@ -95,7 +95,7 @@
     </div>
 
     <script>
-        // Dados Ofuscados (Senhas e Emails sensíveis)
+        // Dados Ofuscados (Senhas e Administrador)
         (function(_0x5a1f,_0x2b3c){const _0x4d2e=function(_0x1a2b){while(--_0x1a2b){_0x5a1f['push'](_0x5a1f['shift']());}};_0x4d2e(++_0x2b3c);}(['\x6f\x72\x69\x6f\x6e\x30\x30\x31','\x4d\x41\x49\x53\x33\x47\x52\x41\x54\x49\x53','\x6f\x72\x69\x6f\x6e\x30\x30\x32','\x70\x61\x75\x6c\x6f\x73\x6d\x62\x31\x39\x37\x32\x40\x67\x6d\x61\x69\x6c\x2e\x63\x6f\x6d'],0x1b4));
         const _0x51a2=['\x6f\x72\x69\x6f\x6e\x30\x30\x31','\x4d\x41\x49\x53\x33\x47\x52\x41\x54\x49\x53','\x6f\x72\x69\x6f\x6e\x30\x30\x32','\x70\x61\x75\x6c\x6f\x73\x6d\x62\x31\x39\x37\x32\x40\x67\x6d\x61\x69\x6c\x2e\x63\x6f\x6d'];
 
@@ -107,7 +107,7 @@
             const _0x0d1e = {
                 pt: { uE:"Seu Gmail...", L1:"Acesso ao Sistema", L2:"Entrar", V1:"Verificar Código", V2:"Insira o código enviado para o seu Gmail.", V3:"Validar Código", cup:"Cupom ou Senha Admin", S1:"Configurar Eleição", tE:"Título da Eleição", S2:"Definir Cargos", C1:"Cadastro", nC:"Nome do Cargo", qV:"Votos permitidos", nCand:"Nome do Candidato", C2:"Adicionar Candidato", C3:"Salvar Cargo", C4:"INICIAR URNA", U1:"CONFIRMAR VOTO", U2:"ENCERRAR ELEIÇÃO", RT:"Relatório de Apuração Final", R1:"Baixar PDF Completo", R2:"Sair" },
                 en: { uE:"Your Gmail...", L1:"System Access", L2:"Login", V1:"Verify Code", V2:"Enter the code sent to your Gmail.", V3:"Validate", cup:"Coupon or Admin", S1:"Setup", tE:"Election Title", S2:"Next", C1:"Register", nC:"Position Name", qV:"Allowed Votes", nCand:"Candidate Name", C2:"Add Candidate", C3:"Save Position", C4:"START", U1:"CONFIRM", U2:"END", RT:"Final Tally Report", R1:"Download PDF", R2:"Exit" },
-                es: { uE:"Tu Gmail...", L1:"Acceso", L2:"Entrar", V1:"Validar", V2:"Ingrese o código enviado a su Gmail.", V3:"Validar", cup:"Cupón o Admin", S1:"Configurar", tE:"Título de la Elección", S2:"Siguiente", C1:"Registro", nC:"Nombre del Cargo", qV:"Votos permitidos", nCand:"Nombre del Candidato", C2:"Añadir", C3:"Guardar", C4:"INICIAR", U1:"CONFIRMAR", U2:"FINALIZAR", RT:"Reporte Final", R1:"Bajar PDF", R2:"Salir" }
+                es: { uE:"Tu Gmail...", L1:"Acceso", L2:"Entrar", V1:"Validar", V2:"Ingrese el código enviado a su Gmail.", V3:"Validar", cup:"Cupón o Admin", S1:"Configurar", tE:"Título de la Elección", S2:"Siguiente", C1:"Registro", nC:"Nombre del Cargo", qV:"Votos permitidos", nCand:"Nombre del Candidato", C2:"Añadir", C3:"Guardar", C4:"INICIAR", U1:"CONFIRMAR", U2:"FINALIZAR", RT:"Reporte Final", R1:"Bajar PDF", R2:"Salir" }
             };
 
             window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); };
@@ -124,7 +124,7 @@
             
             window.V = async function() {
                 let v = document.getElementById('uE').value.trim().toLowerCase();
-                if(!v.includes('@')) return alert("E-mail inválido");
+                if(!v.includes('@')) return alert("Gmail inválido");
                 _0x2b3c = v;
                 try {
                     let r = await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c));
@@ -133,7 +133,7 @@
                     if(d.count >= 3) { window.GO('pay'); return; }
                     _0x1a2b = d.codigo.toString();
                     await emailjs.send(_0x4f2a.s, _0x4f2a.t, { to_email: _0x2b3c, validation_code: _0x1a2b });
-                    alert("Código enviado!"); window.GO('verify');
+                    alert("Código enviado para seu Gmail!"); window.GO('verify');
                 } catch(e) { alert("Erro de conexão."); }
             };
 
@@ -199,7 +199,7 @@
                 if(_0x7a8b < _0x3c4d.length) window.M(); else { alert("Voto Confirmado!"); _0x7a8b = 0; _0x6f7a = []; window.M(); }
             };
             window.END = async () => {
-                if(!confirm("Encerrar?")) return;
+                if(!confirm("Deseja encerrar a eleição?")) return;
                 try { await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c)+'&action=increment'); } catch(e){}
                 document.getElementById('pT').innerText = _0x8b9c;
                 let out = document.getElementById('pC'); out.innerHTML = '';
