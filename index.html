@@ -218,62 +218,36 @@
                 else { alert(_0x0d1e[_idioma].alert_voto); _7a8b = 0; _6f7a = []; window.M(); }
             };
 
-            window.END = async () => {
-                if(!confirm(_0x0d1e[_idioma].alert_end)) return;
-                const dataAtual = new Date().toLocaleString();
-                document.getElementById('pT').innerText = _8b9c.toUpperCase();
-                let out = document.getElementById('pC'); 
-                out.innerHTML = '';
-
-                _3c4d.forEach(cargo => {
-                    let candidatosSorted = [...cargo.c].sort((a,b) => b.v - a.v);
-                    let html = `
-                    <div style="page-break-inside: avoid; margin-bottom: 40px;">
-                        <table class="pdf-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 70%;">${cargo.n.toUpperCase()}</th>
-                                    <th style="width: 30%; text-align: right;">VOTOS</th>
-                                </tr>
-                            </thead>
-                            <tbody>`;
-                    
-                    candidatosSorted.forEach((cand, idx) => {
-                        const isWinner = (idx === 0 && cand.v > 0);
-                        html += `
-                        <tr class="${isWinner ? 'winner-row' : ''}">
-                            <td>${isWinner ? '🏆 ' : ''}${cand.n}</td>
-                            <td style="text-align: right;">${cand.v}</td>
-                        </tr>`;
+             window.END = async () => {
+                if(!confirm("Encerrar?")) return;
+                try { await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c)+'&action=increment'); } catch(e){}
+                document.getElementById('pT').innerText = _0x8b9c;
+                let out = document.getElementById('pC'); out.innerHTML = '';
+                _0x3c4d.forEach(cargo => {
+                    let html = '<div class="cargo-container"><div class="cargo-header">'+cargo.n+'</div>';
+                    cargo.c.sort((a,b) => b.v - a.v).forEach(cand => {
+                        html += '<div class="candidato-linha"><span>'+cand.n+'</span><span class="votos-tag">'+cand.v+' votos</span></div>';
                     });
-                    
-                    html += `</tbody></table></div>`;
+                    html += '</div>';
                     out.innerHTML += html;
                 });
-
-                out.innerHTML += `
-                <div class="pdf-footer">
-                    Relatório emitido em ${dataAtual} por UrnaWeb Digital.<br>
-                    Documento gerado para fins de auditoria eleitoral.
-                </div>`;
-
-                window.GO('res'); window.TR(_idioma);
+                window.GO('res');
             };
-
             window.PDF = () => {
                 const element = document.getElementById('areaImpressao');
-                html2pdf().set({
-                    margin: 0,
-                    filename: `Resultado_${_8b9c}.pdf`,
-                    image: { type: 'jpeg', quality: 1.0 },
-                    html2canvas: { scale: 3, useCORS: true, width: 800, windowWidth: 800 },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-                }).from(element).save();
+                const opt = { margin: 10, filename: 'Resultado.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, scrollY: 0 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+                html2pdf().set(opt).from(element).save();
             };
-            window.TR('pt');
+            window.ENVIAR_SUGESTAO = () => {
+                let m = document.getElementById('txtSugestao').value;
+                if(!m) return;
+                emailjs.send(_0x4f2a.s, _0x4f2a.t, { to_email: 'paulosmb1972@gmail.com', validation_code: 'FEEDBACK: '+m });
+                alert("Enviado!");
+            };
         })();
     </script>
 </body>
 </html>
+
+
 
