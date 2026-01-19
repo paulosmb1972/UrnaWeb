@@ -14,11 +14,10 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         h2 { text-align: center; color: var(--primary); }
         
-        /* Bloco Informativo Gmail */
-        .info-box { text-align: center; font-size: 14px; color: #ddd; margin: 10px 0 20px 0; line-height: 1.4; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border-left: 4px solid var(--accent); }
+        .info-box { text-align: center; font-size: 14px; color: #ddd; margin: 10px 0 20px 0; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border-left: 4px solid var(--accent); }
         
         input, button, textarea { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
-        button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
         
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
         .lang-box button { width: auto; padding: 6px 12px; background: rgba(0,0,0,0.8); font-size: 11px; border: 1px solid var(--primary); }
@@ -26,15 +25,15 @@
         .grid-urna { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-top: 20px; }
         .card-candidato { background: white; color: #333; padding: 10px; border-radius: 12px; text-align: center; border: 4px solid transparent; }
         .card-candidato.selected { border-color: var(--accent); background: #fff9c4; }
-        .foto-cand { width: 100%; height: 110px; object-fit: cover; border-radius: 8px; background: #eee; }
+        .foto-cand { width: 100%; height: 110px; object-fit: cover; border-radius: 8px; }
 
-        /* ESTILO DO PDF - Otimizado para o Consumidor */
-        #areaImpressao { background: white !important; color: black !important; padding: 20px; width: 800px; margin: 0 auto; border-radius: 5px; }
-        .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
-        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; font-size: 16px; border: 1px solid #000; }
-        .pdf-table td { border: 1px solid #ddd; padding: 10px; font-size: 14px; color: black !important; }
+        /* --- ESTILO DE IMPRESSÃO OTIMIZADO --- */
+        #areaImpressao { background: white !important; color: black !important; padding: 15px; width: 180mm; margin: 0 auto; border-radius: 5px; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; table-layout: fixed; }
+        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 8px; text-align: left; font-size: 14px; border: 1px solid #000; }
+        .pdf-table td { border: 1px solid #ddd; padding: 5px; font-size: 12px; color: black !important; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
         .pdf-table tr:nth-child(even) { background: #f9f9f9 !important; }
-        .pdf-header { text-align: center; border-bottom: 3px solid #1abc9c; padding-bottom: 10px; margin-bottom: 20px; }
+        .pdf-header { text-align: center; border-bottom: 2px solid #1abc9c; margin-bottom: 10px; }
         
         .sugestoes-box { margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px; border: 1px solid var(--primary); }
     </style>
@@ -54,162 +53,101 @@
         <button onclick="window.V()" id="L2">Entrar</button>
     </div>
 
-    <div id="verify" class="screen">
-        <h2 id="V1">Verificar Código</h2>
-        <p style="text-align:center" id="V2">Insira o código enviado para o seu Gmail.</p>
-        <input id="iC" type="text" maxlength="4" placeholder="...">
-        <button onclick="window.C()" id="V3">Validar</button>
-    </div>
-
-    <div id="setup" class="screen">
-        <h2 id="S1">Configurar Eleição</h2>
-        <input id="tE" type="text" placeholder="...">
-        <button onclick="window.N()" id="S2">Próximo</button>
-    </div>
-
+    <div id="verify" class="screen"><h2 id="V1">Verificar Código</h2><input id="iC" type="text" maxlength="4"><button onclick="window.C()" id="V3">Validar</button></div>
+    <div id="pay" class="screen"><h2 id="P1">Limite</h2><input id="cup" type="text"><button onclick="window.K()" id="P2">Ativar</button></div>
+    <div id="setup" class="screen"><h2 id="S1">Configurar</h2><input id="tE" type="text"><button onclick="window.N()" id="S2">Próximo</button></div>
     <div id="setupCargo" class="screen">
-        <h2 id="C1">Cadastro</h2>
-        <input id="nC" type="text" placeholder="...">
-        <input id="qV" type="number" value="1">
-        <hr>
-        <input id="nCand" type="text" placeholder="...">
-        <input id="fCand" type="file" accept="image/*">
-        <button onclick="window.A()" id="C2">Adicionar Candidato</button>
-        <div id="listTemp" style="margin:10px 0; color:var(--accent); text-align:center"></div>
+        <h2 id="C1">Cadastro</h2><input id="nC" type="text" placeholder="Cargo"><input id="qV" type="number" value="1">
+        <hr><input id="nCand" type="text" placeholder="Nome Candidato"><input id="fCand" type="file" accept="image/*">
+        <button onclick="window.A()" id="C2">Adicionar</button><div id="listTemp"></div>
         <button onclick="window.SAVE()" id="C3" style="background:var(--success)">Salvar Cargo</button>
-        <button onclick="window.START()" id="C4" style="margin-top:20px; background:var(--dark)">INICIAR URNA</button>
+        <button onclick="window.START()" id="C4" style="background:var(--dark)">INICIAR</button>
     </div>
-
-    <div id="urna" class="screen">
-        <h2 id="uT"></h2>
-        <div id="grid" class="grid-urna"></div>
-        <button onclick="window.VOTE()" id="U1" style="background:var(--success); height:80px; font-size:22px; margin-top:20px">CONFIRMAR VOTO</button>
-        <button onclick="window.END()" id="U2" style="background:var(--danger); font-size:12px; opacity:0.7">ENCERRAR ELEIÇÃO</button>
-    </div>
+    <div id="urna" class="screen"><h2 id="uT"></h2><div id="grid" class="grid-urna"></div><button onclick="window.VOTE()" id="U1" style="background:var(--success); height:80px;">CONFIRMAR VOTO</button><button onclick="window.END()" id="U2" style="background:var(--danger); font-size:12px;">ENCERRAR</button></div>
 
     <div id="res" class="screen">
         <div id="areaImpressao">
             <div class="pdf-header">
-                <h2 id="pT" style="margin:0; color: #0a2a66 !important;"></h2>
-                <p style="margin:5px 0; font-weight:bold; color:#333 !important" id="RT">Relatório de Apuração Final</p>
+                <h2 id="pT" style="margin:0; color: #0a2a66 !important; font-size: 18px;"></h2>
+                <p style="margin:5px 0; font-weight:bold; color:#333 !important; font-size: 14px;" id="RT">Relatório de Apuração Final</p>
             </div>
             <div id="pC"></div>
         </div>
         
-        <div class="sugestoes-box">
-            <textarea id="txtSugestao" placeholder="Sugestões..."></textarea>
-            <button onclick="window.S_SEND()" id="S4" style="background:var(--accent); color:#000">Enviar para Paulo SMB</button>
-        </div>
+        <div id="containerSugestao"></div>
 
-        <button onclick="window.PDF()" id="R1" style="background:var(--success); margin-top:20px">Baixar PDF Completo</button>
+        <button onclick="window.PDF()" id="R1" style="background:var(--success); margin-top:20px">Baixar PDF Completo (A4)</button>
         <button onclick="location.reload()" id="R2" style="background:var(--danger)">Sair</button>
     </div>
 
     <script>
-        const _MY_MAIL = 'paulosmb1972@gmail.com';
+        const _MY_MAIL = 'paulosmv1972@gmail.com';
         (function(){
             const _0x4f2a = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
             emailjs.init(_0x4f2a.k);
             let _0x1a2b='', _0x2b3c='', _idioma='pt', _3c4d=[], _4d5e=null, _5e6f='', _6f7a=[], _7a8b=0, _8b9c='';
             
             const _0x0d1e = {
-                pt: { L1:"Acesso ao Sistema", L2:"Entrar", V1:"Verificar Código", V2:"Insira o código enviado para o seu Gmail.", V3:"Validar Código", DESC_GMAIL: "Para garantir o recebimento seguro do código de acesso, nosso sistema aceita exclusivamente contas do Gmail.", ERR_GMAIL: "Erro: Use um @gmail.com válido.", S1:"Configurar Eleição", S2:"Próximo", C1:"Cadastro", nC:"Nome do Cargo", qV:"Votos permitidos", nCand:"Candidato", C2:"Adicionar", C3:"Salvar Cargo", C4:"INICIAR URNA", U1:"CONFIRMAR VOTO", U2:"ENCERRAR ELEIÇÃO", RT:"Relatório de Apuração Final", txtSugestao:"Sugestões ou dúvidas...", S4:"Enviar para Paulo SMB", R1:"Baixar PDF", R2:"Sair", alert_voto:"Voto Confirmado!", alert_end:"Encerrar eleição?" },
-                en: { L1:"System Access", L2:"Login", V1:"Verify Code", V2:"Enter code sent to your Gmail.", V3:"Validate", DESC_GMAIL: "To ensure secure delivery of the code, our system exclusively accepts Gmail accounts.", ERR_GMAIL: "Error: Use a valid @gmail.com.", S1:"Election Setup", S2:"Next", C1:"Registration", nC:"Position Name", qV:"Allowed Votes", nCand:"Candidate", C2:"Add", C3:"Save Position", C4:"START VOTE", U1:"CONFIRM VOTE", U2:"END ELECTION", RT:"Final Tally Report", txtSugestao:"Suggestions...", S4:"Send to Paulo SMB", R1:"Download PDF", R2:"Exit", alert_voto:"Vote Confirmed!", alert_end:"End election?" },
-                es: { L1:"Acceso", L2:"Entrar", V1:"Validar", V2:"Ingrese el código enviado a su Gmail.", V3:"Validar", DESC_GMAIL: "Para garantizar la entrega segura de su código, el sistema acepta exclusivamente Gmail.", ERR_GMAIL: "Error: Use un @gmail.com válido.", S1:"Configurar Elección", S2:"Siguiente", C1:"Registro", nC:"Nombre del Cargo", qV:"Votos permitidos", nCand:"Candidato", C2:"Añadir", C3:"Guardar", C4:"INICIAR", U1:"CONFIRMAR VOTO", U2:"FINALIZAR", RT:"Reporte Final", txtSugestao:"Sugerencias...", S4:"Enviar a Paulo SMB", R1:"Bajar PDF", R2:"Salir", alert_voto:"¡Voto Confirmado!", alert_end:"¿Finalizar elección?" }
+                pt: { L1:"Acesso ao Sistema", L2:"Entrar", V1:"Verificar Código", DESC_GMAIL: "Para garantir o recebimento seguro do código de acesso, nosso sistema aceita exclusivamente contas do Gmail.", ERR_GMAIL: "Erro: Use um @gmail.com.", RT:"Relatório de Apuração Final", R1:"Baixar PDF", alert_voto:"Voto Confirmado!", alert_end:"Encerrar eleição?", sug_ph:"Sugestões...", sug_btn:"Enviar Feedback" },
+                en: { L1:"System Access", L2:"Login", V1:"Verify Code", DESC_GMAIL: "To ensure secure code delivery, our system exclusively accepts Gmail accounts.", ERR_GMAIL: "Error: Use @gmail.com.", RT:"Final Tally Report", R1:"Download PDF", alert_voto:"Vote Confirmed!", alert_end:"End election?", sug_ph:"Suggestions...", sug_btn:"Send Feedback" },
+                es: { L1:"Acceso", L2:"Entrar", V1:"Validar", DESC_GMAIL: "Para garantizar la entrega segura, el sistema acepta exclusivamente Gmail.", ERR_GMAIL: "Error: Use @gmail.com.", RT:"Reporte Final", R1:"Bajar PDF", alert_voto:"¡Voto Confirmado!", alert_end:"¿Finalizar?", sug_ph:"Sugerencias...", sug_btn:"Enviar" }
             };
 
-            window.TR = (lang) => { 
-                _idioma = lang;
-                for(let k in _0x0d1e[lang]) { 
-                    let el = document.getElementById(k);
-                    if(el) {
-                        if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = _0x0d1e[lang][k];
-                        else el.innerText = _0x0d1e[lang][k];
-                    }
-                }
-            };
-
+            window.TR = (l) => { _idioma=l; for(let k in _0x0d1e[l]){ let el=document.getElementById(k); if(el) el.innerText=_0x0d1e[l][k]; } };
+            
             window.V = async function() {
                 _0x2b3c = document.getElementById('uE').value.trim().toLowerCase();
                 if(!_0x2b3c.endsWith('@gmail.com')) return alert(_0x0d1e[_idioma].ERR_GMAIL);
                 try {
                     let r = await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c));
                     let d = await r.json();
-                    if(d.count >= 3) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('pay').classList.add('active'); return; }
+                    if(d.count >= 3){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('pay').classList.add('active'); return; }
                     _0x1a2b = d.codigo.toString();
                     await emailjs.send(_0x4f2a.s, _0x4f2a.t, { to_email: _0x2b3c, validation_code: _0x1a2b });
                     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('verify').classList.add('active');
-                } catch(e) { alert("Erro"); }
+                } catch(e){ alert("Erro"); }
             };
 
             window.C = () => { if(document.getElementById('iC').value === _0x1a2b || document.getElementById('iC').value === "9999") { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('setup').classList.add('active'); } };
-            
-            window.K = async () => {
-                let c = document.getElementById('cup').value.trim();
-                if(c === 'orion002' && _0x2b3c === _MY_MAIL) { await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c)+'&action=reset'); location.reload(); }
-                if(c === 'orion001' || c.toUpperCase() === 'MAIS3GRATIS') { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('setup').classList.add('active'); }
-            };
-
+            window.K = async () => { let c = document.getElementById('cup').value.trim(); if(c === 'orion002' && _0x2b3c === _MY_MAIL) { await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c)+'&action=reset'); location.reload(); } if(c === 'orion001' || c.toUpperCase() === 'MAIS3GRATIS') { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('setup').classList.add('active'); } };
             window.N = () => { _8b9c = document.getElementById('tE').value || "Urna"; document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('setupCargo').classList.add('active'); };
-            
-            window.A = () => {
-                if(!_4d5e) _4d5e = { n: document.getElementById('nC').value, q: parseInt(document.getElementById('qV').value), c: [] };
-                let nc = document.getElementById('nCand').value; if(!nc) return;
-                _4d5e.c.push({ n: nc, f: _5e6f, v: 0 });
-                document.getElementById('listTemp').innerHTML += " ["+nc+"] ";
-                document.getElementById('nCand').value = ''; _5e6f = '';
-            };
-            document.getElementById('fCand').addEventListener('change', e => { 
-                let r = new FileReader(); r.onload = x => _5e6f = x.target.result; r.readAsDataURL(e.target.files[0]); 
-            });
+            window.A = () => { if(!_4d5e) _4d5e = { n: document.getElementById('nC').value, q: parseInt(document.getElementById('qV').value), c: [] }; let nc = document.getElementById('nCand').value; if(!nc) return; _4d5e.c.push({ n: nc, f: _5e6f, v: 0 }); document.getElementById('listTemp').innerHTML += " ["+nc+"] "; document.getElementById('nCand').value = ''; _5e6f = ''; };
+            document.getElementById('fCand').addEventListener('change', e => { let r = new FileReader(); r.onload = x => _5e6f = x.target.result; r.readAsDataURL(e.target.files[0]); });
             window.SAVE = () => { if(_4d5e) _3c4d.push(_4d5e); _4d5e = null; document.getElementById('nC').value=''; document.getElementById('listTemp').innerHTML=''; alert("OK"); };
             window.START = () => { if(_4d5e) _3c4d.push(_4d5e); _7a8b=0; window.M(); document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('urna').classList.add('active'); };
-            
-            window.M = () => {
-                let c = _3c4d[_7a8b]; document.getElementById('uT').innerText = c.n;
-                let g = document.getElementById('grid'); g.innerHTML = '';
-                c.c.forEach((can, i) => {
-                    let d = document.createElement('div'); d.className = 'card-candidato';
-                    d.innerHTML = (can.f ? '<img src="'+can.f+'" class="foto-cand"><br>' : '') + '<strong>'+can.n+'</strong>';
-                    d.onclick = () => { if(_6f7a.includes(i)) _6f7a = _6f7a.filter(x=>x!==i); else if(_6f7a.length < c.q) _6f7a.push(i); window.UI(); };
-                    g.appendChild(d);
-                });
-            };
+            window.M = () => { let c = _3c4d[_7a8b]; document.getElementById('uT').innerText = c.n; let g = document.getElementById('grid'); g.innerHTML = ''; c.c.forEach((can, i) => { let d = document.createElement('div'); d.className = 'card-candidato'; d.innerHTML = (can.f ? '<img src="'+can.f+'" class="foto-cand"><br>' : '') + '<strong>'+can.n+'</strong>'; d.onclick = () => { if(_6f7a.includes(i)) _6f7a = _6f7a.filter(x=>x!==i); else if(_6f7a.length < c.q) _6f7a.push(i); window.UI(); }; g.appendChild(d); }); };
             window.UI = () => { document.querySelectorAll('.card-candidato').forEach((card, i) => { if(_6f7a.includes(i)) card.classList.add('selected'); else card.classList.remove('selected'); }); };
-            
-            window.VOTE = () => {
-                if(_6f7a.length === 0) return;
-                _6f7a.forEach(i => _3c4d[_7a8b].c[i].v++); _7a8b++;
-                if(_7a8b < _3c4d.length) { _6f7a = []; window.M(); } 
-                else { alert(_0x0d1e[_idioma].alert_voto); _7a8b = 0; _6f7a = []; window.M(); }
-            };
+            window.VOTE = () => { if(_6f7a.length === 0) return; _6f7a.forEach(i => _3c4d[_7a8b].c[i].v++); _7a8b++; if(_7a8b < _3c4d.length) { _6f7a = []; window.M(); } else { alert(_0x0d1e[_idioma].alert_voto); _7a8b = 0; _6f7a = []; window.M(); } };
 
             window.END = async () => {
                 if(!confirm(_0x0d1e[_idioma].alert_end)) return;
-                try { await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c)+'&action=increment'); } catch(e){}
                 document.getElementById('pT').innerText = _8b9c;
                 let out = document.getElementById('pC'); out.innerHTML = '';
-                
                 _3c4d.forEach(cargo => {
                     let html = `<table class="pdf-table"><thead><tr><th colspan="2">${cargo.n}</th></tr></thead><tbody>`;
                     cargo.c.sort((a,b) => b.v - a.v).forEach(cand => {
-                        html += `<tr><td>${cand.n}</td><td style="text-align:right; font-weight:bold; width:100px;">${cand.v} votos</td></tr>`;
+                        html += `<tr><td>${cand.n}</td><td style="text-align:right; font-weight:bold; width:80px;">${cand.v}</td></tr>`;
                     });
                     html += `</tbody></table>`;
                     out.innerHTML += html;
                 });
+                document.getElementById('containerSugestao').innerHTML = `<div class="sugestoes-box"><textarea id="s_box" placeholder="${_0x0d1e[_idioma].sug_ph}"></textarea><button onclick="window.S_SEND()">${_0x0d1e[_idioma].sug_btn}</button></div>`;
                 document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('res').classList.add('active');
             };
 
-            window.S_SEND = () => { let s = document.getElementById('txtSugestao').value; if(s) { emailjs.send(_0x4f2a.s, _0x4f2a.t, { to_email: _MY_MAIL, validation_code: "FB: " + s }); alert("OK"); } };
+            window.S_SEND = () => { let s = document.getElementById('s_box').value; if(s) { emailjs.send(_0x4f2a.s, _0x4f2a.t, { to_email: _MY_MAIL, validation_code: "FB: " + s }); alert("OK"); } };
             
             window.PDF = () => { 
                 const element = document.getElementById('areaImpressao');
                 const opt = {
-                    margin: 10,
-                    filename: 'resultado_urna.pdf',
-                    image: { type: 'jpeg', quality: 1 },
-                    html2canvas: { scale: 2, useCORS: true, width: 800 }, // Fixa largura para evitar cortes em tablet
+                    margin: 5,
+                    filename: 'resultado.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { 
+                        scale: 1.5, // Escala menor para garantir que caiba no A4
+                        useCORS: true, 
+                        width: 700 // Largura fixa de renderização
+                    },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                 };
                 html2pdf().set(opt).from(element).save(); 
