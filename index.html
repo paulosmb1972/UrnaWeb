@@ -17,6 +17,10 @@
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
         .lang-box button { width: auto; padding: 6px 12px; background: rgba(0,0,0,0.6); font-size: 11px; border: 1px solid var(--primary); }
+        
+        /* Bloco de aviso do Gmail na tela inicial */
+        .info-box-gmail { text-align: center; font-size: 14px; color: #ddd; margin: 15px 0; line-height: 1.4; background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid var(--accent); }
+        
         .grid-urna { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-top: 20px; }
         .card-candidato { background: white; color: #333; padding: 10px; border-radius: 10px; text-align: center; border: 4px solid transparent; cursor: pointer; }
         .card-candidato.selected { border-color: var(--accent); background: #fdf2a7; }
@@ -27,7 +31,6 @@
         .candidato-linha { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; color: #000 !important; }
         .votos-tag { font-weight: bold; color: #1abc9c !important; }
         .sugestoes-box { margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px; border: 1px solid var(--primary); }
-        .info-gmail { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; border: 1px solid var(--accent); margin-bottom: 20px; text-align: center; }
     </style>
 </head>
 <body>
@@ -39,17 +42,9 @@
 
     <div id="login" class="screen active">
         <h2 id="L1">Acesso ao Sistema</h2>
+        <div class="info-box-gmail" id="INFO_GMAIL">Para garantir a segurança e o recebimento dos códigos, este sistema aceita exclusivamente contas do Gmail.</div>
         <input id="uE" type="email" placeholder="Seu e-mail...">
-        <button onclick="window.VERIFICAR_DOMINIO()" id="L2">Entrar / Acessar</button>
-    </div>
-
-    <div id="gmail_info" class="screen">
-        <h2 id="G1">Aviso Importante</h2>
-        <div class="info-gmail">
-            <p id="G2">Para garantir a segurança e o recebimento dos códigos, este sistema aceita exclusivamente contas <strong>@gmail.com</strong>.</p>
-        </div>
-        <button onclick="window.V()" id="G3">Entendi, Continuar</button>
-        <button onclick="window.GO('login')" id="G4" style="background:var(--danger)">Voltar e Corrigir</button>
+        <button onclick="window.V()" id="L2">Entrar / Acessar</button>
     </div>
 
     <div id="verify" class="screen">
@@ -122,9 +117,9 @@
             let _0x1a2b='',_0x2b3c='',_0x3c4d=[],_0x4d5e=null,_0x5e6f='',_0x6f7a=[],_0x7a8b=0,_0x8b9c='',_0x9c0d=false;
             
             const _0x0d1e = {
-                pt: { uE:"Seu e-mail...", L1:"Acesso ao Sistema", L2:"Entrar", V1:"Verificar Código", V2:"Insira o código enviado.", V3:"Validar Código", iC:"Código de 4 dígitos", P1:"Limite Atingido", PL:"Escolha um plano para continuar:", B1:"Eleição Única (R$ 30,00)", B2:"Pacote 20 Eleições (R$ 500,00)", cup:"Cupom ou Senha Admin", P2:"Ativar Acesso", P3:"Sair", S1:"Configurar Eleição", tE:"Título da Eleição", S2:"Definir Cargos", C1:"Cadastro", nC:"Nome do Cargo", qV:"Votos permitidos", nCand:"Nome do Candidato", C2:"Adicionar Candidato", C3:"Salvar Cargo", C4:"INICIAR URNA", U1:"CONFIRMAR VOTO", U2:"ENCERRAR ELEIÇÃO", RT:"Relatório de Apuração Final", S3:"Feedback:", txtSugestao:"Dúvidas ou sugestões...", S4:"Enviar para Paulo SMB", R1:"Baixar PDF Completo", R2:"Sair", G1:"Aviso Importante", G2:"Para garantir a segurança e o recebimento dos códigos, este sistema aceita exclusivamente contas @gmail.com.", G3:"Entendi, Continuar", G4:"Voltar e Corrigir" },
-                en: { uE:"Your email...", L1:"System Access", L2:"Login", V1:"Verify Code", V2:"Enter code.", V3:"Validate", iC:"4-digit code", P1:"Limit Reached", PL:"Choose a plan to continue:", B1:"Single Election (R$ 30.00)", B2:"2Pack 20 (R$ 500.00)", cup:"Coupon or Admin", P2:"Activate", P3:"Exit", S1:"Setup", tE:"Election Title", S2:"Next", C1:"Register", nC:"Position Name", qV:"Allowed Votes", nCand:"Candidate Name", C2:"Add Candidate", C3:"Save Position", C4:"START", U1:"CONFIRM", U2:"END", RT:"Final Tally Report", S3:"Feedback:", txtSugestao:"Questions or suggestions...", S4:"Send to Paulo SMB", R1:"Download PDF", R2:"Exit", G1:"Important Notice", G2:"To ensure security and code delivery, this system exclusively accepts @gmail.com accounts.", G3:"Understood, Continue", G4:"Go Back" },
-                es: { uE:"Tu correo...", L1:"Acceso", L2:"Entrar", V1:"Validar", V2:"Ingrese código.", V3:"Validar", iC:"Código de 4 dígitos", P1:"Límite", PL:"Elija un plan:", B1:"Elección Única (R$ 30.00)", B2:"Pack 20 (R$ 500.00)", cup:"Cupón o Admin", P2:"Activar", P3:"Salir", S1:"Configurar", tE:"Título de la Elección", S2:"Siguiente", C1:"Registro", nC:"Nombre del Cargo", qV:"Votos permitidos", nCand:"Nombre del Candidato", C2:"Añadir", C3:"Guardar", C4:"INICIAR", U1:"CONFIRMAR", U2:"FINALIZAR", RT:"Reporte Final", S3:"Comentários:", txtSugestao:"Dudas o sugerencias...", S4:"Enviar a Paulo SMB", R1:"Bajar PDF", R2:"Salir", G1:"Aviso Importante", G2:"Para garantizar la seguridad y entrega, este sistema acepta exclusivamente cuentas @gmail.com.", G3:"Entendido, Continuar", G4:"Volver" }
+                pt: { uE:"Seu e-mail...", L1:"Acesso ao Sistema", L2:"Entrar", V1:"Verificar Código", V2:"Insira o código enviado.", V3:"Validar Código", iC:"Código de 4 dígitos", P1:"Limite Atingido", PL:"Escolha um plano para continuar:", B1:"Eleição Única (R$ 30,00)", B2:"Pacote 20 Eleições (R$ 500,00)", cup:"Cupom ou Senha Admin", P2:"Ativar Acesso", P3:"Sair", S1:"Configurar Eleição", tE:"Título da Eleição", S2:"Definir Cargos", C1:"Cadastro", nC:"Nome do Cargo", qV:"Votos permitidos", nCand:"Nome do Candidato", C2:"Adicionar Candidato", C3:"Salvar Cargo", C4:"INICIAR URNA", U1:"CONFIRMAR VOTO", U2:"ENCERRAR ELEIÇÃO", RT:"Relatório de Apuração Final", S3:"Feedback:", txtSugestao:"Dúvidas ou sugestões...", S4:"Enviar para Paulo SMB", R1:"Baixar PDF Completo", R2:"Sair", INFO_GMAIL: "Para garantir a segurança e o recebimento dos códigos, este sistema aceita exclusivamente contas do Gmail." },
+                en: { uE:"Your email...", L1:"System Access", L2:"Login", V1:"Verify Code", V2:"Enter code.", V3:"Validate", iC:"4-digit code", P1:"Limit Reached", PL:"Choose a plan to continue:", B1:"Single Election (R$ 30.00)", B2:"2Pack 20 (R$ 500.00)", cup:"Coupon or Admin", P2:"Activate", P3:"Exit", S1:"Setup", tE:"Election Title", S2:"Next", C1:"Register", nC:"Position Name", qV:"Allowed Votes", nCand:"Candidate Name", C2:"Add Candidate", C3:"Save Position", C4:"START", U1:"CONFIRM", U2:"END", RT:"Final Tally Report", S3:"Feedback:", txtSugestao:"Questions or suggestions...", S4:"Send to Paulo SMB", R1:"Download PDF", R2:"Exit", INFO_GMAIL: "To ensure security and code delivery, this system exclusively accepts Gmail accounts." },
+                es: { uE:"Tu correo...", L1:"Acceso", L2:"Entrar", V1:"Validar", V2:"Ingrese código.", V3:"Validar", iC:"Código de 4 dígitos", P1:"Límite", PL:"Elija un plan:", B1:"Elección Única (R$ 30.00)", B2:"Pack 20 (R$ 500.00)", cup:"Cupón o Admin", P2:"Activar", P3:"Salir", S1:"Configurar", tE:"Título de la Elección", S2:"Siguiente", C1:"Registro", nC:"Nombre del Cargo", qV:"Votos permitidos", nCand:"Nombre del Candidato", C2:"Añadir", C3:"Guardar", C4:"INICIAR", U1:"CONFIRMAR", U2:"FINALIZAR", RT:"Reporte Final", S3:"Comentários:", txtSugestao:"Dudas o sugerencias...", S4:"Enviar a Paulo SMB", R1:"Bajar PDF", R2:"Salir", INFO_GMAIL: "Para garantizar la seguridad y el recibimento de los códigos, este sistema acepta exclusivamente Gmail." }
             };
 
             window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); };
@@ -138,18 +133,9 @@
                 } 
             };
             
-            window.VERIFICAR_DOMINIO = () => {
-                let v = document.getElementById('uE').value.trim().toLowerCase();
-                if(!v.includes('@gmail.com')) {
-                    window.GO('gmail_info');
-                } else {
-                    window.V();
-                }
-            };
-
             window.V = async function() {
                 let v = document.getElementById('uE').value.trim().toLowerCase();
-                if(!v.includes('@')) return alert("E-mail inválido");
+                if(!v.includes('@gmail.com')) return alert("Por favor, utilize uma conta @gmail.com válida.");
                 _0x2b3c = v;
                 try {
                     let r = await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c));
@@ -171,7 +157,7 @@
             window.K = async () => {
                 let c = document.getElementById('cup').value.trim();
                 if(c === _0x51a2[0]) { window.GO('setup'); return; }
-                if(c === _0x51a2[2]) { // orion002
+                if(c === _0x51a2[2]) {
                     if(_0x2b3c === _0x51a2[3]) {
                         try {
                             await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c)+'&action=reset');
