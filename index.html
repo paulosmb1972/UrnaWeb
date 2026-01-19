@@ -19,6 +19,7 @@
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
         textarea { height: 120px; resize: none; font-family: inherit; }
 
+        .payment-box { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
         .card-candidato { background: white; color: #333; padding: 15px; border-radius: 12px; text-align: center; border: 4px solid transparent; cursor: pointer; margin-bottom: 10px; }
         .card-candidato.selected { border-color: var(--accent); background: #fdf2a7; }
         
@@ -43,6 +44,23 @@
         <div class="info-box" id="H_LOGIN">Informe seu Gmail para receber o código de acesso.</div>
         <input id="uE" type="email">
         <button onclick="window.V()" id="L2">Entrar</button>
+    </div>
+
+    <div id="pay" class="screen">
+        <h2 id="P1">Limite de Eleições Atingido</h2>
+        <div class="info-box" id="H_PAY">Você já utilizou suas eleições gratuitas. Escolha uma opção de pagamento ou insira um cupom abaixo.</div>
+        
+        <div class="payment-box">
+            <button onclick="window.open('https://mpago.la/2maEAFx')" style="background:var(--success)" id="B1">Eleição Única (R$ 30,00)</button>
+            <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9" id="B2">Pacote 20 Eleições (R$ 500,00)</button>
+        </div>
+
+        <div class="payment-box">
+            <div id="L_CUP" style="text-align:center; font-size:14px; margin-bottom:5px;">Possui um cupom de acesso?</div>
+            <input id="cup" type="text">
+            <button onclick="window.K()" id="P2" style="background:var(--accent); color:black">Ativar Cupom</button>
+        </div>
+        <button onclick="location.reload()" style="background:none; border:1px solid white; font-size:12px;">Voltar</button>
     </div>
 
     <div id="setup" class="screen">
@@ -81,12 +99,10 @@
             <textarea id="txtSugestao"></textarea>
             <button onclick="window.ENVIAR_FEEDBACK()" id="F2" style="background:var(--accent); color:black">Enviar Mensagem</button>
         </div>
-
         <button onclick="location.reload()" style="background:var(--danger); margin-top:30px">Sair</button>
     </div>
 
     <div id="verify" class="screen"><h2 id="V1">Verificar</h2><input id="iC" type="text" maxlength="4"><button onclick="window.C()">OK</button></div>
-    <div id="pay" class="screen"><h2>Limite</h2><button onclick="window.open('https://mpago.la/2maEAFx')">Pagar</button><input id="cup" type="text"><button onclick="window.K()">Ativar</button></div>
 
     <script>
         (function(){
@@ -97,28 +113,30 @@
             const _tr = {
                 pt: { 
                     L1: "Acesso ao Sistema", L2: "Entrar / Acessar", uE: "Digite seu e-mail Gmail...", H_LOGIN: "Informe seu Gmail para receber o código de acesso.",
+                    P1: "Limite de Eleições Atingido", H_PAY: "Você já utilizou suas eleições gratuitas. Escolha uma opção de pagamento ou insira um cupom abaixo.", B1: "Eleição Única (R$ 30,00)", B2: "Pacote 20 Eleições (R$ 500,00)", L_CUP: "Possui um cupom de acesso?", cup: "Insira o código do cupom...", P2: "Ativar Cupom",
                     S1: "Nome da Eleição", tE: "Ex: Eleição da Igreja...", H_SETUP: "Dê um título para identificar esta votação.", S2: "Próximo",
                     C1: "Cadastro", nC: "Nome do Cargo...", nCand: "Nome do Candidato...", H_CARGO: "Defina o cargo e adicione os candidatos um a um.", C2: "Adicionar Candidato", C3: "Salvar Cargo", C4: "INICIAR VOTAÇÃO",
                     U1: "CONFIRMAR VOTO", U2: "ENCERRAR ELEIÇÃO", R_TITLE: "Resultado Final", F1: "Sugestões e Pedidos", txtSugestao: "Escreva aqui sua sugestão ou pedido...", H_FEED: "Sua opinião ajuda a melhorar o sistema. Deixe seu comentário.", F2: "Enviar Mensagem",
-                    V1: "Verificar Código", iC: "Digite o código...", cup: "Insira o cupom...", alert_voto: "Voto Confirmado!", alert_end: "Deseja encerrar a eleição?"
+                    V1: "Verificar Código", iC: "Digite o código...", alert_voto: "Voto Confirmado!", alert_end: "Deseja encerrar a eleição?"
                 },
                 en: { 
                     L1: "System Access", L2: "Login / Access", uE: "Enter your Gmail...", H_LOGIN: "Enter your Gmail to receive the access code.",
+                    P1: "Election Limit Reached", H_PAY: "You have used your free elections. Choose a payment option or enter a coupon below.", B1: "Single Election ($30.00)", B2: "20 Elections Pack ($500.00)", L_CUP: "Have an access coupon?", cup: "Enter coupon code...", P2: "Activate Coupon",
                     S1: "Election Name", tE: "Ex: Church Election...", H_SETUP: "Give a title to identify this vote.", S2: "Next",
                     C1: "Registration", nC: "Position Name...", nCand: "Candidate Name...", H_CARGO: "Define the position and add candidates one by one.", C2: "Add Candidate", C3: "Save Position", C4: "START VOTING",
                     U1: "CONFIRM VOTE", U2: "END ELECTION", R_TITLE: "Final Result", F1: "Suggestions & Requests", txtSugestao: "Write your suggestion or request here...", H_FEED: "Your opinion helps us improve. Leave a comment.", F2: "Send Message",
-                    V1: "Verify Code", iC: "Enter code...", cup: "Enter coupon...", alert_voto: "Vote Confirmed!", alert_end: "Do you want to end the election?"
+                    V1: "Verify Code", iC: "Enter code...", alert_voto: "Vote Confirmed!", alert_end: "Do you want to end the election?"
                 },
                 es: { 
                     L1: "Acceso", L2: "Entrar", uE: "Tu e-mail Gmail...", H_LOGIN: "Ingresa tu Gmail para recibir el código de acceso.",
+                    P1: "Límite de Elecciones Alcanzado", H_PAY: "Ya has agotado tus elecciones gratuitas. Elige una opción de pago o ingresa un cupón abajo.", B1: "Elección Única (R$ 30.00)", B2: "Paquete 20 Elecciones (R$ 500.00)", L_CUP: "¿Tienes un cupón de acceso?", cup: "Ingresa el código del cupón...", P2: "Activar Cupón",
                     S1: "Nombre de la Elección", tE: "Ej: Elección de la Iglesia...", H_SETUP: "Asigne un título para identificar esta votación.", S2: "Siguiente",
                     C1: "Registro", nC: "Nombre del Cargo...", nCand: "Nombre del Candidato...", H_CARGO: "Define el cargo y agrega candidatos uno por uno.", C2: "Añadir Candidato", C3: "Guardar Cargo", C4: "INICIAR VOTACIÓN",
                     U1: "CONFIRMAR VOTO", U2: "FINALIZAR ELECCIÓN", R_TITLE: "Resultado Final", F1: "Sugerencias y Pedidos", txtSugestao: "Escriba su sugerencia o pedido aquí...", H_FEED: "Su opinión ayuda a mejorar. Deje su comentario.", F2: "Enviar Mensaje",
-                    V1: "Verificar", iC: "Ingresa el código...", cup: "Cupón...", alert_voto: "¡Voto Confirmado!", alert_end: "¿Desea finalizar la elección?"
+                    V1: "Verificar", iC: "Ingresa el código...", alert_voto: "¡Voto Confirmado!", alert_end: "¿Desea finalizar la elección?"
                 }
             };
 
-            window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); };
             window.TR = (l) => { 
                 _idioma = l; 
                 for(let k in _tr[l]){ 
@@ -136,17 +154,17 @@
                 try {
                     let r = await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(e));
                     let d = await r.json();
-                    if(d.count >= 3) return window.GO('pay');
+                    if(d.count >= 3) { window.GO('pay'); window.TR(_idioma); return; }
                     _code = d.codigo.toString();
                     await emailjs.send(_0x4f2a.s, _0x4f2a.t, { to_email: e, validation_code: _code });
                     window.GO('verify'); window.TR(_idioma);
                 } catch(err) { alert("Erro"); }
             };
 
+            window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); };
             window.C = () => { if(document.getElementById('iC').value === _code || document.getElementById('iC').value === "9999") window.GO('setup'); window.TR(_idioma); };
             window.N = () => { _title = document.getElementById('tE').value || "Urna"; window.GO('setupCargo'); window.TR(_idioma); };
             window.K = () => { if(document.getElementById('cup').value === 'orion001' || document.getElementById('cup').value === 'MAIS3GRATIS') window.GO('setup'); window.TR(_idioma); };
-            
             window.A = () => {
                 if(!_temp) _temp = { n: document.getElementById('nC').value, c: [] };
                 let val = document.getElementById('nCand').value; if(!val) return;
