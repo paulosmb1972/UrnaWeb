@@ -19,37 +19,31 @@
         input, button, textarea { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
 
-        /* --- CONFIGURAÇÃO UNIVERSAL DO RELATÓRIO (NOTEBOOK, CELULAR, TABLET) --- */
+        /* CONFIGURAÇÃO DO RELATÓRIO PDF */
+        .preview-container { width: 100%; overflow-x: auto; background: #ddd; padding: 10px 0; border-radius: 8px; margin-top: 10px; }
         #areaImpressao { 
             background: white !important; 
             color: #2c3e50 !important; 
             padding: 20mm; 
-            width: 170mm; /* Largura fixa de papel para o motor do PDF */
+            width: 170mm; 
             margin: 0 auto;
             border-radius: 0;
-            box-shadow: none;
         }
-        /* Para que o usuário veja o relatório no celular sem precisar de scroll lateral infinito */
-        .preview-container { width: 100%; overflow-x: auto; background: #ddd; padding: 10px 0; border-radius: 8px; }
-
         .pdf-header { text-align: center; border-bottom: 3px solid #0a2a66; padding-bottom: 15px; margin-bottom: 25px; }
         .pdf-header h1 { color: #0a2a66 !important; margin: 0; font-size: 24px; text-transform: uppercase; }
-        
         .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; border: 1px solid #bdc3c7; }
         .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 10px; text-align: left; font-size: 14px; }
         .pdf-table td { padding: 8px 10px; border: 1px solid #ecf0f1; color: #34495e !important; font-size: 14px; }
         .pdf-table tr:nth-child(even) { background-color: #f9f9f9 !important; }
-        
         .winner-row { background-color: #e8f8f5 !important; font-weight: bold; color: #16a085 !important; }
         .pdf-footer { margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; text-align: center; font-size: 10px; color: #95a5a6 !important; }
-        /* ----------------------------------------------------------------------- */
 
-        .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
-        .lang-box button { width: auto; padding: 6px 12px; background: rgba(0,0,0,0.6); font-size: 11px; border: 1px solid var(--primary); }
-        
         .grid-urna { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-top: 20px; }
         .card-candidato { background: white; color: #333; padding: 10px; border-radius: 12px; text-align: center; border: 4px solid transparent; cursor: pointer; }
         .card-candidato.selected { border-color: var(--accent); background: #fdf2a7; }
+        
+        .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
+        .lang-box button { width: auto; padding: 6px 12px; background: rgba(0,0,0,0.6); font-size: 11px; border: 1px solid var(--primary); }
     </style>
 </head>
 <body>
@@ -68,12 +62,12 @@
 
     <div id="setupCargo" class="screen">
         <h2 id="C1">Cadastro</h2>
+        <div class="info-box">Adicione o cargo e os candidatos. Clique em "Salvar Cargo" para cada um.</div>
         <input id="nC" type="text" placeholder="Nome do Cargo">
-        <hr>
         <input id="nCand" type="text" placeholder="Candidato">
-        <button onclick="window.A()" id="C2">Adicionar</button>
-        <div id="listTemp"></div>
-        <button onclick="window.SAVE()">Salvar Cargo</button>
+        <button onclick="window.A()" id="C2">Adicionar Candidato</button>
+        <div id="listTemp" style="text-align:center; margin:10px; color:var(--accent)"></div>
+        <button onclick="window.SAVE()" id="C3" style="background:var(--success)">Salvar Cargo</button>
         <button onclick="window.START()" id="C4" style="background:var(--primary); margin-top:30px">INICIAR VOTAÇÃO</button>
     </div>
 
@@ -81,14 +75,14 @@
         <h2 id="uT"></h2>
         <div id="grid" class="grid-urna"></div>
         <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success); margin-top:20px;">CONFIRMAR VOTO</button>
-        <button onclick="window.END()" id="U2" style="background:var(--danger)">ENCERRAR</button>
+        <button onclick="window.END()" id="U2" style="background:var(--danger); margin-top:40px">ENCERRAR ELEIÇÃO</button>
     </div>
 
     <div id="res" class="screen">
         <div class="preview-container">
             <div id="areaImpressao">
                 <div class="pdf-header"><h1 id="pT_header"></h1></div>
-                <p style="text-align:center; font-weight:bold; margin: 10px 0; color: #333 !important;" id="RT">Relatório de Apuração Final</p>
+                <p style="text-align:center; font-weight:bold; margin: 10px 0;" id="RT">Relatório de Apuração Final</p>
                 <div id="pC"></div>
                 <div id="pdf-footer-audit" class="pdf-footer"></div>
             </div>
@@ -97,9 +91,9 @@
         <button onclick="location.reload()" id="R2" style="background:var(--danger)">Sair</button>
     </div>
 
-    <div id="verify" class="screen"><h2 id="V1">Código</h2><input id="iC" type="text" maxlength="4"><button onclick="window.C()">Validar</button></div>
-    <div id="setup" class="screen"><h2 id="S1">Configurar</h2><input id="tE" type="text"><button onclick="window.N()">Próximo</button></div>
-    <div id="pay" class="screen"><h2>Limite</h2><button onclick="window.open('https://mpago.la/2maEAFx')">Pagar</button><input id="cup" type="text"><button onclick="window.K()">Ativar</button></div>
+    <div id="verify" class="screen"><h2>Código</h2><input id="iC" type="text" maxlength="4"><button onclick="window.C()">Validar</button></div>
+    <div id="setup" class="screen"><h2>Configurar</h2><input id="tE" type="text" placeholder="Título da Eleição"><button onclick="window.N()">Próximo</button></div>
+    <div id="pay" class="screen"><h2>Limite</h2><button onclick="window.open('https://mpago.la/2maEAFx')">Pagar</button><input id="cup" type="text" placeholder="Cupom..."><button onclick="window.K()">Ativar</button></div>
 
     <script>
         const _MY_MAIL = 'paulosmv1972@gmail.com';
@@ -109,20 +103,13 @@
             let _0x1a2b='', _0x2b3c='', _idioma='pt', _3c4d=[], _4d5e=null, _6f7a=[], _7a8b=0, _8b9c='';
             
             const _0x0d1e = {
-                pt: { L1: "Acesso ao Sistema", L2: "Entrar", RT: "Relatório de Apuração Final", R1: "Baixar PDF Oficial (A4)", C4: "INICIAR VOTAÇÃO" },
-                en: { L1: "System Access", L2: "Login", RT: "Final Tally Report", R1: "Download Official PDF (A4)", C4: "START VOTING" },
-                es: { L1: "Acceso al Sistema", L2: "Entrar", RT: "Reporte Final", R1: "Bajar PDF Oficial (A4)", C4: "INICIAR VOTACIÓN" }
+                pt: { L1: "Acesso ao Sistema", L2: "Entrar", RT: "Relatório de Apuração Final", R1: "Baixar PDF Oficial (A4)", C4: "INICIAR VOTAÇÃO", U1: "CONFIRMAR VOTO", U2: "ENCERRAR ELEIÇÃO", alert_voto: "Voto Confirmado!", alert_end: "Deseja encerrar a eleição?" },
+                en: { L1: "System Access", L2: "Login", RT: "Final Tally Report", R1: "Download Official PDF (A4)", C4: "START VOTING", U1: "CONFIRM VOTE", U2: "END ELECTION", alert_voto: "Vote Confirmed!", alert_end: "Do you want to end the election?" },
+                es: { L1: "Acceso ao Sistema", L2: "Entrar", RT: "Reporte Final", R1: "Bajar PDF Oficial (A4)", C4: "INICIAR VOTACIÓN", U1: "CONFIRMAR VOTO", U2: "FINALIZAR ELECCIÓN", alert_voto: "¡Voto Confirmado!", alert_end: "¿Desea finalizar la elección?" }
             };
 
-            window.TR = (lang) => { 
-                _idioma = lang; 
-                for(let k in _0x0d1e[lang]){ 
-                    let el = document.getElementById(k); 
-                    if(el) el.innerText = _0x0d1e[lang][k];
-                } 
-            };
-            
-            window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); };
+            window.TR = (lang) => { _idioma = lang; for(let k in _0x0d1e[lang]){ let el = document.getElementById(k); if(el) el.innerText = _0x0d1e[lang][k]; } };
+            window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); window.scrollTo(0,0); };
 
             window.V = async function() {
                 let v = document.getElementById('uE').value.trim().toLowerCase();
@@ -140,25 +127,34 @@
 
             window.C = () => { if(document.getElementById('iC').value === _0x1a2b || document.getElementById('iC').value === "9999") window.GO('setup'); };
             window.N = () => { _8b9c = document.getElementById('tE').value || "Urna"; window.GO('setupCargo'); };
-            window.K = async () => { if(document.getElementById('cup').value === 'orion001') window.GO('setup'); };
-            window.A = () => { if(!_4d5e) _4d5e = { n: document.getElementById('nC').value, q: 1, c: [] }; _4d5e.c.push({ n: document.getElementById('nCand').value, v: 0 }); document.getElementById('listTemp').innerText += " [OK] "; document.getElementById('nCand').value = ''; };
-            window.SAVE = () => { if(_4d5e) _3c4d.push(_4d5e); _4d5e = null; alert("OK"); };
-            window.START = () => { window.GO('urna'); window.M(); };
+            window.K = async () => { if(document.getElementById('cup').value === 'orion001' || document.getElementById('cup').value === 'MAIS3GRATIS') window.GO('setup'); };
+            window.A = () => { if(!_4d5e) _4d5e = { n: document.getElementById('nC').value, q: 1, c: [] }; _4d5e.c.push({ n: document.getElementById('nCand').value, v: 0 }); document.getElementById('listTemp').innerText += " ["+document.getElementById('nCand').value+"] "; document.getElementById('nCand').value = ''; };
+            window.SAVE = () => { if(_4d5e) _3c4d.push(_4d5e); _4d5e = null; document.getElementById('nC').value=''; document.getElementById('listTemp').innerText=''; alert("Cargo Salvo!"); };
+            window.START = () => { _7a8b=0; window.M(); window.GO('urna'); window.TR(_idioma); };
             
             window.M = () => {
-                let c = _3c4d[_7a8b]; document.getElementById('uT').innerText = c.n;
+                let c = _3c4d[_7a8b]; if(!c) return; document.getElementById('uT').innerText = c.n;
                 let g = document.getElementById('grid'); g.innerHTML = '';
                 c.c.forEach((can, i) => {
                     let d = document.createElement('div'); d.className = 'card-candidato';
                     d.innerHTML = '<strong>'+can.n+'</strong>';
-                    d.onclick = () => { _6f7a = [i]; window.UI(); };
-                    g.appendChild(d);
+                    d.onclick = () => { _6f7a = [i]; window.UI(); }; g.appendChild(d);
                 });
             };
             window.UI = () => { document.querySelectorAll('.card-candidato').forEach((card, i) => { if(_6f7a.includes(i)) card.classList.add('selected'); else card.classList.remove('selected'); }); };
-            window.VOTE = () => { _3c4d[_7a8b].c[_6f7a[0]].v++; alert("Voto OK"); };
+            
+            window.VOTE = () => {
+                if(_6f7a.length === 0) return alert("Selecione um candidato!");
+                _3c4d[_7a8b].c[_6f7a[0]].v++; 
+                _7a8b++;
+                if(_7a8b < _3c4d.length) { _6f7a = []; window.M(); } 
+                else { alert(_0x0d1e[_idioma].alert_voto); _7a8b = 0; _6f7a = []; window.M(); }
+            };
 
+            // --- FUNÇÃO ENCERRAR CORRIGIDA ---
             window.END = async () => {
+                if(!confirm(_0x0d1e[_idioma].alert_end)) return;
+                
                 const dataAudit = new Date().toLocaleString();
                 document.getElementById('pT_header').innerText = _8b9c.toUpperCase();
                 document.getElementById('pdf-footer-audit').innerText = "Relatório emitido em " + dataAudit;
@@ -182,23 +178,14 @@
                 window.GO('res'); window.TR(_idioma);
             };
 
-            // --- FUNÇÃO PDF CORRIGIDA PARA TODOS OS DISPOSITIVOS ---
             window.PDF = () => {
                 const element = document.getElementById('areaImpressao');
                 html2pdf().set({
                     margin: 0,
                     filename: `Resultado_${_8b9c}.pdf`,
                     image: { type: 'jpeg', quality: 1.0 },
-                    html2canvas: { 
-                        scale: 3,           // Alta qualidade
-                        useCORS: true, 
-                        width: 800,         // Força largura de papel A4
-                        windowWidth: 800,   // Crucial: Simula Desktop para o celular não cortar
-                        scrollY: 0,
-                        scrollX: 0
-                    },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+                    html2canvas: { scale: 3, useCORS: true, width: 800, windowWidth: 800 },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                 }).from(element).save();
             };
             window.TR('pt');
