@@ -9,27 +9,36 @@
     <style>
         :root { --primary: #1abc9c; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; }
         body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        
         .screen { display: none; padding: 20px; width: 100%; max-width: 800px; box-sizing: border-box; }
         .active { display: block; animation: fadeIn 0.4s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
         h2 { text-align: center; color: var(--primary); }
         input, button, textarea { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:active { transform: scale(0.98); }
+
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
         .lang-box button { width: auto; padding: 6px 12px; background: rgba(0,0,0,0.6); font-size: 11px; border: 1px solid var(--primary); }
+
         .grid-urna { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-top: 20px; }
         .card-candidato { background: white; color: #333; padding: 10px; border-radius: 10px; text-align: center; border: 4px solid transparent; cursor: pointer; }
         .card-candidato.selected { border-color: var(--accent); background: #fdf2a7; }
         .foto-cand { width: 100%; height: 130px; object-fit: cover; border-radius: 5px; background: #eee; }
+
+        /* Ajustes de Impressão e PDF */
         #areaImpressao { background: white !important; color: #333 !important; padding: 30px; width: 100%; box-sizing: border-box; border-radius: 10px; display: block !important; }
         .cargo-container { margin-bottom: 20px; border: 1px solid #333; page-break-inside: avoid; display: block; clear: both; }
-        .cargo-header { background: #0a2a66 !important; color: white !important; padding: 8px; font-weight: bold; }
+        .cargo-header { background: #0a2a66 !important; color: white !important; padding: 8px; font-weight: bold; -webkit-print-color-adjust: exact; }
         .candidato-linha { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; color: #000 !important; }
         .votos-tag { font-weight: bold; color: #1abc9c !important; }
+
         .sugestoes-box { margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px; border: 1px solid var(--primary); }
     </style>
 </head>
 <body>
+
     <div class="lang-box">
         <button onclick="window.TR('pt')">Português</button>
         <button onclick="window.TR('en')">English</button>
@@ -91,8 +100,7 @@
                 <h1 id="pT" style="color: #0a2a66 !important;"></h1>
                 <p style="color: #333 !important;">Relatório de Apuração Final</p>
             </div>
-            <div id="pC"></div>
-        </div>
+            <div id="pC"></div> </div>
         <div class="sugestoes-box">
             <h4 id="S3" style="margin:0 0 10px 0">Feedback:</h4>
             <textarea id="txtSugestao" placeholder="Dúvidas ou sugestões..."></textarea>
@@ -103,107 +111,136 @@
     </div>
 
     <script>
-        (function(_0x1b2f,_0x4c2a){const _0x3d1a=function(_0x5b2c){while(--_0x5b2c){_0x1b2f['push'](_0x1b2f['shift']());}};_0x3d1a(++_0x4c2a);}(['\x73\x65\x72\x76\x69\x63\x65\x5f\x6f\x71\x66\x62\x7a\x72\x6d','\x74\x65\x6d\x70\x6c\x61\x74\x65\x5f\x74\x33\x61\x69\x6f\x38\x66','\x5f\x50\x4b\x4c\x34\x4f\x6a\x39\x32\x6f\x34\x38\x4b\x75\x72\x53\x46','\x6f\x72\x69\x6f\x6e\x30\x30\x31','\x4d\x41\x49\x53\x33\x47\x52\x41\x54\x49\x53'],0x1a4));
-        const _0x51a2=['\x6f\x72\x69\x6f\x6e\x30\x30\x31','\x4d\x41\x49\x53\x33\x47\x52\x41\x54\x49\x53'];
-        
         (function(){
-            const _0x4f2a = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
-            emailjs.init(_0x4f2a.k);
-            let _0x1a2b='',_0x2b3c='',_0x3c4d=[],_0x4d5e=null,_0x5e6f='',_0x6f7a=[],_0x7a8b=0,_0x8b9c='',_0x9c0d=false;
-            const _0x0d1e = {
+            const _K = { 
+                s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', 
+                u:'https://urnaweb-backend.paulosmb1972.workers.dev' 
+            };
+            emailjs.init(_K.k);
+
+            let code='', mail='', data=[], temp=null, img='', votes=[], idx=0, title='', cupomUsado = false;
+
+            const dict = {
                 pt: { L1:"Acesso ao Sistema", L2:"Entrar", V1:"Verificar Código", V2:"Insira o código enviado.", V3:"Validar Código", P1:"Limite Atingido", P2:"Ativar Acesso", P3:"Sair", S1:"Configurar Eleição", S2:"Continuar", C1:"Cadastro", C2:"Adicionar", C3:"Salvar Cargo", C4:"ABRIR URNA", U1:"CONFIRMAR VOTO", U2:"ENCERRAR ELEIÇÃO", R1:"Gerar PDF", R2:"Sair" },
                 en: { L1:"System Access", L2:"Login", V1:"Verify Code", V2:"Enter code.", V3:"Validate", P1:"Limit Reached", P2:"Activate", P3:"Exit", S1:"Setup", S2:"Next", C1:"Register", C2:"Add", C3:"Save", C4:"START", U1:"CONFIRM", U2:"END", R1:"Get PDF", R2:"Exit" },
                 es: { L1:"Acceso", L2:"Entrar", V1:"Validar", V2:"Ingrese código.", V3:"Validar", P1:"Límite", P2:"Activar", P3:"Salir", S1:"Configurar", S2:"Siguiente", C1:"Registro", C2:"Añadir", C3:"Guardar", C4:"INICIAR", U1:"CONFIRMAR", U2:"FINALIZAR", R1:"Bajar PDF", R2:"Salir" }
             };
-            window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); };
-            window.TR = (a) => { for(let k in _0x0d1e[a]) { if(document.getElementById(k)) document.getElementById(k).innerText = _0x0d1e[a][k]; } };
+
+            window.GO = (id) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); };
+            window.TR = (l) => { for(let k in dict[l]) { if(document.getElementById(k)) document.getElementById(k).innerText = dict[l][k]; } };
+
             window.V = async function() {
                 let v = document.getElementById('uE').value.trim().toLowerCase();
                 if(!v.includes('@')) return alert("E-mail inválido");
-                _0x2b3c = v;
+                mail = v;
                 try {
-                    let r = await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c));
+                    let r = await fetch(`${_K.u}/?email=${encodeURIComponent(mail)}`);
                     let d = await r.json();
-                    _0x9c0d = d.cupom_resgatado || false;
+                    cupomUsado = d.cupom_resgatado || false;
                     if(d.count >= 3) { window.GO('pay'); return; }
-                    _0x1a2b = d.codigo.toString();
-                    await emailjs.send(_0x4f2a.s, _0x4f2a.t, { to_email: _0x2b3c, validation_code: _0x1a2b });
+                    code = d.codigo.toString();
+                    await emailjs.send(_K.s, _K.t, { to_email: mail, validation_code: code });
                     alert("Código enviado!"); window.GO('verify');
                 } catch(e) { alert("Erro de conexão."); }
             };
+
             window.C = () => {
                 const val = document.getElementById('iC').value.trim();
-                if(val === _0x1a2b || val === "9999") window.GO('setup');
+                if(val === code || val === "9999") window.GO('setup');
                 else alert("Código incorreto!");
             };
+
             window.K = async () => {
                 let c = document.getElementById('cup').value.trim();
-                if(c === _0x51a2[0]) { alert("Acesso Administrador!"); window.GO('setup'); return; }
-                if(c.toUpperCase() === _0x51a2[1]) {
-                    if(_0x9c0d) return alert("Cupom já utilizado.");
+                if(c === 'orion001') {
+                    alert("Acesso Administrador Liberado!");
+                    window.GO('setup');
+                    return;
+                }
+                if(c.toUpperCase() === 'MAIS3GRATIS') {
+                    if(cupomUsado) return alert("Cupom já utilizado.");
                     try {
-                        await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c)+'&action=use_coupon');
-                        alert("Liberado!"); window.GO('setup');
-                    } catch(e) { alert("Erro."); }
-                } else alert("Inválido.");
+                        await fetch(`${_K.u}/?email=${encodeURIComponent(mail)}&action=use_coupon`);
+                        alert("Acesso liberado!"); window.GO('setup');
+                    } catch(e) { alert("Erro ao validar."); }
+                } else alert("Código inválido.");
             };
-            window.N = () => { _0x8b9c = document.getElementById('tE').value || "Eleição"; window.GO('setupCargo'); };
+
+            window.N = () => { title = document.getElementById('tE').value || "Eleição"; window.GO('setupCargo'); };
             window.A = () => {
-                if(!_0x4d5e) _0x4d5e = { n: document.getElementById('nC').value, q: parseInt(document.getElementById('qV').value), c: [] };
+                if(!temp) temp = { n: document.getElementById('nC').value, q: parseInt(document.getElementById('qV').value), c: [] };
                 let nc = document.getElementById('nCand').value;
-                if(!nc) return alert("Vazio");
-                _0x4d5e.c.push({ n: nc, f: _0x5e6f, v: 0 });
-                document.getElementById('listTemp').innerHTML += " ["+nc+"] ";
-                document.getElementById('nCand').value = ''; _0x5e6f = '';
+                if(!nc) return alert("Nome vazio");
+                temp.c.push({ n: nc, f: img, v: 0 });
+                document.getElementById('listTemp').innerHTML += ` [${nc}] `;
+                document.getElementById('nCand').value = ''; img = '';
             };
             document.getElementById('fCand').addEventListener('change', e => { 
-                let r = new FileReader(); r.onload = x => _0x5e6f = x.target.result; r.readAsDataURL(e.target.files[0]); 
+                let r = new FileReader(); r.onload = x => img = x.target.result; r.readAsDataURL(e.target.files[0]); 
             });
-            window.SAVE = () => { if(_0x4d5e) _0x3c4d.push(_0x4d5e); _0x4d5e = null; document.getElementById('nC').value=''; document.getElementById('listTemp').innerHTML=''; alert("Salvo!"); };
-            window.START = () => { if(_0x4d5e) _0x3c4d.push(_0x4d5e); _0x7a8b=0; window.M(); window.GO('urna'); };
+            window.SAVE = () => { if(temp) data.push(temp); temp = null; document.getElementById('nC').value=''; document.getElementById('listTemp').innerHTML=''; alert("Cargo salvo!"); };
+            window.START = () => { if(temp) data.push(temp); idx=0; window.M(); window.GO('urna'); };
+
             window.M = () => {
-                let c = _0x3c4d[_0x7a8b]; document.getElementById('uT').innerText = c.n;
+                let c = data[idx]; document.getElementById('uT').innerText = c.n;
                 let g = document.getElementById('grid'); g.innerHTML = '';
                 c.c.forEach((can, i) => {
                     let d = document.createElement('div'); d.className = 'card-candidato';
-                    d.innerHTML = (can.f ? '<img src="'+can.f+'" class="foto-cand"><br>' : '') + '<strong>'+can.n+'</strong>';
+                    d.innerHTML = (can.f ? `<img src="${can.f}" class="foto-cand"><br>` : '') + `<strong>${can.n}</strong>`;
                     d.onclick = () => {
-                        if(_0x6f7a.includes(i)) { _0x6f7a = _0x6f7a.filter(x=>x!==i); d.classList.remove('selected'); }
-                        else if(_0x6f7a.length < c.q) { _0x6f7a.push(i); d.classList.add('selected'); }
+                        if(votes.includes(i)) { votes = votes.filter(x=>x!==i); d.classList.remove('selected'); }
+                        else if(votes.length < c.q) { votes.push(i); d.classList.add('selected'); }
                     };
                     g.appendChild(d);
                 });
             };
+
             window.VOTE = () => {
-                if(_0x6f7a.length === 0) return alert("Vote!");
-                _0x6f7a.forEach(i => _0x3c4d[_0x7a8b].c[i].v++);
-                _0x7a8b++;
-                if(_0x7a8b < _0x3c4d.length) window.M(); else { alert("Confirmado!"); _0x7a8b = 0; _0x6f7a = []; window.M(); }
+                if(votes.length === 0) return alert("Vote!");
+                votes.forEach(i => data[idx].c[i].v++);
+                idx++;
+                if(idx < data.length) window.M(); else { alert("Confirmado!"); idx = 0; window.M(); }
             };
+
             window.END = async () => {
                 if(!confirm("Encerrar?")) return;
-                try { await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c)+'&action=increment'); } catch(e){}
-                document.getElementById('pT').innerText = _0x8b9c;
+                try { await fetch(`${_K.u}/?email=${encodeURIComponent(mail)}&action=increment`); } catch(e){}
+                document.getElementById('pT').innerText = title;
                 let out = document.getElementById('pC'); out.innerHTML = '';
-                _0x3c4d.forEach(cargo => {
-                    let html = '<div class="cargo-container"><div class="cargo-header">'+cargo.n+'</div>';
+                data.forEach(cargo => {
+                    let html = `<div class="cargo-container"><div class="cargo-header">${cargo.n}</div>`;
                     cargo.c.sort((a,b) => b.v - a.v).forEach(cand => {
-                        html += '<div class="candidato-linha"><span>'+cand.n+'</span><span class="votos-tag">'+cand.v+' votos</span></div>';
+                        html += `<div class="candidato-linha"><span>${cand.n}</span><span class="votos-tag">${cand.v} votos</span></div>`;
                     });
-                    html += '</div>';
+                    html += `</div>`;
                     out.innerHTML += html;
                 });
                 window.GO('res');
             };
+
+            // AJUSTE FINAL PDF: Captura o container inteiro e garante a visibilidade
             window.PDF = () => {
                 const element = document.getElementById('areaImpressao');
-                const opt = { margin: 10, filename: 'Resultado.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, scrollY: 0 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+                const opt = { 
+                    margin: 10, 
+                    filename: 'Resultado_Eleicao.pdf', 
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { 
+                        scale: 2, 
+                        useCORS: true, 
+                        letterRendering: true,
+                        scrollY: 0
+                    },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+                };
+                // Gera o PDF a partir do elemento 'areaImpressao' que agora contém todos os cargos
                 html2pdf().set(opt).from(element).save();
             };
+
             window.ENVIAR_SUGESTAO = () => {
                 let m = document.getElementById('txtSugestao').value;
                 if(!m) return;
-                emailjs.send(_0x4f2a.s, _0x4f2a.t, { to_email: 'paulosmb1972@gmail.com', validation_code: 'FEEDBACK: '+m });
+                emailjs.send(_K.s, _K.t, { to_email: 'paulosmb1972@gmail.com', validation_code: `FEEDBACK: ${m}` });
                 alert("Enviado!");
             };
         })();
