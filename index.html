@@ -20,24 +20,18 @@
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
         textarea { height: 100px; resize: none; font-family: inherit; }
 
+        .payment-option { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 15px; text-align: center; }
         .card-candidato { background: white; color: #333; padding: 15px; border-radius: 12px; text-align: center; border: 4px solid transparent; cursor: pointer; margin-bottom: 10px; }
         .card-candidato.selected { border-color: var(--accent); background: #fdf2a7; }
 
-        /* ESTILO DO RELATÓRIO PDF */
-        #areaImpressao { 
-            background: white !important; 
-            color: #2c3e50 !important; 
-            padding: 20mm; 
-            width: 170mm; 
-            margin: 0 auto;
-            border-radius: 0;
-        }
+        /* CONFIGURAÇÃO RELATÓRIO PDF */
+        #areaImpressao { background: white !important; color: #2c3e50 !important; padding: 20mm; width: 170mm; margin: 0 auto; border-radius: 0; }
         .pdf-header { text-align: center; border-bottom: 3px solid #0a2a66; padding-bottom: 15px; margin-bottom: 25px; }
         .pdf-header h1 { color: #0a2a66 !important; margin: 0; font-size: 24px; text-transform: uppercase; }
         .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 10px; text-align: left; border: 1px solid #0a2a66; }
-        .pdf-table td { padding: 10px; border: 1px solid #eee; color: #333 !important; font-size: 14px; }
-        .winner-row { background: #e8f8f5 !important; font-weight: bold; color: #16a085 !important; }
+        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 10px; text-align: left; font-size: 14px; border: 1px solid #0a2a66; }
+        .pdf-table td { padding: 8px 10px; border: 1px solid #ecf0f1; color: #34495e !important; font-size: 14px; }
+        .winner-row { background-color: #e8f8f5 !important; font-weight: bold; color: #16a085 !important; }
         .pdf-footer { margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; text-align: center; font-size: 10px; color: #95a5a6 !important; }
 
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
@@ -60,28 +54,37 @@
     </div>
 
     <div id="pay" class="screen">
-        <h2 id="P1">Limite de Testes</h2>
-        <div class="info-box" id="H_PAY">Escolha um plano ou use um cupom.</div>
-        <button onclick="window.open('https://mpago.la/2maEAFx')" style="background:var(--success)" id="B1">Eleição Única (R$ 30,00)</button>
-        <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9" id="B2">Pacote 20 (R$ 500,00)</button>
-        <input id="cup" type="text">
-        <button onclick="window.K()" id="P2" style="background:var(--accent); color:black">Ativar Cupom</button>
+        <h2 id="P1">Limite de Testes Atingido</h2>
+        <div class="info-box" id="H_PAY">Você utilizou suas 3 eleições gratuitas. Selecione um plano ou utilize um cupom.</div>
+        <div class="payment-option">
+            <button onclick="window.open('https://mpago.la/2maEAFx')" style="background:var(--success)" id="B1">Eleição Única (R$ 30,00)</button>
+            <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9" id="B2">Pacote 20 Eleições (R$ 500,00)</button>
+        </div>
+        <div class="payment-option">
+            <p id="L_CUP" style="margin-bottom: 5px;">Possui um cupom de acesso?</p>
+            <input id="cup" type="text">
+            <button onclick="window.K()" id="P2" style="background:var(--accent); color:black">Ativar Cupom</button>
+        </div>
+        <button onclick="location.reload()" id="B_VOLTAR" style="background:none; border:1px solid white; font-size: 12px;">Voltar</button>
     </div>
 
     <div id="setup" class="screen">
         <h2 id="S1">Nome da Eleição</h2>
+        <div class="info-box" id="H_SETUP">Dê um título para identificar esta votação.</div>
         <input id="tE" type="text">
         <button onclick="window.N()" id="S2">Próximo</button>
     </div>
 
     <div id="setupCargo" class="screen">
         <h2 id="C1">Cadastro</h2>
+        <div class="info-box" id="H_CARGO">Defina o cargo e adicione os candidatos um a um.</div>
         <input id="nC" type="text">
+        <hr>
         <input id="nCand" type="text">
-        <button onclick="window.A()" id="C2">Adicionar</button>
+        <button onclick="window.A()" id="C2">Adicionar Candidato</button>
         <div id="listTemp" style="text-align:center; color:var(--accent); margin:10px;"></div>
         <button onclick="window.SAVE()" id="C3" style="background:var(--success)">Salvar Cargo</button>
-        <button onclick="window.START()" id="C4" style="background:var(--primary); margin-top:20px">INICIAR VOTAÇÃO</button>
+        <button onclick="window.START()" id="C4" style="background:var(--primary); margin-top:30px">INICIAR VOTAÇÃO</button>
     </div>
 
     <div id="urna" class="screen">
@@ -93,7 +96,6 @@
 
     <div id="res" class="screen">
         <h2 id="R_TITLE">Resultado Final</h2>
-        
         <div style="width:100%; overflow-x:auto; background:#444; padding:10px; border-radius:8px;">
             <div id="areaImpressao">
                 <div class="pdf-header"><h1 id="pdf_h1"></h1></div>
@@ -101,15 +103,15 @@
                 <div id="pdf-footer-audit" class="pdf-footer"></div>
             </div>
         </div>
-
         <button onclick="window.PDF()" id="B_PDF" style="background:var(--success); margin-top:20px">Baixar Relatório PDF (A4)</button>
-
-        <div style="margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+        
+        <div style="margin-top: 40px; border-top: 2px solid rgba(255,255,255,0.1); padding-top: 20px;">
             <h3 id="F1" style="text-align:center;">Sugestões e Pedidos</h3>
+            <div class="info-box" id="H_FEED">Sua opinião ajuda a melhorar o sistema. Deixe seu comentário.</div>
             <textarea id="txtSugestao"></textarea>
             <button onclick="window.ENVIAR_FEEDBACK()" id="F2" style="background:var(--accent); color:black">Enviar Mensagem</button>
         </div>
-        <button onclick="location.reload()" style="background:var(--danger); margin-top:20px">Sair</button>
+        <button onclick="location.reload()" id="B_SAIR" style="background:var(--danger); margin-top:30px">Sair</button>
     </div>
 
     <div id="verify" class="screen"><h2 id="V1">Verificar</h2><input id="iC" type="text" maxlength="4"><button onclick="window.C()" id="V3">OK</button></div>
@@ -122,31 +124,32 @@
             
             const _tr = {
                 pt: { 
-                    L1: "Acesso ao Sistema", L2: "Entrar", uE: "Seu e-mail Gmail...", H_LOGIN: "Informe seu Gmail para receber o código.",
-                    P1: "Limite de Testes", H_PAY: "Escolha um plano ou use um cupom.", cup: "Cupom...", B1: "Eleição Única (R$ 30,00)", B2: "Pacote 20 (R$ 500,00)", P2: "Ativar",
-                    S1: "Nome da Eleição", tE: "Título...", S2: "Próximo",
-                    C1: "Cadastro", nC: "Cargo...", nCand: "Candidato...", C2: "Adicionar", C3: "Salvar Cargo", C4: "INICIAR VOTAÇÃO",
-                    U1: "CONFIRMAR VOTO", U2: "ENCERRAR ELEIÇÃO", R_TITLE: "Resultado Final", B_PDF: "Baixar Relatório PDF (A4)", F1: "Sugestões e Pedidos", txtSugestao: "Escreva aqui...", F2: "Enviar Mensagem",
-                    V1: "Verificar", iC: "Código...", alert_voto: "Voto Confirmado!", alert_end: "Deseja encerrar?", alert_cupom_erro: "Cupom Inválido!"
+                    L1: "Acesso ao Sistema", L2: "Entrar / Acessar", uE: "Seu e-mail Gmail...", H_LOGIN: "Informe seu Gmail para receber o código de acesso.",
+                    P1: "Limite de Testes Atingido", H_PAY: "Você já utilizou suas 3 eleições gratuitas. Selecione um plano de ativação ou utilize um cupom.", B1: "Eleição Única (R$ 30,00)", B2: "Pacote 20 Eleições (R$ 500,00)", L_CUP: "Possui um cupom de acesso?", cup: "Insira o código do cupom...", P2: "Ativar Cupom", B_VOLTAR: "Voltar",
+                    S1: "Nome da Eleição", tE: "Ex: Eleição da Igreja...", H_SETUP: "Dê um título para identificar esta votação.", S2: "Próximo",
+                    C1: "Cadastro", nC: "Nome do Cargo...", nCand: "Nome do Candidato...", H_CARGO: "Defina o cargo e adicione os candidatos um a um.", C2: "Adicionar Candidato", C3: "Salvar Cargo", C4: "INICIAR VOTAÇÃO",
+                    U1: "CONFIRMAR VOTO", U2: "ENCERRAR ELEIÇÃO", R_TITLE: "Resultado Final", B_PDF: "Baixar Relatório PDF (A4)", F1: "Sugestões e Pedidos", txtSugestao: "Escreva aqui sua sugestão...", H_FEED: "Sua opinião ajuda a melhorar o sistema. Deixe seu comentário.", F2: "Enviar Mensagem", B_SAIR: "Sair",
+                    V1: "Verificar Código", iC: "Digite o código...", V3: "OK", alert_voto: "Voto Confirmado!", alert_end: "Deseja encerrar a eleição?", alert_cupom_erro: "Cupom Inválido!"
                 },
                 en: { 
-                    L1: "System Access", L2: "Login", uE: "Gmail email...", H_LOGIN: "Enter Gmail to receive code.",
-                    P1: "Test Limit", H_PAY: "Choose a plan or use a coupon.", cup: "Coupon...", B1: "Single Election ($30.00)", B2: "20 Pack ($500.00)", P2: "Activate",
-                    S1: "Election Name", tE: "Title...", S2: "Next",
-                    C1: "Registration", nC: "Position...", nCand: "Candidate...", C2: "Add", C3: "Save Position", C4: "START VOTING",
-                    U1: "CONFIRM VOTE", U2: "END ELECTION", R_TITLE: "Final Result", B_PDF: "Download PDF Report (A4)", F1: "Suggestions", txtSugestao: "Write here...", F2: "Send Message",
-                    V1: "Verify", iC: "Code...", alert_voto: "Vote Confirmed!", alert_end: "End election?", alert_cupom_erro: "Invalid Coupon!"
+                    L1: "System Access", L2: "Login", uE: "Your Gmail email...", H_LOGIN: "Enter Gmail to receive access code.",
+                    P1: "Test Limit Reached", H_PAY: "You used your 3 free elections. Select a plan or use a coupon.", B1: "Single Election ($30.00)", B2: "20 Elections Pack ($500.00)", L_CUP: "Have a coupon?", cup: "Enter coupon code...", P2: "Activate", B_VOLTAR: "Back",
+                    S1: "Election Name", tE: "Ex: Church Election...", H_SETUP: "Identify this vote.", S2: "Next",
+                    C1: "Registration", nC: "Position Name...", nCand: "Candidate Name...", H_CARGO: "Add candidates one by one.", C2: "Add Candidate", C3: "Save Position", C4: "START VOTING",
+                    U1: "CONFIRM VOTE", U2: "END ELECTION", R_TITLE: "Final Result", B_PDF: "Download PDF Report (A4)", F1: "Suggestions", txtSugestao: "Write here...", H_FEED: "Your opinion matters.", F2: "Send Message", B_SAIR: "Exit",
+                    V1: "Verify Code", iC: "Enter code...", V3: "OK", alert_voto: "Vote Confirmed!", alert_end: "End election?", alert_cupom_erro: "Invalid Coupon!"
                 },
                 es: { 
-                    L1: "Acceso", L2: "Entrar", uE: "Gmail...", H_LOGIN: "Ingresa Gmail para el código.",
-                    P1: "Límite Alcanzado", H_PAY: "Elige un plan o usa cupón.", cup: "Cupón...", B1: "Elección Única (R$ 30.00)", B2: "Paquete 20 (R$ 500.00)", P2: "Ativar",
-                    S1: "Nombre", tE: "Título...", S2: "Siguiente",
-                    C1: "Registro", nC: "Cargo...", nCand: "Candidato...", C2: "Añadir", C3: "Guardar", C4: "INICIAR VOTACIÓN",
-                    U1: "CONFIRMAR VOTO", U2: "FINALIZAR", R_TITLE: "Resultado Final", B_PDF: "Bajar PDF (A4)", F1: "Sugerencias", txtSugestao: "Escribe aquí...", F2: "Enviar",
-                    V1: "Verificar", iC: "Código...", alert_voto: "¡Voto OK!", alert_end: "¿Finalizar?", alert_cupom_erro: "¡Cupón Inválido!"
+                    L1: "Acceso", L2: "Entrar", uE: "Tu Gmail...", H_LOGIN: "Ingresa tu Gmail para el código.",
+                    P1: "Límite Alcanzado", H_PAY: "Elige un plan o usa un cupón.", B1: "Elección Única (R$ 30.00)", B2: "Paquete 20 (R$ 500.00)", L_CUP: "¿Tienes cupón?", cup: "Código de cupón...", P2: "Activar", B_VOLTAR: "Volver",
+                    S1: "Nombre", tE: "Ej: Elección...", H_SETUP: "Asigne un título.", S2: "Siguiente",
+                    C1: "Registro", nC: "Nombre del Cargo...", nCand: "Candidato...", H_CARGO: "Añade candidatos.", C2: "Añadir", C3: "Guardar", C4: "INICIAR VOTACIÓN",
+                    U1: "CONFIRMAR VOTO", U2: "FINALIZAR", R_TITLE: "Resultado Final", B_PDF: "Bajar PDF (A4)", F1: "Sugerencias", txtSugestao: "Escribe aquí...", H_FEED: "Tu opinión importa.", F2: "Enviar", B_SAIR: "Salir",
+                    V1: "Verificar", iC: "Código...", V3: "OK", alert_voto: "¡Voto OK!", alert_end: "¿Finalizar?", alert_cupom_erro: "¡Cupón Inválido!"
                 }
             };
 
+            window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); };
             window.TR = (l) => { 
                 _idioma = l; 
                 for(let k in _tr[l]){ 
@@ -171,8 +174,7 @@
                 } catch(err) { alert("Erro"); }
             };
 
-            window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); };
-            window.C = () => { if(document.getElementById('iC').value === _code || document.getElementById('iC').value === "9999") window.GO('setup'); window.TR(_idioma); };
+            window.C = () => { if(document.getElementById('iC').value === _code || document.getElementById('iC').value === "9999") { window.GO('setup'); window.TR(_idioma); } };
             window.N = () => { _title = document.getElementById('tE').value || "Urna"; window.GO('setupCargo'); window.TR(_idioma); };
             
             window.K = () => { 
@@ -190,24 +192,9 @@
             };
             window.SAVE = () => { if(_temp) _data.push(_temp); _temp=null; document.getElementById('nC').value=''; document.getElementById('listTemp').innerText=''; alert("OK"); };
             window.START = () => { if(_temp) _data.push(_temp); _idx=0; window.M(); window.GO('urna'); window.TR(_idioma); };
-            
-            window.M = () => {
-                let c = _data[_idx]; if(!c) return; document.getElementById('uT').innerText = c.n;
-                let g = document.getElementById('gridUrna'); g.innerHTML = '';
-                c.c.forEach((can, i) => {
-                    let d = document.createElement('div'); d.className = 'card-candidato';
-                    d.innerHTML = '<strong>'+can.n+'</strong>';
-                    d.onclick = () => { _sel = [i]; window.UI(); }; g.appendChild(d);
-                });
-            };
+            window.M = () => { let c = _data[_idx]; if(!c) return; document.getElementById('uT').innerText = c.n; let g = document.getElementById('gridUrna'); g.innerHTML = ''; c.c.forEach((can, i) => { let d = document.createElement('div'); d.className = 'card-candidato'; d.innerHTML = '<strong>'+can.n+'</strong>'; d.onclick = () => { _sel = [i]; window.UI(); }; g.appendChild(d); }); };
             window.UI = () => { document.querySelectorAll('.card-candidato').forEach((card, i) => { if(_sel.includes(i)) card.classList.add('selected'); else card.classList.remove('selected'); }); };
-            
-            window.VOTE = () => {
-                if(!_sel.length) return;
-                _data[_idx].c[_sel[0]].v++; _idx++;
-                if(_idx < _data.length) { _sel=[]; window.M(); } 
-                else { alert(_tr[_idioma].alert_voto); _idx=0; _sel=[]; window.M(); }
-            };
+            window.VOTE = () => { if(!_sel.length) return; _data[_idx].c[_sel[0]].v++; _idx++; if(_idx < _data.length) { _sel=[]; window.M(); } else { alert(_tr[_idioma].alert_voto); _idx=0; _sel=[]; window.M(); } };
 
             window.END = () => {
                 if(!confirm(_tr[_idioma].alert_end)) return;
@@ -229,8 +216,8 @@
             window.PDF = () => {
                 const element = document.getElementById('areaImpressao');
                 html2pdf().set({
-                    margin: 10,
-                    filename: `Resultado_${_title}.pdf`,
+                    margin: 0,
+                    filename: `Relatorio_${_title}.pdf`,
                     image: { type: 'jpeg', quality: 1.0 },
                     html2canvas: { scale: 3, useCORS: true, width: 800, windowWidth: 800 },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
