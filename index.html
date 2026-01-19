@@ -21,12 +21,11 @@
         .card-candidato { background: white; color: #333; padding: 10px; border-radius: 10px; text-align: center; border: 4px solid transparent; cursor: pointer; }
         .card-candidato.selected { border-color: var(--accent); background: #fdf2a7; }
         .foto-cand { width: 100%; height: 130px; object-fit: cover; border-radius: 5px; background: #eee; }
-        #areaImpressao { background: white !important; color: #333 !important; padding: 30px; width: 100%; box-sizing: border-box; border-radius: 10px; display: block !important; }
-        .cargo-container { margin-bottom: 20px; border: 1px solid #333; page-break-inside: avoid; display: block; clear: both; }
+        #areaImpressao { background: white !important; color: #333 !important; padding: 30px; width: 100%; box-sizing: border-box; border-radius: 10px; }
+        .cargo-container { margin-bottom: 20px; border: 1px solid #333; page-break-inside: avoid; }
         .cargo-header { background: #0a2a66 !important; color: white !important; padding: 8px; font-weight: bold; }
         .candidato-linha { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; color: #000 !important; }
         .votos-tag { font-weight: bold; color: #1abc9c !important; }
-        .sugestoes-box { margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px; border: 1px solid var(--primary); }
     </style>
 </head>
 <body>
@@ -38,13 +37,13 @@
 
     <div id="login" class="screen active">
         <h2 id="L1">Acesso ao Sistema</h2>
-        <input id="uE" type="email" placeholder="Seu e-mail...">
+        <input id="uE" type="email" placeholder="Seu Gmail...">
         <button onclick="window.V()" id="L2">Entrar / Acessar</button>
     </div>
 
     <div id="verify" class="screen">
         <h2 id="V1">Verificar Código</h2>
-        <p style="text-align:center" id="V2">Insira o código enviado para o seu e-mail.</p>
+        <p style="text-align:center" id="V2">Insira o código enviado para o seu Gmail.</p>
         <input id="iC" type="text" maxlength="4" placeholder="...">
         <button onclick="window.C()" id="V3">Validar Código</button>
     </div>
@@ -87,35 +86,28 @@
 
     <div id="res" class="screen">
         <div id="areaImpressao">
-            <div class="res-header">
-                <h1 id="pT" style="color: #0a2a66 !important;"></h1>
-                <p id="RT" style="color: #333 !important;">Relatório de Apuração Final</p>
-            </div>
+            <h1 id="pT" style="color: #0a2a66 !important; text-align:center"></h1>
+            <p id="RT" style="color: #333 !important; text-align:center; font-weight:bold">Relatório de Apuração Final</p>
             <div id="pC"></div>
-        </div>
-        <div class="sugestoes-box">
-            <h4 id="S3" style="margin:0 0 10px 0">Feedback:</h4>
-            <textarea id="txtSugestao" placeholder="..."></textarea>
-            <button onclick="window.ENVIAR_SUGESTAO()" id="S4" style="background:var(--accent); color:#000">Enviar para Paulo SMB</button>
         </div>
         <button onclick="window.PDF()" id="R1" style="background:var(--success)">Baixar PDF Completo</button>
         <button onclick="location.reload()" id="R2" style="background:var(--danger)">Sair</button>
     </div>
 
     <script>
-        // Bloco de dados ofuscados (Hex)
+        // Dados Ofuscados (Senhas e Emails sensíveis)
         (function(_0x5a1f,_0x2b3c){const _0x4d2e=function(_0x1a2b){while(--_0x1a2b){_0x5a1f['push'](_0x5a1f['shift']());}};_0x4d2e(++_0x2b3c);}(['\x6f\x72\x69\x6f\x6e\x30\x30\x31','\x4d\x41\x49\x53\x33\x47\x52\x41\x54\x49\x53','\x6f\x72\x69\x6f\x6e\x30\x30\x32','\x70\x61\x75\x6c\x6f\x73\x6d\x62\x31\x39\x37\x32\x40\x67\x6d\x61\x69\x6c\x2e\x63\x6f\x6d'],0x1b4));
         const _0x51a2=['\x6f\x72\x69\x6f\x6e\x30\x30\x31','\x4d\x41\x49\x53\x33\x47\x52\x41\x54\x49\x53','\x6f\x72\x69\x6f\x6e\x30\x30\x32','\x70\x61\x75\x6c\x6f\x73\x6d\x62\x31\x39\x37\x32\x40\x67\x6d\x61\x69\x6c\x2e\x63\x6f\x6d'];
 
         (function(){
             const _0x4f2a = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
             emailjs.init(_0x4f2a.k);
-            let _0x1a2b='',_0x2b3c='',_0x3c4d=[],_0x4d5e=null,_0x5e6f='',_0x6f7a=[],_0x7a8b=0,_0x8b9c='',_0x9c0d=false;
+            let _0x1a2b='', _0x2b3c='', _0x3c4d=[], _0x4d5e=null, _0x5e6f='', _0x6f7a=[], _0x7a8b=0, _0x8b9c='', _0x9c0d=false;
             
             const _0x0d1e = {
-                pt: { uE:"Seu e-mail...", L1:"Acesso ao Sistema", L2:"Entrar", V1:"Verificar Código", V2:"Insira o código enviado.", V3:"Validar Código", iC:"Código de 4 dígitos", P1:"Limite Atingido", PL:"Escolha um plano para continuar:", B1:"Eleição Única (R$ 30,00)", B2:"Pacote 20 Eleições (R$ 500,00)", cup:"Cupom ou Senha Admin", P2:"Ativar Acesso", P3:"Sair", S1:"Configurar Eleição", tE:"Título da Eleição", S2:"Definir Cargos", C1:"Cadastro", nC:"Nome do Cargo", qV:"Votos permitidos", nCand:"Nome do Candidato", C2:"Adicionar Candidato", C3:"Salvar Cargo", C4:"INICIAR URNA", U1:"CONFIRMAR VOTO", U2:"ENCERRAR ELEIÇÃO", RT:"Relatório de Apuração Final", S3:"Feedback:", txtSugestao:"Dúvidas ou sugestões...", S4:"Enviar para Paulo SMB", R1:"Baixar PDF Completo", R2:"Sair" },
-                en: { uE:"Your email...", L1:"System Access", L2:"Login", V1:"Verify Code", V2:"Enter code.", V3:"Validate", iC:"4-digit code", P1:"Limit Reached", PL:"Choose a plan to continue:", B1:"Single Election (R$ 30.00)", B2:"20 Pack (R$ 500.00)", cup:"Coupon or Admin", P2:"Activate", P3:"Exit", S1:"Setup", tE:"Election Title", S2:"Next", C1:"Register", nC:"Position Name", qV:"Allowed Votes", nCand:"Candidate Name", C2:"Add Candidate", C3:"Save Position", C4:"START", U1:"CONFIRM", U2:"END", RT:"Final Tally Report", S3:"Feedback:", txtSugestao:"Questions or suggestions...", S4:"Send to Paulo SMB", R1:"Download PDF", R2:"Exit" },
-                es: { uE:"Tu correo...", L1:"Acceso", L2:"Entrar", V1:"Validar", V2:"Ingrese código.", V3:"Validar", iC:"Código de 4 dígitos", P1:"Límite", PL:"Elija un plan:", B1:"Elección Única (R$ 30.00)", B2:"Pack 20 (R$ 500.00)", cup:"Cupón o Admin", P2:"Activar", P3:"Salir", S1:"Configurar", tE:"Título de la Elección", S2:"Siguiente", C1:"Registro", nC:"Nombre del Cargo", qV:"Votos permitidos", nCand:"Nombre del Candidato", C2:"Añadir", C3:"Guardar", C4:"INICIAR", U1:"CONFIRMAR", U2:"FINALIZAR", RT:"Reporte Final", S3:"Comentarios:", txtSugestao:"Dudas o sugerencias...", S4:"Enviar a Paulo SMB", R1:"Bajar PDF", R2:"Salir" }
+                pt: { uE:"Seu Gmail...", L1:"Acesso ao Sistema", L2:"Entrar", V1:"Verificar Código", V2:"Insira o código enviado para o seu Gmail.", V3:"Validar Código", cup:"Cupom ou Senha Admin", S1:"Configurar Eleição", tE:"Título da Eleição", S2:"Definir Cargos", C1:"Cadastro", nC:"Nome do Cargo", qV:"Votos permitidos", nCand:"Nome do Candidato", C2:"Adicionar Candidato", C3:"Salvar Cargo", C4:"INICIAR URNA", U1:"CONFIRMAR VOTO", U2:"ENCERRAR ELEIÇÃO", RT:"Relatório de Apuração Final", R1:"Baixar PDF Completo", R2:"Sair" },
+                en: { uE:"Your Gmail...", L1:"System Access", L2:"Login", V1:"Verify Code", V2:"Enter the code sent to your Gmail.", V3:"Validate", cup:"Coupon or Admin", S1:"Setup", tE:"Election Title", S2:"Next", C1:"Register", nC:"Position Name", qV:"Allowed Votes", nCand:"Candidate Name", C2:"Add Candidate", C3:"Save Position", C4:"START", U1:"CONFIRM", U2:"END", RT:"Final Tally Report", R1:"Download PDF", R2:"Exit" },
+                es: { uE:"Tu Gmail...", L1:"Acceso", L2:"Entrar", V1:"Validar", V2:"Ingrese o código enviado a su Gmail.", V3:"Validar", cup:"Cupón o Admin", S1:"Configurar", tE:"Título de la Elección", S2:"Siguiente", C1:"Registro", nC:"Nombre del Cargo", qV:"Votos permitidos", nCand:"Nombre del Candidato", C2:"Añadir", C3:"Guardar", C4:"INICIAR", U1:"CONFIRMAR", U2:"FINALIZAR", RT:"Reporte Final", R1:"Bajar PDF", R2:"Salir" }
             };
 
             window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); };
@@ -124,7 +116,7 @@
                 for(let k in _0x0d1e[a]) { 
                     let el = document.getElementById(k);
                     if(el) {
-                        if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = _0x0d1e[a][k];
+                        if(el.tagName === 'INPUT') el.placeholder = _0x0d1e[a][k];
                         else el.innerText = _0x0d1e[a][k];
                     }
                 } 
@@ -142,7 +134,7 @@
                     _0x1a2b = d.codigo.toString();
                     await emailjs.send(_0x4f2a.s, _0x4f2a.t, { to_email: _0x2b3c, validation_code: _0x1a2b });
                     alert("Código enviado!"); window.GO('verify');
-                } catch(e) { alert("Erro."); }
+                } catch(e) { alert("Erro de conexão."); }
             };
 
             window.C = () => {
@@ -153,20 +145,17 @@
 
             window.K = async () => {
                 let c = document.getElementById('cup').value.trim();
-                // Admin 1 (Setup)
                 if(c === _0x51a2[0]) { window.GO('setup'); return; }
-                // Admin 2 (Reset para Paulo)
-                if(c === _0x51a2[2]) { 
+                if(c === _0x51a2[2]) { // orion002
                     if(_0x2b3c === _0x51a2[3]) {
                         try {
                             await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c)+'&action=reset');
                             alert("Reset realizado para " + _0x2b3c); 
                             location.reload();
-                        } catch(e) { alert("Erro no reset."); }
+                        } catch(e) { alert("Erro."); }
                     } else alert("Não autorizado.");
                     return;
                 }
-                // Cupom de uso único
                 if(c.toUpperCase() === _0x51a2[1]) {
                     if(_0x9c0d) return alert("Cupom já usado.");
                     try {
@@ -210,7 +199,7 @@
                 if(_0x7a8b < _0x3c4d.length) window.M(); else { alert("Voto Confirmado!"); _0x7a8b = 0; _0x6f7a = []; window.M(); }
             };
             window.END = async () => {
-                if(!confirm("Deseja encerrar a eleição?")) return;
+                if(!confirm("Encerrar?")) return;
                 try { await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c)+'&action=increment'); } catch(e){}
                 document.getElementById('pT').innerText = _0x8b9c;
                 let out = document.getElementById('pC'); out.innerHTML = '';
@@ -226,16 +215,9 @@
             };
             window.PDF = () => {
                 const element = document.getElementById('areaImpressao');
-                const opt = { margin: 10, filename: 'Resultado.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, scrollY: 0 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+                const opt = { margin: 10, filename: 'Resultado.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
                 html2pdf().set(opt).from(element).save();
             };
-            window.ENVIAR_SUGESTAO = () => {
-                let m = document.getElementById('txtSugestao').value;
-                if(!m) return;
-                emailjs.send(_0x4f2a.s, _0x4f2a.t, { to_email: _0x51a2[3], validation_code: 'FEEDBACK: '+m });
-                alert("Sugestão enviada!");
-            };
-            // Iniciar com tradução padrão em PT
             window.TR('pt');
         })();
     </script>
