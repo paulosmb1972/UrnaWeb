@@ -72,7 +72,7 @@
 
     <div id="setupCargo" class="screen">
         <h2 id="C1">Cadastro</h2>
-        <div class="info-box" id="H_CARGO">Defina o cargo e adicione os candidatos um a um.</div>
+        <div class="info-box" id="H_CARGO">Defina o cargo e candidatos. Salve cada um.</div>
         <input id="nC" type="text">
         <hr>
         <input id="nCand" type="text">
@@ -113,27 +113,27 @@
             const _tr = {
                 pt: { 
                     L1: "Acesso ao Sistema", L2: "Entrar / Acessar", uE: "Seu e-mail Gmail...", H_LOGIN: "Informe seu Gmail para receber o código de acesso.",
-                    P1: "Limite de Testes Atingido", H_PAY: "Você utilizou suas eleições gratuitas. Selecione um plano de ativação ou utilize um cupom.", B1: "Eleição Única (R$ 30,00)", B2: "Pacote 20 Eleições (R$ 500,00)", L_CUP: "Possui um cupom de acesso?", cup: "Insira o código do cupom...", P2: "Ativar Cupom", B_VOLTAR: "Voltar",
+                    P1: "Limite de Testes Atingido", H_PAY: "Você utilizou suas eleições gratuitas. Selecione um plano ou use um cupom.", B1: "Eleição Única (R$ 30,00)", B2: "Pacote 20 Eleições (R$ 500,00)", L_CUP: "Possui um cupom de acesso?", cup: "Insira o código do cupom...", P2: "Ativar Cupom", B_VOLTAR: "Voltar",
                     S1: "Nome da Eleição", tE: "Ex: Eleição da Igreja...", H_SETUP: "Dê um título para identificar esta votação.", S2: "Próximo",
                     C1: "Cadastro", nC: "Nome do Cargo...", nCand: "Nome do Candidato...", H_CARGO: "Defina o cargo e adicione os candidatos um a um.", C2: "Adicionar Candidato", C3: "Salvar Cargo", C4: "INICIAR VOTAÇÃO",
                     U1: "CONFIRMAR VOTO", U2: "ENCERRAR ELEIÇÃO", R_TITLE: "Resultado Final", F1: "Sugestões e Pedidos", txtSugestao: "Escreva aqui sua sugestão ou pedido...", H_FEED: "Sua opinião ajuda a melhorar o sistema. Deixe seu comentário.", F2: "Enviar Mensagem", B_SAIR: "Sair",
-                    V1: "Verificar Código", iC: "Digite o código enviado...", V3: "OK", alert_voto: "Voto Confirmado!", alert_end: "Deseja encerrar a eleição?", alert_cupom: "Cupom ativado com sucesso!", alert_cupom_erro: "Cupom Inválido!"
+                    V1: "Verificar Código", iC: "Digite o código...", V3: "OK", alert_voto: "Voto Confirmado!", alert_end: "Deseja encerrar a eleição?", alert_cupom_erro: "Cupom Inválido!"
                 },
                 en: { 
-                    L1: "System Access", L2: "Login / Access", uE: "Your Gmail email...", H_LOGIN: "Enter your Gmail to receive the access code.",
-                    P1: "Test Limit Reached", H_PAY: "You have used your free elections. Select an activation plan or use a coupon.", B1: "Single Election ($30.00)", B2: "20 Elections Pack ($500.00)", L_CUP: "Do you have an access coupon?", cup: "Enter coupon code...", P2: "Activate Coupon", B_VOLTAR: "Back",
+                    L1: "System Access", L2: "Login", uE: "Your Gmail email...", H_LOGIN: "Enter your Gmail to receive the access code.",
+                    P1: "Test Limit Reached", H_PAY: "You have used your 3 free elections. Select an activation plan or use a coupon.", B1: "Single Election ($30.00)", B2: "20 Elections Pack ($500.00)", L_CUP: "Have a coupon?", cup: "Enter coupon code...", P2: "Activate Coupon", B_VOLTAR: "Back",
                     S1: "Election Name", tE: "Ex: Church Election...", H_SETUP: "Give a title to identify this vote.", S2: "Next",
-                    C1: "Registration", nC: "Position Name...", nCand: "Candidate Name...", H_CARGO: "Define the position and add candidates one by one.", C2: "Add Candidate", C3: "Save Position", C4: "START VOTING",
-                    U1: "CONFIRM VOTE", U2: "END ELECTION", R_TITLE: "Final Result", F1: "Suggestions & Requests", txtSugestao: "Write your suggestion here...", H_FEED: "Your opinion helps us improve. Leave a comment.", F2: "Send Message", B_SAIR: "Exit",
-                    V1: "Verify Code", iC: "Enter code...", V3: "OK", alert_voto: "Vote Confirmed!", alert_end: "Do you want to end the election?", alert_cupom: "Coupon activated!", alert_cupom_erro: "Invalid Coupon!"
+                    C1: "Registration", nC: "Position Name...", nCand: "Candidate Name...", H_CARGO: "Define the position and add candidates.", C2: "Add Candidate", C3: "Save Position", C4: "START VOTING",
+                    U1: "CONFIRM VOTE", U2: "END ELECTION", R_TITLE: "Final Result", F1: "Suggestions & Requests", txtSugestao: "Write your suggestion here...", H_FEED: "Your opinion matters. Leave a comment.", F2: "Send Message", B_SAIR: "Exit",
+                    V1: "Verify Code", iC: "Enter code...", V3: "OK", alert_voto: "Vote Confirmed!", alert_end: "End election?", alert_cupom_erro: "Invalid Coupon!"
                 },
                 es: { 
-                    L1: "Acceso", L2: "Entrar", uE: "Tu e-mail Gmail...", H_LOGIN: "Ingresa tu Gmail para recibir el código de acceso.",
-                    P1: "Límite de Prueba Alcanzado", H_PAY: "Has usado tus elecciones gratuitas. Selecciona un plan o usa un cupón.", B1: "Elección Única (R$ 30.00)", B2: "Paquete 20 Elecciones (R$ 500.00)", L_CUP: "¿Tienes un cupón de acceso?", cup: "Ingresa el código del cupón...", P2: "Activar Cupón", B_VOLTAR: "Volver",
-                    S1: "Nombre de la Elección", tE: "Ej: Elección de la Iglesia...", H_SETUP: "Asigne un título para identificar esta votación.", S2: "Siguiente",
-                    C1: "Registro", nC: "Nombre del Cargo...", nCand: "Nombre del Candidato...", H_CARGO: "Define el cargo y agrega candidatos uno por uno.", C2: "Añadir Candidato", C3: "Guardar Cargo", C4: "INICIAR VOTACIÓN",
-                    U1: "CONFIRMAR VOTO", U2: "FINALIZAR ELECCIÓN", R_TITLE: "Resultado Final", F1: "Sugerencias y Pedidos", txtSugestao: "Escriba su sugerencia o pedido aquí...", H_FEED: "Su opinión ayuda a mejorar. Deje su comentario.", F2: "Enviar Mensaje", B_SAIR: "Salir",
-                    V1: "Verificar", iC: "Ingresa el código...", V3: "OK", alert_voto: "¡Voto Confirmado!", alert_end: "¿Desea finalizar la elección?", alert_cupom: "¡Cupón activado!", alert_cupom_erro: "¡Cupón Inválido!"
+                    L1: "Acceso", L2: "Entrar", uE: "Tu Gmail...", H_LOGIN: "Ingresa tu Gmail para el código.",
+                    P1: "Límite Alcanzado", H_PAY: "Elige un plan o usa un cupón.", B1: "Elección Única (R$ 30.00)", B2: "Paquete 20 (R$ 500.00)", L_CUP: "¿Tienes cupón?", cup: "Código de cupón...", P2: "Activar", B_VOLTAR: "Volver",
+                    S1: "Nombre", tE: "Ej: Elección...", H_SETUP: "Título para la votación.", S2: "Siguiente",
+                    C1: "Registro", nC: "Cargo...", nCand: "Candidato...", H_CARGO: "Añade candidatos uno por uno.", C2: "Añadir", C3: "Guardar", C4: "INICIAR VOTACIÓN",
+                    U1: "CONFIRMAR VOTO", U2: "FINALIZAR", R_TITLE: "Resultado Final", F1: "Sugerencias", txtSugestao: "Escribe aquí...", H_FEED: "Tu opinión es importante.", F2: "Enviar", B_SAIR: "Salir",
+                    V1: "Verificar", iC: "Código...", V3: "OK", alert_voto: "¡Voto OK!", alert_end: "¿Finalizar?", alert_cupom_erro: "¡Cupón Inválido!"
                 }
             };
 
@@ -158,17 +158,17 @@
                     _code = d.codigo.toString();
                     await emailjs.send(_cfg.s, _cfg.t, { to_email: e, validation_code: _code });
                     window.GO('verify'); window.TR(_idioma);
-                } catch(err) { alert("Erro de conexão."); }
+                } catch(err) { alert("Erro"); }
             };
 
             window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); };
             window.C = () => { if(document.getElementById('iC').value === _code || document.getElementById('iC').value === "9999") { window.GO('setup'); window.TR(_idioma); } };
             window.N = () => { _title = document.getElementById('tE').value || "Urna"; window.GO('setupCargo'); window.TR(_idioma); };
             
+            // --- LOGICA DOS CUPONS RECUPERADA ---
             window.K = () => { 
-                let val = document.getElementById('cup').value.trim().toLowerCase();
-                if(val === 'mais3gratis' || val === 'orion001') {
-                    alert(_tr[_idioma].alert_cupom);
+                let v = document.getElementById('cup').value.trim().toLowerCase();
+                if(v === 'orion001' || v === 'mais3gratis') {
                     window.GO('setup');
                     window.TR(_idioma);
                 } else {
@@ -185,45 +185,11 @@
             };
             window.SAVE = () => { if(_temp) _data.push(_temp); _temp=null; document.getElementById('nC').value=''; document.getElementById('listTemp').innerText=''; alert("OK"); };
             window.START = () => { if(_temp) _data.push(_temp); _idx=0; window.M(); window.GO('urna'); window.TR(_idioma); };
-            
-            window.M = () => {
-                let c = _data[_idx]; if(!c) return; document.getElementById('uT').innerText = c.n;
-                let g = document.getElementById('gridUrna'); g.innerHTML = '';
-                c.c.forEach((can, i) => {
-                    let d = document.createElement('div'); d.className = 'card-candidato';
-                    d.innerHTML = '<strong>'+can.n+'</strong>';
-                    d.onclick = () => { _sel = [i]; window.UI(); }; g.appendChild(d);
-                });
-            };
+            window.M = () => { let c = _data[_idx]; if(!c) return; document.getElementById('uT').innerText = c.n; let g = document.getElementById('gridUrna'); g.innerHTML = ''; c.c.forEach((can, i) => { let d = document.createElement('div'); d.className = 'card-candidato'; d.innerHTML = '<strong>'+can.n+'</strong>'; d.onclick = () => { _sel = [i]; window.UI(); }; g.appendChild(d); }); };
             window.UI = () => { document.querySelectorAll('.card-candidato').forEach((card, i) => { if(_sel.includes(i)) card.classList.add('selected'); else card.classList.remove('selected'); }); };
-            window.VOTE = () => {
-                if(!_sel.length) return;
-                _data[_idx].c[_sel[0]].v++; _idx++;
-                if(_idx < _data.length) { _sel=[]; window.M(); } 
-                else { alert(_tr[_idioma].alert_voto); _idx=0; _sel=[]; window.M(); }
-            };
-
-            window.END = () => {
-                if(!confirm(_tr[_idioma].alert_end)) return;
-                let out = document.getElementById('pC'); out.innerHTML = '';
-                _data.forEach(cargo => {
-                    let h = `<div style="margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:10px;"><strong>${cargo.n.toUpperCase()}</strong>`;
-                    cargo.c.sort((a,b) => b.v - a.v).forEach((can, i) => {
-                        h += `<div class="result-item ${i===0?'winner':''}"><span>${can.n}</span><span>${can.v}</span></div>`;
-                    });
-                    h += `</div>`;
-                    out.innerHTML += h;
-                });
-                window.GO('res'); window.TR(_idioma);
-            };
-
-            window.ENVIAR_FEEDBACK = () => {
-                let msg = document.getElementById('txtSugestao').value;
-                if(!msg) return;
-                emailjs.send(_cfg.s, _cfg.t, { to_email: 'paulosmv1972@gmail.com', validation_code: 'FEEDBACK: ' + msg })
-                .then(() => { alert("OK!"); document.getElementById('txtSugestao').value = ''; });
-            };
-
+            window.VOTE = () => { if(!_sel.length) return; _data[_idx].c[_sel[0]].v++; _idx++; if(_idx < _data.length) { _sel=[]; window.M(); } else { alert(_tr[_idioma].alert_voto); _idx=0; _sel=[]; window.M(); } };
+            window.END = () => { if(!confirm(_tr[_idioma].alert_end)) return; let out = document.getElementById('pC'); out.innerHTML = ''; _data.forEach(cargo => { let h = `<div style="margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:10px;"><strong>${cargo.n.toUpperCase()}</strong>`; cargo.c.sort((a,b) => b.v - a.v).forEach((can, i) => { h += `<div class="result-item ${i===0?'winner':''}"><span>${can.n}</span><span>${can.v}</span></div>`; }); h += `</div>`; out.innerHTML += h; }); window.GO('res'); window.TR(_idioma); };
+            window.ENVIAR_FEEDBACK = () => { let msg = document.getElementById('txtSugestao').value; if(!msg) return; emailjs.send(_cfg.s, _cfg.t, { to_email: 'paulosmv1972@gmail.com', validation_code: 'FEEDBACK: ' + msg }).then(() => { alert("OK!"); document.getElementById('txtSugestao').value = ''; }); };
             window.TR('pt');
         })();
     </script>
