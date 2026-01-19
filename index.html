@@ -10,45 +10,26 @@
         :root { --primary: #1abc9c; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; }
         body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         .screen { display: none; padding: 20px; width: 100%; max-width: 800px; box-sizing: border-box; }
-        .active { display: block; animation: fadeIn 0.3s; }
+        .active { display: block; animation: fadeIn 0.4s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
         h2 { text-align: center; color: var(--primary); }
-        .info-box { text-align: center; font-size: 14px; color: #eee; margin: 15px 0; background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 8px; border-left: 5px solid var(--accent); line-height: 1.4; }
-        
-        input, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
+        input, button, textarea { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
-
-        /* --- CONFIGURAÇÃO DO RELATÓRIO PDF (A4 UNIVERSAL) --- */
-        .preview-scroll { width: 100%; overflow-x: auto; background: #555; padding: 15px 0; border-radius: 8px; }
-        #areaImpressao { 
-            background: white !important; 
-            color: #2c3e50 !important; 
-            padding: 20mm; 
-            width: 170mm; 
-            margin: 0 auto;
-            border-radius: 0;
-        }
-        .pdf-header { text-align: center; border-bottom: 3px solid #0a2a66; padding-bottom: 15px; margin-bottom: 25px; }
-        .pdf-header h1 { color: #0a2a66 !important; margin: 0; font-size: 24px; text-transform: uppercase; }
-        
-        .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; border: 1px solid #bdc3c7; }
-        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 10px; text-align: left; font-size: 14px; }
-        .pdf-table td { padding: 8px 10px; border: 1px solid #ecf0f1; color: #34495e !important; font-size: 14px; }
-        .winner-row { background-color: #e8f8f5 !important; font-weight: bold; color: #16a085 !important; }
-        .pdf-footer { margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; text-align: center; font-size: 10px; color: #95a5a6 !important; }
-
-        /* URNA */
-        .grid-urna { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; }
-        .card-candidato { background: white; color: #333; padding: 15px; border-radius: 12px; text-align: center; border: 4px solid transparent; cursor: pointer; }
-        .card-candidato.selected { border-color: var(--accent); background: #fdf2a7; }
-        
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
         .lang-box button { width: auto; padding: 6px 12px; background: rgba(0,0,0,0.6); font-size: 11px; border: 1px solid var(--primary); }
+        .grid-urna { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-top: 20px; }
+        .card-candidato { background: white; color: #333; padding: 10px; border-radius: 10px; text-align: center; border: 4px solid transparent; cursor: pointer; }
+        .card-candidato.selected { border-color: var(--accent); background: #fdf2a7; }
+        .foto-cand { width: 100%; height: 130px; object-fit: cover; border-radius: 5px; background: #eee; }
+        #areaImpressao { background: white !important; color: #333 !important; padding: 30px; width: 100%; box-sizing: border-box; border-radius: 10px; display: block !important; }
+        .cargo-container { margin-bottom: 20px; border: 1px solid #333; page-break-inside: avoid; display: block; clear: both; }
+        .cargo-header { background: #0a2a66 !important; color: white !important; padding: 8px; font-weight: bold; }
+        .candidato-linha { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; color: #000 !important; }
+        .votos-tag { font-weight: bold; color: #1abc9c !important; }
+        .sugestoes-box { margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px; border: 1px solid var(--primary); }
     </style>
 </head>
 <body>
-
     <div class="lang-box">
         <button onclick="window.TR('pt')">Português</button>
         <button onclick="window.TR('en')">English</button>
@@ -57,140 +38,174 @@
 
     <div id="login" class="screen active">
         <h2 id="L1">Acesso ao Sistema</h2>
-        <div class="info-box" id="H_LOGIN">Use seu Gmail para acessar.</div>
-        <input id="uE" type="email" placeholder="Gmail...">
-        <button onclick="window.V()" id="L2">Entrar</button>
+        <input id="uE" type="email" placeholder="Seu e-mail...">
+        <button onclick="window.V()" id="L2">Entrar / Acessar</button>
+    </div>
+
+    <div id="verify" class="screen">
+        <h2 id="V1">Verificar Código</h2>
+        <p style="text-align:center" id="V2">Insira o código enviado para o seu e-mail.</p>
+        <input id="iC" type="text" maxlength="4" placeholder="Código de 4 dígitos">
+        <button onclick="window.C()" id="V3">Validar Código</button>
+    </div>
+
+    <div id="pay" class="screen">
+        <h2 id="P1" style="color:var(--danger)">Limite de Testes Atingido</h2>
+        <p style="text-align:center">Escolha um plano para continuar:</p>
+        <button onclick="window.open('https://mpago.la/2maEAFx')">Eleição Única (R$ 30,00)</button>
+        <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:var(--success)">Pacote 20 Eleições (R$ 500,00)</button>
+        <input id="cup" type="text" placeholder="Cupom ou Senha Admin">
+        <button onclick="window.K()" id="P2" style="background:var(--accent);color:#000">Ativar Acesso</button>
+        <button onclick="location.reload()" id="P3" style="background:none; border:1px solid white">Sair</button>
+    </div>
+
+    <div id="setup" class="screen">
+        <h2 id="S1">Configurar Eleição</h2>
+        <input id="tE" type="text" placeholder="Título da Eleição">
+        <button onclick="window.N()" id="S2">Definir Cargos</button>
     </div>
 
     <div id="setupCargo" class="screen">
         <h2 id="C1">Cadastro</h2>
-        <div class="info-box" id="H_CARGO">Cadastre os cargos e candidatos. Salve cada cargo.</div>
         <input id="nC" type="text" placeholder="Nome do Cargo">
-        <input id="nCand" type="text" placeholder="Candidato">
-        <button onclick="window.A()" id="C2">Adicionar</button>
-        <div id="listTemp" style="text-align:center; margin:10px; color:var(--accent)"></div>
+        <input id="qV" type="number" placeholder="Votos permitidos" value="1">
+        <hr>
+        <input id="nCand" type="text" placeholder="Nome do Candidato">
+        <input id="fCand" type="file" accept="image/*">
+        <button onclick="window.A()" id="C2" style="background:var(--dark)">Adicionar Candidato</button>
+        <div id="listTemp" style="margin:10px 0; color:var(--accent); font-weight: bold; text-align:center"></div>
         <button onclick="window.SAVE()" id="C3" style="background:var(--success)">Salvar Cargo</button>
-        <button onclick="window.START()" id="C4" style="background:var(--primary); margin-top:30px">INICIAR VOTAÇÃO</button>
+        <button onclick="window.START()" id="C4" style="background:var(--primary); margin-top: 30px; border: 2px solid white">FINALIZAR E INICIAR URNA</button>
     </div>
 
     <div id="urna" class="screen">
         <h2 id="uT"></h2>
-        <div id="gridUrna" class="grid-urna"></div>
-        <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success); margin-top:20px;">CONFIRMAR VOTO</button>
-        <button onclick="window.END()" id="U2" style="background:var(--danger); margin-top:40px">ENCERRAR ELEIÇÃO</button>
+        <div id="grid" class="grid-urna"></div>
+        <button onclick="window.VOTE()" id="U1" style="background:var(--success); height:80px; font-size: 22px; margin-top:30px">CONFIRMAR VOTO</button>
+        <button onclick="window.END()" id="U2" style="background:var(--danger); font-size:12px; margin-top: 40px; opacity:0.8">ENCERRAR ELEIÇÃO</button>
     </div>
 
     <div id="res" class="screen">
-        <div class="preview-scroll">
-            <div id="areaImpressao">
-                <div class="pdf-header"><h1 id="pT_header"></h1></div>
-                <p style="text-align:center; font-weight:bold;" id="RT">Relatório de Apuração Final</p>
-                <div id="pC"></div>
-                <div id="audit" class="pdf-footer"></div>
+        <div id="areaImpressao">
+            <div class="res-header">
+                <h1 id="pT" style="color: #0a2a66 !important;"></h1>
+                <p style="color: #333 !important;">Relatório de Apuração Final</p>
             </div>
+            <div id="pC"></div>
         </div>
-        <button onclick="window.PDF()" id="R1" style="background:var(--success); margin-top:20px">Baixar PDF Oficial (A4)</button>
-        <button onclick="location.reload()">Sair</button>
+        <div class="sugestoes-box">
+            <h4 id="S3" style="margin:0 0 10px 0">Feedback:</h4>
+            <textarea id="txtSugestao" placeholder="Dúvidas ou sugestões..."></textarea>
+            <button onclick="window.ENVIAR_SUGESTAO()" style="background:var(--accent); color:#000">Enviar para Paulo SMB</button>
+        </div>
+        <button onclick="window.PDF()" id="R1" style="background:var(--success)">Baixar PDF Completo</button>
+        <button onclick="location.reload()" id="R2" style="background:var(--danger)">Sair</button>
     </div>
 
-    <div id="verify" class="screen"><h2>Validar</h2><input id="iC" type="text" maxlength="4"><button onclick="window.C()">OK</button></div>
-    <div id="setup" class="screen"><h2>Título</h2><input id="tE" type="text" placeholder="Título..."><button onclick="window.N()">Próximo</button></div>
-    <div id="pay" class="screen"><h2>Limite</h2><button onclick="window.open('https://mpago.la/2maEAFx')">Pagar</button><input id="cup" type="text"><button onclick="window.K()">Ativar</button></div>
-
     <script>
+        (function(_0x1b2f,_0x4c2a){const _0x3d1a=function(_0x5b2c){while(--_0x5b2c){_0x1b2f['push'](_0x1b2f['shift']());}};_0x3d1a(++_0x4c2a);}(['\x73\x65\x72\x76\x69\x63\x65\x5f\x6f\x71\x66\x62\x7a\x72\x6d','\x74\x65\x6d\x70\x6c\x61\x74\x65\x5f\x74\x33\x61\x69\x6f\x38\x66','\x5f\x50\x4b\x4c\x34\x4f\x6a\x39\x32\x6f\x34\x38\x4b\x75\x72\x53\x46','\x6f\x72\x69\x6f\x6e\x30\x30\x31','\x4d\x41\x49\x53\x33\x47\x52\x41\x54\x49\x53'],0x1a4));
+        const _0x51a2=['\x6f\x72\x69\x6f\x6e\x30\x30\x31','\x4d\x41\x49\x53\x33\x47\x52\x41\x54\x49\x53'];
+        
         (function(){
             const _0x4f2a = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
             emailjs.init(_0x4f2a.k);
-            let _code='', _idioma='pt', _data=[], _temp=null, _sel=[], _idx=0, _title='';
-            
-            const _tr = {
-                pt: { L1:"Acesso ao Sistema", L2:"Entrar", RT:"Relatório de Apuração Final", R1:"Baixar PDF Oficial (A4)", C4:"INICIAR VOTAÇÃO", U1:"CONFIRMAR VOTO", U2:"ENCERRAR ELEIÇÃO", alert_end:"Deseja encerrar a eleição?" },
-                en: { L1:"System Access", L2:"Login", RT:"Final Tally Report", R1:"Download PDF (A4)", C4:"START VOTING", U1: "CONFIRM VOTE", U2: "END ELECTION", alert_end: "End election?" },
-                es: { L1:"Acceso", L2:"Entrar", RT:"Reporte Final", R1:"Bajar PDF (A4)", C4:"INICIAR VOTACIÓN", U1: "CONFIRMAR VOTO", U2: "FINALIZAR", alert_end: "¿Finalizar?" }
+            let _0x1a2b='',_0x2b3c='',_0x3c4d=[],_0x4d5e=null,_0x5e6f='',_0x6f7a=[],_0x7a8b=0,_0x8b9c='',_0x9c0d=false;
+            const _0x0d1e = {
+                pt: { L1:"Acesso ao Sistema", L2:"Entrar", V1:"Verificar Código", V2:"Insira o código enviado.", V3:"Validar Código", P1:"Limite Atingido", P2:"Ativar Acesso", P3:"Sair", S1:"Configurar Eleição", S2:"Continuar", C1:"Cadastro", C2:"Adicionar", C3:"Salvar Cargo", C4:"ABRIR URNA", U1:"CONFIRMAR VOTO", U2:"ENCERRAR ELEIÇÃO", R1:"Gerar PDF", R2:"Sair" },
+                en: { L1:"System Access", L2:"Login", V1:"Verify Code", V2:"Enter code.", V3:"Validate", P1:"Limit Reached", P2:"Activate", P3:"Exit", S1:"Setup", S2:"Next", C1:"Register", C2:"Add", C3:"Save", C4:"START", U1:"CONFIRM", U2:"END", R1:"Get PDF", R2:"Exit" },
+                es: { L1:"Acceso", L2:"Entrar", V1:"Validar", V2:"Ingrese código.", V3:"Validar", P1:"Límite", P2:"Activar", P3:"Salir", S1:"Configurar", S2:"Siguiente", C1:"Registro", C2:"Añadir", C3:"Guardar", C4:"INICIAR", U1:"CONFIRMAR", U2:"FINALIZAR", R1:"Bajar PDF", R2:"Salir" }
             };
-
             window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); };
-            window.TR = (l) => { _idioma=l; for(let k in _tr[l]){ let el=document.getElementById(k); if(el) el.innerText=_tr[l][k]; } };
-
+            window.TR = (a) => { for(let k in _0x0d1e[a]) { if(document.getElementById(k)) document.getElementById(k).innerText = _0x0d1e[a][k]; } };
             window.V = async function() {
-                let e = document.getElementById('uE').value.trim().toLowerCase();
-                if(!e.endsWith('@gmail.com')) return alert("Use Gmail.");
+                let v = document.getElementById('uE').value.trim().toLowerCase();
+                if(!v.includes('@')) return alert("E-mail inválido");
+                _0x2b3c = v;
                 try {
-                    let r = await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(e));
+                    let r = await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c));
                     let d = await r.json();
-                    if(d.count >= 3) return window.GO('pay');
-                    _code = d.codigo.toString();
-                    await emailjs.send(_0x4f2a.s, _0x4f2a.t, { to_email: e, validation_code: _code });
-                    window.GO('verify');
-                } catch(err) { alert("Erro."); }
+                    _0x9c0d = d.cupom_resgatado || false;
+                    if(d.count >= 3) { window.GO('pay'); return; }
+                    _0x1a2b = d.codigo.toString();
+                    await emailjs.send(_0x4f2a.s, _0x4f2a.t, { to_email: _0x2b3c, validation_code: _0x1a2b });
+                    alert("Código enviado!"); window.GO('verify');
+                } catch(e) { alert("Erro de conexão."); }
             };
-
-            window.C = () => { if(document.getElementById('iC').value === _code || document.getElementById('iC').value === "9999") window.GO('setup'); };
-            window.N = () => { _title = document.getElementById('tE').value || "Urna"; window.GO('setupCargo'); };
-            window.K = () => { if(document.getElementById('cup').value === 'orion001') window.GO('setup'); };
-            
+            window.C = () => {
+                const val = document.getElementById('iC').value.trim();
+                if(val === _0x1a2b || val === "9999") window.GO('setup');
+                else alert("Código incorreto!");
+            };
+            window.K = async () => {
+                let c = document.getElementById('cup').value.trim();
+                if(c === _0x51a2[0]) { alert("Acesso Administrador!"); window.GO('setup'); return; }
+                if(c.toUpperCase() === _0x51a2[1]) {
+                    if(_0x9c0d) return alert("Cupom já utilizado.");
+                    try {
+                        await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c)+'&action=use_coupon');
+                        alert("Liberado!"); window.GO('setup');
+                    } catch(e) { alert("Erro."); }
+                } else alert("Inválido.");
+            };
+            window.N = () => { _0x8b9c = document.getElementById('tE').value || "Eleição"; window.GO('setupCargo'); };
             window.A = () => {
-                if(!_temp) _temp = { n: document.getElementById('nC').value, c: [] };
-                let v = document.getElementById('nCand').value; if(!v) return;
-                _temp.c.push({ n: v, v: 0 });
-                document.getElementById('listTemp').innerText += " ["+v+"] ";
-                document.getElementById('nCand').value = '';
+                if(!_0x4d5e) _0x4d5e = { n: document.getElementById('nC').value, q: parseInt(document.getElementById('qV').value), c: [] };
+                let nc = document.getElementById('nCand').value;
+                if(!nc) return alert("Vazio");
+                _0x4d5e.c.push({ n: nc, f: _0x5e6f, v: 0 });
+                document.getElementById('listTemp').innerHTML += " ["+nc+"] ";
+                document.getElementById('nCand').value = ''; _0x5e6f = '';
             };
-            window.SAVE = () => { if(_temp) _data.push(_temp); _temp=null; document.getElementById('nC').value=''; document.getElementById('listTemp').innerText=''; alert("Salvo!"); };
-            window.START = () => { if(_temp) _data.push(_temp); window.GO('urna'); _idx=0; window.M(); window.TR(_idioma); };
-            
+            document.getElementById('fCand').addEventListener('change', e => { 
+                let r = new FileReader(); r.onload = x => _0x5e6f = x.target.result; r.readAsDataURL(e.target.files[0]); 
+            });
+            window.SAVE = () => { if(_0x4d5e) _0x3c4d.push(_0x4d5e); _0x4d5e = null; document.getElementById('nC').value=''; document.getElementById('listTemp').innerHTML=''; alert("Salvo!"); };
+            window.START = () => { if(_0x4d5e) _0x3c4d.push(_0x4d5e); _0x7a8b=0; window.M(); window.GO('urna'); };
             window.M = () => {
-                let c = _data[_idx]; if(!c) return; document.getElementById('uT').innerText = c.n;
-                let g = document.getElementById('gridUrna'); g.innerHTML = '';
+                let c = _0x3c4d[_0x7a8b]; document.getElementById('uT').innerText = c.n;
+                let g = document.getElementById('grid'); g.innerHTML = '';
                 c.c.forEach((can, i) => {
                     let d = document.createElement('div'); d.className = 'card-candidato';
-                    d.innerHTML = '<strong>'+can.n+'</strong>';
-                    d.onclick = () => { _sel = [i]; window.UI(); }; g.appendChild(d);
+                    d.innerHTML = (can.f ? '<img src="'+can.f+'" class="foto-cand"><br>' : '') + '<strong>'+can.n+'</strong>';
+                    d.onclick = () => {
+                        if(_0x6f7a.includes(i)) { _0x6f7a = _0x6f7a.filter(x=>x!==i); d.classList.remove('selected'); }
+                        else if(_0x6f7a.length < c.q) { _0x6f7a.push(i); d.classList.add('selected'); }
+                    };
+                    g.appendChild(d);
                 });
             };
-            window.UI = () => { document.querySelectorAll('.card-candidato').forEach((card, i) => { if(_sel.includes(i)) card.classList.add('selected'); else card.classList.remove('selected'); }); };
-            
             window.VOTE = () => {
-                if(!_sel.length) return alert("Escolha!");
-                _data[_idx].c[_sel[0]].v++; _idx++;
-                if(_idx < _data.length) { _sel=[]; window.M(); } 
-                else { alert("OK!"); _idx=0; _sel=[]; window.M(); }
+                if(_0x6f7a.length === 0) return alert("Vote!");
+                _0x6f7a.forEach(i => _0x3c4d[_0x7a8b].c[i].v++);
+                _0x7a8b++;
+                if(_0x7a8b < _0x3c4d.length) window.M(); else { alert("Confirmado!"); _0x7a8b = 0; _0x6f7a = []; window.M(); }
             };
-
-            // --- BOTÃO ENCERRAR (REPARADO) ---
-            window.END = () => {
-                if(!confirm(_tr[_idioma].alert_end)) return;
-                
-                document.getElementById('pT_header').innerText = _title.toUpperCase();
-                document.getElementById('audit').innerText = "Emitido em: " + new Date().toLocaleString();
+            window.END = async () => {
+                if(!confirm("Encerrar?")) return;
+                try { await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c)+'&action=increment'); } catch(e){}
+                document.getElementById('pT').innerText = _0x8b9c;
                 let out = document.getElementById('pC'); out.innerHTML = '';
-
-                _data.forEach(cargo => {
-                    let sorted = [...cargo.c].sort((a,b) => b.v - a.v);
-                    let h = `<div style="page-break-inside: avoid; margin-bottom: 30px;">
-                        <table class="pdf-table">
-                            <thead><tr><th style="width: 70%;">${cargo.n.toUpperCase()}</th><th style="width: 30%; text-align: right;">VOTOS</th></tr></thead>
-                            <tbody>`;
-                    sorted.forEach((can, i) => {
-                        const win = (i === 0 && can.v > 0);
-                        h += `<tr class="${win ? 'winner-row' : ''}"><td>${win ? '🏆 ' : ''}${can.n}</td><td style="text-align: right;"><b>${can.v}</b></td></tr>`;
+                _0x3c4d.forEach(cargo => {
+                    let html = '<div class="cargo-container"><div class="cargo-header">'+cargo.n+'</div>';
+                    cargo.c.sort((a,b) => b.v - a.v).forEach(cand => {
+                        html += '<div class="candidato-linha"><span>'+cand.n+'</span><span class="votos-tag">'+cand.v+' votos</span></div>';
                     });
-                    h += `</tbody></table></div>`;
-                    out.innerHTML += h;
+                    html += '</div>';
+                    out.innerHTML += html;
                 });
                 window.GO('res');
-                window.TR(_idioma);
             };
-
             window.PDF = () => {
                 const element = document.getElementById('areaImpressao');
-                html2pdf().set({
-                    margin: 0, filename: 'Resultado.pdf',
-                    html2canvas: { scale: 3, useCORS: true, width: 800, windowWidth: 800 },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                }).from(element).save();
+                const opt = { margin: 10, filename: 'Resultado.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, scrollY: 0 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+                html2pdf().set(opt).from(element).save();
             };
-            window.TR('pt');
+            window.ENVIAR_SUGESTAO = () => {
+                let m = document.getElementById('txtSugestao').value;
+                if(!m) return;
+                emailjs.send(_0x4f2a.s, _0x4f2a.t, { to_email: 'paulosmb1972@gmail.com', validation_code: 'FEEDBACK: '+m });
+                alert("Enviado!");
+            };
         })();
     </script>
 </body>
