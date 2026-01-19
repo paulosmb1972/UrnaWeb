@@ -38,7 +38,7 @@
         .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 10px; text-align: left; }
         .pdf-table td { padding: 10px; border: 1px solid #eee; vertical-align: middle; }
-        .pdf-img { width: 40px; height: 40px; border-radius: 5px; object-fit: cover; background: #eee; }
+        .pdf-img { width: 40px; height: 40px; border-radius: 5px; object-fit: cover; }
         .winner-row { background-color: #e8f8f5 !important; font-weight: bold; }
 
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
@@ -62,7 +62,6 @@
 
     <div id="pay" class="screen">
         <h2 id="P1">Limite de Testes Atingido</h2>
-        <div class="info-box" id="H_PAY">Escolha um plano ou use um cupom.</div>
         <button onclick="window.open('https://mpago.la/2maEAFx')" style="background:var(--success)" id="B1">R$ 30,00</button>
         <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9" id="B2">R$ 500,00</button>
         <input id="cup" type="text">
@@ -104,7 +103,7 @@
             <div id="areaImpressao">
                 <div class="pdf-header"><h1 id="pdf_h1"></h1></div>
                 <div id="pC"></div>
-                <div id="pdf-footer-audit" class="pdf-footer" style="text-align:center; font-size:10px; margin-top:20px; color:#999;"></div>
+                <div id="audit" style="text-align:center; font-size:10px; margin-top:10px; color:#999"></div>
             </div>
         </div>
         <button onclick="window.PDF()" id="B_PDF" style="background:var(--success); margin-top:20px">Baixar Relatório PDF (A4)</button>
@@ -116,7 +115,7 @@
         <button onclick="location.reload()" style="background:var(--danger)">Sair</button>
     </div>
 
-    <div id="verify" class="screen"><h2 id="V1">Verificar</h2><input id="iC" type="text" maxlength="4"><button onclick="window.C()" id="V3">OK</button></div>
+    <div id="verify" class="screen"><h2 id="V1">Verificar</h2><input id="iC" type="text" maxlength="4"><button onclick="window.C()">OK</button></div>
     <div id="setup" class="screen"><h2 id="S1">Título</h2><input id="tE" type="text"><button onclick="window.N()">Próximo</button></div>
 
     <script>
@@ -167,7 +166,7 @@
             window.END = () => { 
                 if(!confirm(_tr[_idioma].alert_end)) return;
                 document.getElementById('pdf_h1').innerText = _title.toUpperCase(); 
-                document.getElementById('pdf-footer-audit').innerText = "Audit: " + new Date().toLocaleString();
+                document.getElementById('audit').innerText = "Audit: " + new Date().toLocaleString();
                 let out = document.getElementById('pC'); out.innerHTML = ''; 
                 _data.forEach(cargo => { 
                     let sorted = [...cargo.c].sort((a,b) => b.v - a.v); 
@@ -175,7 +174,7 @@
                     sorted.forEach((can, i) => { 
                         const isWin = i === 0 && can.v > 0;
                         h += `<tr class="${isWin ? 'winner-row' : ''}">
-                                <td style="width:50px">${can.f ? `<img src="${can.f}" class="pdf-img">` : ''}</td>
+                                <td style="width:40px">${can.f ? `<img src="${can.f}" class="pdf-img">` : ''}</td>
                                 <td>${can.n}</td>
                                 <td style="text-align:right"><b>${can.v}</b></td>
                               </tr>`; 
