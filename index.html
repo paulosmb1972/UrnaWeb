@@ -10,7 +10,7 @@
         :root { --primary: #1abc9c; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; }
         body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         .screen { display: none; padding: 20px; width: 100%; max-width: 800px; box-sizing: border-box; }
-        .active { display: block; animation: fadeIn 0.4s; }
+        .active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
         h2 { text-align: center; color: var(--primary); }
@@ -19,25 +19,26 @@
         input, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
 
-        /* CONFIGURAÇÃO DO RELATÓRIO PDF (A4 NOTEBOOK/CELULAR) */
-        .preview-scroll { width: 100%; overflow-x: auto; background: #555; padding: 10px 0; border-radius: 8px; }
+        /* --- CONFIGURAÇÃO DO RELATÓRIO PDF (A4 UNIVERSAL) --- */
+        .preview-scroll { width: 100%; overflow-x: auto; background: #555; padding: 15px 0; border-radius: 8px; }
         #areaImpressao { 
             background: white !important; 
             color: #2c3e50 !important; 
             padding: 20mm; 
             width: 170mm; 
             margin: 0 auto;
-            min-height: 250mm;
+            border-radius: 0;
         }
         .pdf-header { text-align: center; border-bottom: 3px solid #0a2a66; padding-bottom: 15px; margin-bottom: 25px; }
         .pdf-header h1 { color: #0a2a66 !important; margin: 0; font-size: 24px; text-transform: uppercase; }
         
         .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; border: 1px solid #bdc3c7; }
-        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 10px; text-align: left; }
-        .pdf-table td { padding: 8px 10px; border: 1px solid #ecf0f1; color: #34495e !important; }
+        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 10px; text-align: left; font-size: 14px; }
+        .pdf-table td { padding: 8px 10px; border: 1px solid #ecf0f1; color: #34495e !important; font-size: 14px; }
         .winner-row { background-color: #e8f8f5 !important; font-weight: bold; color: #16a085 !important; }
-        /* ---------------------------------------------------- */
+        .pdf-footer { margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; text-align: center; font-size: 10px; color: #95a5a6 !important; }
 
+        /* URNA */
         .grid-urna { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; }
         .card-candidato { background: white; color: #333; padding: 15px; border-radius: 12px; text-align: center; border: 4px solid transparent; cursor: pointer; }
         .card-candidato.selected { border-color: var(--accent); background: #fdf2a7; }
@@ -56,17 +57,18 @@
 
     <div id="login" class="screen active">
         <h2 id="L1">Acesso ao Sistema</h2>
+        <div class="info-box" id="H_LOGIN">Use seu Gmail para acessar.</div>
         <input id="uE" type="email" placeholder="Gmail...">
         <button onclick="window.V()" id="L2">Entrar</button>
     </div>
 
     <div id="setupCargo" class="screen">
-        <h2 id="C1">Cadastro de Cargos</h2>
-        <div class="info-box" id="H_CARGO">Cadastre o cargo e adicione os candidatos. Salve cada cargo individualmente.</div>
+        <h2 id="C1">Cadastro</h2>
+        <div class="info-box" id="H_CARGO">Cadastre os cargos e candidatos. Salve cada cargo.</div>
         <input id="nC" type="text" placeholder="Nome do Cargo">
         <input id="nCand" type="text" placeholder="Candidato">
         <button onclick="window.A()" id="C2">Adicionar</button>
-        <div id="listTemp" style="text-align:center; color:var(--accent); margin:10px;"></div>
+        <div id="listTemp" style="text-align:center; margin:10px; color:var(--accent)"></div>
         <button onclick="window.SAVE()" id="C3" style="background:var(--success)">Salvar Cargo</button>
         <button onclick="window.START()" id="C4" style="background:var(--primary); margin-top:30px">INICIAR VOTAÇÃO</button>
     </div>
@@ -84,16 +86,16 @@
                 <div class="pdf-header"><h1 id="pT_header"></h1></div>
                 <p style="text-align:center; font-weight:bold;" id="RT">Relatório de Apuração Final</p>
                 <div id="pC"></div>
-                <div id="audit" style="text-align:center; font-size:10px; color:#999; margin-top:20px;"></div>
+                <div id="audit" class="pdf-footer"></div>
             </div>
         </div>
         <button onclick="window.PDF()" id="R1" style="background:var(--success); margin-top:20px">Baixar PDF Oficial (A4)</button>
-        <button onclick="location.reload()" id="R2" style="background:var(--danger)">Sair</button>
+        <button onclick="location.reload()">Sair</button>
     </div>
 
-    <div id="verify" class="screen"><h2>Verificar</h2><input id="iC" type="text" maxlength="4"><button onclick="window.C()">Validar</button></div>
-    <div id="setup" class="screen"><h2>Configurar</h2><input id="tE" type="text" placeholder="Título da Eleição"><button onclick="window.N()">Próximo</button></div>
-    <div id="pay" class="screen"><h2>Limite</h2><button onclick="window.open('https://mpago.la/2maEAFx')">Pagar</button><input id="cup" type="text" placeholder="Cupom..."><button onclick="window.K()">Ativar</button></div>
+    <div id="verify" class="screen"><h2>Validar</h2><input id="iC" type="text" maxlength="4"><button onclick="window.C()">OK</button></div>
+    <div id="setup" class="screen"><h2>Título</h2><input id="tE" type="text" placeholder="Título..."><button onclick="window.N()">Próximo</button></div>
+    <div id="pay" class="screen"><h2>Limite</h2><button onclick="window.open('https://mpago.la/2maEAFx')">Pagar</button><input id="cup" type="text"><button onclick="window.K()">Ativar</button></div>
 
     <script>
         (function(){
@@ -102,13 +104,13 @@
             let _code='', _idioma='pt', _data=[], _temp=null, _sel=[], _idx=0, _title='';
             
             const _tr = {
-                pt: { L1: "Acesso ao Sistema", L2: "Entrar", RT: "Relatório de Apuração Final", R1: "Baixar PDF Oficial (A4)", C4: "INICIAR VOTAÇÃO", U1: "CONFIRMAR VOTO", U2: "ENCERRAR ELEIÇÃO", alert_end: "Encerrar votação?" },
-                en: { L1: "System Access", L2: "Login", RT: "Final Tally Report", R1: "Download Official PDF (A4)", C4: "START VOTING", U1: "CONFIRM VOTE", U2: "END ELECTION", alert_end: "End election?" },
-                es: { L1: "Acceso", L2: "Entrar", RT: "Reporte Final", R1: "Bajar PDF Oficial (A4)", C4: "INICIAR VOTACIÓN", U1: "CONFIRMAR VOTO", U2: "FINALIZAR ELECCIÓN", alert_end: "¿Finalizar?" }
+                pt: { L1:"Acesso ao Sistema", L2:"Entrar", RT:"Relatório de Apuração Final", R1:"Baixar PDF Oficial (A4)", C4:"INICIAR VOTAÇÃO", U1:"CONFIRMAR VOTO", U2:"ENCERRAR ELEIÇÃO", alert_end:"Deseja encerrar a eleição?" },
+                en: { L1:"System Access", L2:"Login", RT:"Final Tally Report", R1:"Download PDF (A4)", C4:"START VOTING", U1: "CONFIRM VOTE", U2: "END ELECTION", alert_end: "End election?" },
+                es: { L1:"Acceso", L2:"Entrar", RT:"Reporte Final", R1:"Bajar PDF (A4)", C4:"INICIAR VOTACIÓN", U1: "CONFIRMAR VOTO", U2: "FINALIZAR", alert_end: "¿Finalizar?" }
             };
 
             window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); };
-            window.TR = (l) => { _idioma = l; for(let k in _tr[l]){ let el = document.getElementById(k); if(el) el.innerText = _tr[l][k]; } };
+            window.TR = (l) => { _idioma=l; for(let k in _tr[l]){ let el=document.getElementById(k); if(el) el.innerText=_tr[l][k]; } };
 
             window.V = async function() {
                 let e = document.getElementById('uE').value.trim().toLowerCase();
@@ -124,26 +126,21 @@
             };
 
             window.C = () => { if(document.getElementById('iC').value === _code || document.getElementById('iC').value === "9999") window.GO('setup'); };
-            window.N = () => { _title = document.getElementById('tE').value || "Urna Digital"; window.GO('setupCargo'); };
+            window.N = () => { _title = document.getElementById('tE').value || "Urna"; window.GO('setupCargo'); };
             window.K = () => { if(document.getElementById('cup').value === 'orion001') window.GO('setup'); };
             
             window.A = () => {
                 if(!_temp) _temp = { n: document.getElementById('nC').value, c: [] };
-                let val = document.getElementById('nCand').value; if(!val) return;
-                _temp.c.push({ n: val, v: 0 });
-                document.getElementById('listTemp').innerText += " ["+val+"] ";
+                let v = document.getElementById('nCand').value; if(!v) return;
+                _temp.c.push({ n: v, v: 0 });
+                document.getElementById('listTemp').innerText += " ["+v+"] ";
                 document.getElementById('nCand').value = '';
             };
-            window.SAVE = () => { if(_temp) _data.push(_temp); _temp=null; document.getElementById('nC').value=''; document.getElementById('listTemp').innerText=''; alert("OK!"); };
-            
-            window.START = () => { 
-                if(_temp) _data.push(_temp); 
-                if(_data.length === 0) return alert("Adicione cargos!");
-                _idx=0; window.M(); window.GO('urna'); window.TR(_idioma);
-            };
+            window.SAVE = () => { if(_temp) _data.push(_temp); _temp=null; document.getElementById('nC').value=''; document.getElementById('listTemp').innerText=''; alert("Salvo!"); };
+            window.START = () => { if(_temp) _data.push(_temp); window.GO('urna'); _idx=0; window.M(); window.TR(_idioma); };
             
             window.M = () => {
-                let c = _data[_idx]; document.getElementById('uT').innerText = c.n;
+                let c = _data[_idx]; if(!c) return; document.getElementById('uT').innerText = c.n;
                 let g = document.getElementById('gridUrna'); g.innerHTML = '';
                 c.c.forEach((can, i) => {
                     let d = document.createElement('div'); d.className = 'card-candidato';
@@ -160,7 +157,7 @@
                 else { alert("OK!"); _idx=0; _sel=[]; window.M(); }
             };
 
-            // --- CORREÇÃO DEFINITIVA DO BOTÃO ENCERRAR ---
+            // --- BOTÃO ENCERRAR (REPARADO) ---
             window.END = () => {
                 if(!confirm(_tr[_idioma].alert_end)) return;
                 
@@ -170,11 +167,15 @@
 
                 _data.forEach(cargo => {
                     let sorted = [...cargo.c].sort((a,b) => b.v - a.v);
-                    let h = `<table class="pdf-table"><thead><tr><th colspan="2">${cargo.n.toUpperCase()}</th></tr></thead><tbody>`;
+                    let h = `<div style="page-break-inside: avoid; margin-bottom: 30px;">
+                        <table class="pdf-table">
+                            <thead><tr><th style="width: 70%;">${cargo.n.toUpperCase()}</th><th style="width: 30%; text-align: right;">VOTOS</th></tr></thead>
+                            <tbody>`;
                     sorted.forEach((can, i) => {
-                        h += `<tr class="${i===0 && can.v > 0 ? 'winner-row' : ''}"><td>${i===0 ? '🏆 ' : ''}${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`;
+                        const win = (i === 0 && can.v > 0);
+                        h += `<tr class="${win ? 'winner-row' : ''}"><td>${win ? '🏆 ' : ''}${can.n}</td><td style="text-align: right;"><b>${can.v}</b></td></tr>`;
                     });
-                    h += `</tbody></table>`;
+                    h += `</tbody></table></div>`;
                     out.innerHTML += h;
                 });
                 window.GO('res');
