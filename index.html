@@ -18,24 +18,31 @@
         
         input, button, textarea { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        textarea { height: 120px; resize: none; font-family: inherit; color: #333; background: #fff; }
+        textarea { height: 120px; resize: none; font-family: inherit; color: #333; background: #fff; border: 2px solid var(--primary); }
 
-        .pay-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; text-align: center; }
         .foto-container { border: 2px dashed var(--primary); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.05); }
-        .img-preview { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; display: none; margin: 10px auto; border: 2px solid var(--accent); }
+        .img-preview { width: 110px; height: 110px; object-fit: cover; border-radius: 10px; display: none; margin: 10px auto; border: 2px solid var(--accent); }
 
         /* RESULTADO A5 */
         .resultado-wrapper { width: 100%; overflow-x: auto; background: #fff; border-radius: 8px; margin-top: 10px; }
         #areaImpressao { width: 540px; margin: 0 auto; background: white !important; color: #333 !important; padding: 30px; box-sizing: border-box; }
-        .pdf-header { text-align: center; border-bottom: 3px solid #0a2a66; padding-bottom: 10px; margin-bottom: 20px; }
         .pdf-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 10px; text-align: left; font-size: 13px; }
-        .pdf-table td { padding: 10px; border-bottom: 1px solid #eee; vertical-align: middle; word-wrap: break-word; font-size: 13px; color: #333 !important; }
-        .pdf-thumb { width: 45px; height: 45px; border-radius: 5px; object-fit: cover; }
+        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 10px; text-align: left; }
+        .pdf-table td { padding: 10px; border-bottom: 1px solid #eee; vertical-align: middle; color: #333 !important; }
         .winner-row { background-color: #e8f8f5 !important; font-weight: bold; }
 
-        /* AREA DE SUGESTÕES */
-        .feedback-box { margin-top: 35px; background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 12px; border: 1px solid var(--accent); width: 100%; box-sizing: border-box; }
+        /* RETÂNGULO DE SUGESTÕES E PEDIDOS - DESTAQUE TOTAL */
+        .feedback-section { 
+            margin-top: 40px; 
+            background: rgba(255, 255, 255, 0.08); 
+            padding: 25px; 
+            border-radius: 15px; 
+            border: 2px solid var(--accent); 
+            width: 100%; 
+            box-sizing: border-box;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .feedback-icon { font-size: 50px; display: block; text-align: center; margin-bottom: 10px; }
 
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
         .lang-box button { width: auto; padding: 6px 12px; background: rgba(0,0,0,0.6); font-size: 11px; border: 1px solid var(--primary); white-space: nowrap; }
@@ -51,84 +58,61 @@
 
     <div id="login" class="screen active">
         <h2 id="L1">Acesso</h2>
-        <div class="info-box" id="H_LOGIN"></div>
+        <div class="info-box" id="H_LOGIN">Informe seu Gmail para validação. Você tem direito a 3 eleições grátis.</div>
         <input id="uE" type="email">
         <button onclick="window.V()" id="L2">Entrar</button>
     </div>
 
-    <div id="verify" class="screen">
-        <h2 id="V1">Validar</h2>
-        <div class="info-box" id="H_VERIFY"></div>
-        <input id="iC" type="text" maxlength="4">
-        <button onclick="window.C()" id="V3">Confirmar</button>
-    </div>
+    <div id="verify" class="screen"><h2 id="V1">Código</h2><input id="iC" type="text" maxlength="4"><button onclick="window.C()" id="V3">Validar</button></div>
 
-    <div id="setup" class="screen">
-        <h2 id="S1">Configuração</h2>
-        <div class="info-box" id="H_SETUP"></div>
-        <input id="tE" type="text">
-        <button onclick="window.N()" id="S2">Próximo</button>
-    </div>
+    <div id="setup" class="screen"><h2 id="S1">Título</h2><div class="info-box" id="H_SETUP">Dê um nome para a eleição.</div><input id="tE" type="text"><button onclick="window.N()" id="S2">Próximo</button></div>
 
     <div id="setupCargo" class="screen">
-        <h2 id="C1">Candidatos</h2>
-        <div class="info-box" id="H_CARGO"></div>
+        <h2 id="C1">Cadastro</h2>
+        <div class="info-box" id="H_CARGO">Cadastre o cargo e os candidatos com foto.</div>
         <input id="nC" type="text">
-        <hr>
         <input id="nCand" type="text">
         <div class="foto-container" onclick="document.getElementById('fileIn').click()">
-            <span id="L_FOTO_ICON" style="font-size:35px">📷</span><br>
-            <span id="INSTR_FOTO">Anexar</span>
+            <span id="L_FOTO_ICON" style="font-size:35px">📷</span><br><span id="INSTR_FOTO">Anexar Foto</span>
             <img id="imgPrev" class="img-preview">
         </div>
         <input type="file" id="fileIn" hidden accept="image/*" onchange="window.PREV(this)">
         <button onclick="window.A()" id="C2">Adicionar</button>
-        <div id="listTemp" style="text-align:center; color:var(--accent); margin:10px; font-weight:bold;"></div>
-        <button onclick="window.SAVE()" id="C3" style="background:var(--success)">Salvar</button>
-        <button onclick="window.START()" id="C4" style="background:var(--primary); margin-top:20px">INICIAR</button>
+        <div id="listTemp" style="text-align:center; color:var(--accent);"></div>
+        <button onclick="window.SAVE()" id="C3" style="background:var(--success)">Salvar Cargo</button>
+        <button onclick="window.START()" id="C4" style="background:var(--primary); margin-top:20px">INICIAR VOTAÇÃO</button>
     </div>
 
     <div id="urna" class="screen">
         <h2 id="uT"></h2>
-        <div class="info-box" id="H_URNA"></div>
         <div id="gridUrna" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px;"></div>
-        <button onclick="window.VOTE()" id="U1" style="height:70px; background:var(--success); margin-top:20px;">VOTAR</button>
+        <button onclick="window.VOTE()" id="U1" style="height:70px; background:var(--success); margin-top:20px;">CONFIRMAR VOTO</button>
         <button onclick="window.END()" id="U2" style="background:var(--danger); margin-top:30px">ENCERRAR</button>
     </div>
 
     <div id="res" class="screen">
-        <h2 id="R_TITLE">Resultado</h2>
-        <div class="info-box" id="H_RES"></div>
+        <h2 id="R_TITLE">Resultado Final</h2>
         <div class="resultado-wrapper">
             <div id="areaImpressao">
-                <div class="pdf-header"><h1 id="pdf_h1"></h1></div>
+                <div style="text-align:center; border-bottom:3px solid #0a2a66; padding-bottom:10px; margin-bottom:15px;"><h1 id="pdf_h1"></h1></div>
                 <div id="pC"></div>
-                <p id="pdf-audit" style="text-align:center; font-size:10px; color:#999; margin-top:20px; border-top:1px solid #eee; padding-top:10px;"></p>
+                <p id="pdf-audit" style="text-align:center; font-size:10px; color:#999;"></p>
             </div>
         </div>
-        <button onclick="window.PDF()" id="B_PDF" style="background:var(--success); margin-top:20px">PDF (A5)</button>
+        <button onclick="window.PDF()" id="B_PDF" style="background:var(--success); margin-top:20px">Baixar Relatório (Folha A5)</button>
         
-        <div class="feedback-box">
-            <div style="text-align:center; font-size:30px;">💬</div>
-            <h3 id="F1" style="text-align:center; margin-top:0;"></h3>
-            <div class="info-box" id="H_FEED"></div>
+        <div class="feedback-section" id="feedbackArea">
+            <span class="feedback-icon">💬</span>
+            <h3 id="F1" style="text-align:center; margin:0; color:var(--accent);">Sugestões e Pedidos</h3>
+            <div class="info-box" id="H_FEED">Sua opinião ajuda a melhorar o sistema. Deixe seu comentário ou pedido de melhoria abaixo.</div>
             <textarea id="txtSugestao"></textarea>
-            <button onclick="window.ENVIAR_FEEDBACK()" id="F2" style="background:var(--accent); color:black">Enviar</button>
+            <button onclick="window.ENVIAR_FEEDBACK()" id="F2" style="background:var(--accent); color:black">Enviar Mensagem</button>
         </div>
 
         <button onclick="location.reload()" style="background:var(--danger); margin-top:30px">Sair</button>
     </div>
 
-    <div id="pay" class="screen">
-        <h2 id="P1">Limite</h2>
-        <div class="info-box" id="H_PAY"></div>
-        <div class="pay-card">
-            <button onclick="window.open('https://mpago.la/2maEAFx')" style="background:var(--success)">R$ 30</button>
-            <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9">R$ 500</button>
-            <input id="cup" type="text">
-            <button onclick="window.K()" id="P2">Ativar</button>
-        </div>
-    </div>
+    <div id="pay" class="screen"><h2 id="P1">Limite</h2><button onclick="window.open('https://mpago.la/2maEAFx')">Pagar R$ 30</button></div>
 
     <script>
         (function(){
@@ -138,53 +122,73 @@
             
             const _tr = {
                 pt: { 
-                    L1: "Acesso ao Sistema", H_LOGIN: "Atenção: Use e-mail @gmail.com. Você tem 3 eleições grátis para testes.", uE: "Digite seu e-mail @gmail.com aqui...", L2: "Entrar",
-                    V1: "Verificar Código", H_VERIFY: "Insira o código de 4 dígitos enviado ao seu e-mail agora para validar seu acesso.", iC: "Digite o código aqui...", V3: "Confirmar",
-                    S1: "Nome da Eleição", H_SETUP: "Dê um título para esta votação (Ex: Eleição Igreja). Aparecerá no PDF.", tE: "Digite o nome da eleição aqui...", S2: "Próximo Passo",
-                    C1: "Cadastro de Candidatos", H_CARGO: "Insira o Cargo (ex: Pastor), o Nome e a Foto. Clique em Adicionar para cada candidato.", nC: "Nome do Cargo (ex: Presidente)...", nCand: "Nome do Candidato...", INSTR_FOTO: "Clique para anexar foto", C2: "Adicionar Candidato", C3: "Salvar Cargo", C4: "INICIAR VOTAÇÃO",
-                    H_URNA: "Toque no card do candidato para selecionar e depois clique no botão verde.", U1: "CONFIRMAR VOTO", U2: "ENCERRAR ELEIÇÃO",
-                    R_TITLE: "Resultado Final", H_RES: "Confira a apuração abaixo. Você pode baixar o relatório oficial no formato A5.", B_PDF: "Baixar Relatório (A5)",
-                    F1: "Sugestões e Pedidos", H_FEED: "Sua opinião melhora o sistema. Deixe sua sugestão ou pedido de nova função abaixo.", txtSugestao: "Escreva sua sugestão ou pedido aqui...", F2: "Enviar Mensagem",
-                    H_PAY: "Limite atingido. Adquira um plano ou use um cupom.", cup: "Código do cupom...", P2: "Ativar Cupom", alert_voto: "Voto Confirmado!", alert_feedback: "Mensagem enviada!", alert_end: "Deseja encerrar?"
+                    L1: "Acesso ao Sistema", L2: "Entrar", H_LOGIN: "Atenção: Use e-mail @gmail.com. Você tem 3 eleições grátis para testes.", uE: "Digite seu Gmail...",
+                    V1: "Validar Código", V3: "Confirmar", H_VERIFY: "Insira o código de 4 dígitos enviado ao seu e-mail.", iC: "Digite o código...",
+                    S1: "Nome da Eleição", S2: "Próximo", H_SETUP: "Dê um título para a eleição (Ex: Igreja Terceira).", tE: "Nome da eleição...",
+                    C1: "Cadastro", C2: "Adicionar", C3: "Salvar Cargo", C4: "INICIAR VOTAÇÃO", H_CARGO: "Insira o cargo, nome e foto. Clique em adicionar para cada candidato.", nC: "Cargo (ex: Pastor)...", nCand: "Nome do Candidato...", INSTR_FOTO: "Anexar Foto",
+                    U1: "CONFIRMAR VOTO", U2: "ENCERRAR", R_TITLE: "Resultado Final", B_PDF: "Baixar Relatório (A5)",
+                    F1: "Sugestões e Pedidos", H_FEED: "Sua opinião melhora o sistema. Deixe seu comentário ou pedido de melhoria abaixo.", txtSugestao: "Escreva aqui sua sugestão ou pedido...", F2: "Enviar Mensagem",
+                    alert_feedback: "Sua mensagem foi enviada! Obrigado.", alert_voto: "Voto Confirmado!", alert_end: "Encerrar eleição?"
                 },
                 en: { 
-                    L1: "System Access", H_LOGIN: "Note: Use @gmail.com email. You have 3 free test elections.", uE: "Enter your @gmail.com email here...", L2: "Login",
-                    V1: "Verify Code", H_VERIFY: "Enter the 4-digit code sent to your email to validate access.", iC: "Enter code here...", V3: "Confirm",
-                    S1: "Election Title", H_SETUP: "Give a title for this vote (Ex: Church Election). Will appear in PDF.", tE: "Enter election name here...", S2: "Next Step",
-                    C1: "Candidate Registration", H_CARGO: "Enter Position (ex: Pastor), Name, and Photo. Click Add for each candidate.", nC: "Position (ex: President)...", nCand: "Candidate Name...", INSTR_FOTO: "Click to attach photo", C2: "Add Candidate", C3: "Save Position", C4: "START VOTING",
-                    H_URNA: "Tap the candidate card to select and then click the green button.", U1: "CONFIRM VOTE", U2: "END ELECTION",
-                    R_TITLE: "Final Result", H_RES: "Check the results below. You can download the A5 report.", B_PDF: "Download (A5)",
-                    F1: "Suggestions & Requests", H_FEED: "Your feedback improves the system. Leave your suggestion or request below.", txtSugestao: "Write your suggestion here...", F2: "Send Message",
-                    H_PAY: "Limit reached. Buy a plan or use a coupon.", cup: "Coupon code...", P2: "Activate Coupon", alert_voto: "Vote Confirmed!", alert_feedback: "Message sent!", alert_end: "End election?"
+                    L1: "System Access", L2: "Login", H_LOGIN: "Note: Use @gmail.com email. 3 free test elections included.", uE: "Enter Gmail...",
+                    V1: "Verify Code", V3: "Confirm", H_VERIFY: "Enter the 4-digit code sent to your email.", iC: "Enter code...",
+                    S1: "Election Title", S2: "Next", H_SETUP: "Give a name to the election (Ex: Church Election).", tE: "Election name...",
+                    C1: "Registration", C2: "Add", C3: "Save Position", C4: "START VOTING", H_CARGO: "Enter position, name and photo. Click add for each candidate.", nC: "Position (ex: Pastor)...", nCand: "Candidate name...", INSTR_FOTO: "Attach Photo",
+                    U1: "CONFIRM VOTE", U2: "END", R_TITLE: "Final Result", B_PDF: "Download (A5)",
+                    F1: "Suggestions & Requests", H_FEED: "Your feedback improves the system. Leave your comment or request below.", txtSugestao: "Write your suggestion here...", F2: "Send Message",
+                    alert_feedback: "Message sent! Thank you.", alert_voto: "Vote Confirmed!", alert_end: "End election?"
                 },
                 es: { 
-                    L1: "Acceso", H_LOGIN: "Atención: Use e-mail @gmail.com. Tienes 3 elecciones gratis para pruebas.", uE: "Escriba su e-mail @gmail.com aquí...", L2: "Entrar",
-                    V1: "Validar", H_VERIFY: "Ingrese el código de 4 dígitos enviado a su e-mail.", iC: "Ingrese el código...", V3: "Confirmar",
-                    S1: "Nombre", H_SETUP: "Asigna un título (Ej: Elección Iglesia). Aparecerá en el PDF.", tE: "Escriba el nombre aquí...", S2: "Siguiente",
-                    C1: "Registro", H_CARGO: "Ingrese Cargo (ej: Pastor), Nombre y Foto. Clic en Añadir para cada candidato.", nC: "Cargo (ej: Presidente)...", nCand: "Nombre del Candidato...", INSTR_FOTO: "Clic para foto", C2: "Añadir", C3: "Guardar Cargo", C4: "INICIAR VOTACIÓN",
-                    H_URNA: "Toca el card del candidato para selecionar y clic en el botón verde.", U1: "CONFIRMAR VOTO", U2: "FINALIZAR",
-                    R_TITLE: "Resultado Final", H_RES: "Mira los votos. Baja el informe A5 oficial.", B_PDF: "Bajar (A5)",
-                    F1: "Sugerencias y Pedidos", H_FEED: "Su opinión mejora el sistema. Deje su sugerencia o pedido abajo.", txtSugestao: "Escriba su sugerencia aquí...", F2: "Enviar Mensaje",
-                    H_PAY: "Límite alcanzado. Compre un plan o use un cupón.", cup: "Código...", P2: "Validar", alert_voto: "¡Voto OK!", alert_feedback: "¡Mensaje enviado!", alert_end: "¿Finalizar?"
+                    L1: "Acceso", L2: "Entrar", H_LOGIN: "Atención: Use e-mail @gmail.com. Tienes 3 elecciones gratis.", uE: "Tu Gmail...",
+                    V1: "Validar", V3: "Confirmar", H_VERIFY: "Ingrese o código enviado a su email.", iC: "Código...",
+                    S1: "Nombre", S2: "Siguiente", H_SETUP: "Asigna un título (Ej: Iglesia).", tE: "Nombre de la elección...",
+                    C1: "Registro", C2: "Añadir", C3: "Guardar", C4: "INICIAR VOTACIÓN", H_CARGO: "Ingresa cargo, nombre e foto.", nC: "Cargo (ej: Pastor)...", nCand: "Candidato...", INSTR_FOTO: "Foto",
+                    U1: "CONFIRMAR VOTO", U2: "FINALIZAR", R_TITLE: "Resultado Final", B_PDF: "Bajar (A5)",
+                    F1: "Sugerencias e Pedidos", H_FEED: "Sua opinión nos ajuda a mejorar. Deja tu comentario abajo.", txtSugestao: "Escribe aquí...", F2: "Enviar",
+                    alert_feedback: "¡Mensaje enviado!", alert_voto: "¡Voto OK!", alert_end: "¿Finalizar?"
                 }
             };
 
             window.TR = (l) => { _idioma = l; for(let k in _tr[l]){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = _tr[l][k]; else el.innerText = _tr[l][k]; } } };
             window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); window.TR(_idioma); };
             window.PREV = (input) => { if (input.files && input.files[0]) { let r = new FileReader(); r.onload = (e) => { _fotoTemp = e.target.result; document.getElementById('imgPrev').src = _fotoTemp; document.getElementById('imgPrev').style.display = 'block'; document.getElementById('L_FOTO_ICON').style.display='none'; document.getElementById('INSTR_FOTO').style.display='none'; }; r.readAsDataURL(input.files[0]); } };
-            window.V = async function() { let e = document.getElementById('uE').value; try { let r = await fetch(_cfg.u+'/?email='+e); let d = await r.json(); if(d.count >= 3) { window.GO('pay'); return; } _code = d.codigo.toString(); await emailjs.send(_cfg.s, _cfg.t, { to_email: e, validation_code: _code }); window.GO('verify'); } catch(err) { alert("Erro"); } };
+            
+            window.V = async function() { let e = document.getElementById('uE').value.trim().toLowerCase(); try { let r = await fetch(_cfg.u+'/?email='+encodeURIComponent(e)); let d = await r.json(); if(d.count >= 3) { window.GO('pay'); return; } _code = d.codigo.toString(); await emailjs.send(_cfg.s, _cfg.t, { to_email: e, validation_code: _code }); window.GO('verify'); } catch(err) { alert("Erro"); } };
             window.C = () => { if(document.getElementById('iC').value === _code || document.getElementById('iC').value === "9999") window.GO('setup'); };
-            window.N = () => { _title = document.getElementById('tE').value; window.GO('setupCargo'); };
-            window.K = () => { let v = document.getElementById('cup').value.trim().toLowerCase(); if(v === 'orion001' || v === 'mais3gratis') window.GO('setup'); };
+            window.N = () => { _title = document.getElementById('tE').value || "Urna"; window.GO('setupCargo'); };
             window.A = () => { if(!_temp) _temp = { n: document.getElementById('nC').value, c: [] }; let n = document.getElementById('nCand').value; if(n) _temp.c.push({ n: n, v: 0, f: _fotoTemp }); document.getElementById('nCand').value = ''; _fotoTemp = ''; document.getElementById('imgPrev').style.display='none'; document.getElementById('L_FOTO_ICON').style.display='block'; document.getElementById('INSTR_FOTO').style.display='block'; };
             window.SAVE = () => { if(_temp) _data.push(_temp); _temp=null; document.getElementById('nC').value=''; alert("OK!"); };
             window.START = () => { if(_temp) _data.push(_temp); _idx=0; window.M(); window.GO('urna'); };
             window.M = () => { let c = _data[_idx]; document.getElementById('uT').innerText = c.n; let g = document.getElementById('gridUrna'); g.innerHTML = ''; c.c.forEach((can, i) => { let d = document.createElement('div'); d.style="background:white; color:#333; padding:10px; border-radius:8px; text-align:center; border:3px solid transparent; cursor:pointer;"; d.innerHTML = (can.f ? `<img src="${can.f}" style="width:80px; height:80px; object-fit:cover; border-radius:5px;">` : '') + `<br><small>${can.n}</small>`; d.onclick = () => { _sel = [i]; window.UI(); }; g.appendChild(d); }); };
             window.UI = () => { document.querySelectorAll('#gridUrna div').forEach((card, i) => { if(_sel.includes(i)) card.style.borderColor = "var(--accent)"; else card.style.borderColor = "transparent"; }); };
             window.VOTE = () => { if(!_sel.length) return; _data[_idx].c[_sel[0]].v++; _idx++; if(_idx < _data.length) { _sel=[]; window.M(); } else { alert(_tr[_idioma].alert_voto); _idx=0; _sel=[]; window.M(); } };
-            window.END = () => { if(!confirm(_tr[_idioma].alert_end)) return; document.getElementById('pdf_h1').innerText = _title.toUpperCase(); let out = document.getElementById('pC'); out.innerHTML = ''; _data.forEach(cargo => { let sorted = [...cargo.c].sort((a,b) => b.v - a.v); let h = `<table class="pdf-table"><thead><tr><th style="width:55px"></th><th>${cargo.n.toUpperCase()}</th><th style="text-align:right">Votos</th></tr></thead><tbody>`; sorted.forEach((can, i) => { h += `<tr class="${i===0 && can.v > 0 ? 'winner-row' : ''}"><td>${can.f ? `<img src="${can.f}" class="pdf-thumb">` : ''}</td><td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`; }); h += `</tbody></table><br>`; out.innerHTML += h; }); window.GO('res'); };
-            window.PDF = () => { html2pdf().set({ margin: 2, filename: 'Relatorio.pdf', html2canvas: { scale: 3, width: 540 }, jsPDF: { format: 'a5' } }).from(document.getElementById('areaImpressao')).save(); };
-            window.ENVIAR_FEEDBACK = () => { let msg = document.getElementById('txtSugestao').value; if(!msg) return; emailjs.send(_cfg.s, _cfg.t, { to_email: 'paulosmv1972@gmail.com', validation_code: 'FEEDBACK: ' + msg }).then(() => { alert(_tr[_idioma].alert_feedback); document.getElementById('txtSugestao').value = ''; }); };
+            
+            window.END = () => { 
+                if(!confirm(_tr[_idioma].alert_end)) return;
+                document.getElementById('pdf_h1').innerText = _title.toUpperCase(); 
+                document.getElementById('pdf-audit').innerText = "Emitido em: " + new Date().toLocaleString();
+                let out = document.getElementById('pC'); out.innerHTML = ''; 
+                _data.forEach(cargo => { 
+                    let sorted = [...cargo.c].sort((a,b) => b.v - a.v); 
+                    let h = `<table class="pdf-table"><thead><tr><th style="width:55px"></th><th>${cargo.n.toUpperCase()}</th><th style="text-align:right">Votos</th></tr></thead><tbody>`; 
+                    sorted.forEach((can) => { h += `<tr><td>${can.f ? `<img src="${can.f}" class="pdf-thumb">` : ''}</td><td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`; }); 
+                    h += `</tbody></table><br>`; out.innerHTML += h; 
+                }); 
+                window.GO('res'); 
+            };
+
+            window.PDF = () => { html2pdf().set({ margin: 2, filename: 'Relatorio_A5.pdf', html2canvas: { scale: 3, useCORS: true, width: 540 }, jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' } }).from(document.getElementById('areaImpressao')).save(); };
+
+            window.ENVIAR_FEEDBACK = () => {
+                let msg = document.getElementById('txtSugestao').value;
+                if(!msg) return;
+                emailjs.send(_cfg.s, _cfg.t, { to_email: 'paulosmv1972@gmail.com', validation_code: 'FEEDBACK INDEX 3: ' + msg }).then(() => { 
+                    alert(_tr[_idioma].alert_feedback); 
+                    document.getElementById('txtSugestao').value = ''; 
+                });
+            };
+
             window.TR('pt');
         })();
     </script>
