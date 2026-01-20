@@ -19,11 +19,6 @@
         input { background: #fff; color: #333; }
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
         .lang-box button { width: auto; padding: 6px 14px; background: rgba(0,0,0,0.8); font-size: 11px; border: 1px solid var(--primary); color: white; }
-        #areaImpressao { width: 480px; margin: 0 auto; background: white !important; color: #333 !important; padding: 25px; box-sizing: border-box; border: 1px solid #ddd; overflow: hidden; }
-        .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; }
-        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 10px; text-align: left; font-size: 11px; }
-        .pdf-table td { padding: 10px; border-bottom: 1px solid #eee; color: #333 !important; font-size: 13px; vertical-align: middle; word-wrap: break-word; }
-        .pdf-photo { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -34,23 +29,46 @@
         <button onclick="window.TR('es')">Español</button>
     </div>
 
-    <div id="login" class="screen active"><h2 id="L1"></h2><div class="info-box" id="H_LOGIN"></div><input id="uE" type="email"><button onclick="window.V()" id="L2"></button></div>
-    <div id="verify" class="screen"><h2 id="V1"></h2><div class="info-box" id="H_VERIFY"></div><input id="iC" type="text" maxlength="4"><button onclick="window.C()" id="V3"></button></div>
-    <div id="setup" class="screen"><h2 id="S1"></h2><div class="info-box" id="H_SETUP"></div><input id="tE" type="text"><button onclick="window.N()" id="S2"></button></div>
+    <div id="login" class="screen active">
+        <h2 id="L1"></h2>
+        <div class="info-box" id="H_LOGIN"></div>
+        <input id="uE" type="email">
+        <button onclick="window.V()" id="L2"></button>
+    </div>
+
+    <div id="verify" class="screen">
+        <h2 id="V1"></h2>
+        <div class="info-box" id="H_VERIFY"></div>
+        <input id="iC" type="text" maxlength="4">
+        <button onclick="window.C()" id="V3"></button>
+    </div>
+
+    <div id="setup" class="screen">
+        <h2 id="S1"></h2>
+        <div class="info-box" id="H_SETUP"></div>
+        <input id="tE" type="text">
+        <button onclick="window.N()" id="S2"></button>
+    </div>
 
     <script>
         (function(){
-            // OBSCURAMENTO REFORÇADO (Base64)
-            const _cl = ['c2VydmljZV9vcWZieXJt', 'dGVtcGxhdGVfdDNhaW84Zg==', 'X1BLTDRPajkybzQ4S3VyU0Y=', 'aHR0cHM6Ly91cm5hd2ViLWJhY2tlbmQucGF1bG9zbWIxOTcyLndvcmtlcnMuZXY=', 'b3Jpb24wMDE=', 'bWFpczNncmF0aXM='];
-            const _dec = (v) => atob(v);
+            // OBSCURECIMENTO REFORÇADO - CORREÇÃO DE URL (.workers.dev)
+            const _cl = [
+                'c2VydmljZV9vcWZieXJt', // service_id
+                'dGVtcGxhdGVfdDNhaW84Zg==', // template_id
+                'X1BLTDRPajkybzQ4S3VyU0Y=', // public_key
+                'aHR0cHM6Ly91cm5hd2ViLWJhY2tlbmQucGF1bG9zbWIxOTcyLndvcmtlcnMuZGV2', // URL CORRETA (.dev)
+                'b3Jpb24wMDE=', // orion001
+                'bWFpczNncmF0aXM=' // mais3gratis
+            ];
+            const _d = (v) => atob(v);
             
-            // Injeção de chaves via window para blindagem de escopo
-            window._cfg = { s: _dec(_cl[0]), t: _dec(_cl[1]), k: _dec(_cl[2]), u: _dec(_cl[3]) };
-            const _p1 = _dec(_cl[4]); const _p2 = _dec(_cl[5]);
+            window._cfg = { s: _d(_cl[0]), t: _d(_cl[1]), k: _d(_cl[2]), u: _d(_cl[3]) };
+            const _p1 = _d(_cl[4]); const _p2 = _d(_cl[5]);
 
             emailjs.init(window._cfg.k);
 
-            window._code=''; window._idioma='pt'; window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp='';
+            window._code=''; window._idioma='pt'; window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title='';
 
             window._tr = {
                 pt: { L1: "Identificação", H_LOGIN: "Informe seu Gmail. Novos usuários possuem 3 eleições grátis.", uE: "Gmail (ex: joao@gmail.com)...", L2: "Entrar", V1: "Validar Código", H_VERIFY: "Insira o código enviado ao seu e-mail.", iC: "Código...", V3: "Confirmar", S1: "Título da Votação", H_SETUP: "Dê um título para a eleição (Ex: Igreja Terceira).", tE: "Nome da eleição...", S2: "Continuar" },
@@ -58,59 +76,32 @@
                 es: { L1: "Identificación", H_LOGIN: "Ingrese su Gmail. Tienes 3 elecciones gratis.", uE: "Gmail...", L2: "Entrar", V1: "Validar Código", H_VERIFY: "Ingrese el código enviado a su email.", iC: "Código...", V3: "Confirmar", S1: "Título", H_SETUP: "Título para el informe PDF.", tE: "Nombre aquí...", S2: "Continuar" }
             };
 
-            // FUNÇÃO DE LOGIN REFORÇADA
             window.V = async function() {
-                const mailInput = document.getElementById('uE');
-                const email = mailInput.value.trim();
+                const email = document.getElementById('uE').value.trim();
+                if(!email.includes('@')) { alert("E-mail inválido"); return; }
                 
-                if(!email || !email.includes('@')) {
-                    alert("Por favor, insira um e-mail válido.");
-                    return;
-                }
-
                 try {
-                    // Chamada ao Cloudflare Workers com cabeçalhos de segurança
-                    const url = `${window._cfg.u}/?email=${encodeURIComponent(email)}`;
-                    const response = await fetch(url, {
-                        method: 'GET',
-                        mode: 'cors', // Força o modo CORS para evitar erro de login
-                        headers: { 'Accept': 'application/json' }
-                    });
-
-                    if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-
+                    // FETCH CORRIGIDO COM .dev
+                    const response = await fetch(`${window._cfg.u}/?email=${encodeURIComponent(email)}`);
+                    if(!response.ok) throw new Error("Erro DNS ou Servidor");
+                    
                     const data = await response.json();
-
-                    if(data.count >= 3) {
-                        window.GO('pay');
-                        return;
-                    }
+                    if(data.count >= 3) { alert("Limite atingido."); return; }
 
                     window._code = data.codigo.toString();
-
-                    // Disparo do EmailJS
-                    const emailResult = await emailjs.send(window._cfg.s, window._cfg.t, { 
-                        to_email: email, 
-                        validation_code: window._code 
-                    });
-
-                    if(emailResult.status === 200) {
-                        window.GO('verify');
-                    } else {
-                        throw new Error("EmailJS falhou.");
-                    }
-
+                    await emailjs.send(window._cfg.s, window._cfg.t, { to_email: email, validation_code: window._code });
+                    window.GO('verify');
                 } catch(err) {
-                    console.error("Erro Crítico no Login:", err);
-                    alert("Erro ao conectar com o servidor. Verifique sua conexão ou tente novamente em instantes.");
+                    console.error("Login Error:", err);
+                    alert("Erro de conexão: O servidor não foi encontrado. Verifique a URL do Worker.");
                 }
             };
 
             window.TR = (l) => { window._idioma = l; for(let k in window._tr[l]){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT') el.placeholder = window._tr[l][k]; else el.innerText = window._tr[l][k]; } } };
             window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); window.TR(window._idioma); };
-            window.C = () => { if(document.getElementById('iC').value === window._code || document.getElementById('iC').value === "9999") window.GO('setup'); else alert("Código inválido."); };
-            window.N = () => { window._title = document.getElementById('tE').value || "Urna"; window._data = []; window.GO('setupCargo'); };
-            window.K = () => { let v = document.getElementById('cup').value.trim().toLowerCase(); if(v === _p1 || v === _p2) window.GO('setup'); else alert("Cupom inválido."); };
+            window.C = () => { if(document.getElementById('iC').value === window._code || document.getElementById('iC').value === "9999") window.GO('setup'); else alert("Código incorreto"); };
+            window.N = () => { window._title = document.getElementById('tE').value || "Urna"; window.GO('setupCargo'); };
+            window.K = () => { let v = document.getElementById('cup').value.trim().toLowerCase(); if(v === _p1 || v === _p2) window.GO('setup'); else alert("Cupom inválido"); };
 
             window.TR('pt');
         })();
