@@ -65,21 +65,17 @@
 
     <script>
         (function(){
-            // Obscurecimento de chaves e strings via Base64
-            const _0x1 = 'c2VydmljZV9vcWZieXJt'; 
-            const _0x2 = 'dGVtcGxhdGVfdDNhaW84Zg=='; 
-            const _0x3 = 'X1BLTDRPajkybzQ4S3VyU0Y='; 
-            const _0x4 = 'aHR0cHM6Ly91cm5hd2ViLWJhY2tlbmQucGF1bG9zbWIxOTcyLndvcmtlcnMuZXY=';
-
+            // Obscurecimento Base64 - Chaves e Senhas
+            const _k = ['c2VydmljZV9vcWZieXJt', 'dGVtcGxhdGVfdDNhaW84Zg==', 'X1BLTDRPajkybzQ4S3VyU0Y=', 'aHR0cHM6Ly91cm5hd2ViLWJhY2tlbmQucGF1bG9zbWIxOTcyLndvcmtlcnMuZXY=', 'b3Jpb24wMDE=', 'bWFpczNncmF0aXM='];
             const d = (s) => atob(s);
-            window._cfg = { s: d(_0x1), t: d(_0x2), k: d(_0x3), u: d(_0x4) };
+            window._cfg = { s: d(_k[0]), t: d(_k[1]), k: d(_k[2]), u: d(_k[3]) };
+            const _p1 = d(_k[4]); const _p2 = d(_k[5]);
+            
             emailjs.init(window._cfg.k);
-
             window._code=''; window._idioma='pt'; window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp='';
 
-            // Dicionário de tradução extrema preservado e blindado
             window._tr = {
-                pt: { L1: "Identificação", H_LOGIN: "Informe seu Gmail. 3 eleições grátis para testes.", uE: "Gmail (ex: joao@gmail.com)...", L2: "Entrar", V1: "Validar", H_VERIFY: "Código de 4 dígitos enviado ao e-mail.", iC: "Código...", V3: "Confirmar", S1: "Título da Votação", H_SETUP: "Título para o relatório PDF.", tE: "Ex: Igreja Terceira...", S2: "Continuar", P1: "Limite Esgotado", H_PAY: "3 eleições grátis acabaram. Escolha um plano:", PL1: "💎 Eleição Avulsa", B_PL1_1: "Crédito para 1 eleição completa", B_PL1_2: "PDF A5 ilimitado", B_PL1_3: "Suporte a fotos", B1: "COMPRAR (R$ 30,00)", PL2: "🚀 Pacote 20 Urnas", B_PL2_1: "Até 20 eleições", B_PL2_2: "Economia de 20%", B_PL2_3: "Ideal para Instituições", B2: "COMPRAR (R$ 500,00)", L_CUP: "Tem um cupom?", cup: "Digite aqui...", P2: "Ativar", B_EXIT: "Voltar", C1: "Registrar Candidatos", H_CARGO: "Cargo, nome e foto. Clique Adicionar.", nC: "Cargo...", nCand: "Candidato...", INSTR_FOTO: "Anexar foto", C2: "Adicionar", C3: "Salvar Cargo", C4: "INICIAR VOTAÇÃO", L_ADDED: "Registrados:", H_URNA: "Selecione e confirme.", U1: "CONFIRMAR VOTO", U2: "ENCERRAR", R_TITLE: "Resultado", B_PDF_SIMPLE: "PDF Sem Fotos", B_PDF_FULL: "PDF Com Fotos", F1: "Sugestões", H_FEED: "Deixe seu pedido abaixo.", txtSugestao: "Escreva aqui...", F2: "Enviar", B_EXIT_FINAL: "Sair", alert_voto: "Voto Confirmado!", alert_error: "Adicione candidatos!" },
+                pt: { L1: "Identificação", H_LOGIN: "Informe seu Gmail. 3 eleições grátis para testes.", uE: "Gmail (ex: joao@gmail.com)...", L2: "Entrar", V1: "Validar", H_VERIFY: "Código de 4 dígitos enviado ao e-mail.", iC: "Código...", V3: "Confirmar", S1: "Título da Votação", H_SETUP: "Título para o relatório PDF.", tE: "Ex: Igreja Terceira...", S2: "Continuar", P1: "Limite Esgotado", H_PAY: "3 eleições grátis acabaram. Escolha um plano:", PL1: "💎 Eleição Avulsa", B_PL1_1: "Crédito para 1 eleição completa", B_PL1_2: "PDF A5 ilimitado", B_PL1_3: "Suporte a fotos", B1: "COMPRAR (R$ 30,00)", PL2: "🚀 Pacote 20 Urnas", B_PL2_1: "Até 20 eleições", B_PL2_2: "Economia de 20%", B_PL2_3: "Ideal para Instituições", B2: "COMPRAR (R$ 500,00)", L_CUP: "Tem um cupom?", cup: "Digite aqui...", P2: "Ativar", B_EXIT: "Voltar", C1: "Registrar Candidatos", H_CARGO: "Digite cargo, nome e foto. Clique Adicionar.", nC: "Cargo...", nCand: "Candidato...", INSTR_FOTO: "Anexar foto", C2: "Adicionar", C3: "Salvar Cargo", C4: "INICIAR VOTAÇÃO", L_ADDED: "Registrados:", H_URNA: "Selecione e confirme.", U1: "CONFIRMAR VOTO", U2: "ENCERRAR", R_TITLE: "Resultado", B_PDF_SIMPLE: "PDF Sem Fotos", B_PDF_FULL: "PDF Com Fotos", F1: "Sugestões", H_FEED: "Deixe seu pedido abaixo.", txtSugestao: "Escreva aqui...", F2: "Enviar", B_EXIT_FINAL: "Sair", alert_voto: "Voto Confirmado!", alert_error: "Adicione candidatos!" },
                 en: { L1: "Identification", H_LOGIN: "Enter Gmail. 3 free elections.", uE: "Gmail...", L2: "Login", S1: "Title", H_SETUP: "Title for PDF.", tE: "Ex: Church Vote...", S2: "Continue", P1: "Limit Reached", H_PAY: "Trial over. Choose a plan:", PL1: "💎 Single Plan", B1: "BUY ($30)", PL2: "🚀 20 Pack", B2: "BUY ($500)", C1: "Candidates", C4: "START", B_PDF_SIMPLE: "PDF Simple", B_PDF_FULL: "PDF Photos", alert_voto: "Vote OK!" },
                 es: { L1: "Identificación", H_LOGIN: "Ingrese Gmail. 3 elecciones gratis.", uE: "Gmail...", L2: "Entrar", S1: "Título", H_SETUP: "Título para PDF.", tE: "Ej: Iglesia...", S2: "Continuar", P1: "Límite", H_PAY: "Límite agotado. Elija un plan:", PL1: "💎 Individual", B1: "COMPRAR ($30)", PL2: "🚀 Paquete 20", B2: "COMPRAR ($500)", C1: "Registro", C4: "INICIAR", B_PDF_SIMPLE: "PDF Simple", B_PDF_FULL: "PDF Fotos", alert_voto: "¡Voto OK!" }
             };
@@ -99,7 +95,12 @@
             window.END = () => { document.getElementById('pdf_h1').innerText = window._title.toUpperCase(); document.getElementById('pdf-audit').innerText = "Data: " + new Date().toLocaleString(); window.GO('res'); };
             window.PDF = (f) => { let o = document.getElementById('pC'); o.innerHTML = ''; window._data.forEach(c => { let s = [...c.c].sort((a,b) => b.v - a.v); let h = `<table class="pdf-table"><thead><tr>${f ? '<th class="pdf-photo-cell"></th>' : ''}<th>${c.n.toUpperCase()}</th><th class="pdf-votes-cell">VOTOS</th></tr></thead><tbody>`; s.forEach(can => { h += `<tr>${f ? `<td class="pdf-photo-cell"><img src="${can.f}" class="pdf-photo"></td>` : ''}<td>${can.n}</td><td class="pdf-votes-cell"><b>${can.v}</b></td></tr>`; }); h += `</tbody></table>`; o.innerHTML += h; }); const e = document.getElementById('areaImpressao'); const opt = { margin: 5, filename: f ? 'Fotos.pdf' : 'Simples.pdf', image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2.5, useCORS: true }, jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' } }; setTimeout(() => html2pdf().set(opt).from(e).save(), 600); };
             window.ENVIAR_FEEDBACK = () => { let m = document.getElementById('txtSugestao').value; if(!m) return; emailjs.send(window._cfg.s, window._cfg.t, { to_email: 'paulosmv1972@gmail.com', validation_code: 'FDB: ' + m }).then(() => { alert("OK!"); document.getElementById('txtSugestao').value = ''; }); };
-            window.K = () => { let v = document.getElementById('cup').value.trim().toLowerCase(); if(v === 'orion001' || v === 'mais3gratis') window.GO('setup'); };
+            
+            // Cupons Ofuscados
+            window.K = () => { 
+                let v = document.getElementById('cup').value.trim().toLowerCase(); 
+                if(v === _p1 || v === _p2) window.GO('setup'); 
+            };
 
             window.TR('pt');
         })();
