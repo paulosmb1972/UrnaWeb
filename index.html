@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UrnaWeb Digital - Sistema de Votação Oficial</title>
+    <title>UrnaWeb Digital - Oficial</title>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
@@ -18,18 +18,20 @@
         
         input, button, textarea { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        
-        /* TELA DE PAGAMENTO E CUPOM */
-        .pay-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; text-align: center; }
-        .coupon-area { margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); }
-        .coupon-icon { font-size: 30px; margin-bottom: 5px; display: block; }
 
-        /* CADASTRO E FOTO */
-        .foto-container { border: 2px dashed var(--primary); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.05); }
+        /* PAGAMENTO E CUPOM */
+        .pay-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 15px; text-align: center; }
+        .coupon-icon { font-size: 35px; display: block; margin-bottom: 5px; }
+
+        /* FOTO E URNA */
+        .foto-container { border: 2px dashed var(--primary); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.05); margin: 10px 0; }
         .img-preview { width: 130px; height: 130px; object-fit: cover; border-radius: 10px; display: none; margin: 10px auto; border: 2px solid var(--accent); }
+        .card-candidato { background: white; color: #333; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 10px; border: 4px solid transparent; cursor: pointer; }
+        .card-candidato img { width: 100px; height: 100px; border-radius: 10px; object-fit: cover; }
+        .card-candidato.selected { border-color: var(--accent); background: #fdf2a7; }
 
-        /* RESULTADO E PDF (ANTI-CORTE) */
-        .resultado-wrapper { width: 100%; overflow-x: auto; background: #fff; border-radius: 8px; padding: 5px; }
+        /* RESULTADO PDF ANTI-CORTE */
+        .resultado-wrapper { width: 100%; overflow-x: auto; background: #fff; border-radius: 8px; }
         #areaImpressao { width: 800px; margin: 0 auto; background: white !important; color: #333 !important; padding: 40px; box-sizing: border-box; }
         .pdf-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; }
@@ -61,7 +63,7 @@
         <div class="pay-card">
             <button onclick="window.open('https://mpago.la/2maEAFx')" style="background:var(--success)" id="B1">Eleição Avulsa (R$ 30,00)</button>
             <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9" id="B2">Pacote 20 Eleições (R$ 500,00)</button>
-            <div class="coupon-area">
+            <div class="pay-card" style="margin-top:20px; border:none;">
                 <span class="coupon-icon">🎟️</span>
                 <p id="L_CUP">Possui um cupom de acesso?</p>
                 <input id="cup" type="text">
@@ -78,7 +80,7 @@
         <hr>
         <input id="nCand" type="text">
         <div class="foto-container" onclick="document.getElementById('fileIn').click()">
-            <span id="L_FOTO_ICON">📷</span><br>
+            <span id="L_FOTO_ICON" style="font-size:35px">📷</span><br>
             <span id="INSTR_FOTO">Clique aqui para anexar a foto</span>
             <img id="imgPrev" class="img-preview">
         </div>
@@ -114,7 +116,7 @@
             let _code='', _idioma='pt', _data=[], _temp=null, _sel=[], _idx=0, _title='', _fotoTemp='';
             
             const _tr = {
-                pt: { L1: "Acesso ao Sistema", uE: "Seu e-mail...", H_LOGIN: "Informe seu Gmail para receber o código de acesso.", P1: "Limite de Testes Atingido", H_PAY: "Você atingiu o limite gratuito. Selecione um plano ou utilize um cupom.", B1: "Eleição Avulsa (R$ 30,00)", B2: "Pacote 20 Eleições (R$ 500,00)", L_CUP: "Possui um cupom de acesso?", cup: "Código...", P2: "Ativar Cupom", C1: "Cadastro", nC: "Nome do Cargo...", nCand: "Nome do Candidato...", INSTR_FOTO: "Clique para anexar a foto", C2: "Adicionar Candidato", C3: "Salvar Cargo", C4: "INICIAR VOTAÇÃO", R_TITLE: "Resultado Final", B_PDF: "Baixar Relatório PDF (A4)" },
+                pt: { L1: "Acesso ao Sistema", uE: "Seu Gmail...", H_LOGIN: "Informe seu Gmail para receber o código de acesso.", P1: "Limite de Testes Atingido", H_PAY: "Você atingiu o limite gratuito. Selecione um plano ou utilize um cupom.", B1: "Eleição Avulsa (R$ 30,00)", B2: "Pacote 20 Eleições (R$ 500,00)", L_CUP: "Possui um cupom de acesso?", cup: "Código...", P2: "Ativar Cupom", C1: "Cadastro", nC: "Nome do Cargo...", nCand: "Nome do Candidato...", INSTR_FOTO: "Clique aqui para anexar a foto", C2: "Adicionar Candidato", C3: "Salvar Cargo", C4: "INICIAR VOTAÇÃO", R_TITLE: "Resultado Final", B_PDF: "Baixar Relatório PDF (A4)" },
                 en: { L1: "System Access", uE: "Your email...", H_LOGIN: "Enter Gmail to receive access code.", P1: "Limit Reached", H_PAY: "You used 3 free elections. Select a plan or use a coupon.", B1: "Single Election ($30.00)", B2: "20 Pack ($500.00)", L_CUP: "Have a coupon?", cup: "Code...", P2: "Activate", C1: "Registration", nC: "Position...", nCand: "Candidate...", INSTR_FOTO: "Click to attach photo", C2: "Add Candidate", C3: "Save Position", C4: "START VOTING", R_TITLE: "Final Result", B_PDF: "Download PDF" },
                 es: { L1: "Acceso", uE: "Tu email...", H_LOGIN: "Ingresa Gmail para el código.", P1: "Límite Alcanzado", H_PAY: "Has agotado las pruebas. Elige un plan o usa un cupón.", B1: "Elección Individual (R$ 30.00)", B2: "Paquete 20 (R$ 500.00)", L_CUP: "¿Tienes cupón?", cup: "Código...", P2: "Validar", C1: "Registro", nC: "Cargo...", nCand: "Candidato...", INSTR_FOTO: "Clic para adjuntar foto", C2: "Añadir", C3: "Guardar", C4: "INICIAR VOTACIÓN", R_TITLE: "Resultado Final", B_PDF: "Bajar PDF" }
             };
@@ -133,7 +135,7 @@
             window.GO = (a) => { 
                 document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); 
                 document.getElementById(a).classList.add('active'); 
-                window.TR(_idioma); // Reforça a tradução ao trocar de tela
+                window.TR(_idioma);
             };
 
             window.PREV = (input) => { 
