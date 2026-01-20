@@ -29,14 +29,31 @@
         <button onclick="window.TR('es')">Español</button>
     </div>
 
-    <div id="login" class="screen active"><h2 id="L1"></h2><div class="info-box" id="H_LOGIN"></div><input id="uE" type="email"><button onclick="window.V()" id="L2"></button></div>
-    <div id="verify" class="screen"><h2 id="V1"></h2><div class="info-box" id="H_VERIFY"></div><input id="iC" type="text" maxlength="4"><button onclick="window.C()" id="V3"></button></div>
-    <div id="setup" class="screen"><h2 id="S1"></h2><div class="info-box" id="H_SETUP"></div><input id="tE" type="text"><button onclick="window.N()" id="S2"></button></div>
+    <div id="login" class="screen active">
+        <h2 id="L1"></h2>
+        <div class="info-box" id="H_LOGIN"></div>
+        <input id="uE" type="email">
+        <button onclick="window.V()" id="L2"></button>
+    </div>
+
+    <div id="verify" class="screen">
+        <h2 id="V1"></h2>
+        <div class="info-box" id="H_VERIFY"></div>
+        <input id="iC" type="text" maxlength="4">
+        <button onclick="window.C()" id="V3"></button>
+    </div>
+
+    <div id="setup" class="screen">
+        <h2 id="S1"></h2>
+        <div class="info-box" id="H_SETUP"></div>
+        <input id="tE" type="text">
+        <button onclick="window.N()" id="S2"></button>
+    </div>
 
     <script>
         (function(){
-            // BLINDAGEM PRO - URL CORRIGIDA PARA .dev E SENHAS OFUSCADAS
-            const _x = [
+            // OBSCURECIMENTO TOTAL - URL CORRIGIDA PARA .dev
+            const _cl = [
                 'c2VydmljZV9vcWZieXJt', // service_id
                 'dGVtcGxhdGVfdDNhaW84Zg==', // template_id
                 'X1BLTDRPajkybzQ4S3VyU0Y=', // public_key
@@ -44,10 +61,10 @@
                 'b3Jpb24wMDE=', // orion001
                 'bWFpczNncmF0aXM=' // mais3gratis
             ];
-            const _d = (s) => atob(s);
+            const _d = (v) => atob(v);
             
-            window._cfg = { s: _d(_x[0]), t: _d(_x[1]), k: _d(_x[2]), u: _d(_x[3]) };
-            const _p1 = _d(_x[4]); const _p2 = _d(_x[5]);
+            window._cfg = { s: _d(_cl[0]), t: _d(_cl[1]), k: _d(_cl[2]), u: _d(_cl[3]) };
+            const _p1 = _d(_cl[4]); const _p2 = _d(_cl[5]);
 
             emailjs.init(window._cfg.k);
 
@@ -64,9 +81,9 @@
                 if(!email.includes('@')) { alert("E-mail inválido"); return; }
                 
                 try {
-                    // CONEXÃO CORRIGIDA: .workers.dev
+                    // CONEXÃO CORRIGIDA PARA .dev
                     const response = await fetch(`${window._cfg.u}/?email=${encodeURIComponent(email)}`);
-                    if(!response.ok) throw new Error("DNS_FAIL");
+                    if(!response.ok) throw new Error("DNS_ERR");
                     
                     const data = await response.json();
                     if(data.count >= 3) { alert("Limite de uso atingido."); return; }
@@ -75,8 +92,8 @@
                     await emailjs.send(window._cfg.s, window._cfg.t, { to_email: email, validation_code: window._code });
                     window.GO('verify');
                 } catch(err) {
-                    console.error("Critical Error:", err);
-                    alert("Erro de conexão: O servidor 'workers.dev' não respondeu. Verifique se o Worker está ativo.");
+                    console.error("DNS Error:", err);
+                    alert("Erro de conexão: O servidor não foi encontrado. Verifique se o Worker está ativo e a URL correta.");
                 }
             };
 
