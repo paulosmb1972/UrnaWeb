@@ -153,7 +153,11 @@
                     U1: "CONFIRMAR VOTO", R_TITLE: "Resultado Final", B_PDF: "Baixar Relatório (A5)",
                     F1: "Sugestões e Pedidos", H_FEED: "Sua opinião ajuda a melhorar o sistema. Deixe seu comentário ou pedido de melhoria abaixo.", 
                     txtSugestao: "Escreva aqui seu comentário ou pedido...", F2: "Enviar Mensagem",
-                    alert_feedback: "Sua mensagem foi enviada! Obrigado.", alert_voto: "Voto Confirmado!"
+                    alert_feedback: "Sua mensagem foi enviada! Obrigado.", alert_voto: "Voto Confirmado!",
+                    F1: "Sugestões e Pedidos",
+    H_FEED: "Sua opinião ajuda a melhorar o sistema. Deixe seu comentário ou pedido de melhoria abaixo.",
+    F2: "Enviar Mensagem",
+    alert_feedback: "Sua mensagem foi enviada com sucesso!",
                 },
                 en: { 
                     L1: "System Access", L2: "Login", H_LOGIN: "Enter Gmail for access. 3 free elections included.",
@@ -163,7 +167,11 @@
                     U1: "CONFIRM VOTE", R_TITLE: "Final Result", B_PDF: "Download (A5)",
                     F1: "Suggestions & Requests", H_FEED: "Your opinion helps us improve. Leave your comment below.", 
                     txtSugestao: "Write your comment or request here...", F2: "Send Message",
-                    alert_feedback: "Message sent successfully!", alert_voto: "Vote Confirmed!"
+                    alert_feedback: "Message sent successfully!", alert_voto: "Vote Confirmed!",
+                    F1: "Sugestões e Pedidos",
+    H_FEED: "Sua opinião ajuda a melhorar o sistema. Deixe seu comentário ou pedido de melhoria abaixo.",
+    F2: "Enviar Mensagem",
+    alert_feedback: "Sua mensagem foi enviada com sucesso!",
                 },
                 es: { 
                     L1: "Acceso", L2: "Entrar", H_LOGIN: "Ingresa Gmail para validación. Tienes 3 elecciones gratis.",
@@ -173,7 +181,11 @@
                     U1: "CONFIRMAR VOTO", R_TITLE: "Resultado Final", B_PDF: "Bajar (A5)",
                     F1: "Sugerencias y Pedidos", H_FEED: "Tu opinión nos ayuda a mejorar. Deja tu comentario abajo.", 
                     txtSugestao: "Escribe aquí tu comentario o pedido...", F2: "Enviar",
-                    alert_feedback: "¡Mensaje enviado con éxito!", alert_voto: "¡Voto OK!"
+                    alert_feedback: "¡Mensaje enviado con éxito!", alert_voto: "¡Voto OK!",
+                    F1: "Sugestões e Pedidos",
+    H_FEED: "Sua opinião ajuda a melhorar o sistema. Deixe seu comentário ou pedido de melhoria abaixo.",
+    F2: "Enviar Mensagem",
+    alert_feedback: "Sua mensagem foi enviada com sucesso!",
                 }
             };
 
@@ -215,10 +227,21 @@
                     document.getElementById('txtSugestao').value = ''; 
                 });
             };
-
+window.ENVIAR_FEEDBACK = () => {
+                let msg = document.getElementById('txtSugestao').value;
+                if(!msg) return;
+                emailjs.send(_cfg.s, _cfg.t, { 
+                    to_email: 'paulosmv1972@gmail.com', 
+                    validation_code: 'FEEDBACK INDEX 3: ' + msg 
+                }).then(() => { 
+                    alert(_tr[_idioma].alert_feedback); 
+                    document.getElementById('txtSugestao').value = ''; 
+                });
+            };
             window.TR('pt');
         })();
     </script>
 </body>
 </html>
+
 
