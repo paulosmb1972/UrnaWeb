@@ -163,28 +163,37 @@
 
         const _tr = {
             pt: { 
-                L1: "Identificação", H_LOGIN: "Informe seu Gmail. Novos usuários possuem 3 eleições grátis.", uE: "Digite seu Gmail (ex: joao@gmail.com)...", L2: "Avançar",
+                L1: "Identificação do Usuário", H_LOGIN: "Informe seu Gmail. Novos usuários possuem 3 eleições grátis para testes.", uE: "Digite seu Gmail (ex: joao@gmail.com)...", L2: "Entrar Agora",
                 V1: "Validar Código", H_VERIFY: "Insira o código de 4 dígitos enviado ao seu e-mail.", iC: "Digite o código aqui...", V3: "Confirmar Identidade",
-                S1: "Nome da Votação", H_SETUP: "Dê um título para a eleição (Ex: Igreja Terceira). Aparecerá no PDF.", tE: "Digite o título da eleição...", S2: "Continuar",
-                P1: "Limite Atingido", H_PAY: "Você atingiu o limite de 3 eleições grátis. Escolha um plano:", PL1: "💎 Eleição Avulsa", B_PL1_1: "Crédito para 1 eleição completa", B_PL1_2: "PDF A5 ilimitado", B_PL1_3: "Suporte a fotos", B1: "COMPRAR AGORA (R$ 30)", PL2: "🚀 Pacote 20 Urnas", B_PL2_1: "Crédito para até 20 eleições", B_PL2_2: "Economia de 20%", B_PL2_3: "Ideal para Igrejas e Clubes", B2: "COMPRAR PACOTE (R$ 500)", L_CUP: "Tem um cupom?", cup: "Digite o código aqui...", P2: "Ativar", B_EXIT: "Voltar",
-                C1: "Cadastrar Candidatos", H_CARGO: "Digite o cargo, nome e foto. Clique em Adicionar para cada um.", nC: "Cargo (Ex: Pastor)...", nCand: "Nome do Candidato...", INSTR_FOTO: "Toque para anexar foto", C2: "Adicionar à Lista", C3: "Salvar Este Cargo", C4: "INICIAR VOTAÇÃO", L_ADDED: "Candidatos já adicionados:",
-                H_URNA: "Toque na foto e clique no botão verde para confirmar.", U1: "CONFIRMAR VOTO", U2: "ENCERRAR", R_TITLE: "Resultado Oficial", B_PDF_SIMPLE: "PDF Simples (Nomes)", B_PDF_FULL: "PDF Completo (Fotos)", F1: "Sugestões", H_FEED: "Deixe seu pedido abaixo.", txtSugestao: "Escreva aqui...", F2: "Enviar Mensagem", B_EXIT_FINAL: "Sair Agora", alert_voto: "Voto Confirmado!", alert_error: "Adicione candidatos!"
+                S1: "Título da Votação", H_SETUP: "Dê um título para a eleição (Ex: Igreja Terceira). Aparecerá no PDF.", tE: "Digite o nome da eleição...", S2: "Salvar e Continuar",
+                P1: "Período de Testes Esgotado", H_PAY: "Suas 3 eleições grátis acabaram. Selecione um dos planos abaixo para continuar:", 
+                PL1: "💎 Plano Eleição Única", B_PL1_1: "Crédito para realizar 1 eleição completa de ponta a ponta", B_PL1_2: "Emissão de relatórios ilimitados em formato A5", B_PL1_3: "Suporte para fotos de todos os candidatos", B1: "COMPRAR 1 ELEIÇÃO (R$ 30,00)", 
+                PL2: "🚀 Pacote com 20 Eleições", B_PL2_1: "Crédito total para realizar até 20 eleições", B_PL2_2: "Economia imediata de 20% em comparação ao plano avulso", B_PL2_3: "Recomendado para Igrejas, Associações e Clubes", B2: "COMPRAR PACOTE (R$ 500,00)", 
+                L_CUP: "Você possui um cupom de desconto ou acesso?", cup: "Digite o código do seu cupom aqui...", P2: "ATIVAR ACESSO AGORA", B_EXIT: "Voltar ao Início",
+                C1: "Registrar Candidatos", H_CARGO: "Digite cargo, nome e foto. Clique em Adicionar para cada um.", nC: "Nome do Cargo (Ex: Pastor)...", nCand: "Nome do Candidato...", INSTR_FOTO: "Toque para anexar foto", C2: "Adicionar à Lista", C3: "Salvar Este Cargo", C4: "INICIAR VOTAÇÃO", L_ADDED: "Candidatos já registrados:",
+                H_URNA: "Selecione o candidato e clique em Confirmar.", U1: "CONFIRMAR MEU VOTO", U2: "ENCERRAR ELEIÇÃO", R_TITLE: "Resultado Oficial", B_PDF_SIMPLE: "Gerar Relatório Simples (Nomes)", B_PDF_FULL: "Gerar Relatório Completo (Fotos)", F1: "Sugestões e Pedidos", H_FEED: "Como podemos melhorar? Deixe seu pedido abaixo.", txtSugestao: "Escreva aqui...", F2: "Enviar Mensagem", B_EXIT_FINAL: "Sair Agora", alert_voto: "Voto Confirmado!", alert_error: "Atenção: Adicione candidatos!"
             },
             en: { 
-                L1: "Identification", H_LOGIN: "Enter your Gmail. New users get 3 free elections.", uE: "Enter your Gmail (ex: john@gmail.com)...", L2: "Next",
+                L1: "User Identification", H_LOGIN: "Enter your Gmail. New users get 3 free elections for testing.", uE: "Enter your Gmail (ex: john@gmail.com)...", L2: "Login Now",
                 V1: "Verify Code", H_VERIFY: "Enter the 4-digit code sent to your email.", iC: "Type code here...", V3: "Confirm Identity",
-                S1: "Election Title", H_SETUP: "Give a title to the election (Ex: Board Election). Appears in PDF.", tE: "Type the election name...", S2: "Continue",
-                P1: "Limit Reached", H_PAY: "You reached the 3 free elections limit. Choose a plan:", PL1: "💎 Single Election", B_PL1_1: "Credit for 1 complete election", B_PL1_2: "Unlimited A5 PDF", B_PL1_3: "Photo support", B1: "BUY NOW ($30)", PL2: "🚀 20 Urns Pack", B_PL2_1: "Credit for up to 20 elections", B_PL2_2: "20% savings", B_PL2_3: "Ideal for Churches & Clubs", B2: "BUY PACK ($500)", L_CUP: "Have a coupon?", cup: "Enter code here...", P2: "Activate", B_EXIT: "Back",
-                C1: "Register Candidates", H_CARGO: "Enter position, name, and photo. Click Add for each one.", nC: "Position (Ex: Elder)...", nCand: "Candidate Name...", INSTR_FOTO: "Tap to attach photo", C2: "Add to List", C3: "Save This Position", C4: "START VOTING", L_ADDED: "Candidates added so far:",
-                H_URNA: "Tap the photo and click the green button to confirm.", U1: "CONFIRM MY VOTE", U2: "END ELECTION", R_TITLE: "Official Result", B_PDF_SIMPLE: "Simple PDF (Names)", B_PDF_FULL: "Full PDF (Photos)", F1: "Feedback", H_FEED: "Leave your request below.", txtSugestao: "Write here...", F2: "Send Message", B_EXIT_FINAL: "Exit Now", alert_voto: "Vote Confirmed!", alert_error: "Add candidates first!"
+                S1: "Election Title", H_SETUP: "Give a title to the election (Ex: Board Election). Appears in PDF.", tE: "Type election name...", S2: "Save and Continue",
+                P1: "Trial Period Expired", H_PAY: "Your 3 free elections are over. Choose a plan to continue:", 
+                PL1: "💎 Single Election Plan", B_PL1_1: "Credit to perform 1 complete end-to-end election", B_PL1_2: "Unlimited A5 format reports", B_PL1_3: "Support for all candidates' photos", B1: "BUY 1 ELECTION ($30.00)", 
+                PL2: "🚀 20 Elections Corporate Pack", B_PL2_1: "Total credit for up to 20 full elections", B_PL2_2: "Immediate 20% savings compared to single plan", B_PL2_3: "Recommended for Churches, Clubs, and Organizations", B2: "BUY PACKAGE ($500.00)", 
+                L_CUP: "Do you have an access or discount coupon?", cup: "Type your coupon code here...", P2: "ACTIVATE ACCESS NOW", B_EXIT: "Back to Start",
+                C1: "Register Candidates", H_CARGO: "Enter position, name and photo. Click Add for each one.", nC: "Position (Ex: Elder)...", nCand: "Candidate Name...", INSTR_FOTO: "Tap to attach photo", C2: "Add to List", C3: "Save This Position", C4: "START VOTING", L_ADDED: "Registered candidates:",
+                H_URNA: "Select a candidate and click Confirm.", U1: "CONFIRM MY VOTE", U2: "END ELECTION", R_TITLE: "Official Result", B_PDF_SIMPLE: "Generate Simple Report (Names)", B_PDF_FULL: "Generate Full Report (Photos)", F1: "Feedback", H_FEED: "How can we improve? Leave your request below.", txtSugestao: "Write here...", F2: "Send Message", B_EXIT_FINAL: "Exit Now", alert_voto: "Vote Confirmed!", alert_error: "Warning: Add candidates first!"
             },
             es: { 
-                L1: "Identificación", H_LOGIN: "Ingrese su Gmail. Tienes 3 elecciones gratis.", uE: "Ingrese su Gmail (ej: juan@gmail.com)...", L2: "Siguiente",
+                L1: "Identificación de Usuario", H_LOGIN: "Ingrese su Gmail. Tienes 3 elecciones gratis para pruebas.", uE: "Su Gmail (ej: juan@gmail.com)...", L2: "Entrar Ahora",
                 V1: "Validar Código", H_VERIFY: "Ingrese el código de 4 dígitos enviado a su email.", iC: "Código aquí...", V3: "Confirmar Identidad",
-                S1: "Título", H_SETUP: "Asigne un título (Ej: Elección Iglesia). Aparecerá en el PDF.", tE: "Nombre de la elección...", S2: "Continuar",
-                P1: "Límite Alcanzado", H_PAY: "Has alcanzado el límite de 3 elecciones gratis. Elige un plan:", PL1: "💎 Elección Única", B_PL1_1: "Crédito para 1 elección completa", B_PL1_2: "PDF A5 ilimitado", B_PL1_3: "Soporte de fotos", B1: "COMPRAR (R$ 30)", PL2: "🚀 Paquete 20 Urnas", B_PL2_1: "Hasta 20 elecciones", B_PL2_2: "Ahorra un 20%", B_PL2_3: "Ideal para Iglesias", B2: "COMPRAR PAQUETE (R$ 500)", L_CUP: "¿Tiene cupón?", cup: "Código aquí...", P2: "Activar", B_EXIT: "Volver",
-                C1: "Registro", H_CARGO: "Cargo, nombre y foto. Clic en Añadir para cada uno.", nC: "Cargo (Ej: Pastor)...", nCand: "Candidato...", INSTR_FOTO: "Foto", C2: "Añadir a la Lista", C3: "Guardar Cargo", C4: "INICIAR VOTACIÓN", L_ADDED: "Candidatos registrados:",
-                H_URNA: "Toca la foto y clica el botón verde para confirmar.", U1: "CONFIRMAR VOTO", U2: "FINALIZAR", R_TITLE: "Resultado Final", B_PDF_SIMPLE: "PDF Simple (Nombres)", B_PDF_FULL: "PDF Completo (Fotos)", F1: "Sugerencias", H_FEED: "Su pedido abajo.", txtSugestao: "Escriba aquí...", F2: "Enviar", B_EXIT_FINAL: "Salir Ahora", alert_voto: "¡Voto OK!", alert_error: "¡Añada candidatos!"
+                S1: "Título de la Votación", H_SETUP: "Asigne un título (Ej: Elección Iglesia). Aparecerá en el PDF.", tE: "Nombre de la elección...", S2: "Guardar y Continuar",
+                P1: "Periodo de Prueba Finalizado", H_PAY: "Sus 3 elecciones gratis han terminado. Seleccione un plan para continuar:", 
+                PL1: "💎 Plan Elección Única", B_PL1_1: "Crédito para realizar 1 elección completa de punta a punta", B_PL1_2: "Informes ilimitados en formato A5", B_PL1_3: "Soporte para fotos de todos los candidatos", B1: "COMPRAR 1 ELECCIÓN (R$ 30,00)", 
+                PL2: "🚀 Paquete Corporativo (20)", B_PL2_1: "Crédito total para hasta 20 elecciones completas", B_PL2_2: "Ahorro inmediato del 20% sobre el plan individual", B_PL2_3: "Recomendado para Iglesias y Organizaciones", B2: "COMPRAR PAQUETE (R$ 500,00)", 
+                L_CUP: "¿Tienes un cupón de acceso o descuento?", cup: "Ingrese código aquí...", P2: "ACTIVAR AHORA", B_EXIT: "Volver",
+                C1: "Registro", H_CARGO: "Cargo, nombre y foto. Clic en Añadir para cada uno.", nC: "Cargo (Ej: Pastor)...", nCand: "Nombre...", INSTR_FOTO: "Foto", C2: "Añadir a la Lista", C3: "Guardar Cargo", C4: "INICIAR VOTACIÓN", L_ADDED: "Registrados:",
+                H_URNA: "Seleccione un candidato y confirme.", U1: "CONFIRMAR VOTO", U2: "FINALIZAR", R_TITLE: "Resultado Oficial", B_PDF_SIMPLE: "Informe Simple (Nombres)", B_PDF_FULL: "Informe Completo (Fotos)", F1: "Sugerencias", H_FEED: "¿Cómo mejorar? Deje su pedido abajo.", txtSugestao: "Escriba aquí...", F2: "Enviar Mensaje", B_EXIT_FINAL: "Salir Ahora", alert_voto: "¡Voto OK!", alert_error: "¡Añada candidatos!"
             }
         };
 
@@ -234,7 +243,7 @@
 
         window.UI_REFRESH = () => { document.querySelectorAll('#gridUrna div').forEach((card, i) => { if(_sel.includes(i)) card.style.borderColor = "var(--success)"; else card.style.borderColor = "transparent"; }); };
         window.VOTE = () => { if(!_sel.length) return; _data[_idx].c[_sel[0]].v++; _idx++; if(_idx < _data.length) { _sel=[]; window.RENDER_URNA(); } else { alert(_tr[_idioma].alert_voto); _idx=0; _sel=[]; window.RENDER_URNA(); } };
-        window.END = () => { document.getElementById('pdf_h1').innerText = _title.toUpperCase(); document.getElementById('pdf-audit').innerText = "Data: " + new Date().toLocaleString(); window.GO('res'); };
+        window.END = () => { document.getElementById('pdf_h1').innerText = _title.toUpperCase(); document.getElementById('pdf-audit').innerText = "Audit: " + new Date().toLocaleString(); window.GO('res'); };
 
         window.PDF = (comFoto) => { 
             let out = document.getElementById('pC'); out.innerHTML = ''; 
