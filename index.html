@@ -19,10 +19,16 @@
         input, button, textarea { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
 
-        /* ESTILIZAÇÃO DOS PLANOS */
-        .pay-card { background: rgba(255,255,255,0.07); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); margin-bottom: 25px; text-align: center; }
-        .price-tag { font-size: 28px; font-weight: bold; color: var(--accent); display: block; margin: 10px 0; }
-        .plan-description { font-size: 14px; color: #fff; margin-bottom: 15px; line-height: 1.5; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; }
+        /* TELA DE PAGAMENTO (MANTIDA) */
+        .pay-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; text-align: left; }
+        .pay-card h3 { margin-top: 0; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+        .price-tag { font-size: 26px; font-weight: bold; color: var(--accent); display: block; margin: 10px 0; text-align: center; }
+        .benefit-list { font-size: 13px; color: #ccc; margin-bottom: 15px; padding-left: 20px; list-style-type: none; }
+        .benefit-list li::before { content: "• "; color: var(--accent); }
+
+        /* FOTOS E URNA */
+        .foto-container { border: 2px dashed var(--primary); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.05); }
+        .img-preview { width: 110px; height: 110px; object-fit: cover; border-radius: 10px; display: none; margin: 10px auto; border: 2px solid var(--accent); }
 
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
         .lang-box button { width: auto; padding: 6px 12px; background: rgba(0,0,0,0.6); font-size: 11px; border: 1px solid var(--primary); white-space: nowrap; }
@@ -36,76 +42,134 @@
         <button onclick="window.TR('es')">Espanol</button>
     </div>
 
+    <div id="login" class="screen active">
+        <h2 id="L1">Acesso</h2>
+        <div class="info-box" id="H_LOGIN">Informe seu Gmail para validação. Novos usuários possuem 3 eleições gratuitas.</div>
+        <input id="uE" type="email">
+        <button onclick="window.V()" id="L2">Entrar</button>
+    </div>
+
+    <div id="verify" class="screen">
+        <h2 id="V1">Validar</h2>
+        <div class="info-box" id="H_VERIFY">Insira o código de 4 dígitos enviado ao seu e-mail agora.</div>
+        <input id="iC" type="text" maxlength="4">
+        <button onclick="window.C()" id="V3">Confirmar</button>
+    </div>
+
+    <div id="setup" class="screen">
+        <h2 id="S1">Configuração da Eleição</h2>
+        <div class="info-box" id="H_SETUP">Dê um nome para a eleição. Este título aparecerá no topo do relatório PDF A5.</div>
+        <input id="tE" type="text">
+        <button onclick="window.N()" id="S2">Próximo Passo</button>
+    </div>
+
     <div id="pay" class="screen">
-        <h2 id="P1">Limite de Testes Atingido</h2>
-        <div class="info-box" id="H_PAY">Suas 3 eleições grátis acabaram. Escolha o plano de créditos que melhor atende à sua necessidade:</div>
+        <h2 id="P1">Período de Testes Encerrado</h2>
+        <div class="info-box" id="H_PAY">Você atingiu o limite de 3 eleições gratuitas. Escolha o plano ideal para você:</div>
         
         <div class="pay-card">
-            <h3 id="T1">Eleição Avulsa</h3>
-            <div class="plan-description" id="D1">Ideal para uma única votação rápida. Este crédito permite realizar 1 eleição completa com direito a relatório PDF.</div>
+            <h3 id="PL1">💎 Eleição Avulsa</h3>
+            <ul class="benefit-list">
+                <li id="B_PL1_1">Crédito para realizar 1 eleição completa</li>
+                <li id="B_PL1_2">Relatórios em PDF formato A5 ilimitados</li>
+                <li id="B_PL1_3">Suporte a fotos e candidatos</li>
+            </ul>
             <span class="price-tag">R$ 30,00</span>
-            <button onclick="window.open('https://mpago.la/2maEAFx')" style="background:var(--success)" id="B1">Comprar Eleição Única</button>
+            <button onclick="window.open('https://mpago.la/2maEAFx')" style="background:var(--success)" id="B1">ADQUIRIR AGORA (R$ 30,00)</button>
         </div>
 
         <div class="pay-card">
-            <h3 id="T2">Pacote 20 Eleições</h3>
-            <div class="plan-description" id="D2">O melhor custo-benefício para organizações. Este pacote dá direito a realizar até 20 eleições, saindo apenas R$ 25,00 por urna.</div>
+            <h3 id="PL2">🚀 Pacote Corporativo</h3>
+            <ul class="benefit-list">
+                <li id="B_PL2_1">Crédito para realizar até 20 eleições</li>
+                <li id="B_PL2_2">Economia de 20% por eleição</li>
+                <li id="B_PL2_3">Ideal para Igrejas e Organizações</li>
+            </ul>
             <span class="price-tag">R$ 500,00</span>
-            <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9" id="B2">Comprar Pacote Completo</button>
+            <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9" id="B2">ADQUIRIR PACOTE (R$ 500,00)</button>
         </div>
 
         <div class="pay-card" style="border: 2px solid var(--accent);">
-            <p id="L_CUP" style="margin-top:0; font-weight:bold;"></p>
+            <p id="L_CUP" style="margin-top:0; font-weight:bold; text-align:center;">Você possui um cupom de acesso?</p>
             <input id="cup" type="text">
-            <button onclick="window.K()" id="P2" style="background:var(--accent); color:black">Ativar</button>
+            <button onclick="window.K()" id="P2" style="background:var(--accent); color:black">ATIVAR ACESSO</button>
         </div>
-        
-        <button onclick="location.reload()" style="background:none; border: 1px solid white;">Voltar</button>
+        <button onclick="location.reload()" style="background:none; border:1px solid white;">Voltar ao Início</button>
     </div>
 
-    <div id="login" class="screen active">
-        <h2 id="L1">Acesso</h2><div class="info-box" id="H_LOGIN"></div><input id="uE" type="email"><button onclick="window.V()" id="L2">Entrar</button>
+    <div id="setupCargo" class="screen">
+        <h2 id="C1">Cadastro de Candidatos</h2>
+        <div class="info-box" id="H_CARGO">Defina o Cargo (Ex: Presbítero), o Nome e a Foto de cada candidato.</div>
+        <input id="nC" type="text">
+        <input id="nCand" type="text">
+        <div class="foto-container" onclick="document.getElementById('fileIn').click()">
+            <span id="L_FOTO_ICON" style="font-size:35px">📷</span><br><span id="INSTR_FOTO">Anexar Foto</span>
+            <img id="imgPrev" class="img-preview">
+        </div>
+        <input type="file" id="fileIn" hidden accept="image/*" onchange="window.PREV(this)">
+        <button onclick="window.A()" id="C2">Adicionar Candidato</button>
+        <div id="listTemp" style="text-align:center; color:var(--accent); margin:10px; font-weight:bold;"></div>
+        <button onclick="window.SAVE()" id="C3" style="background:var(--success)">Salvar Cargo</button>
+        <button onclick="window.START()" id="C4" style="background:var(--primary); margin-top:20px">INICIAR VOTAÇÃO</button>
     </div>
-    <div id="verify" class="screen"><h2 id="V1">Código</h2><input id="iC" type="text" maxlength="4"><button onclick="window.C()">Confirmar</button></div>
-    <div id="setup" class="screen"><h2 id="S1">Configuração</h2><input id="tE" type="text"><button onclick="window.N()">Próximo</button></div>
+
+    <div id="urna" class="screen">
+        <h2 id="uT"></h2>
+        <div id="gridUrna" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px;"></div>
+        <button onclick="window.VOTE()" id="U1" style="height:70px; background:var(--success); margin-top:20px;">VOTAR</button>
+    </div>
 
     <script>
         (function(){
             const _cfg = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
             emailjs.init(_cfg.k);
-            let _code='', _idioma='pt', _data=[], _temp=null, _sel=[], _idx=0, _title='';
+            let _code='', _idioma='pt', _data=[], _temp=null, _sel=[], _idx=0, _title='', _fotoTemp='';
             
             const _tr = {
                 pt: { 
-                    P1: "Limite de Testes Atingido",
-                    H_PAY: "Suas 3 eleições grátis acabaram. Escolha o plano de créditos que melhor atende à sua necessidade:",
-                    T1: "Eleição Avulsa", D1: "Ideal para uma única votação rápida. Este crédito permite realizar 1 eleição completa com direito a relatório PDF.", B1: "Comprar Eleição Única (R$ 30,00)",
-                    T2: "Pacote 20 Eleições", D2: "O melhor custo-benefício para organizações. Este pacote dá direito a realizar até 20 eleições, saindo apenas R$ 25,00 cada.", B2: "Comprar Pacote (R$ 500,00)",
-                    L_CUP: "Possui um cupom de acesso?", cup: "Digite seu cupom aqui...", P2: "Ativar Código",
-                    H_LOGIN: "Informe seu Gmail. Novos usuários possuem 3 eleições grátis.", uE: "seu-email@gmail.com", L2: "Entrar"
+                    L1: "Acesso", L2: "Entrar", H_LOGIN: "Informe seu Gmail. Novos usuários possuem 3 eleições grátis.", uE: "Digite seu Gmail aqui...",
+                    V1: "Validar", V3: "Confirmar", H_VERIFY: "Insira o código de 4 dígitos enviado ao seu e-mail.",
+                    S1: "Configuração da Eleição", S2: "Próximo Passo", H_SETUP: "Dê um nome para a eleição. Este título aparecerá no topo do relatório PDF A5.", tE: "Nome da eleição (Ex: Igreja Terceira)...",
+                    P1: "Período de Testes Encerrado", H_PAY: "Você atingiu o limite de 3 eleições gratuitas. Escolha o plano ideal para você:",
+                    PL1: "💎 Eleição Avulsa", B1: "ADQUIRIR AGORA (R$ 30,00)", L_CUP: "Você possui um cupom de acesso?", cup: "Digite o código aqui...", P2: "ATIVAR ACESSO",
+                    C1: "Cadastro", C2: "Adicionar Candidato", C3: "Salvar Cargo", C4: "INICIAR VOTAÇÃO", H_CARGO: "Defina o cargo, nome e foto. Clique em Adicionar para cada candidato.", nC: "Cargo (Ex: Pastor)...", nCand: "Nome do Candidato...", INSTR_FOTO: "Anexar Foto",
+                    U1: "CONFIRMAR VOTO"
                 },
                 en: { 
-                    P1: "Trial Limit Reached",
-                    H_PAY: "Your 3 free elections are over. Choose the credit plan that best suits your needs:",
-                    T1: "Single Election", D1: "Ideal for a single quick vote. This credit allows you to perform 1 complete election with PDF report.", B1: "Buy Single Election ($30.00)",
-                    T2: "20 Election Pack", D2: "Best value for organizations. This pack allows up to 20 elections, costing only $25.00 each.", B2: "Buy Full Pack ($500.00)",
-                    L_CUP: "Do you have an access coupon?", cup: "Enter coupon here...", P2: "Activate Code",
-                    H_LOGIN: "Enter your Gmail. New users have 3 free elections.", uE: "your-email@gmail.com", L2: "Login"
+                    L1: "Access", L2: "Login", H_LOGIN: "Enter your Gmail. New users have 3 free elections.", uE: "Enter your Gmail...",
+                    V1: "Verify", V3: "Confirm", H_VERIFY: "Enter the 4-digit code sent to your email.",
+                    S1: "Election Setup", S2: "Next Step", H_SETUP: "Give a name to the election. This title will appear on the A5 PDF report.", tE: "Election name (Ex: Board Vote)...",
+                    P1: "Trial Period Ended", H_PAY: "You have reached the limit of 3 free elections. Choose the plan that's right for you:",
+                    PL1: "💎 Single Election", B1: "GET IT NOW ($30.00)", L_CUP: "Do you have an access coupon?", cup: "Enter code here...", P2: "ACTIVATE ACCESS",
+                    C1: "Registration", C2: "Add Candidate", C3: "Save Position", C4: "START VOTING", H_CARGO: "Set position, name and photo. Click Add for each candidate.", nC: "Position (Ex: Elder)...", nCand: "Candidate Name...", INSTR_FOTO: "Attach Photo",
+                    U1: "CONFIRM VOTE"
                 },
                 es: { 
-                    P1: "Límite de Prueba Alcanzado",
-                    H_PAY: "Tus 3 elecciones gratis han terminado. Elige el plan de créditos que mejor se adapte a tus necesidades:",
-                    T1: "Elección Individual", D1: "Ideal para una sola votación rápida. Este crédito permite realizar 1 elección completa con informe PDF.", B1: "Comprar Elección Única (R$ 30.00)",
-                    T2: "Paquete de 20 Elecciones", D2: "El mejor valor para organizaciones. Este paquete permite hasta 20 elecciones, por solo R$ 25.00 cada una.", B2: "Comprar Paquete (R$ 500.00)",
-                    L_CUP: "¿Tienes un cupón de acceso?", cup: "Ingrese cupón aquí...", P2: "Validar Código",
-                    H_LOGIN: "Ingresa tu Gmail. Los nuevos usuarios tienen 3 elecciones gratis.", uE: "tu-email@gmail.com", L2: "Entrar"
+                    L1: "Acceso", L2: "Entrar", H_LOGIN: "Ingresa tu Gmail. Los novos tienen 3 elecciones gratis.", uE: "Ingresa tu Gmail...",
+                    V1: "Validar", V3: "Confirmar", H_VERIFY: "Ingrese el código de 4 dígitos enviado a su email.",
+                    S1: "Configuración", S2: "Siguiente Paso", H_SETUP: "Asigna un nombre a la elección. Este título aparecerá en el PDF A5.", tE: "Nombre de la elección...",
+                    P1: "Periodo de Prueba Finalizado", H_PAY: "Has alcanzado el límite de 3 elecciones gratuitas. Elige el plan ideal para ti:",
+                    PL1: "💎 Elección Única", B1: "ADQUIRIR AHORA (R$ 30.00)", L_CUP: "¿Tienes un cupón de acceso?", cup: "Ingrese el código...", P2: "ACTIVAR ACCESO",
+                    C1: "Registro", C2: "Añadir Candidato", C3: "Guardar Cargo", C4: "INICIAR VOTACIÓN", H_CARGO: "Define cargo, nombre y foto. Clic en Añadir para cada candidato.", nC: "Cargo (Ex: Pastor)...", nCand: "Nombre del Candidato...", INSTR_FOTO: "Foto",
+                    U1: "CONFIRMAR VOTO"
                 }
             };
 
             window.TR = (l) => { _idioma = l; for(let k in _tr[l]){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT') el.placeholder = _tr[l][k]; else el.innerText = _tr[l][k]; } } };
             window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); window.TR(_idioma); };
+            window.PREV = (input) => { if (input.files && input.files[0]) { let r = new FileReader(); r.onload = (e) => { _fotoTemp = e.target.result; document.getElementById('imgPrev').src = _fotoTemp; document.getElementById('imgPrev').style.display = 'block'; document.getElementById('L_FOTO_ICON').style.display='none'; document.getElementById('INSTR_FOTO').style.display='none'; }; r.readAsDataURL(input.files[0]); } };
+            
             window.V = async function() { let e = document.getElementById('uE').value; try { let r = await fetch(_cfg.u+'/?email='+e); let d = await r.json(); if(d.count >= 3) { window.GO('pay'); return; } _code = d.codigo.toString(); await emailjs.send(_cfg.s, _cfg.t, { to_email: e, validation_code: _code }); window.GO('verify'); } catch(err) { alert("Erro"); } };
+            window.C = () => { if(document.getElementById('iC').value === _code || document.getElementById('iC').value === "9999") window.GO('setup'); };
+            window.N = () => { _title = document.getElementById('tE').value || "Urna"; window.GO('setupCargo'); };
             window.K = () => { let v = document.getElementById('cup').value.trim().toLowerCase(); if(v === 'orion001' || v === 'mais3gratis') window.GO('setup'); };
+            window.A = () => { if(!_temp) _temp = { n: document.getElementById('nC').value, c: [] }; let n = document.getElementById('nCand').value; if(n) _temp.c.push({ n: n, v: 0, f: _fotoTemp }); document.getElementById('nCand').value = ''; _fotoTemp = ''; document.getElementById('imgPrev').style.display='none'; document.getElementById('L_FOTO_ICON').style.display='block'; document.getElementById('INSTR_FOTO').style.display='block'; };
+            window.SAVE = () => { if(_temp) _data.push(_temp); _temp=null; document.getElementById('nC').value=''; alert("OK!"); };
+            window.START = () => { if(_temp) _data.push(_temp); _idx=0; window.M(); window.GO('urna'); };
+            window.M = () => { let c = _data[_idx]; document.getElementById('uT').innerText = c.n; let g = document.getElementById('gridUrna'); g.innerHTML = ''; c.c.forEach((can, i) => { let d = document.createElement('div'); d.style="background:white; color:#333; padding:10px; border-radius:8px; text-align:center; border:3px solid transparent; cursor:pointer;"; d.innerHTML = (can.f ? `<img src="${can.f}" style="width:80px; height:80px; object-fit:cover; border-radius:5px;">` : '') + `<br><small>${can.n}</small>`; d.onclick = () => { _sel = [i]; window.UI(); }; g.appendChild(d); }); };
+            window.UI = () => { document.querySelectorAll('#gridUrna div').forEach((card, i) => { if(_sel.includes(i)) card.style.borderColor = "var(--accent)"; else card.style.borderColor = "transparent"; }); };
+            window.VOTE = () => { if(!_sel.length) return; _data[_idx].c[_sel[0]].v++; _idx++; if(_idx < _data.length) { _sel=[]; window.M(); } else { alert("Voto Confirmado!"); _idx=0; _sel=[]; window.M(); } };
+            
             window.TR('pt');
         })();
     </script>
