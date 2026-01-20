@@ -17,12 +17,28 @@
         input, button, textarea { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
         input { background: #fff; color: #333; }
+        textarea { height: 100px; resize: none; color: #333; background: #fff; }
+        .pay-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
+        .price-tag { font-size: 26px; font-weight: bold; color: var(--accent); display: block; margin: 10px 0; text-align: center; }
+        .benefit-list { font-size: 13px; color: #ccc; margin-bottom: 15px; padding-left: 20px; list-style: none; }
+        .benefit-list li::before { content: "✔ "; color: var(--success); margin-right: 5px; }
+        .foto-container { border: 2px dashed var(--primary); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.05); }
+        .img-preview { width: 110px; height: 110px; object-fit: cover; border-radius: 10px; display: none; margin: 10px auto; border: 2px solid var(--accent); }
+        .cand-list-box { background: rgba(0,0,0,0.3); border-radius: 8px; padding: 15px; margin: 15px 0; border: 1px solid var(--primary); }
+        .cand-item { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 8px 0; font-size: 14px; }
+        .cand-item img { width: 35px; height: 35px; border-radius: 4px; object-fit: cover; }
+        #areaImpressao { width: 480px; margin: 0 auto; background: white !important; color: #333 !important; padding: 25px; box-sizing: border-box; border: 1px solid #ddd; overflow: hidden; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; }
+        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 10px; text-align: left; font-size: 11px; text-transform: uppercase; }
+        .pdf-table td { padding: 10px; border-bottom: 1px solid #eee; color: #333 !important; font-size: 13px; vertical-align: middle; word-wrap: break-word; overflow: hidden; }
+        .pdf-photo-cell { width: 65px; text-align: center; }
+        .pdf-photo { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; display: block; margin: 0 auto; }
+        .pdf-votes-cell { width: 80px; text-align: right; }
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
-        .lang-box button { width: auto; padding: 6px 14px; background: rgba(0,0,0,0.8); font-size: 11px; border: 1px solid var(--primary); color: white; }
+        .lang-box button { width: auto; padding: 6px 14px; background: rgba(0,0,0,0.8); font-size: 11px; border: 1px solid var(--primary); color: white; cursor: pointer; }
     </style>
 </head>
 <body>
-
     <div class="lang-box">
         <button onclick="window.TR('pt')">Português</button>
         <button onclick="window.TR('en')">English</button>
@@ -33,58 +49,72 @@
     <div id="verify" class="screen"><h2 id="V1"></h2><div class="info-box" id="H_VERIFY"></div><input id="iC" type="text" maxlength="4"><button onclick="window.C()" id="V3"></button></div>
     <div id="setup" class="screen"><h2 id="S1"></h2><div class="info-box" id="H_SETUP"></div><input id="tE" type="text"><button onclick="window.N()" id="S2"></button></div>
 
+    <div id="pay" class="screen">
+        <h2 id="P1"></h2><div class="info-box" id="H_PAY"></div>
+        <div class="pay-card"><h3 id="PL1"></h3><ul class="benefit-list"><li id="B_PL1_1"></li><li id="B_PL1_2"></li><li id="B_PL1_3"></li></ul><span class="price-tag">R$ 30,00</span><button onclick="window.open('https://mpago.la/2maEAFx')" style="background:var(--success)" id="B1"></button></div>
+        <div class="pay-card"><h3 id="PL2"></h3><ul class="benefit-list"><li id="B_PL2_1"></li><li id="B_PL2_2"></li><li id="B_PL2_3"></li></ul><span class="price-tag">R$ 500,00</span><button onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9" id="B2"></button></div>
+        <div class="pay-card" style="border: 2px solid var(--accent);"><p id="L_CUP" style="text-align:center; font-weight:bold;"></p><input id="cup" type="text"><button onclick="window.K()" id="P2" style="background:var(--accent); color:black"></button></div>
+        <button onclick="location.reload()" style="background:none; border:1px solid white;" id="B_EXIT"></button>
+    </div>
+
+    <div id="setupCargo" class="screen"><h2 id="C1"></h2><div class="info-box" id="H_CARGO"></div><input id="nC" type="text"><input id="nCand" type="text"><div class="foto-container" onclick="document.getElementById('fileIn').click()"><span id="L_FOTO_ICON" style="font-size:35px">📷</span><br><span id="INSTR_FOTO"></span><img id="imgPrev" class="img-preview"></div><input type="file" id="fileIn" hidden accept="image/*" onchange="window.PREV(this)"><button onclick="window.A()" id="C2"></button><div class="cand-list-box" id="candPreviewList" style="display:none;"><strong id="L_ADDED"></strong><div id="candItems"></div></div><button onclick="window.SAVE()" id="C3" style="background:var(--success)"></button><button onclick="window.START_VOTE_PROCESS()" id="C4" style="background:var(--primary); margin-top:20px"></button></div>
+
+    <div id="urna" class="screen"><h2 id="uT" style="color:var(--accent)"></h2><div class="info-box" id="H_URNA"></div><div id="gridUrna" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px;"></div><button onclick="window.VOTE()" id="U1" style="height:70px; background:var(--success); margin-top:20px;"></button><button onclick="window.END()" id="U2" style="background:var(--danger); margin-top:30px"></button></div>
+
+    <div id="res" class="screen"><h2 id="R_TITLE"></h2><div id="areaImpressao"><div style="text-align:center; border-bottom:3px solid #0a2a66; padding-bottom:5px; margin-bottom:15px;"><h2 id="pdf_h1" style="color:#0a2a66; margin:0;"></h2></div><div id="pC"></div><p id="pdf-audit" style="text-align:center; font-size:9px; color:#999; margin-top:10px;"></p></div><button onclick="window.PDF(false)" id="B_PDF_SIMPLE" style="background:var(--primary); margin-top:20px"></button><button onclick="window.PDF(true)" id="B_PDF_FULL" style="background:var(--success); margin-top:10px"></button><div class="feedback-box"><div style="text-align:center; font-size:24px;">💬</div><h3 id="F1" style="text-align:center; margin-top:0;"></h3><div class="info-box" id="H_FEED"></div><textarea id="txtSugestao"></textarea><button onclick="window.ENVIAR_FEEDBACK()" id="F2"></button></div><button onclick="location.reload()" style="background:var(--danger); margin-top:30px" id="B_EXIT_FINAL"></button></div>
+
     <script>
         (function(){
-            // BLINDAGEM PRO - URL CORRIGIDA PARA .dev E SENHAS OFUSCADAS
-            const _cl = [
-                'c2VydmljZV9vcWZieXJt', // service_id
-                'dGVtcGxhdGVfdDNhaW84Zg==', // template_id
-                'X1BLTDRPajkybzQ4S3VyU0Y=', // public_key
-                'aHR0cHM6Ly91cm5hd2ViLWJhY2tlbmQucGF1bG9zbWIxOTcyLndvcmtlcnMuZGV2', // URL CORRETA (.dev)
-                'b3Jpb24wMDE=', // orion001
-                'bWFpczNncmF0aXM=' // mais3gratis
-            ];
-            const _d = (v) => atob(v);
-            
-            window._cfg = { s: _d(_cl[0]), t: _d(_cl[1]), k: _d(_cl[2]), u: _d(_cl[3]) };
-            const _p1 = _d(_cl[4]); const _p2 = _d(_cl[5]);
-
+            const _x = ['c2VydmljZV9vcWZieXJt', 'dGVtcGxhdGVfdDNhaW84Zg==', 'X1BLTDRPajkybzQ4S3VyU0Y=', 'aHR0cHM6Ly91cm5hd2ViLWJhY2tlbmQucGF1bG9zbWIxOTcyLndvcmtlcnMuZGV2', 'b3Jpb24wMDE=', 'bWFpczNncmF0aXM='];
+            const _d = (s) => atob(s);
+            window._cfg = { s: _d(_x[0]), t: _d(_x[1]), k: _d(_x[2]), u: _d(_x[3]) };
+            const _p1 = _d(_x[4]); const _p2 = _d(_x[5]);
             emailjs.init(window._cfg.k);
-
-            window._code=''; window._idioma='pt'; window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title='';
+            window._code=''; window._idioma='pt'; window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp='';
 
             window._tr = {
-                pt: { L1: "Identificação", H_LOGIN: "Informe seu Gmail. Novos usuários possuem 3 eleições grátis para testes.", uE: "Gmail (ex: joao@gmail.com)...", L2: "Entrar", V1: "Validar Código", H_VERIFY: "Insira o código enviado ao seu e-mail.", iC: "Código...", V3: "Confirmar", S1: "Título da Votação", H_SETUP: "Dê um título para a eleição (Ex: Igreja Terceira).", tE: "Nome da eleição...", S2: "Continuar" },
-                en: { L1: "Identification", H_LOGIN: "Enter your Gmail. New users get 3 free elections.", uE: "Gmail...", L2: "Login", V1: "Verify Code", H_VERIFY: "Enter the code sent to your email.", iC: "Code...", V3: "Confirm", S1: "Election Title", H_SETUP: "Title for the PDF report.", tE: "Election name...", S2: "Continue" },
-                es: { L1: "Identificación", H_LOGIN: "Ingrese su Gmail. Tienes 3 elecciones gratis.", uE: "Gmail...", L2: "Entrar", V1: "Validar Código", H_VERIFY: "Ingrese el código enviado a su email.", iC: "Código...", V3: "Confirmar", S1: "Título", H_SETUP: "Título para el informe PDF.", tE: "Nombre aquí...", S2: "Continuar" }
+                pt: { L1: "Identificação", H_LOGIN: "Informe seu Gmail. Novos usuários possuem 3 eleições grátis.", uE: "Gmail (ex: joao@gmail.com)...", L2: "Entrar", V1: "Validar Código", H_VERIFY: "Insira o código enviado ao seu e-mail.", iC: "Código...", V3: "Confirmar", S1: "Título da Votação", H_SETUP: "Título para o relatório PDF.", tE: "Ex: Igreja Terceira...", S2: "Continuar", P1: "Período Esgotado", H_PAY: "Suas 3 eleições grátis acabaram. Selecione um plano ou use um cupom:", PL1: "💎 Eleição Única", B_PL1_1: "Crédito para 1 eleição completa", B_PL1_2: "Relatórios ilimitados em formato A5", B_PL1_3: "Suporte a fotos", B1: "COMPRAR (R$ 30,00)", PL2: "🚀 Pacote 20 Urnas", B_PL2_1: "Até 20 eleições", B_PL2_2: "Economia de 20%", B_PL2_3: "Ideal para Instituições", B2: "COMPRAR (R$ 500,00)", L_CUP: "Tem um cupom de acesso?", cup: "Digite aqui...", P2: "Validar Cupom", B_EXIT: "Voltar", C1: "Candidatos", H_CARGO: "Digite cargo, nome e foto. Clique Adicionar.", nC: "Cargo...", nCand: "Candidato...", INSTR_FOTO: "Foto", C2: "Adicionar", C3: "Salvar Cargo", C4: "INICIAR VOTAÇÃO", L_ADDED: "Registrados:", H_URNA: "Selecione e confirme.", U1: "CONFIRMAR VOTO", U2: "ENCERRAR", R_TITLE: "Resultado", B_PDF_SIMPLE: "PDF Sem Fotos", B_PDF_FULL: "PDF Com Fotos", F1: "Sugestões", H_FEED: "Deixe seu pedido abaixo.", txtSugestao: "Escreva aqui...", F2: "Enviar", B_EXIT_FINAL: "Sair Agora", alert_voto: "Voto Confirmado!", alert_error: "Adicione candidatos!" },
+                en: { L1: "Identification", H_LOGIN: "Enter Gmail. 3 free elections.", uE: "Gmail...", L2: "Login", S1: "Title", H_SETUP: "Title for PDF.", tE: "Ex: Church...", S2: "Continue", P1: "Limit Reached", H_PAY: "Trial over. Choose a plan or use a coupon:", PL1: "💎 Single Plan", B1: "BUY ($30)", PL2: "🚀 20 Pack", B2: "BUY ($500)", C1: "Candidates", C4: "START", B_PDF_SIMPLE: "PDF No Photos", B_PDF_FULL: "PDF With Photos", alert_voto: "Vote OK!" },
+                es: { L1: "Identificación", H_LOGIN: "Ingrese Gmail. 3 gratis.", uE: "Gmail...", L2: "Entrar", S1: "Título", H_SETUP: "Título para PDF.", tE: "Ej: Iglesia...", S2: "Continuar", P1: "Límite", H_PAY: "Límite agotado. Elija un plan o cupón:", PL1: "💎 Individual", B1: "COMPRAR ($30)", PL2: "🚀 Paquete 20", B2: "COMPRAR ($500)", C1: "Registro", C4: "INICIAR", B_PDF_SIMPLE: "PDF Simple", B_PDF_FULL: "PDF Fotos", alert_voto: "¡Voto OK!" }
             };
 
+            window.TR = (l) => { window._idioma = l; for(let k in window._tr[l]){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = window._tr[l][k]; else el.innerText = window._tr[l][k]; } } };
+            window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); window.TR(window._idioma); };
+            
             window.V = async function() {
                 const email = document.getElementById('uE').value.trim();
                 if(!email.includes('@')) { alert("E-mail inválido"); return; }
-                
                 try {
-                    // CONEXÃO CORRIGIDA PARA .workers.dev
                     const response = await fetch(`${window._cfg.u}/?email=${encodeURIComponent(email)}`);
-                    if(!response.ok) throw new Error("DNS_FAIL");
-                    
+                    if(!response.ok) throw new Error("DNS");
                     const data = await response.json();
                     if(data.count >= 3) { window.GO('pay'); return; }
-
                     window._code = data.codigo.toString();
                     await emailjs.send(window._cfg.s, window._cfg.t, { to_email: email, validation_code: window._code });
                     window.GO('verify');
                 } catch(err) {
-                    console.error("Critical Error:", err);
-                    alert("Erro de conexão: O servidor não foi encontrado. Verifique se o Worker está ativo e a URL correta (.dev).");
+                    alert("Erro de conexão. Verifique o servidor.");
                 }
             };
 
-            window.TR = (l) => { window._idioma = l; for(let k in window._tr[l]){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT') el.placeholder = window._tr[l][k]; else el.innerText = window._tr[l][k]; } } };
-            window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); window.TR(window._idioma); };
-            window.C = () => { if(document.getElementById('iC').value === window._code || document.getElementById('iC').value === "9999") window.GO('setup'); else alert("Código incorreto"); };
-            window.N = () => { window._title = document.getElementById('tE').value || "Urna"; window.GO('setupCargo'); };
-            window.K = () => { let v = document.getElementById('cup').value.trim().toLowerCase(); if(v === _p1 || v === _p2) window.GO('setup'); else alert("Cupom inválido"); };
+            window.C = () => { if(document.getElementById('iC').value === window._code || document.getElementById('iC').value === "9999") window.GO('setup'); else alert("Incorreto"); };
+            window.N = () => { window._title = document.getElementById('tE').value || "Urna"; window._data = []; window.GO('setupCargo'); };
+            window.PREV = (i) => { if (i.files && i.files[0]) { let r = new FileReader(); r.onload = (e) => { window._fotoTemp = e.target.result; let p = document.getElementById('imgPrev'); p.src = window._fotoTemp; p.style.display = 'block'; document.getElementById('L_FOTO_ICON').style.display='none'; document.getElementById('INSTR_FOTO').style.display='none'; }; r.readAsDataURL(i.files[0]); } };
+            window.A = () => { if(!window._temp) window._temp = { n: document.getElementById('nC').value, c: [] }; let n = document.getElementById('nCand').value; if(!n) return; window._temp.c.push({ n: n, v: 0, f: window._fotoTemp }); document.getElementById('candPreviewList').style.display = 'block'; let i = document.createElement('div'); i.className = 'cand-item'; i.innerHTML = (window._fotoTemp ? `<img src="${window._fotoTemp}">` : '') + `<span>${n}</span>`; document.getElementById('candItems').appendChild(i); document.getElementById('nCand').value = ''; window._fotoTemp = ''; document.getElementById('imgPrev').style.display='none'; document.getElementById('L_FOTO_ICON').style.display='block'; document.getElementById('INSTR_FOTO').style.display='block'; };
+            window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('candItems').innerHTML = ''; document.getElementById('candPreviewList').style.display = 'none'; alert("OK!"); };
+            window.START_VOTE_PROCESS = () => { if(window._temp) { window._data.push(window._temp); window._temp = null; } if(window._data.length === 0) { alert(window._tr[window._idioma].alert_error); return; } window._idx = 0; if(window.RENDER_URNA()) window.GO('urna'); };
+            window.RENDER_URNA = () => { let c = window._data[window._idx]; if(!c) return false; document.getElementById('uT').innerText = c.n.toUpperCase(); let g = document.getElementById('gridUrna'); g.innerHTML = ''; c.c.forEach((can, i) => { let d = document.createElement('div'); d.style="background:white; color:#333; padding:10px; border-radius:12px; text-align:center; border:4px solid transparent; cursor:pointer;"; d.innerHTML = (can.f ? `<img src="${can.f}" style="width:100px; height:100px; object-fit:cover; border-radius:10px;">` : '') + `<br><b style="font-size:18px;">${can.n}</b>`; d.onclick = () => { window._sel = [i]; window.UI_REFRESH(); }; g.appendChild(d); }); return true; };
+            window.UI_REFRESH = () => { document.querySelectorAll('#gridUrna div').forEach((c, i) => { if(window._sel.includes(i)) c.style.borderColor = "var(--success)"; else c.style.borderColor = "transparent"; }); };
+            window.VOTE = () => { if(!window._sel.length) return; window._data[window._idx].c[window._sel[0]].v++; window._idx++; if(window._idx < window._data.length) { window._sel=[]; window.RENDER_URNA(); } else { alert(window._tr[window._idioma].alert_voto); window._idx=0; window._sel=[]; window.RENDER_URNA(); } };
+            window.END = () => { document.getElementById('pdf_h1').innerText = window._title.toUpperCase(); document.getElementById('pdf-audit').innerText = "Data: " + new Date().toLocaleString(); window.GO('res'); };
+            window.PDF = (f) => { let o = document.getElementById('pC'); o.innerHTML = ''; window._data.forEach(c => { let s = [...c.c].sort((a,b) => b.v - a.v); let h = `<table class="pdf-table"><thead><tr>${f ? '<th class="pdf-photo-cell"></th>' : ''}<th>${c.n.toUpperCase()}</th><th class="pdf-votes-cell">VOTOS</th></tr></thead><tbody>`; s.forEach(can => { h += `<tr>${f ? `<td class="pdf-photo-cell"><img src="${can.f}" class="pdf-photo"></td>` : ''}<td>${can.n}</td><td class="pdf-votes-cell"><b>${can.v}</b></td></tr>`; }); h += `</tbody></table>`; o.innerHTML += h; }); const e = document.getElementById('areaImpressao'); const opt = { margin: 5, filename: f ? 'Fotos.pdf' : 'Simples.pdf', image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2.5, useCORS: true }, jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' } }; setTimeout(() => html2pdf().set(opt).from(e).save(), 600); };
+            window.ENVIAR_FEEDBACK = () => { let m = document.getElementById('txtSugestao').value; if(!m) return; emailjs.send(window._cfg.s, window._cfg.t, { to_email: 'paulosmv1972@gmail.com', validation_code: 'FDB: ' + m }).then(() => { alert("Enviado!"); document.getElementById('txtSugestao').value = ''; }); };
+            
+            // CUPOM BLINDADO E OFUSCADO
+            window.K = () => { 
+                let v = document.getElementById('cup').value.trim().toLowerCase(); 
+                if(v === _p1 || v === _p2) { alert("Acesso Autorizado!"); window.GO('setup'); } else { alert("Cupom Inválido."); }
+            };
 
             window.TR('pt');
         })();
