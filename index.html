@@ -29,30 +29,13 @@
         <button onclick="window.TR('es')">Español</button>
     </div>
 
-    <div id="login" class="screen active">
-        <h2 id="L1"></h2>
-        <div class="info-box" id="H_LOGIN"></div>
-        <input id="uE" type="email">
-        <button onclick="window.V()" id="L2"></button>
-    </div>
-
-    <div id="verify" class="screen">
-        <h2 id="V1"></h2>
-        <div class="info-box" id="H_VERIFY"></div>
-        <input id="iC" type="text" maxlength="4">
-        <button onclick="window.C()" id="V3"></button>
-    </div>
-
-    <div id="setup" class="screen">
-        <h2 id="S1"></h2>
-        <div class="info-box" id="H_SETUP"></div>
-        <input id="tE" type="text">
-        <button onclick="window.N()" id="S2"></button>
-    </div>
+    <div id="login" class="screen active"><h2 id="L1"></h2><div class="info-box" id="H_LOGIN"></div><input id="uE" type="email"><button onclick="window.V()" id="L2"></button></div>
+    <div id="verify" class="screen"><h2 id="V1"></h2><div class="info-box" id="H_VERIFY"></div><input id="iC" type="text" maxlength="4"><button onclick="window.C()" id="V3"></button></div>
+    <div id="setup" class="screen"><h2 id="S1"></h2><div class="info-box" id="H_SETUP"></div><input id="tE" type="text"><button onclick="window.N()" id="S2"></button></div>
 
     <script>
         (function(){
-            // OBSCURECIMENTO TOTAL - URL CORRIGIDA PARA .dev
+            // BLINDAGEM PRO - URL CORRIGIDA PARA .dev E SENHAS OFUSCADAS
             const _cl = [
                 'c2VydmljZV9vcWZieXJt', // service_id
                 'dGVtcGxhdGVfdDNhaW84Zg==', // template_id
@@ -71,7 +54,7 @@
             window._code=''; window._idioma='pt'; window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title='';
 
             window._tr = {
-                pt: { L1: "Identificação", H_LOGIN: "Informe seu Gmail. Novos usuários possuem 3 eleições grátis.", uE: "Gmail (ex: joao@gmail.com)...", L2: "Entrar", V1: "Validar Código", H_VERIFY: "Insira o código enviado ao seu e-mail.", iC: "Código...", V3: "Confirmar", S1: "Título da Votação", H_SETUP: "Dê um título para a eleição (Ex: Igreja Terceira).", tE: "Nome da eleição...", S2: "Continuar" },
+                pt: { L1: "Identificação", H_LOGIN: "Informe seu Gmail. Novos usuários possuem 3 eleições grátis para testes.", uE: "Gmail (ex: joao@gmail.com)...", L2: "Entrar", V1: "Validar Código", H_VERIFY: "Insira o código enviado ao seu e-mail.", iC: "Código...", V3: "Confirmar", S1: "Título da Votação", H_SETUP: "Dê um título para a eleição (Ex: Igreja Terceira).", tE: "Nome da eleição...", S2: "Continuar" },
                 en: { L1: "Identification", H_LOGIN: "Enter your Gmail. New users get 3 free elections.", uE: "Gmail...", L2: "Login", V1: "Verify Code", H_VERIFY: "Enter the code sent to your email.", iC: "Code...", V3: "Confirm", S1: "Election Title", H_SETUP: "Title for the PDF report.", tE: "Election name...", S2: "Continue" },
                 es: { L1: "Identificación", H_LOGIN: "Ingrese su Gmail. Tienes 3 elecciones gratis.", uE: "Gmail...", L2: "Entrar", V1: "Validar Código", H_VERIFY: "Ingrese el código enviado a su email.", iC: "Código...", V3: "Confirmar", S1: "Título", H_SETUP: "Título para el informe PDF.", tE: "Nombre aquí...", S2: "Continuar" }
             };
@@ -81,19 +64,19 @@
                 if(!email.includes('@')) { alert("E-mail inválido"); return; }
                 
                 try {
-                    // CONEXÃO CORRIGIDA PARA .dev
+                    // CONEXÃO CORRIGIDA PARA .workers.dev
                     const response = await fetch(`${window._cfg.u}/?email=${encodeURIComponent(email)}`);
-                    if(!response.ok) throw new Error("DNS_ERR");
+                    if(!response.ok) throw new Error("DNS_FAIL");
                     
                     const data = await response.json();
-                    if(data.count >= 3) { alert("Limite de uso atingido."); return; }
+                    if(data.count >= 3) { window.GO('pay'); return; }
 
                     window._code = data.codigo.toString();
                     await emailjs.send(window._cfg.s, window._cfg.t, { to_email: email, validation_code: window._code });
                     window.GO('verify');
                 } catch(err) {
-                    console.error("DNS Error:", err);
-                    alert("Erro de conexão: O servidor não foi encontrado. Verifique se o Worker está ativo e a URL correta.");
+                    console.error("Critical Error:", err);
+                    alert("Erro de conexão: O servidor não foi encontrado. Verifique se o Worker está ativo e a URL correta (.dev).");
                 }
             };
 
