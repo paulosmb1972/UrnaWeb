@@ -20,16 +20,17 @@
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
         input { background: #fff; color: #333; }
 
-        /* AJUSTE FIXO PARA FOTO DO CANDIDATO (EVITA TAMANHO ENORME) */
+        /* BLINDAGEM DE TAMANHO DA FOTO - RESOLVE O PROBLEMA DA FOTO GRANDE */
         .foto-container { border: 2px dashed var(--primary); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.05); }
         .img-preview { 
-            width: 110px !important; 
-            height: 110px !important; 
+            width: 120px !important; 
+            height: 120px !important; 
             object-fit: cover; 
             border-radius: 10px; 
             display: none; 
             margin: 10px auto; 
-            border: 2px solid var(--accent); 
+            border: 3px solid var(--accent);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
         .pay-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
@@ -114,32 +115,28 @@
 
             window._tr = {
                 pt: { 
-                    L1: "Identificação", H_LOGIN: "Informe seu Gmail. Novos usuários possuem 3 eleições grátis.", uE: "Gmail...", L2: "Entrar",
-                    V1: "Validar", H_VERIFY: "Insira o código enviado ao e-mail.", iC: "Código...", V3: "Confirmar",
-                    S1: "Título da Votação", H_SETUP: "Defina o nome para os relatórios.", tE: "Nome da eleição...", S2: "Continuar",
-                    P1: "Limite Atingido", H_PAY: "Escolha um plano ou use um cupom promocional:", PL1: "💎 Plano Eleição Única", B_PL1_1: "Válido para 1 eleição completa", B_PL1_2: "Relatórios A5 sem limites", B_PL1_3: "Suporte total a fotos", B1: "ADQUIRIR PLANO (R$ 30,00)", PL2: "🚀 Pacote Institucional 20 Urnas", B_PL2_1: "Até 20 eleições profissionais", B_PL2_2: "Desconto especial de 20%", B_PL2_3: "Ideal para grandes entidades", B2: "ADQUIRIR PACOTE (R$ 500,00)", L_CUP: "Tem um cupom?", cup: "Código...", P2: "Liberar Acesso", B_EXIT: "Voltar",
-                    C1: "Candidatos", H_CARGO: "Preencha cargo, nome e anexe a foto.", nC: "Nome do Cargo (ex: Presidente)...", nCand: "Nome do Candidato...", INSTR_FOTO: "Foto do Candidato", C2: "Adicionar", C3: "Salvar Cargo", C4: "FINALIZAR CADASTRO", L_ADDED: "Registrados:",
-                    H_URNA: "Clique na foto do candidato e confirme abaixo.", U1: "CONFIRMAR MEU VOTO", U2: "ENCERRAR VOTAÇÃO GERAL", R_TITLE: "Resultado Oficial", B_PDF_SIMPLE: "PDF Sem Fotos", B_PDF_FULL: "PDF Com Fotos", B_EXIT_FINAL: "Sair", alert_voto: "Voto Confirmado!", alert_error: "Adicione candidatos!"
+                    L1: "Identificação Digital", H_LOGIN: "Informe seu Gmail. Novos usuários possuem 3 eleições grátis para testes.", uE: "Seu Gmail...", L2: "Avançar",
+                    V1: "Validar Código", H_VERIFY: "Insira o código enviado ao seu e-mail.", iC: "Código...", V3: "Confirmar",
+                    S1: "Título da Eleição", H_SETUP: "Defina o nome oficial para os relatórios PDF.", tE: "Ex: Igreja Terceira...", S2: "Continuar para Cadastro",
+                    P1: "Limite de Uso Gratuito Atingido", H_PAY: "Você utilizou suas 3 eleições de cortesia. Para continuar realizando votações profissionais, selecione um dos pacotes abaixo ou ative seu acesso através de um cupom promocional.", PL1: "💎 Plano Eleição Única", B_PL1_1: "Válido para 1 eleição completa", B_PL1_2: "Relatórios A5 sem limites", B_PL1_3: "Suporte total a fotos", B1: "ADQUIRIR PLANO (R$ 30,00)", PL2: "🚀 Pacote Institucional 20 Urnas", B_PL2_1: "Até 20 eleições profissionais", B_PL2_2: "Desconto especial de 20%", B_PL2_3: "Ideal para grandes entidades", B2: "ADQUIRIR PACOTE (R$ 500,00)", L_CUP: "Possui um código de desconto ou cupom?", cup: "Digite seu cupom aqui...", P2: "Validar e Liberar Acesso", B_EXIT: "Voltar ao Início",
+                    C1: "Registrar Candidatos", H_CARGO: "Preencha o cargo, nome do candidato e anexe a foto.", nC: "Nome do Cargo (ex: Presidente)...", nCand: "Nome do Candidato...", INSTR_FOTO: "Toque para enviar foto", C2: "Adicionar Candidato", C3: "Salvar este Cargo", C4: "CONCLUIR E ABRIR URNA", L_ADDED: "Lista de Registrados:",
+                    H_URNA: "Selecione o candidato na tela e clique no botão abaixo para confirmar.", U1: "CONFIRMAR MEU VOTO", U2: "ENCERRAR VOTAÇÃO GERAL", R_TITLE: "Resultado Oficial", B_PDF_SIMPLE: "PDF Sem Fotos", B_PDF_FULL: "PDF Com Fotos", B_EXIT_FINAL: "Sair Agora", alert_voto: "Voto registrado!", alert_error: "Cadastre candidatos!"
                 },
                 en: { 
-                    L1: "Identification", H_LOGIN: "Enter Gmail. 3 free elections for testing.", uE: "Gmail...", L2: "Login",
-                    S1: "Setup Title", H_SETUP: "Enter the official name for reports.", tE: "Election name...", S2: "Continue",
-                    P1: "Limit Reached", H_PAY: "Select a plan or use a promotional coupon:", PL1: "💎 Single Election Plan", B_PL1_1: "Valid for 1 complete election", B_PL1_2: "Unlimited A5 PDF reports", B_PL1_3: "Full photo support", B1: "ACQUIRE PLAN (R$ 30,00)", PL2: "🚀 Institutional 20 Urns Pack", B_PL2_1: "Up to 20 professional elections", B_PL2_2: "Special 20% discount", B_PL2_3: "Ideal for large entities", B2: "ACQUIRE PACKAGE (R$ 500,00)", L_CUP: "Have a coupon?", cup: "Code...", P2: "Activate Access", B_EXIT: "Go Back",
-                    C1: "Candidates", H_CARGO: "Fill in position, name and attach photo.", nC: "Name of Position (ex: President)...", nCand: "Candidate Name...", INSTR_FOTO: "Candidate Photo", C2: "Add", C3: "Save Position", C4: "FINISH SETUP", L_ADDED: "Registered:",
-                    H_URNA: "Click on the candidate photo and confirm below.", U1: "CONFIRM MY VOTE", U2: "CLOSE GLOBAL VOTING", R_TITLE: "Official Results", B_PDF_SIMPLE: "PDF Text Only", B_PDF_FULL: "PDF With Photos", B_EXIT_FINAL: "Exit", alert_voto: "Vote Recorded!", alert_error: "Add candidates first!"
+                    L1: "Identification", H_LOGIN: "Enter Gmail. 3 free elections for testing.", uE: "Gmail...", L2: "Next",
+                    P1: "Free Limit Reached", H_PAY: "You used your 3 courtesy elections. To continue, select a package or use a promotional coupon.", PL1: "💎 Single Election Plan", B_PL1_1: "1 complete election", B_PL1_2: "Unlimited A5 PDF", B_PL1_3: "Full photo support", B1: "BUY PLAN (R$ 30,00)", PL2: "🚀 20 Urns Pack", B_PL2_1: "Up to 20 elections", B2: "BUY PACKAGE (R$ 500,00)", L_CUP: "Have a coupon?", cup: "Coupon here...", P2: "Validate & Release", B_EXIT: "Back",
+                    C1: "Candidates", H_CARGO: "Fill position, candidate name, and photo.", nC: "Position Name...", nCand: "Candidate Name...", INSTR_FOTO: "Attach photo", C2: "Add", C3: "Save Position", C4: "START VOTING", U1: "CONFIRM MY VOTE", U2: "CLOSE GLOBAL VOTING", alert_voto: "Vote recorded!", alert_error: "Add candidates!"
                 },
                 es: { 
-                    L1: "Identificación", H_LOGIN: "Ingrese Gmail. 3 elecciones gratis de prueba.", uE: "Gmail...", L2: "Entrar",
-                    S1: "Título", H_SETUP: "Defina el nombre para los informes.", tE: "Elección...", S2: "Continuar",
-                    P1: "Límite Alcanzado", H_PAY: "Elija un plan o use un cupón promocional:", PL1: "💎 Plan Elección Única", B_PL1_1: "Válido para 1 elección completa", B_PL1_2: "Informes A5 ilimitados", B_PL1_3: "Soporte total para fotos", B1: "ADQUIRIR PLAN (R$ 30,00)", PL2: "🚀 Paquete Institucional 20 Urnas", B_PL2_1: "Hasta 20 elecciones profesionales", B_PL2_2: "Descuento especial del 20%", B_PL2_3: "Ideal para grandes entidades", B2: "ADQUIRIR PAQUETE (R$ 500,00)", L_CUP: "¿Tiene un cupón?", cup: "Código...", P2: "Liberar Acceso", B_EXIT: "Volver",
-                    C1: "Candidatos", H_CARGO: "Cargo, nombre y adjunte la foto.", nC: "Nombre del Cargo (ej: Pastor)...", nCand: "Nombre del Candidato...", INSTR_FOTO: "Foto del Candidato", C2: "Añadir", C3: "Guardar Cargo", C4: "INICIAR URNA", L_ADDED: "Registrados:",
-                    H_URNA: "Clic en la foto y confirme abajo.", U1: "CONFIRMAR MI VOTO", U2: "FINALIZAR VOTACIÓN GENERAL", R_TITLE: "Resultado Oficial", B_PDF_SIMPLE: "PDF Sin Fotos", B_PDF_FULL: "PDF Con Fotos", B_EXIT_FINAL: "Salir", alert_voto: "¡Voto Registrado!", alert_error: "¡Añade candidatos!"
+                    L1: "Identificación", H_LOGIN: "Ingrese Gmail. 3 gratis.", uE: "Gmail...", L2: "Entrar",
+                    P1: "Límite Alcanzado", H_PAY: "Ha agotado sus 3 elecciones de cortesía. Elija un paquete o use un cupón.", PL1: "💎 Plan Individual", B_PL1_1: "1 elección completa", B1: "COMPRAR PLAN (R$ 30,00)", PL2: "🚀 Paquete 20 Urnas", B_PL2_1: "20 elecciones profesionales", B2: "COMPRAR PAQUETE (R$ 500,00)", L_CUP: "¿Tiene un cupón?", P2: "Validar y Liberar", B_EXIT: "Volver",
+                    C1: "Candidatos", H_CARGO: "Cargo, nombre y foto.", nC: "Nombre del Cargo...", nCand: "Nombre del Candidato...", INSTR_FOTO: "Adjuntar foto", C2: "Añadir", C3: "Guardar Cargo", C4: "INICIAR VOTACIÓN", U1: "CONFIRMAR MI VOTO", U2: "FINALIZAR VOTACIÓN GENERAL", alert_voto: "¡Voto registrado!"
                 }
             };
 
             window.TR = (l) => { window._idioma = l; for(let k in window._tr[l]){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT') el.placeholder = window._tr[l][k]; else el.innerText = window._tr[l][k]; } } };
             window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); window.TR(window._idioma); };
-            window.V = async function() { const email = document.getElementById('uE').value.trim(); if(!email.includes('@')) { alert("E-mail inválido"); return; } try { const response = await fetch(`${window._cfg.u}/?email=${encodeURIComponent(email)}`); const data = await response.json(); if(data.count >= 3) { window.GO('pay'); return; } window._code = data.codigo.toString(); await emailjs.send(window._cfg.s, window._cfg.t, { to_email: email, validation_code: window._code }); window.GO('verify'); } catch(err) { alert("Erro."); } };
+            window.V = async function() { const email = document.getElementById('uE').value.trim(); if(!email.includes('@')) { alert("E-mail inválido"); return; } try { const response = await fetch(`${window._cfg.u}/?email=${encodeURIComponent(email)}`); const data = await response.json(); if(data.count >= 3) { window.GO('pay'); return; } window._code = data.codigo.toString(); await emailjs.send(window._cfg.s, window._cfg.t, { to_email: email, validation_code: window._code }); window.GO('verify'); } catch(err) { alert("Erro de conexão."); } };
             window.C = () => { if(document.getElementById('iC').value === window._code || document.getElementById('iC').value === "9999") window.GO('setup'); else alert("Incorreto"); };
             window.N = () => { window._title = document.getElementById('tE').value || "Urna"; window._data = []; window.GO('setupCargo'); };
             window.K = () => { let v = document.getElementById('cup').value.trim().toLowerCase(); if(v === _c1 || v === _c2) { alert("Liberado!"); window.GO('setup'); } else { alert("Inválido."); } };
