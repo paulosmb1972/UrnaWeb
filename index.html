@@ -19,14 +19,10 @@
         input, button, textarea { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
         
-        /* BLOCO DE PAGAMENTO BLINDADO */
         .pay-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; text-align: center; }
-
-        /* CADASTRO COM FOTO */
         .foto-container { border: 2px dashed var(--primary); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.05); }
         .img-preview { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; display: none; margin: 10px auto; border: 2px solid var(--accent); }
 
-        /* RESULTADO FORMATO A5 (540px) */
         .resultado-wrapper { width: 100%; overflow-x: auto; background: #fff; border-radius: 8px; margin-top: 10px; }
         #areaImpressao { width: 540px; margin: 0 auto; background: white !important; color: #333 !important; padding: 30px; box-sizing: border-box; }
         .pdf-header { text-align: center; border-bottom: 3px solid #0a2a66; padding-bottom: 10px; margin-bottom: 20px; }
@@ -51,21 +47,21 @@
     <div id="login" class="screen active">
         <h2 id="L1">Acesso ao Sistema</h2>
         <div class="info-box" id="H_LOGIN">Informe seu Gmail para validação. Você tem direito a 3 eleições gratuitas para testes.</div>
-        <input id="uE" type="email">
+        <input id="uE" type="email" placeholder="seu-email@gmail.com">
         <button onclick="window.V()" id="L2">Entrar</button>
     </div>
 
     <div id="verify" class="screen">
         <h2 id="V1">Verificar Código</h2>
         <div class="info-box" id="H_VERIFY">Insira o código de 4 dígitos enviado para o seu e-mail agora para validar seu acesso.</div>
-        <input id="iC" type="text" maxlength="4">
+        <input id="iC" type="text" maxlength="4" placeholder="0000">
         <button onclick="window.C()" id="V3">Confirmar</button>
     </div>
 
     <div id="setup" class="screen">
         <h2 id="S1">Nome da Eleição</h2>
         <div class="info-box" id="H_SETUP">Dê um título para identificar esta votação no relatório final (Ex: Igreja Terceira).</div>
-        <input id="tE" type="text">
+        <input id="tE" type="text" placeholder="Título da eleição...">
         <button onclick="window.N()" id="S2">Próximo</button>
     </div>
 
@@ -77,7 +73,7 @@
             <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9" id="B2">Pacote 20 Eleições (R$ 500,00)</button>
             <hr style="margin:20px 0; border:0.5px solid rgba(255,255,255,0.1);">
             <p id="L_CUP">Possui um cupom de acesso?</p>
-            <input id="cup" type="text">
+            <input id="cup" type="text" placeholder="Código do cupom...">
             <button onclick="window.K()" id="P2" style="background:var(--accent); color:black">Ativar Cupom</button>
         </div>
         <button onclick="location.reload()" style="background:none; border:1px solid white;">Voltar</button>
@@ -86,9 +82,9 @@
     <div id="setupCargo" class="screen">
         <h2 id="C1">Cadastro de Candidatos</h2>
         <div class="info-box" id="H_CARGO">Defina o Cargo, o Nome do Candidato e clique na câmera para anexar a foto.</div>
-        <input id="nC" type="text">
+        <input id="nC" type="text" placeholder="Nome do Cargo (ex: Presbítero)...">
         <hr>
-        <input id="nCand" type="text">
+        <input id="nCand" type="text" placeholder="Nome do Candidato...">
         <div class="foto-container" onclick="document.getElementById('fileIn').click()">
             <span id="L_FOTO_ICON" style="font-size:35px">📷</span><br>
             <span id="INSTR_FOTO">Clique aqui para anexar a foto do candidato</span>
@@ -106,7 +102,7 @@
         <div class="info-box" id="H_URNA">Toque no card do candidato para selecionar e depois clique no botão verde para confirmar seu voto.</div>
         <div id="gridUrna" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px;"></div>
         <button onclick="window.VOTE()" id="U1" style="height:70px; background:var(--success); margin-top:20px;">CONFIRMAR VOTO</button>
-        <button onclick="window.END()" id="U2" style="background:var(--danger); margin-top:30px">ENCERRAR ELEIÇÃO</button>
+        <button onclick="window.END()" id="U2" style="background:var(--danger); margin-top:40px">ENCERRAR ELEIÇÃO</button>
     </div>
 
     <div id="res" class="screen">
@@ -114,7 +110,7 @@
         <div class="info-box" id="H_RES">Confira a apuração abaixo. Você pode baixar o relatório oficial no formato A5.</div>
         <div class="resultado-wrapper">
             <div id="areaImpressao">
-                <div class="pdf-header"><h1 id="pdf_h1"></h1></div>
+                <div class="pdf-header"><h1 id="pdf_h1" style="color:#0a2a66 !important;"></h1></div>
                 <div id="pC"></div>
                 <p id="pdf-audit" style="text-align:center; font-size:10px; color:#999; margin-top:20px; border-top:1px solid #eee; padding-top:10px;"></p>
             </div>
@@ -135,7 +131,7 @@
                     V1: "Verificar Código", H_VERIFY: "Insira o código de 4 dígitos enviado para o seu e-mail agora para validar seu acesso.", V3: "Confirmar",
                     S1: "Nome da Eleição", tE: "Ex: Igreja Terceira...", H_SETUP: "Dê um título para identificar esta votação no relatório final.", S2: "Próximo",
                     P1: "Limite de Testes Atingido", H_PAY: "Suas 3 eleições grátis acabaram. Escolha um plano abaixo para liberar sua eleição ou use um cupom.", B1: "Eleição Única (R$ 30,00)", B2: "Pacote 20 Eleições (R$ 500,00)", L_CUP: "Possui um cupom de acesso?", cup: "Código...", P2: "Ativar Cupom",
-                    C1: "Cadastro de Candidatos", nC: "Nome do Cargo...", nCand: "Candidato...", H_CARGO: "Defina o Cargo, o Nome do Candidato e clique na câmera para anexar a foto.", INSTR_FOTO: "Clique aqui para anexar a foto do candidato", C2: "Adicionar Candidato", C3: "Salvar Cargo", C4: "INICIAR VOTAÇÃO",
+                    C1: "Cadastro de Candidatos", nC: "Nome do Cargo (ex: Presbítero)...", nCand: "Candidato...", H_CARGO: "Defina o Cargo, o Nome do Candidato e clique na câmera para anexar a foto.", INSTR_FOTO: "Clique aqui para anexar a foto do candidato", C2: "Adicionar Candidato", C3: "Salvar Cargo", C4: "INICIAR VOTAÇÃO",
                     U1: "CONFIRMAR VOTO", U2: "ENCERRAR ELEIÇÃO", H_URNA: "Toque no card do candidato para selecionar e depois clique no botão verde para confirmar seu voto.",
                     R_TITLE: "Resultado Final", H_RES: "Confira a apuração abaixo. Você pode baixar o relatório oficial no formato A5.", B_PDF: "Baixar Relatório (A5)", alert_voto: "Voto Confirmado!", alert_end: "Deseja encerrar a eleição?"
                 },
@@ -144,7 +140,7 @@
                     V1: "Verify Code", H_VERIFY: "Enter the 4-digit code sent to your email to validate access.", V3: "Confirm",
                     S1: "Election Title", tE: "Ex: Church Vote...", H_SETUP: "Give a title to identify this vote in the final report.", S2: "Next",
                     P1: "Test Limit Reached", H_PAY: "Your 3 free elections are over. Select a plan to release your election or use a coupon.", B1: "Single Election ($30.00)", B2: "20 Pack ($500.00)", L_CUP: "Have a coupon?", cup: "Code...", P2: "Activate",
-                    C1: "Candidate Registration", nC: "Position...", nCand: "Name...", H_CARGO: "Define Position, Candidate Name and click the camera to attach photo.", INSTR_FOTO: "Click here to attach photo", C2: "Add Candidate", C3: "Save Position", C4: "START VOTING",
+                    C1: "Candidate Registration", nC: "Position (ex: Elder)...", nCand: "Name...", H_CARGO: "Define Position, Candidate Name and click the camera to attach photo.", INSTR_FOTO: "Click here to attach photo", C2: "Add Candidate", C3: "Save Position", C4: "START VOTING",
                     U1: "CONFIRM VOTE", U2: "END ELECTION", H_URNA: "Tap the card to select and click the green button to confirm your vote.",
                     R_TITLE: "Final Result", H_RES: "Check results below. Download official A5 report.", B_PDF: "Download (A5)", alert_voto: "Vote Confirmed!", alert_end: "End election?"
                 },
@@ -153,13 +149,22 @@
                     V1: "Verificar", H_VERIFY: "Ingresa el código enviado a tu e-mail para validar el acceso.", V3: "Confirmar",
                     S1: "Nombre", tE: "Ej: Iglesia...", H_SETUP: "Asigna un título para el informe PDF.", S2: "Siguiente",
                     P1: "Límite Alcanzado", H_PAY: "Tus 3 elecciones gratis terminaron. Elige un plano o usa un cupón.", B1: "Elección Individual (R$ 30.00)", B2: "Paquete 20 (R$ 500.00)", L_CUP: "¿Tienes cupón?", cup: "Código...", P2: "Validar",
-                    C1: "Registro", nC: "Cargo...", nCand: "Candidato...", H_CARGO: "Ingresa Cargo, Nombre y foto.", INSTR_FOTO: "Clic para foto", C2: "Añadir", C3: "Guardar", C4: "INICIAR VOTACIÓN",
+                    C1: "Registro", nC: "Cargo (ej: Presbítero)...", nCand: "Candidato...", H_CARGO: "Ingresa Cargo, Nombre y foto.", INSTR_FOTO: "Clic para foto", C2: "Añadir", C3: "Guardar", C4: "INICIAR VOTACIÓN",
                     U1: "CONFIRMAR VOTO", U2: "FINALIZAR", H_URNA: "Toca el card para seleccionar y clic en el botón verde.",
                     R_TITLE: "Resultado Final", H_RES: "Mira los votos. Baja el informe A5 oficial.", B_PDF: "Bajar (A5)", alert_voto: "¡Voto OK!", alert_end: "¿Finalizar?"
                 }
             };
 
-            window.TR = (l) => { _idioma = l; for(let k in _tr[l]){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT') el.placeholder = _tr[l][k]; else el.innerText = _tr[l][k]; } } };
+            window.TR = (l) => { 
+                _idioma = l; 
+                for(let k in _tr[l]){ 
+                    let el = document.getElementById(k); 
+                    if(el) { 
+                        if(el.tagName === 'INPUT') el.placeholder = _tr[l][k]; 
+                        else el.innerText = _tr[l][k]; 
+                    } 
+                } 
+            };
             window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); window.TR(_idioma); };
             window.PREV = (input) => { if (input.files && input.files[0]) { let r = new FileReader(); r.onload = (e) => { _fotoTemp = e.target.result; document.getElementById('imgPrev').src = _fotoTemp; document.getElementById('imgPrev').style.display = 'block'; document.getElementById('L_FOTO_ICON').style.display='none'; document.getElementById('INSTR_FOTO').style.display='none'; }; r.readAsDataURL(input.files[0]); } };
             
@@ -188,7 +193,7 @@
             window.END = () => { 
                 if(!confirm(_tr[_idioma].alert_end)) return;
                 document.getElementById('pdf_h1').innerText = _title.toUpperCase(); 
-                document.getElementById('pdf-audit').innerText = "Emitido em: " + new Date().toLocaleString();
+                document.getElementById('pdf-audit').innerText = "Audit: " + new Date().toLocaleString();
                 let out = document.getElementById('pC'); out.innerHTML = ''; 
                 _data.forEach(cargo => { 
                     let sorted = [...cargo.c].sort((a,b) => b.v - a.v); 
