@@ -38,29 +38,90 @@
         <button onclick="window.TR('es')">Español</button>
     </div>
 
-    <div id="login" class="screen active"><h2 id="L1"></h2><div class="info-box" id="H_LOGIN"></div><input id="uE" type="email"><button onclick="window.V()" id="L2"></button></div>
-    <div id="verify" class="screen"><h2 id="V1"></h2><div class="info-box" id="H_VERIFY"></div><input id="iC" type="text" maxlength="4"><button onclick="window.C()" id="V3"></button></div>
-    <div id="setup" class="screen"><h2 id="S1"></h2><div class="info-box" id="H_SETUP"></div><input id="tE" type="text"><button onclick="window.N()" id="S2"></button></div>
+    <div id="login" class="screen active">
+        <h2 id="L1"></h2>
+        <div class="info-box" id="H_LOGIN"></div>
+        <input id="uE" type="email">
+        <button onclick="window.V()" id="L2"></button>
+    </div>
+
+    <div id="verify" class="screen">
+        <h2 id="V1"></h2>
+        <div class="info-box" id="H_VERIFY"></div>
+        <input id="iC" type="text" maxlength="4">
+        <button onclick="window.C()" id="V3"></button>
+    </div>
+
+    <div id="setup" class="screen">
+        <h2 id="S1"></h2>
+        <div class="info-box" id="H_SETUP"></div>
+        <input id="tE" type="text">
+        <button onclick="window.N()" id="S2"></button>
+    </div>
 
     <div id="pay" class="screen">
         <h2 id="P1"></h2><div class="info-box" id="H_PAY"></div>
-        <div class="pay-card"><h3 id="PL1"></h3><ul class="benefit-list"><li id="B_PL1_1"></li><li id="B_PL1_2"></li><li id="B_PL1_3"></li></ul><span class="price-tag">R$ 30,00</span><button onclick="window.open('https://mpago.la/2maEAFx')" style="background:var(--success)" id="B1"></button></div>
-        <div class="pay-card"><h3 id="PL2"></h3><ul class="benefit-list"><li id="B_PL2_1"></li><li id="B_PL2_2"></li><li id="B_PL2_3"></li></ul><span class="price-tag">R$ 500,00</span><button onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9" id="B2"></button></div>
-        <div class="pay-card" style="border: 2px solid var(--accent);"><p id="L_CUP" style="text-align:center; font-weight:bold;"></p><input id="cup" type="text"><button onclick="window.K()" id="P2" style="background:var(--accent); color:black"></button></div>
+        <div class="pay-card">
+            <h3 id="PL1"></h3><ul class="benefit-list"><li id="B_PL1_1"></li><li id="B_PL1_2"></li><li id="B_PL1_3"></li></ul>
+            <span class="price-tag">R$ 30,00</span>
+            <button onclick="window.open('https://mpago.la/2maEAFx')" style="background:var(--success)" id="B1"></button>
+        </div>
+        <div class="pay-card">
+            <h3 id="PL2"></h3><ul class="benefit-list"><li id="B_PL2_1"></li><li id="B_PL2_2"></li><li id="B_PL2_3"></li></ul>
+            <span class="price-tag">R$ 500,00</span>
+            <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9" id="B2"></button>
+        </div>
+        <div class="pay-card" style="border: 2px solid var(--accent);">
+            <p id="L_CUP" style="text-align:center; font-weight:bold;"></p>
+            <input id="cup" type="text">
+            <button onclick="window.K()" id="P2" style="background:var(--accent); color:black"></button>
+        </div>
         <button onclick="location.reload()" style="background:none; border:1px solid white;" id="B_EXIT"></button>
     </div>
 
-    <div id="setupCargo" class="screen"><h2 id="C1"></h2><div class="info-box" id="H_CARGO"></div><input id="nC" type="text"><input id="nCand" type="text"><div class="foto-container" onclick="document.getElementById('fileIn').click()"><span id="L_FOTO_ICON" style="font-size:35px">📷</span><br><span id="INSTR_FOTO"></span><img id="imgPrev" class="img-preview"></div><input type="file" id="fileIn" hidden accept="image/*" onchange="window.PREV(this)"><button onclick="window.A()" id="C2"></button><div class="cand-list-box" id="candPreviewList" style="display:none;"><strong id="L_ADDED"></strong><div id="candItems"></div></div><button onclick="window.SAVE()" id="C3" style="background:var(--success)"></button><button onclick="window.START_VOTE_PROCESS()" id="C4" style="background:var(--primary); margin-top:20px"></button></div>
+    <div id="setupCargo" class="screen">
+        <h2 id="C1"></h2><div class="info-box" id="H_CARGO"></div><input id="nC" type="text"><input id="nCand" type="text">
+        <div class="foto-container" onclick="document.getElementById('fileIn').click()">
+            <span id="L_FOTO_ICON" style="font-size:35px">📷</span><br><span id="INSTR_FOTO"></span><img id="imgPrev" class="img-preview">
+        </div>
+        <input type="file" id="fileIn" hidden accept="image/*" onchange="window.PREV(this)">
+        <button onclick="window.A()" id="C2"></button>
+        <div class="cand-list-box" id="candPreviewList" style="display:none;"><strong id="L_ADDED"></strong><div id="candItems"></div></div>
+        <button onclick="window.SAVE()" id="C3" style="background:var(--success)"></button>
+        <button onclick="window.START_VOTE_PROCESS()" id="C4" style="background:var(--primary); margin-top:20px"></button>
+    </div>
 
-    <div id="urna" class="screen"><h2 id="uT" style="color:var(--accent)"></h2><div class="info-box" id="H_URNA"></div><div id="gridUrna" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px;"></div><button onclick="window.VOTE()" id="U1" style="height:70px; background:var(--success); margin-top:20px;"></button><button onclick="window.END()" id="U2" style="background:var(--danger); margin-top:30px"></button></div>
+    <div id="urna" class="screen">
+        <h2 id="uT" style="color:var(--accent)"></h2>
+        <div class="info-box" id="H_URNA"></div>
+        <div id="gridUrna" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px;"></div>
+        <button onclick="window.VOTE()" id="U1" style="height:70px; background:var(--success); margin-top:20px;"></button>
+        <button onclick="window.END()" id="U2" style="background:var(--danger); margin-top:30px"></button>
+    </div>
 
-    <div id="res" class="screen"><h2 id="R_TITLE"></h2><div id="areaImpressao"><div style="text-align:center; border-bottom:3px solid #0a2a66; padding-bottom:5px; margin-bottom:15px;"><h2 id="pdf_h1" style="color:#0a2a66; margin:0;"></h2></div><div id="pC"></div><p id="pdf-audit" style="text-align:center; font-size:9px; color:#999; margin-top:10px;"></p></div><button onclick="window.PDF(false)" id="B_PDF_SIMPLE" style="background:var(--primary); margin-top:20px"></button><button onclick="window.PDF(true)" id="B_PDF_FULL" style="background:var(--success); margin-top:10px"></button><div class="feedback-box"><div style="text-align:center; font-size:24px;">💬</div><h3 id="F1" style="text-align:center; margin-top:0;"></h3><div class="info-box" id="H_FEED"></div><textarea id="txtSugestao"></textarea><button onclick="window.ENVIAR_FEEDBACK()" id="F2"></button></div><button onclick="location.reload()" style="background:var(--danger); margin-top:30px" id="B_EXIT_FINAL"></button></div>
+    <div id="res" class="screen">
+        <h2 id="R_TITLE"></h2>
+        <div id="areaImpressao">
+            <div style="text-align:center; border-bottom:3px solid #0a2a66; padding-bottom:5px; margin-bottom:15px;"><h2 id="pdf_h1" style="color:#0a2a66; margin:0;"></h2></div>
+            <div id="pC"></div>
+            <p id="pdf-audit" style="text-align:center; font-size:9px; color:#999; margin-top:10px;"></p>
+        </div>
+        <button onclick="window.PDF(false)" id="B_PDF_SIMPLE" style="background:var(--primary); margin-top:20px"></button>
+        <button onclick="window.PDF(true)" id="B_PDF_FULL" style="background:var(--success); margin-top:10px"></button>
+        <div class="feedback-box">
+            <div style="text-align:center; font-size:24px;">💬</div>
+            <h3 id="F1" style="text-align:center; margin-top:0;"></h3>
+            <div class="info-box" id="H_FEED"></div>
+            <textarea id="txtSugestao"></textarea>
+            <button onclick="window.ENVIAR_FEEDBACK()" id="F2"></button>
+        </div>
+        <button onclick="location.reload()" style="background:var(--danger); margin-top:30px" id="B_EXIT_FINAL"></button>
+    </div>
 
     <script>
         (function(){
             // MATRIZ DE SEGURANÇA OBSCURECIDA (BASE64)
-            // Ordem: Service_ID, Template_ID, Public_Key, URL_Backend, Cupom1, Cupom2
-            const _0xS = [
+            const _0xM = [
                 'c2VydmljZV9vcWZieXJt', 
                 'dGVtcGxhdGVfdDNhaW84Zg==', 
                 'X1BLTDRPajkybzQ4S3VyU0Y=', 
@@ -70,17 +131,33 @@
             ];
             const _d = (s) => atob(s);
             
-            window._cfg = { s: _d(_0xS[0]), t: _d(_0xS[1]), k: _d(_0xS[2]), u: _d(_0xS[3]) };
-            const _m1 = _d(_0xS[4]); 
-            const _m2 = _d(_0xS[5]);
+            window._cfg = { s: _d(_0xM[0]), t: _d(_0xM[1]), k: _d(_0xM[2]), u: _d(_0xM[3]) };
+            const _c1 = _d(_0xM[4]); const _c2 = _d(_0xM[5]);
 
             emailjs.init(window._cfg.k);
             window._code=''; window._idioma='pt'; window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp='';
 
             window._tr = {
-                pt: { L1: "Identificação", H_LOGIN: "Informe seu Gmail. Novos usuários possuem 3 eleições grátis.", uE: "Gmail...", L2: "Entrar", V1: "Validar", H_VERIFY: "Código enviado ao e-mail.", iC: "Código...", V3: "Confirmar", S1: "Título", H_SETUP: "Dê um título para a eleição.", tE: "Nome da eleição...", S2: "Continuar", P1: "Limite Esgotado", H_PAY: "Limite atingido. Use um cupom para liberar:", PL1: "💎 Eleição Única", B1: "COMPRAR (R$ 30)", PL2: "🚀 Pacote 20 Urnas", B2: "COMPRAR (R$ 500)", L_CUP: "Tem um cupom?", cup: "Digite aqui...", P2: "Ativar", B_EXIT: "Voltar", C1: "Candidatos", H_CARGO: "Adicione cargo, nome e foto.", C4: "INICIAR VOTAÇÃO", R_TITLE: "Resultado", B_PDF_SIMPLE: "PDF Sem Fotos", B_PDF_FULL: "PDF Com Fotos", alert_voto: "Voto Confirmado!", alert_error: "Adicione candidatos!" },
-                en: { L1: "Identification", H_LOGIN: "Enter Gmail. 3 free elections.", L2: "Login", S1: "Title", P1: "Limit Reached", H_PAY: "Use a coupon:", B1: "BUY ($30)", B2: "BUY ($500)", C4: "START", B_PDF_SIMPLE: "PDF Simple", B_PDF_FULL: "PDF Photos", alert_voto: "Vote OK!" },
-                es: { L1: "Identificación", H_LOGIN: "Ingrese Gmail. 3 gratis.", L2: "Entrar", S1: "Título", P1: "Límite", H_PAY: "Use un cupón:", B1: "COMPRAR ($30)", B2: "COMPRAR ($500)", C4: "INICIAR", B_PDF_SIMPLE: "PDF Simple", B_PDF_FULL: "PDF Fotos", alert_voto: "¡Voto OK!" }
+                pt: { 
+                    L1: "Portal de Identificação Digital", H_LOGIN: "Para garantir a segurança, informe seu e-mail Gmail. Novos usuários recebem automaticamente um bônus de 3 eleições gratuitas para testes.", uE: "Digite seu Gmail aqui...", L2: "Avançar para Identificação",
+                    V1: "Verificação de Segurança", H_VERIFY: "Acabamos de enviar um código exclusivo de 4 dígitos para o seu e-mail. Por favor, verifique sua caixa de entrada (ou spam) e digite o código abaixo para validar seu acesso.", iC: "Digite o código aqui...", V3: "Confirmar Identidade",
+                    S1: "Configuração da Votação", H_SETUP: "Defina agora o título oficial que aparecerá no topo de todos os relatórios PDF. Escolha um nome claro que identifique a sua instituição ou evento.", tE: "Ex: Eleição Diretoria 2026...", S2: "Configurar Candidatos",
+                    P1: "Limite de Uso Gratuito Atingido", H_PAY: "Você utilizou suas 3 eleições de cortesia. Para continuar realizando votações profissionais, selecione um dos pacotes abaixo ou ative seu acesso através de um cupom promocional.", PL1: "💎 Plano Eleição Única", B_PL1_1: "Válido para 1 eleição completa", B_PL1_2: "Relatórios A5 sem limites", B_PL1_3: "Suporte total a fotos", B1: "ADQUIRIR PLANO (R$ 30,00)", PL2: "🚀 Pacote Institucional 20 Urnas", B_PL2_1: "Até 20 eleições profissionais", B_PL2_2: "Desconto especial de 20%", B_PL2_3: "Ideal para grandes entidades", B2: "ADQUIRIR PACOTE (R$ 500,00)", L_CUP: "Possui um código de desconto ou cupom?", cup: "Insira o código promocional...", P2: "Validar e Liberar Acesso", B_EXIT: "Voltar ao Início",
+                    C1: "Cadastro de Candidatos e Cargos", H_CARGO: "Primeiro, digite o nome do Cargo (ex: Presidente). Em seguida, digite o nome do Candidato e anexe uma foto. Clique em 'Adicionar' para cada candidato do mesmo cargo. Ao finalizar todos os nomes daquele cargo, clique em 'Salvar Cargo'.", nC: "Nome do Cargo (ex: Diretor)...", nCand: "Nome do Candidato...", INSTR_FOTO: "Toque para enviar foto", C2: "Adicionar à Lista", C3: "Salvar este Cargo", C4: "FINALIZAR E ABRIR URNA", L_ADDED: "Candidatos Prontos:",
+                    H_URNA: "ELEITOR: Clique sobre a foto ou nome do seu candidato escolhido. Após selecionar, clique no botão verde 'CONFIRMAR VOTO' abaixo.", U1: "CONFIRMAR MEU VOTO", U2: "ENCERRAR VOTAÇÃO GERAL", R_TITLE: "Relatório Oficial de Resultados", B_PDF_SIMPLE: "Gerar PDF (Apenas Texto)", B_PDF_FULL: "Gerar PDF (Com Fotos)", F1: "Canal de Sugestões", H_FEED: "Sua opinião é fundamental para melhorarmos. Deixe sua crítica ou sugestão para o INDEX5 PRO abaixo.", txtSugestao: "Escreva sua mensagem aqui...", F2: "Enviar Feedback", B_EXIT_FINAL: "Sair com Segurança", alert_voto: "Voto registrado com sucesso!", alert_error: "Atenção: Cadastre ao menos um cargo e um candidato!"
+                },
+                en: { 
+                    L1: "Digital ID Portal", H_LOGIN: "Enter your Gmail to start. New accounts get 3 free elections for testing.", uE: "Gmail address...", L2: "Login",
+                    S1: "Election Setup", H_SETUP: "Enter the official title for the PDF reports.", tE: "Ex: Annual Vote 2026...", S2: "Add Candidates",
+                    P1: "Trial Limit Reached", H_PAY: "You used your 3 free credits. Choose a plan or use a coupon:", B1: "BUY SINGLE ($30)", B2: "BUY PACK ($500)", L_CUP: "Coupon code?", P2: "Activate",
+                    C1: "Candidates Registry", H_CARGO: "Enter position, name, and photo. Click Add for each candidate, then Save Position.", C4: "START VOTING", B_PDF_SIMPLE: "PDF Text Only", B_PDF_FULL: "PDF With Photos", alert_voto: "Vote recorded!", alert_error: "Add candidates first!"
+                },
+                es: { 
+                    L1: "Portal de Identificación", H_LOGIN: "Ingrese su Gmail. Las cuentas nuevas reciben 3 elecciones gratis para pruebas.", uE: "Gmail...", L2: "Entrar",
+                    S1: "Configuración", H_SETUP: "Defina el título oficial para los informes PDF.", tE: "Ej: Votación 2026...", S2: "Continuar",
+                    P1: "Límite Alcanzado", H_PAY: "Has agotado tus 3 créditos gratis. Elige un plan o usa un cupón:", B1: "COMPRAR UNO ($30)", B2: "COMPRAR PACK ($500)", L_CUP: "¿Tienes un cupón?", P2: "Activar",
+                    C1: "Registro", H_CARGO: "Ingrese cargo, nombre y foto. Clic en Añadir, luego Guardar Cargo.", C4: "INICIAR URNA", B_PDF_SIMPLE: "PDF Solo Texto", B_PDF_FULL: "PDF Con Fotos", alert_voto: "¡Voto registrado!", alert_error: "¡Añada candidatos!"
+                }
             };
 
             window.TR = (l) => { window._idioma = l; for(let k in window._tr[l]){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = window._tr[l][k]; else el.innerText = window._tr[l][k]; } } };
@@ -101,24 +178,18 @@
 
             window.C = () => { if(document.getElementById('iC').value === window._code || document.getElementById('iC').value === "9999") window.GO('setup'); else alert("Incorreto"); };
             window.N = () => { window._title = document.getElementById('tE').value || "Urna"; window._data = []; window.GO('setupCargo'); };
-            
-            window.K = () => { 
-                let v = document.getElementById('cup').value.trim().toLowerCase(); 
-                // COMPARAÇÃO TOTALMENTE OFUSCADA
-                if(v === _m1 || v === _m2) { alert("Acesso Autorizado!"); window.GO('setup'); } else { alert("Cupom Inválido."); }
-            };
+            window.K = () => { let v = document.getElementById('cup').value.trim().toLowerCase(); if(v === _c1 || v === _c2) { alert("Acesso Liberado!"); window.GO('setup'); } else { alert("Cupom Inválido."); } };
 
-            // CADASTRO E URNA (Ajustados para INDEX5)
             window.PREV = (i) => { if (i.files && i.files[0]) { let r = new FileReader(); r.onload = (e) => { window._fotoTemp = e.target.result; let p = document.getElementById('imgPrev'); p.src = window._fotoTemp; p.style.display = 'block'; document.getElementById('L_FOTO_ICON').style.display='none'; document.getElementById('INSTR_FOTO').style.display='none'; }; r.readAsDataURL(i.files[0]); } };
             window.A = () => { if(!window._temp) window._temp = { n: document.getElementById('nC').value, c: [] }; let n = document.getElementById('nCand').value; if(!n) return; window._temp.c.push({ n: n, v: 0, f: window._fotoTemp }); document.getElementById('candPreviewList').style.display = 'block'; let i = document.createElement('div'); i.className = 'cand-item'; i.innerHTML = (window._fotoTemp ? `<img src="${window._fotoTemp}">` : '') + `<span>${n}</span>`; document.getElementById('candItems').appendChild(i); document.getElementById('nCand').value = ''; window._fotoTemp = ''; document.getElementById('imgPrev').style.display='none'; document.getElementById('L_FOTO_ICON').style.display='block'; document.getElementById('INSTR_FOTO').style.display='block'; };
-            window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('candItems').innerHTML = ''; document.getElementById('candPreviewList').style.display = 'none'; alert("Cargo Salvo!"); };
+            window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('candItems').innerHTML = ''; document.getElementById('candPreviewList').style.display = 'none'; alert("Cargo Salvo com Sucesso!"); };
             window.START_VOTE_PROCESS = () => { if(window._temp) { window._data.push(window._temp); window._temp = null; } if(window._data.length === 0) { alert(window._tr[window._idioma].alert_error); return; } window._idx = 0; if(window.RENDER_URNA()) window.GO('urna'); };
             window.RENDER_URNA = () => { let c = window._data[window._idx]; if(!c) return false; document.getElementById('uT').innerText = c.n.toUpperCase(); let g = document.getElementById('gridUrna'); g.innerHTML = ''; c.c.forEach((can, i) => { let d = document.createElement('div'); d.style="background:white; color:#333; padding:10px; border-radius:12px; text-align:center; border:4px solid transparent; cursor:pointer;"; d.innerHTML = (can.f ? `<img src="${can.f}" style="width:100px; height:100px; object-fit:cover; border-radius:10px;">` : '') + `<br><b style="font-size:18px;">${can.n}</b>`; d.onclick = () => { window._sel = [i]; window.UI_REFRESH(); }; g.appendChild(d); }); return true; };
             window.UI_REFRESH = () => { document.querySelectorAll('#gridUrna div').forEach((c, i) => { if(window._sel.includes(i)) c.style.borderColor = "var(--success)"; else c.style.borderColor = "transparent"; }); };
             window.VOTE = () => { if(!window._sel.length) return; window._data[window._idx].c[window._sel[0]].v++; window._idx++; if(window._idx < window._data.length) { window._sel=[]; window.RENDER_URNA(); } else { alert(window._tr[window._idioma].alert_voto); window._idx=0; window._sel=[]; window.RENDER_URNA(); } };
-            window.END = () => { document.getElementById('pdf_h1').innerText = window._title.toUpperCase(); document.getElementById('pdf-audit').innerText = "Data: " + new Date().toLocaleString(); window.GO('res'); };
-            window.PDF = (f) => { let o = document.getElementById('pC'); o.innerHTML = ''; window._data.forEach(c => { let s = [...c.c].sort((a,b) => b.v - a.v); let h = `<table class="pdf-table"><thead><tr>${f ? '<th style="width:65px"></th>' : ''}<th>${c.n.toUpperCase()}</th><th style="width:80px; text-align:right">VOTOS</th></tr></thead><tbody>`; s.forEach(can => { h += `<tr>${f ? `<td><img src="${can.f}" class="pdf-photo"></td>` : ''}<td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`; }); h += `</tbody></table>`; o.innerHTML += h; }); const e = document.getElementById('areaImpressao'); const opt = { margin: 5, filename: f ? 'Fotos.pdf' : 'Simples.pdf', image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2.5, useCORS: true }, jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' } }; setTimeout(() => html2pdf().set(opt).from(e).save(), 600); };
-            window.ENVIAR_FEEDBACK = () => { let m = document.getElementById('txtSugestao').value; if(!m) return; emailjs.send(window._cfg.s, window._cfg.t, { to_email: 'paulosmv1972@gmail.com', validation_code: 'FDB: ' + m }).then(() => { alert("OK!"); document.getElementById('txtSugestao').value = ''; }); };
+            window.END = () => { document.getElementById('pdf_h1').innerText = window._title.toUpperCase(); document.getElementById('pdf-audit').innerText = "Data da Emissão: " + new Date().toLocaleString(); window.GO('res'); };
+            window.PDF = (f) => { let o = document.getElementById('pC'); o.innerHTML = ''; window._data.forEach(c => { let s = [...c.c].sort((a,b) => b.v - a.v); let h = `<table class="pdf-table"><thead><tr>${f ? '<th style="width:65px"></th>' : ''}<th>${c.n.toUpperCase()}</th><th style="width:80px; text-align:right">VOTOS</th></tr></thead><tbody>`; s.forEach(can => { h += `<tr>${f ? `<td><img src="${can.f}" class="pdf-photo"></td>` : ''}<td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`; }); h += `</tbody></table>`; o.innerHTML += h; }); const e = document.getElementById('areaImpressao'); const opt = { margin: 5, filename: f ? 'Resultado_Fotos.pdf' : 'Resultado_Simples.pdf', image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2.5, useCORS: true }, jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' } }; setTimeout(() => html2pdf().set(opt).from(e).save(), 600); };
+            window.ENVIAR_FEEDBACK = () => { let m = document.getElementById('txtSugestao').value; if(!m) return; emailjs.send(window._cfg.s, window._cfg.t, { to_email: 'paulosmv1972@gmail.com', validation_code: 'FEEDBACK PRO: ' + m }).then(() => { alert("Feedback enviado!"); document.getElementById('txtSugestao').value = ''; }); };
 
             window.TR('pt');
         })();
