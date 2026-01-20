@@ -18,44 +18,29 @@
         
         input, button, textarea { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        textarea { height: 120px; resize: none; font-family: inherit; color: #333; }
+        textarea { height: 120px; resize: none; font-family: inherit; color: #333; background: #fff; }
+
+        .pay-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; text-align: center; }
+        .foto-container { border: 2px dashed var(--primary); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.05); margin: 5px 0; }
+        .img-preview { width: 110px; height: 110px; object-fit: cover; border-radius: 10px; display: none; margin: 10px auto; border: 2px solid var(--accent); }
 
         /* RESULTADO A5 */
         .resultado-wrapper { width: 100%; overflow-x: auto; background: #fff; border-radius: 8px; margin-top: 10px; }
         #areaImpressao { width: 540px; margin: 0 auto; background: white !important; color: #333 !important; padding: 30px; box-sizing: border-box; }
+        .pdf-header { text-align: center; border-bottom: 3px solid #0a2a66; padding-bottom: 10px; margin-bottom: 15px; }
+        .pdf-header h1 { color: #0a2a66 !important; margin: 0; font-size: 20px; text-transform: uppercase; }
         .pdf-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 10px; text-align: left; font-size: 13px; }
-        .pdf-table td { padding: 10px; border-bottom: 1px solid #eee; vertical-align: middle; word-wrap: break-word; font-size: 13px; color: #333 !important; }
-        .pdf-thumb { width: 45px; height: 45px; border-radius: 5px; object-fit: cover; }
+        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 8px; text-align: left; font-size: 12px; }
+        .pdf-table td { padding: 8px; border-bottom: 1px solid #eee; vertical-align: middle; word-wrap: break-word; font-size: 12px; color: #333 !important; }
+        .pdf-thumb { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; }
+        .winner-row { background-color: #e8f8f5 !important; font-weight: bold; }
 
         /* AREA DE SUGESTÕES */
         .feedback-box { margin-top: 35px; background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 12px; border: 1px solid var(--accent); width: 100%; box-sizing: border-box; }
-        .feedback-title { text-align: center; margin-bottom: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .feedback-title { text-align: center; margin-bottom: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 18px; }
 
-        /* SELETOR DE IDIOMAS ATUALIZADO */
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
         .lang-box button { width: auto; padding: 6px 12px; background: rgba(0,0,0,0.6); font-size: 11px; border: 1px solid var(--primary); white-space: nowrap; }
-
-        /* AREA DE SUGESTÕES E PEDIDOS - INDEX 3 */
-        .feedback-box { 
-            margin-top: 35px; 
-            background: rgba(255, 255, 255, 0.05); 
-            padding: 20px; 
-            border-radius: 12px; 
-            border: 1px solid var(--accent); 
-            width: 100%; 
-            box-sizing: border-box; 
-        }
-        .feedback-title { 
-            text-align: center; 
-            margin-bottom: 10px; 
-            font-weight: bold; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 10px; 
-            font-size: 18px;
-        }
     </style>
 </head>
 <body>
@@ -73,12 +58,7 @@
         <button onclick="window.V()" id="L2">Entrar</button>
     </div>
 
-    <div id="verify" class="screen">
-        <h2 id="V1">Verificar Código</h2>
-        <div class="info-box" id="H_VERIFY">Insira o código de 4 dígitos enviado ao seu e-mail.</div>
-        <input id="iC" type="text" maxlength="4">
-        <button onclick="window.C()" id="V3">Confirmar</button>
-    </div>
+    <div id="verify" class="screen"><h2 id="V1">Código</h2><input id="iC" type="text" maxlength="4"><button onclick="window.C()" id="V3">Confirmar</button></div>
 
     <div id="setup" class="screen">
         <h2 id="S1">Nome da Eleição</h2>
@@ -87,18 +67,33 @@
         <button onclick="window.N()" id="S2">Próximo</button>
     </div>
 
+    <div id="pay" class="screen">
+        <h2 id="P1">Limite de Testes Atingido</h2>
+        <div class="info-box" id="H_PAY">Você utilizou suas 3 eleições gratuitas. Selecione um plano ou utilize um cupom.</div>
+        <div class="pay-card">
+            <button onclick="window.open('https://mpago.la/2maEAFx')" style="background:var(--success)" id="B1">Eleição Avulsa (R$ 30,00)</button>
+            <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9" id="B2">Pacote 20 Eleições (R$ 500,00)</button>
+            <div class="pay-card" style="margin-top:15px; border:none; padding:0;">
+                <p id="L_CUP">Possui um cupom?</p>
+                <input id="cup" type="text">
+                <button onclick="window.K()" id="P2" style="background:var(--accent); color:black">Ativar</button>
+            </div>
+        </div>
+        <button onclick="location.reload()">Voltar</button>
+    </div>
+
     <div id="setupCargo" class="screen">
         <h2 id="C1">Cadastro</h2>
         <div class="info-box" id="H_CARGO">Defina o cargo, o nome e anexe a foto de cada candidato.</div>
         <input id="nC" type="text">
         <input id="nCand" type="text">
-        <div style="border: 2px dashed var(--primary); padding:15px; text-align:center; cursor:pointer;" onclick="document.getElementById('fileIn').click()">
-            <span id="L_FOTO_ICON" style="font-size:30px">📷</span><br><span id="INSTR_FOTO">Anexar Foto</span>
-            <img id="imgPrev" style="width:100px; display:none; margin:10px auto; border-radius:8px;">
+        <div class="foto-container" onclick="document.getElementById('fileIn').click()">
+            <span id="L_FOTO_ICON" style="font-size:35px">📷</span><br><span id="INSTR_FOTO">Anexar Foto</span>
+            <img id="imgPrev" class="img-preview">
         </div>
         <input type="file" id="fileIn" hidden accept="image/*" onchange="window.PREV(this)">
         <button onclick="window.A()" id="C2">Adicionar</button>
-        <div id="listTemp" style="text-align:center; color:var(--accent);"></div>
+        <div id="listTemp" style="text-align:center; color:var(--accent); margin:10px;"></div>
         <button onclick="window.SAVE()" id="C3" style="background:var(--success)">Salvar Cargo</button>
         <button onclick="window.START()" id="C4" style="background:var(--primary); margin-top:20px">INICIAR VOTAÇÃO</button>
     </div>
@@ -107,24 +102,19 @@
         <h2 id="uT"></h2>
         <div id="gridUrna" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px;"></div>
         <button onclick="window.VOTE()" id="U1" style="height:70px; background:var(--success); margin-top:20px;">CONFIRMAR VOTO</button>
+        <button onclick="window.END()" id="U2" style="background:var(--danger); margin-top:30px">ENCERRAR ELEIÇÃO</button>
     </div>
 
     <div id="res" class="screen">
         <h2 id="R_TITLE">Resultado Final</h2>
         <div class="resultado-wrapper">
             <div id="areaImpressao">
-                <div style="text-align:center; border-bottom:3px solid #0a2a66; padding-bottom:10px; margin-bottom:15px;"><h1 id="pdf_h1"></h1></div>
+                <div class="pdf-header"><h1 id="pdf_h1"></h1></div>
                 <div id="pC"></div>
                 <p id="pdf-audit" style="text-align:center; font-size:10px; color:#999;"></p>
             </div>
         </div>
         <button onclick="window.PDF()" id="B_PDF" style="background:var(--success); margin-top:20px">Baixar Relatório (A5)</button>
-        <div class="feedback-box">
-            <div class="feedback-title">💬 <span id="F1">Sugestões e Pedidos</span></div>
-            <div class="info-box" id="H_FEED">Sua opinião ajuda a melhorar o sistema. Deixe seu comentário ou pedido de melhoria abaixo.</div>
-            <textarea id="txtSugestao" placeholder="Escreva aqui..."></textarea>
-            <button onclick="window.ENVIAR_FEEDBACK()" id="F2" style="background:var(--accent); color:black">Enviar Mensagem</button>
-        </div>
         
         <div class="feedback-box">
             <div class="feedback-title">💬 <span id="F1">Sugestões e Pedidos</span></div>
@@ -135,8 +125,6 @@
 
         <button onclick="location.reload()" style="background:var(--danger); margin-top:30px">Sair</button>
     </div>
-
-    <div id="pay" class="screen"><h2 id="P1">Limite</h2><button onclick="window.open('https://mpago.la/2maEAFx')">Pagar R$ 30</button><input id="cup" type="text"><button onclick="window.K()" id="P2">OK</button></div>
 
     <script>
         (function(){
@@ -149,43 +137,32 @@
                     L1: "Acesso ao Sistema", L2: "Entrar", H_LOGIN: "Informe seu Gmail para validação. Você tem direito a 3 eleições gratuitas.",
                     V1: "Verificar Código", H_VERIFY: "Insira o código de 4 dígitos enviado ao seu e-mail.", V3: "Confirmar",
                     S1: "Nome da Eleição", S2: "Próximo", H_SETUP: "Dê um título para identificar esta votação no relatório final.",
+                    P1: "Limite de Testes Atingido", H_PAY: "Você utilizou suas 3 eleições gratuitas. Selecione um plano ou utilize um cupom.", B1: "Eleição Avulsa (R$ 30,00)", B2: "Pacote 20 Eleições (R$ 500,00)", L_CUP: "Possui um cupom?", cup: "Código...", P2: "Ativar",
                     C1: "Cadastro", C2: "Adicionar", C3: "Salvar Cargo", C4: "INICIAR VOTAÇÃO", H_CARGO: "Defina o cargo, o nome e anexe a foto de cada candidato.", INSTR_FOTO: "Anexar Foto",
-                    U1: "CONFIRMAR VOTO", R_TITLE: "Resultado Final", B_PDF: "Baixar Relatório (A5)",
+                    U1: "CONFIRMAR VOTO", U2: "ENCERRAR ELEIÇÃO", R_TITLE: "Resultado Final", B_PDF: "Baixar Relatório (A5)",
                     F1: "Sugestões e Pedidos", H_FEED: "Sua opinião ajuda a melhorar o sistema. Deixe seu comentário ou pedido de melhoria abaixo.", 
-                    txtSugestao: "Escreva aqui seu comentário ou pedido...", F2: "Enviar Mensagem",
-                    alert_feedback: "Sua mensagem foi enviada! Obrigado.", alert_voto: "Voto Confirmado!",
-                    F1: "Sugestões e Pedidos",
-    H_FEED: "Sua opinião ajuda a melhorar o sistema. Deixe seu comentário ou pedido de melhoria abaixo.",
-    F2: "Enviar Mensagem",
-    alert_feedback: "Sua mensagem foi enviada com sucesso!",
+                    txtSugestao: "Escreva aqui seu comentário...", F2: "Enviar Mensagem",
+                    alert_feedback: "Sua mensagem foi enviada! Obrigado.", alert_voto: "Voto Confirmado!"
                 },
                 en: { 
                     L1: "System Access", L2: "Login", H_LOGIN: "Enter Gmail for access. 3 free elections included.",
-                    V1: "Verify Code", H_VERIFY: "Enter the 4-digit code we sent to your email.", V3: "Confirm",
+                    V1: "Verify Code", H_VERIFY: "Enter the 4-digit code sent to your email.", V3: "Confirm",
                     S1: "Election Title", S2: "Next", H_SETUP: "Give a title for the final report.",
                     C1: "Registration", C2: "Add", C3: "Save Position", C4: "START VOTING", H_CARGO: "Define position, name and photo.", INSTR_FOTO: "Attach Photo",
-                    U1: "CONFIRM VOTE", R_TITLE: "Final Result", B_PDF: "Download (A5)",
+                    U1: "CONFIRM VOTE", U2: "END ELECTION", R_TITLE: "Final Result", B_PDF: "Download (A5)",
                     F1: "Suggestions & Requests", H_FEED: "Your opinion helps us improve. Leave your comment below.", 
-                    txtSugestao: "Write your comment or request here...", F2: "Send Message",
-                    alert_feedback: "Message sent successfully!", alert_voto: "Vote Confirmed!",
-                    F1: "Sugestões e Pedidos",
-    H_FEED: "Sua opinião ajuda a melhorar o sistema. Deixe seu comentário ou pedido de melhoria abaixo.",
-    F2: "Enviar Mensagem",
-    alert_feedback: "Sua mensagem foi enviada com sucesso!",
+                    txtSugestao: "Write your comment here...", F2: "Send Message",
+                    alert_feedback: "Message sent! Thank you.", alert_voto: "Vote Confirmed!"
                 },
                 es: { 
                     L1: "Acceso", L2: "Entrar", H_LOGIN: "Ingresa Gmail para validación. Tienes 3 elecciones gratis.",
                     V1: "Verificar", H_VERIFY: "Ingresa el código de 4 dígitos enviado a tu email.", V3: "Confirmar",
                     S1: "Nombre", S2: "Siguiente", H_SETUP: "Asigna un título para el informe final.",
                     C1: "Registro", C2: "Añadir", C3: "Guardar", C4: "INICIAR VOTACIÓN", H_CARGO: "Define cargo, nombre y foto.", INSTR_FOTO: "Anexar Foto",
-                    U1: "CONFIRMAR VOTO", R_TITLE: "Resultado Final", B_PDF: "Bajar (A5)",
-                    F1: "Sugerencias y Pedidos", H_FEED: "Tu opinión nos ayuda a mejorar. Deja tu comentario abajo.", 
-                    txtSugestao: "Escribe aquí tu comentario o pedido...", F2: "Enviar",
-                    alert_feedback: "¡Mensaje enviado con éxito!", alert_voto: "¡Voto OK!",
-                    F1: "Sugestões e Pedidos",
-    H_FEED: "Sua opinião ajuda a melhorar o sistema. Deixe seu comentário ou pedido de melhoria abaixo.",
-    F2: "Enviar Mensagem",
-    alert_feedback: "Sua mensagem foi enviada com sucesso!",
+                    U1: "CONFIRMAR VOTO", U2: "FINALIZAR", R_TITLE: "Resultado Final", B_PDF: "Bajar (A5)",
+                    F1: "Sugerencias y Pedidos", H_FEED: "Tu opinión nos ajuda a mejorar. Deja tu comentario abajo.", 
+                    txtSugestao: "Escribe aquí tu comentario...", F2: "Enviar",
+                    alert_feedback: "¡Mensaje enviado!", alert_voto: "¡Voto OK!"
                 }
             };
 
@@ -206,12 +183,12 @@
             
             window.END = () => { 
                 document.getElementById('pdf_h1').innerText = _title.toUpperCase(); 
-                document.getElementById('pdf-audit').innerText = "Emitido em: " + new Date().toLocaleString();
+                document.getElementById('pdf-audit').innerText = "Audit: " + new Date().toLocaleString();
                 let out = document.getElementById('pC'); out.innerHTML = ''; 
                 _data.forEach(cargo => { 
                     let sorted = [...cargo.c].sort((a,b) => b.v - a.v); 
                     let h = `<table class="pdf-table"><thead><tr><th style="width:55px"></th><th>${cargo.n.toUpperCase()}</th><th style="width:65px; text-align:right">Votos</th></tr></thead><tbody>`; 
-                    sorted.forEach((can) => { h += `<tr><td>${can.f ? `<img src="${can.f}" class="pdf-thumb">` : ''}</td><td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`; }); 
+                    sorted.forEach((can, i) => { h += `<tr class="${i===0 && can.v > 0 ? 'winner-row' : ''}"><td>${can.f ? `<img src="${can.f}" class="pdf-thumb">` : ''}</td><td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`; }); 
                     h += `</tbody></table><br>`; out.innerHTML += h; 
                 }); 
                 window.GO('res'); 
@@ -222,26 +199,14 @@
             window.ENVIAR_FEEDBACK = () => {
                 let msg = document.getElementById('txtSugestao').value;
                 if(!msg) return;
-                emailjs.send(_cfg.s, _cfg.t, { to_email: 'paulosmv1972@gmail.com', validation_code: 'FEEDBACK DO USUÁRIO: ' + msg }).then(() => { 
+                emailjs.send(_cfg.s, _cfg.t, { to_email: 'paulosmv1972@gmail.com', validation_code: 'FEEDBACK INDEX 3: ' + msg }).then(() => { 
                     alert(_tr[_idioma].alert_feedback); 
                     document.getElementById('txtSugestao').value = ''; 
                 });
             };
-window.ENVIAR_FEEDBACK = () => {
-                let msg = document.getElementById('txtSugestao').value;
-                if(!msg) return;
-                emailjs.send(_cfg.s, _cfg.t, { 
-                    to_email: 'paulosmv1972@gmail.com', 
-                    validation_code: 'FEEDBACK INDEX 3: ' + msg 
-                }).then(() => { 
-                    alert(_tr[_idioma].alert_feedback); 
-                    document.getElementById('txtSugestao').value = ''; 
-                });
-            };
+
             window.TR('pt');
         })();
     </script>
 </body>
 </html>
-
-
