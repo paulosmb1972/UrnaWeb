@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UrnaWeb Digital - Sistema de Votação</title>
+    <title>UrnaWeb Digital - Sistema de Votação Oficial</title>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { --primary: #1abc9c; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; }
-        body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
         .screen { display: none; padding: 20px; width: 100%; max-width: 600px; box-sizing: border-box; }
         .active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -18,64 +18,96 @@
         
         input, button, textarea { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
-
-        .pay-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 15px; text-align: center; }
-        .foto-container { border: 2px dashed var(--primary); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.05); margin: 10px 0; }
-        .img-preview { width: 130px; height: 130px; object-fit: cover; border-radius: 10px; display: none; margin: 10px auto; border: 2px solid var(--accent); }
         
+        .pay-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; text-align: center; }
+        .foto-container { border: 2px dashed var(--primary); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.05); margin-bottom: 10px; }
+        .img-preview { width: 130px; height: 130px; object-fit: cover; border-radius: 10px; display: none; margin: 10px auto; border: 2px solid var(--accent); }
+
         .resultado-wrapper { width: 100%; overflow-x: auto; background: #fff; border-radius: 8px; }
         #areaImpressao { width: 800px; margin: 0 auto; background: white !important; color: #333 !important; padding: 40px; box-sizing: border-box; }
         .pdf-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; }
         .pdf-table td { padding: 10px; border-bottom: 1px solid #eee; vertical-align: middle; word-wrap: break-word; }
         .pdf-thumb { width: 50px; height: 50px; border-radius: 6px; object-fit: cover; }
+
+        .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
+        .lang-box button { width: auto; padding: 6px 12px; background: rgba(0,0,0,0.6); font-size: 11px; border: 1px solid var(--primary); }
     </style>
 </head>
 <body>
 
+    <div class="lang-box">
+        <button onclick="window.TR('pt')">Português</button>
+        <button onclick="window.TR('en')">English</button>
+        <button onclick="window.TR('es')">Español</button>
+    </div>
+
     <div id="login" class="screen active">
-        <h2>Acesso ao Sistema</h2>
-        <div class="info-box"><b>Atenção:</b> Utilize apenas e-mail @gmail.com. Você tem direito a <b>3 eleições gratuitas</b> para testes. Após isso, será necessário adquirir um plano.</div>
-        <input id="uE" type="email" placeholder="seu-email@gmail.com">
-        <button onclick="window.V()">Entrar</button>
+        <h2 id="L1">Acesso ao Sistema</h2>
+        <div class="info-box" id="H_LOGIN">Insira seu e-mail @gmail.com para validar seu acesso. Novos usuários possuem 3 eleições gratuitas para testes.</div>
+        <input id="uE" type="email">
+        <button onclick="window.V()" id="L2">Receber Código por E-mail</button>
+    </div>
+
+    <div id="verify" class="screen">
+        <h2 id="V1">Validar Acesso</h2>
+        <div class="info-box" id="H_VERIFY">Enviamos um código de 4 dígitos para o seu Gmail. Digite-o abaixo para continuar.</div>
+        <input id="iC" type="text" maxlength="4">
+        <button onclick="window.C()" id="V3">Verificar e Entrar</button>
     </div>
 
     <div id="pay" class="screen">
-        <h2>Limite de Gratuidade Atingido</h2>
-        <div class="info-box">Você utilizou suas 3 eleições gratuitas. Selecione um plano ou utilize um cupom para continuar.</div>
+        <h2 id="P1">Limite Gratuito Atingido</h2>
+        <div class="info-box" id="H_PAY">Você já realizou suas 3 eleições de teste. Selecione um plano profissional abaixo ou valide um cupom promocional para liberar novas eleições.</div>
         <div class="pay-card">
-            <button onclick="window.open('https://mpago.la/2maEAFx')" style="background:var(--success)">Eleição Avulsa (R$ 30,00)</button>
-            <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9">Pacote 20 Eleições (R$ 500,00)</button>
-            <div class="pay-card" style="margin-top:20px; border:none;">
+            <button onclick="window.open('https://mpago.la/2maEAFx')" style="background:var(--success)" id="B1">Liberar 1 Eleição (R$ 30,00)</button>
+            <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9" id="B2">Pacote Profissional 20 Eleições (R$ 500,00)</button>
+            <div class="pay-card" style="margin-top:20px; border:none; padding:0;">
                 <span style="font-size:30px">🎟️</span>
-                <p>Possui um cupom de acesso?</p>
-                <input id="cup" type="text" placeholder="Código do cupom...">
-                <button onclick="window.K()" style="background:var(--accent); color:black">Ativar Cupom</button>
+                <p id="L_CUP">Possui um cupom de acesso ou código promocional?</p>
+                <input id="cup" type="text">
+                <button onclick="window.K()" id="P2" style="background:var(--accent); color:black">Validar e Ativar Cupom</button>
             </div>
         </div>
-        <button onclick="location.reload()" style="background:none; border:1px solid white;">Voltar</button>
+        <button onclick="location.reload()" style="background:none; border:1px solid white;">Voltar ao Início</button>
+    </div>
+
+    <div id="setup" class="screen">
+        <h2 id="S1">Configurar Eleição</h2>
+        <div class="info-box" id="H_SETUP">Escreva o título da sua eleição (Ex: Eleição Diretoria 2026). Este nome aparecerá no topo do relatório final.</div>
+        <input id="tE" type="text">
+        <button onclick="window.N()" id="S2">Definir Candidatos</button>
     </div>
 
     <div id="setupCargo" class="screen">
-        <h2>Cadastro</h2>
-        <div class="info-box">Defina o cargo, o nome e anexe a foto de cada candidato.</div>
-        <input id="nC" type="text" placeholder="Nome do Cargo (ex: Presidente)">
+        <h2 id="C1">Cadastrar Candidatos</h2>
+        <div class="info-box" id="H_CARGO">1. Digite o Cargo (ex: Presidente). 2. Digite o Nome do Candidato. 3. Clique na câmera para anexar a foto. 4. Clique em Adicionar.</div>
+        <input id="nC" type="text">
         <hr>
-        <input id="nCand" type="text" placeholder="Nome do Candidato">
+        <input id="nCand" type="text">
         <div class="foto-container" onclick="document.getElementById('fileIn').click()">
             <span id="L_FOTO_ICON" style="font-size:35px">📷</span><br>
-            <span id="INSTR_FOTO">Clique aqui para anexar a foto</span>
+            <span id="INSTR_FOTO">Clique aqui para selecionar a foto do candidato</span>
             <img id="imgPrev" class="img-preview">
         </div>
         <input type="file" id="fileIn" hidden accept="image/*" onchange="window.PREV(this)">
-        <button onclick="window.A()">Adicionar Candidato</button>
-        <div id="listTemp" style="text-align:center; color:var(--accent); margin:10px;"></div>
-        <button onclick="window.SAVE()" style="background:var(--success)">Salvar Cargo</button>
-        <button onclick="window.START()" style="background:var(--primary); margin-top:20px">INICIAR VOTAÇÃO</button>
+        <button onclick="window.A()" id="C2">Adicionar à Lista</button>
+        <div id="listTemp" style="text-align:center; color:var(--accent); margin:10px; font-weight:bold;"></div>
+        <button onclick="window.SAVE()" id="C3" style="background:var(--success)">Concluir e Salvar Cargo</button>
+        <button onclick="window.START()" id="C4" style="background:var(--primary); margin-top:20px">INICIAR VOTAÇÃO AGORA</button>
+    </div>
+
+    <div id="urna" class="screen">
+        <h2 id="uT"></h2>
+        <div class="info-box" id="H_URNA">Toque no card do candidato desejado para selecioná-lo e depois clique no botão verde de confirmação.</div>
+        <div id="gridUrna" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:15px;"></div>
+        <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success); margin-top:20px;">CONFIRMAR MEU VOTO</button>
+        <button onclick="window.END()" id="U2" style="background:var(--danger); margin-top:40px">FINALIZAR ELEIÇÃO (AUDITORIA)</button>
     </div>
 
     <div id="res" class="screen">
-        <h2>Resultado Final</h2>
+        <h2 id="R_TITLE">Relatório de Resultados</h2>
+        <div class="info-box" id="H_RES">Confira os votos totais abaixo. Você pode gerar e baixar o documento oficial em PDF clicando no botão verde.</div>
         <div class="resultado-wrapper">
             <div id="areaImpressao">
                 <div style="text-align:center; border-bottom:4px solid #0a2a66; padding-bottom:15px; margin-bottom:20px;">
@@ -85,22 +117,61 @@
                 <p id="pdf-audit" style="text-align:center; font-size:12px; color:#999; margin-top:30px; border-top:1px solid #eee; padding-top:10px;"></p>
             </div>
         </div>
-        <button onclick="window.PDF()" style="background:var(--success); margin-top:20px">Baixar Relatório PDF (A4)</button>
-        <button onclick="location.reload()" style="background:var(--danger)">Sair</button>
+        <button onclick="window.PDF()" id="B_PDF" style="background:var(--success); margin-top:20px">Gerar e Baixar Relatório PDF</button>
+        <button onclick="location.reload()" style="background:var(--danger); margin-top:20px;">Sair do Sistema</button>
     </div>
-
-    <div id="verify" class="screen"><h2>Verificar</h2><input id="iC" type="text" maxlength="4" placeholder="Código de 4 dígitos"><button onclick="window.C()">Confirmar</button></div>
-    <div id="setup" class="screen"><h2>Título</h2><input id="tE" type="text" placeholder="Nome da Eleição..."><button onclick="window.N()">Próximo</button></div>
 
     <script>
         (function(){
             const _cfg = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
             emailjs.init(_cfg.k);
-            let _code='', _data=[], _temp=null, _sel=[], _idx=0, _title='', _fotoTemp='';
+            let _code='', _idioma='pt', _data=[], _temp=null, _sel=[], _idx=0, _title='', _fotoTemp='';
             
+            const _tr = {
+                pt: { 
+                    L1: "Acesso ao Sistema", L2: "Receber Código por E-mail", uE: "Seu e-mail @gmail.com...", H_LOGIN: "Insira seu e-mail @gmail.com para validar seu acesso. Novos usuários possuem 3 eleições gratuitas para testes.",
+                    V1: "Validar Acesso", H_VERIFY: "Enviamos um código de 4 dígitos para o seu Gmail. Digite-o abaixo para continuar.", iC: "Digite o código...", V3: "Verificar e Entrar",
+                    P1: "Limite Gratuito Atingido", H_PAY: "Você já realizou suas 3 eleições de teste. Selecione um plano profissional abaixo ou valide um cupom promocional para liberar novas eleições.", B1: "Liberar 1 Eleição (R$ 30,00)", B2: "Pacote Profissional 20 Eleições (R$ 500,00)", L_CUP: "Possui um cupom de acesso ou código promocional?", cup: "Digite o cupom aqui...", P2: "Validar e Ativar Cupom",
+                    S1: "Configurar Eleição", tE: "Título da Eleição (Ex: Igreja, Condomínio)...", H_SETUP: "Escreva o título da sua eleição. Este nome aparecerá no topo do relatório final.", S2: "Definir Candidatos",
+                    C1: "Cadastrar Candidatos", nC: "Nome do Cargo (Ex: Presidente)...", nCand: "Nome do Candidato...", H_CARGO: "1. Digite o Cargo. 2. Digite o Nome do Candidato. 3. Clique na câmera para anexar a foto. 4. Clique em Adicionar.", INSTR_FOTO: "Clique aqui para selecionar a foto do candidato", C2: "Adicionar à Lista", C3: "Concluir e Salvar Cargo", C4: "INICIAR VOTAÇÃO AGORA",
+                    U1: "CONFIRMAR MEU VOTO", U2: "FINALIZAR ELEIÇÃO (AUDITORIA)", H_URNA: "Toque no card do candidato desejado para selecioná-lo e depois clique no botão verde de confirmação.",
+                    R_TITLE: "Relatório de Resultados", H_RES: "Confira os votos totais abaixo. Você pode gerar e baixar o documento oficial em PDF clicando no botão verde.", B_PDF: "Gerar e Baixar Relatório PDF", alert_voto: "Voto Confirmado com Sucesso!", alert_end: "Deseja realmente encerrar a votação agora?"
+                },
+                en: { 
+                    L1: "System Access", L2: "Receive Code by Email", uE: "Your @gmail.com email...", H_LOGIN: "Enter your Gmail to validate access. New users have 3 free elections for testing.",
+                    V1: "Validate Access", H_VERIFY: "We sent a 4-digit code to your Gmail. Enter it below to continue.", iC: "Enter code...", V3: "Verify and Login",
+                    P1: "Free Limit Reached", H_PAY: "You have used your 3 test elections. Select a professional plan below or validate a coupon to release new elections.", B1: "Release 1 Election ($30.00)", B2: "20 Elections Pack ($500.00)", L_CUP: "Do you have a coupon or promotional code?", cup: "Enter coupon here...", P2: "Validate and Activate",
+                    S1: "Setup Election", tE: "Election Title (Ex: Board Election)...", H_SETUP: "Write the title of your election. This name will appear at the top of the final report.", S2: "Set Candidates",
+                    C1: "Register Candidates", nC: "Position Name (Ex: President)...", nCand: "Candidate Name...", H_CARGO: "1. Type the Position. 2. Type Candidate Name. 3. Click the camera to attach photo. 4. Click Add.", INSTR_FOTO: "Click here to select candidate photo", C2: "Add to List", C3: "Save and Finish Position", C4: "START VOTING NOW",
+                    U1: "CONFIRM MY VOTE", U2: "FINISH ELECTION (AUDIT)", H_URNA: "Tap the candidate card to select and then click the green confirmation button.",
+                    R_TITLE: "Result Report", H_RES: "Check total votes below. You can generate and download the official PDF document.", B_PDF: "Generate and Download PDF", alert_voto: "Vote Successfully Confirmed!", alert_end: "Are you sure you want to end the voting now?"
+                },
+                es: { 
+                    L1: "Acceso al Sistema", L2: "Recibir Código por Email", uE: "Tu @gmail.com...", H_LOGIN: "Ingresa tu Gmail para validar el acceso. Nuevos usuarios tienen 3 elecciones gratis.",
+                    V1: "Validar Acceso", H_VERIFY: "Enviamos un código de 4 dígitos a tu Gmail. Ingrésalo abajo.", iC: "Ingresa el código...", V3: "Verificar y Entrar",
+                    P1: "Límite Gratuito Alcanzado", H_PAY: "Has agotado tus 3 elecciones de prueba. Elige un plan o usa un cupón para continuar.", B1: "Liberar 1 Elección (R$ 30.00)", B2: "Paquete 20 Elecciones (R$ 500.00)", L_CUP: "¿Tienes un cupón o código promocional?", cup: "Ingresa cupón aquí...", P2: "Validar y Activar",
+                    S1: "Configurar Elección", tE: "Título de la Elección (Ej: Junta Directiva)...", H_SETUP: "Escribe el título de tu elección. Este nombre aparecerá arriba en el informe final.", S2: "Definir Candidatos",
+                    C1: "Registrar Candidatos", nC: "Nombre del Cargo (Ej: Presidente)...", nCand: "Nombre del Candidato...", H_CARGO: "1. Escribe el Cargo. 2. Escribe el Nombre. 3. Clic en la cámara para la foto. 4. Clic en Añadir.", INSTR_FOTO: "Clic aquí para seleccionar la foto", C2: "Añadir a la Lista", C3: "Concluir y Guardar Cargo", C4: "INICIAR VOTACIÓN AHORA",
+                    U1: "CONFIRMAR MI VOTO", U2: "FINALIZAR ELECCIÓN (AUDITORÍA)", H_URNA: "Toca el card del candidato para seleccionarlo y luego clic en el botón verde.",
+                    R_TITLE: "Informe de Resultados", H_RES: "Confirma los votos totales abajo. Puedes generar el PDF oficial en el botón verde.", B_PDF: "Generar y Bajar PDF", alert_voto: "¡Voto Confirmado con Éxito!", alert_end: "¿Realmente deseas finalizar la votación ahora?"
+                }
+            };
+
+            window.TR = (l) => { 
+                _idioma = l; 
+                for(let k in _tr[l]){ 
+                    let el = document.getElementById(k); 
+                    if(el) { 
+                        if(el.tagName === 'INPUT') el.placeholder = _tr[l][k]; 
+                        else el.innerHTML = _tr[l][k]; 
+                    } 
+                } 
+            };
+
             window.GO = (a) => { 
                 document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); 
                 document.getElementById(a).classList.add('active'); 
+                window.TR(_idioma);
             };
 
             window.PREV = (input) => { 
@@ -119,7 +190,7 @@
 
             window.V = async function() { 
                 let e = document.getElementById('uE').value.trim().toLowerCase(); 
-                if(!e.includes("@gmail.com")) { alert("Utilize apenas e-mail @gmail.com!"); return; }
+                if(!e.includes("@gmail.com")) { alert("Utilize apenas Gmail!"); return; }
                 try { 
                     let r = await fetch(_cfg.u+'/?email='+encodeURIComponent(e)); 
                     let d = await r.json(); 
@@ -127,14 +198,14 @@
                     _code = d.codigo.toString(); 
                     await emailjs.send(_cfg.s, _cfg.t, { to_email: e, validation_code: _code }); 
                     window.GO('verify'); 
-                } catch(err) { alert("Erro ao conectar ao servidor."); } 
+                } catch(err) { alert("Erro de conexão."); } 
             };
 
             window.C = () => { if(document.getElementById('iC').value === _code || document.getElementById('iC').value === "9999") window.GO('setup'); };
             window.N = () => { _title = document.getElementById('tE').value || "Urna"; window.GO('setupCargo'); };
-            window.K = () => { let v = document.getElementById('cup').value.trim().toLowerCase(); if(v === 'orion001' || v === 'mais3gratis') window.GO('setup'); else alert("Cupom inválido!"); };
+            window.K = () => { let v = document.getElementById('cup').value.trim().toLowerCase(); if(v === 'orion001' || v === 'mais3gratis') window.GO('setup'); };
             window.A = () => { if(!_temp) _temp = { n: document.getElementById('nC').value, c: [] }; let n = document.getElementById('nCand').value; if(!n) return; _temp.c.push({ n: n, v: 0, f: _fotoTemp }); document.getElementById('nCand').value = ''; _fotoTemp = ''; document.getElementById('imgPrev').style.display='none'; document.getElementById('L_FOTO_ICON').style.display='block'; document.getElementById('INSTR_FOTO').style.display='block'; };
-            window.SAVE = () => { if(_temp) _data.push(_temp); _temp=null; document.getElementById('nC').value=''; alert("Cargo Salvo com Sucesso!"); };
+            window.SAVE = () => { if(_temp) _data.push(_temp); _temp=null; document.getElementById('nC').value=''; alert("Cargo Salvo!"); };
             window.START = () => { if(_temp) _data.push(_temp); _idx=0; window.M(); window.GO('urna'); };
             window.M = () => { 
                 let c = _data[_idx]; document.getElementById('uT').innerText = c.n; let g = document.getElementById('gridUrna'); g.innerHTML = ''; 
@@ -145,16 +216,16 @@
                 }); 
             };
             window.UI = () => { document.querySelectorAll('.card-candidato').forEach((card, i) => { if(_sel.includes(i)) card.classList.add('selected'); else card.classList.remove('selected'); }); };
-            window.VOTE = () => { if(!_sel.length) return; _data[_idx].c[_sel[0]].v++; _idx++; if(_idx < _data.length) { _sel=[]; window.M(); } else { alert("Voto Confirmado!"); _idx=0; _sel=[]; window.M(); } };
+            window.VOTE = () => { if(!_sel.length) return; _data[_idx].c[_sel[0]].v++; _idx++; if(_idx < _data.length) { _sel=[]; window.M(); } else { alert(_tr[_idioma].alert_voto); _idx=0; _sel=[]; window.M(); } };
             
             window.END = () => { 
-                if(!confirm("Deseja encerrar a eleição e ver o resultado?")) return;
+                if(!confirm(_tr[_idioma].alert_end)) return;
                 document.getElementById('pdf_h1').innerText = _title.toUpperCase(); 
                 document.getElementById('pdf-audit').innerText = "Relatório Oficial - Emitido em: " + new Date().toLocaleString();
                 let out = document.getElementById('pC'); out.innerHTML = ''; 
                 _data.forEach(cargo => { 
                     let sorted = [...cargo.c].sort((a,b) => b.v - a.v); 
-                    let h = `<table class="pdf-table"><thead><tr><th style="width:70px"></th><th>${cargo.n.toUpperCase()}</th><th style="width:80px; text-align:right">VOTOS</th></tr></thead><tbody>`; 
+                    let h = `<table class="pdf-table"><thead><tr><th style="width:70px"></th><th>${cargo.n.toUpperCase()}</th><th style="width:100px; text-align:right">VOTOS</th></tr></thead><tbody>`; 
                     sorted.forEach((can) => { h += `<tr><td>${can.f ? `<img src="${can.f}" class="pdf-thumb">` : ''}</td><td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`; }); 
                     h += `</tbody></table><br>`; out.innerHTML += h; 
                 }); 
@@ -163,8 +234,10 @@
 
             window.PDF = () => { 
                 const element = document.getElementById('areaImpressao'); 
-                html2pdf().set({ margin: 0, filename: 'Resultado_Eleicao.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, width: 800 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(element).save(); 
+                html2pdf().set({ margin: 0, filename: 'Resultado.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, width: 800 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(element).save(); 
             };
+
+            window.TR('pt');
         })();
     </script>
 </body>
