@@ -20,11 +20,12 @@
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
         textarea { height: 100px; resize: none; font-family: inherit; }
 
-        /* AREA DE UPLOAD DE FOTO */
-        .foto-cad-container { border: 2px dashed var(--primary); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.05); margin: 10px 0; }
-        .foto-cad-container:hover { background: rgba(26, 188, 156, 0.1); }
-        .foto-icon { font-size: 45px; display: block; margin-bottom: 5px; }
-        .img-preview-cad { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; display: none; margin: 10px auto; border: 2px solid var(--accent); }
+      /* AREA DE FOTO - ATUALIZADO */
+        .foto-cad-container { border: 2px dashed var(--primary); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.05); margin: 5px 0 15px 0; transition: 0.3s; }
+        .foto-cad-container:hover { border-color: var(--accent); background: rgba(255,255,255,0.1); }
+        .foto-icon-cam { font-size: 45px; display: block; margin-bottom: 5px; color: var(--primary); }
+        .foto-text-label { font-size: 13px; font-weight: bold; color: var(--primary); display: block; }
+        .img-preview-cad { width: 130px; height: 130px; object-fit: cover; border-radius: 10px; display: none; margin: 10px auto; border: 2px solid var(--accent); }
 
         /* URNA E PDF */
         .card-candidato { background: white; color: #333; padding: 15px; border-radius: 12px; text-align: center; border: 4px solid transparent; cursor: pointer; margin-bottom: 10px; }
@@ -78,9 +79,9 @@
         <hr>
         <input id="nCand" type="text">
         
-        <div class="foto-cad-container" onclick="document.getElementById('fileIn').click()">
-            <span id="L_FOTO_ICON" class="foto-icon">📷</span>
-            <span id="INSTR_FOTO">Clique para anexar a foto</span>
+       <div class="foto-cad-container" onclick="document.getElementById('fileIn').click()">
+            <span id="L_FOTO_ICON" class="foto-icon-cam">📷</span>
+            <span id="INSTR_FOTO" class="foto-text-label">Clique para anexar a foto do candidato</span>
             <img id="imgPrev" class="img-preview-cad">
         </div>
         <input type="file" id="fileIn" hidden accept="image/*" onchange="window.PREV(this)">
@@ -148,7 +149,21 @@
             };
 
             window.TR = (l) => { _idioma = l; for(let k in _tr[l]){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = _tr[l][k]; else el.innerText = _tr[l][k]; } } };
-            window.PREV = (input) => { if (input.files && input.files[0]) { let r = new FileReader(); r.onload = (e) => { _fotoTemp = e.target.result; document.getElementById('imgPrev').src = _fotoTemp; document.getElementById('imgPrev').style.display = 'block'; document.getElementById('L_FOTO_ICON').style.display = 'none'; document.getElementById('INSTR_FOTO').style.display = 'none'; }; r.readAsDataURL(input.files[0]); } };
+           window.PREV = (input) => { 
+                if (input.files && input.files[0]) { 
+                    let r = new FileReader(); 
+                    r.onload = (e) => { 
+                        _fotoTemp = e.target.result; 
+                        let img = document.getElementById('imgPrev');
+                        img.src = _fotoTemp; 
+                        img.style.display = 'block'; 
+                        // Esconde o ícone e o texto após selecionar
+                        document.getElementById('L_FOTO_ICON').style.display = 'none'; 
+                        document.getElementById('INSTR_FOTO').style.display = 'none'; 
+                    }; 
+                    r.readAsDataURL(input.files[0]); 
+                } 
+            };
             window.V = async function() { let e = document.getElementById('uE').value.trim().toLowerCase(); try { let r = await fetch(_cfg.u+'/?email='+encodeURIComponent(e)); let d = await r.json(); if(d.count >= 3) return window.GO('pay'); _code = d.codigo.toString(); await emailjs.send(_cfg.s, _cfg.t, { to_email: e, validation_code: _code }); window.GO('verify'); window.TR(_idioma); } catch(err) { alert("Erro"); } };
             window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); };
             window.C = () => { if(document.getElementById('iC').value === _code || document.getElementById('iC').value === "9999") window.GO('setup'); window.TR(_idioma); };
@@ -168,3 +183,4 @@
     </script>
 </body>
 </html>
+
