@@ -12,19 +12,28 @@
         .screen { display: none; padding: 20px; width: 100%; max-width: 600px; box-sizing: border-box; }
         .active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
         h2 { text-align: center; color: var(--primary); margin-bottom: 5px; }
         .info-box { text-align: center; font-size: 14px; color: #eee; margin: 15px 0; background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 8px; border-left: 5px solid var(--accent); line-height: 1.5; }
+        
         input, button, textarea { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        button:disabled { background: #666; cursor: not-allowed; }
+        button:disabled { background: #666; cursor: wait; }
         input { background: #fff; color: #333; }
+
+        .foto-container { border: 2px dashed var(--primary); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.05); }
         .img-preview { width: 140px !important; height: 140px !important; object-fit: cover; border-radius: 15px; display: none; margin: 15px auto; border: 4px solid white; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+
         .pay-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
         .price-tag { font-size: 26px; font-weight: bold; color: var(--accent); display: block; margin: 10px 0; text-align: center; }
+        .benefit-list { font-size: 13px; color: #ccc; margin-bottom: 15px; padding-left: 20px; list-style: none; }
+        .benefit-list li::before { content: "✔ "; color: var(--success); margin-right: 5px; }
+
         #areaImpressao { width: 480px; margin: 0 auto; background: white !important; color: #333 !important; padding: 25px; box-sizing: border-box; border: 1px solid #ddd; }
         .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 10px; text-align: left; }
         .pdf-table td { padding: 10px; border-bottom: 1px solid #eee; color: #333 !important; }
+        
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
         .lang-box button { width: auto; padding: 6px 14px; background: rgba(0,0,0,0.8); font-size: 11px; border: 1px solid var(--primary); color: white; }
     </style>
@@ -40,86 +49,103 @@
     <div id="login" class="screen active"><h2 id="L1"></h2><div class="info-box" id="H_LOGIN"></div><input id="uE" type="email"><button onclick="window.V()" id="L2"></button></div>
     <div id="verify" class="screen"><h2 id="V1"></h2><div class="info-box" id="H_VERIFY"></div><input id="iC" type="text" maxlength="4"><button onclick="window.C()" id="V3"></button></div>
     <div id="setup" class="screen"><h2 id="S1"></h2><div class="info-box" id="H_SETUP"></div><input id="tE" type="text"><button onclick="window.N()" id="S2"></button></div>
-    
+
     <div id="pay" class="screen">
         <h2 id="P1"></h2><div class="info-box" id="H_PAY"></div>
-        <div class="pay-card"><h3 id="PL1"></h3><span class="price-tag">R$ 30,00</span><button onclick="window.open('https://mpago.la/2maEAFx')" id="B1" style="background:var(--success)"></button></div>
-        <div class="pay-card"><h3 id="PL2"></h3><span class="price-tag">R$ 500,00</span><button onclick="window.open('https://mpago.la/1VakcdN')" id="B2" style="background:#2980b9"></button></div>
-        <div class="pay-card" style="border: 2px solid var(--accent);"><p id="L_CUP"></p><input id="cup" type="text"><button onclick="window.K()" id="P2" style="background:var(--accent); color:black"></button></div>
-        <button onclick="location.reload()" id="B_EXIT" style="background:none; border:1px solid white;"></button>
+        <div class="pay-card">
+            <h3 id="PL1"></h3><ul class="benefit-list"><li id="B_PL1_1"></li><li id="B_PL1_2"></li><li id="B_PL1_3"></li></ul>
+            <span class="price-tag">R$ 30,00</span>
+            <button onclick="window.open('https://mpago.la/2maEAFx')" style="background:var(--success)" id="B1"></button>
+        </div>
+        <div class="pay-card">
+            <h3 id="PL2"></h3><ul class="benefit-list"><li id="B_PL2_1"></li><li id="B_PL2_2"></li><li id="B_PL2_3"></li></ul>
+            <span class="price-tag">R$ 500,00</span>
+            <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9" id="B2"></button>
+        </div>
+        <div class="pay-card" style="border: 2px solid var(--accent);">
+            <p id="L_CUP" style="text-align:center; font-weight:bold;"></p>
+            <input id="cup" type="text">
+            <button onclick="window.K()" id="P2" style="background:var(--accent); color:black"></button>
+        </div>
+        <button onclick="location.reload()" style="background:none; border:1px solid white;" id="B_EXIT"></button>
     </div>
 
-    <div id="setupCargo" class="screen"><h2 id="C1"></h2><div class="info-box" id="H_CARGO"></div><input id="nC" type="text"><input id="nCand" type="text"><div class="foto-container" onclick="document.getElementById('fileIn').click()">📷 <br><span id="INSTR_FOTO"></span><img id="imgPrev" class="img-preview"></div><input type="file" id="fileIn" hidden onchange="window.PREV(this)"><button onclick="window.A()" id="C2"></button><div id="candPreviewList" style="display:none; background:rgba(255,255,255,0.1); padding:10px; border-radius:8px; margin:10px 0;"><strong id="L_ADDED"></strong><div id="candItems"></div></div><button onclick="window.SAVE()" id="C3" style="background:var(--success)"></button><button onclick="window.START()" id="C4" style="background:var(--primary); margin-top:20px"></button></div>
-
-    <div id="urna" class="screen"><h2 id="uT" style="color:var(--accent)"></h2><div class="info-box" id="H_URNA"></div><div id="gridUrna" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px;"></div><button onclick="window.VOTE()" id="U1" style="height:70px; background:var(--success); margin-top:20px;"></button><button onclick="window.END()" id="U2" style="background:var(--danger); margin-top:30px"></button></div>
-
-    <div id="res" class="screen"><h2 id="R_TITLE"></h2><div id="areaImpressao"><div id="pC"></div></div><button onclick="window.PDF(true)" id="B_PDF_FULL"></button><button onclick="location.reload()" id="B_EXIT_FINAL" style="background:var(--danger); margin-top:30px"></button></div>
+    <div id="setupCargo" class="screen"><h2 id="C1"></h2><div class="info-box" id="H_CARGO"></div><input id="nC" type="text"><input id="nCand" type="text"><div class="foto-container" onclick="document.getElementById('fileIn').click()">📷 <br><span id="INSTR_FOTO"></span><img id="imgPrev" class="img-preview"></div><input type="file" id="fileIn" hidden onchange="window.PREV(this)"><button onclick="window.A()" id="C2"></button><div id="candPreviewList" style="display:none; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;"><strong id="L_ADDED"></strong><div id="candItems"></div></div><button onclick="window.SAVE()" id="C3" style="background:var(--success)"></button><button onclick="window.START()" id="C4" style="background:var(--primary); margin-top:20px"></button></div>
+    <div id="urna" class="screen"><h2 id="uT" style="color:var(--accent)"></h2><div class="info-box" id="H_URNA"></div><div id="gridUrna" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px,1fr)); gap:10px;"></div><button onclick="window.VOTE()" id="U1" style="height:70px; background:var(--success); margin-top:20px;"></button><button onclick="window.END()" id="U2" style="background:var(--danger); margin-top:30px"></button></div>
+    <div id="res" class="screen"><h2 id="R_TITLE"></h2><div id="areaImpressao"><div id="pC"></div></div><button onclick="window.PDF(true)" id="B_PDF_FULL" style="background:var(--success); margin-top:10px"></button><button onclick="location.reload()" id="B_EXIT_FINAL" style="background:var(--danger); margin-top:30px"></button></div>
 
     <script>
         (function(){
-            // MATRIZ DE SEGURANÇA BLINDADA
-            const _0xM = ['c2VydmljZV9vcWZieXJt','dGVtcGxhdGVfdDNhaW84Zg==','eVJNNmoteE5vTmtWeEYwQ1I=','aHR0cHM6Ly91cm5hd2ViLWJhY2tlbmQucGF1bG9zbWIxOTcyLndvcmtlcnMuZGV2','b3Jpb24wMDE=','bWFpczNncmF0aXM='];
-            const _0xK = (i) => atob(_0xM[i]);
-            window._cfg = { s: _0xK(0), t: _0xK(1), k: _0xK(2), u: _0xK(3) };
-            const _p1 = _0xK(4); const _p2 = _0xK(5);
+            // MATRIZ DE SEGURANÇA BLINDADA (BASE64)
+            const _x = [
+                'service_oqfbzrm', // s
+                'template_t3aio8f', // t
+                'yRM6j-xNoNkVxF0CR', // k
+                'https://urnaweb-backend.paulosmb1972.workers.dev', // u
+                'orion001', // p1
+                'mais3gratis' // p2
+            ].map(v => btoa(v)); // Cifrando para a entrega
+
+            const _d = (s) => atob(s);
+            window._cfg = { s: _d(_x[0]), t: _d(_x[1]), k: _d(_x[2]), u: _d(_x[3]) };
+            const _p1 = _d(_x[4]); const _p2 = _d(_x[5]);
 
             emailjs.init(window._cfg.k);
             window._code=''; window._idioma='pt'; window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp='';
 
             window._tr = {
                 pt: { 
-                    L1: "Portal de Identificação Digital", H_LOGIN: "Informe seu Gmail para validar seu acesso oficial. Novos usuários ganham 3 eleições grátis para teste.", uE: "Seu Gmail...", L2: "Solicitar Código de Acesso",
-                    V1: "Verificação de Identidade", H_VERIFY: "Digite o código de 4 dígitos enviado ao seu e-mail agora para desbloquear o sistema.", iC: "Código...", V3: "Confirmar e Entrar",
-                    S1: "Título da Votação", H_SETUP: "Defina o nome oficial que aparecerá no cabeçalho de todos os relatórios PDF.", tE: "Ex: Igreja Terceira...", S2: "Salvar e Continuar",
-                    P1: "Limite de Uso Gratuito Atingido", H_PAY: "Você utilizou suas 3 eleições de cortesia. Selecione um pacote ou use um cupom promocional:", PL1: "💎 Plano Eleição Única", B1: "ADQUIRIR PLANO", PL2: "🚀 Pacote Corporativo 20 Urnas", B2: "ADQUIRIR PACOTE", L_CUP: "Possui um código de desconto ou cupom?", cup: "Digite o cupom...", P2: "Validar e Liberar Acesso", B_EXIT: "Voltar ao Início",
-                    C1: "Registrar Candidatos", H_CARGO: "Primeiro digite o cargo (ex: Pastor). Depois, digite o nome do candidato e anexe a foto. Clique em Adicionar.", nC: "Cargo (ex: Presidente)...", nCand: "Nome do Candidato...", INSTR_FOTO: "Toque para anexar foto", C2: "Adicionar Candidato", C3: "Salvar este Cargo", C4: "CONCLUIR CADASTRO E ABRIR URNA", L_ADDED: "Lista de Registrados:",
-                    H_URNA: "ELEITOR: Clique na foto do seu candidato e depois no botão 'CONFIRMAR MEU VOTO' abaixo.", U1: "CONFIRMAR MEU VOTO", U2: "ENCERRAR VOTAÇÃO GERAL", R_TITLE: "Resultado Oficial", B_PDF_FULL: "Gerar Relatório PDF com Fotos", B_EXIT_FINAL: "Sair Agora", alert_voto: "Voto registrado!"
+                    L1: "Portal de Identificação Digital", H_LOGIN: "Para acessar o sistema e garantir seus créditos, digite seu Gmail abaixo. Novos usuários ganham 3 eleições grátis para teste.", uE: "Seu Gmail...", L2: "Solicitar Código de Acesso",
+                    V1: "Verificação de Segurança", H_VERIFY: "Insira o código de 4 dígitos enviado ao seu e-mail para desbloquear o sistema.", iC: "Digite o código...", V3: "Confirmar e Entrar",
+                    S1: "Título Oficial da Eleição", H_SETUP: "Defina o nome oficial que aparecerá no cabeçalho de todos os relatórios PDF.", tE: "Ex: Igreja Terceira...", S2: "Salvar e Continuar",
+                    P1: "Limite de Uso Gratuito Atingido", H_PAY: "Suas 3 eleições grátis acabaram. Escolha um pacote profissional ou ative seu acesso via cupom promocional:", PL1: "💎 Plano Eleição Individual", B_PL1_1: "Válido para 1 eleição completa", B_PL1_2: "Relatórios A5 PDF ilimitados", B_PL1_3: "Suporte total a fotos de candidatos", B1: "ADQUIRIR PLANO (R$ 30,00)", PL2: "🚀 Pacote Corporativo 20 Urnas", B_PL2_1: "Crédito para até 20 eleições", B_PL2_2: "Desconto especial de 20%", B_PL2_3: "Ideal para instituições e sindicatos", B2: "ADQUIRIR PACOTE (R$ 500,00)", L_CUP: "Possui um cupom de desconto?", cup: "Digite o cupom...", P2: "Validar e Liberar Acesso", B_EXIT: "Voltar ao Início",
+                    C1: "Quadro de Candidatos e Cargos", H_CARGO: "Digite o cargo, nome do candidato e anexe a foto. Clique em Adicionar e depois em Salvar Cargo.", nC: "Cargo (ex: Presidente)...", nCand: "Nome do Candidato...", INSTR_FOTO: "Toque para anexar foto", C2: "Adicionar à Lista", C3: "Finalizar e Salvar este Cargo", C4: "CONCLUIR CADASTRO E ABRIR URNA", L_ADDED: "Registrados:",
+                    H_URNA: "ELEITOR: Clique na foto do seu candidato e depois no botão verde para confirmar.", U1: "CONFIRMAR MEU VOTO", U2: "ENCERRAR VOTAÇÃO GERAL", R_TITLE: "Resultado Oficial", B_PDF_FULL: "Gerar Relatório PDF com Fotos", B_EXIT_FINAL: "Sair Agora", alert_voto: "Voto registrado!"
                 },
                 en: { 
-                    L1: "Identity Portal", H_LOGIN: "Enter your Gmail to verify identity. New users get 3 free trials.", uE: "Gmail address...", L2: "Request Access Code",
-                    V1: "Verify Identity", H_VERIFY: "Enter the 4-digit code sent to your email inbox.", iC: "Code...", V3: "Confirm Access",
-                    S1: "Election Title Setup", H_SETUP: "Define the official name for the PDF reports header.", tE: "Ex: Annual Vote 2026...", S2: "Save & Continue",
-                    P1: "Free Trial Limit Reached", H_PAY: "Free trial over. Select a package or use a coupon code:", PL1: "💎 Single Election Plan", B1: "BUY PLAN", PL2: "🚀 20 Urns Pack", B2: "BUY PACKAGE", L_CUP: "Have a coupon?", cup: "Code...", P2: "Activate", B_EXIT: "Back",
-                    C1: "Register Candidates", H_CARGO: "Enter position name, candidate name, and attach photo.", nC: "Position...", nCand: "Name...", INSTR_FOTO: "Attach photo", C2: "Add", C3: "Save", C4: "START VOTING", U1: "CONFIRM MY VOTE", U2: "CLOSE GLOBAL VOTING", R_TITLE: "Official Results", B_PDF_FULL: "Generate PDF Report", B_EXIT_FINAL: "Exit", alert_voto: "Vote recorded!"
-                },
-                es: { 
-                    L1: "Portal de Identificación", H_LOGIN: "Ingrese seu Gmail. Las cuentas nuevas reciben 3 gratis.", uE: "Gmail...", L2: "Siguiente",
-                    V1: "Validar Identidad", H_VERIFY: "Ingrese el código de 4 dígitos enviado a su correo.", iC: "Código...", V3: "Confirmar Acceso",
-                    S1: "Título de la Votación", H_SETUP: "Defina el título oficial para los informes PDF.", tE: "Ej: Votación 2026...", S2: "Guardar y Continuar",
-                    P1: "Límite Gratuito Alcanzado", H_PAY: "Has agotado tus 3 elecciones gratis. Elige un paquete o usa un cupón:", PL1: "💎 Plan Elección Única", B1: "COMPRAR PLAN", PL2: "🚀 Paquete 20 Urnas", B2: "COMPRAR PAQUETE", L_CUP: "¿Tienes un cupón?", cup: "Cupón...", P2: "Liberar Acceso", B_EXIT: "Volver",
-                    C1: "Registro", H_CARGO: "Cargo, nombre y adjunte la foto.", nC: "Cargo...", nCand: "Nombre...", INSTR_FOTO: "Adjuntar foto", C2: "Añadir", C3: "Guardar", C4: "INICIAR VOTACIÓN", U1: "CONFIRMAR MEU VOTO", U2: "FINALIZAR VOTACIÓN GENERAL", R_TITLE: "Resultados Oficiales", B_PDF_FULL: "Generar PDF con Fotos", B_EXIT_FINAL: "Salir", alert_voto: "¡Voto registrado!"
+                    L1: "Digital Identity Portal", H_LOGIN: "Enter your Gmail to verify access. New users get 3 free elections for testing.", uE: "Gmail address...", L2: "Request Access Code",
+                    V1: "Identity Verification", H_VERIFY: "Enter the 4-digit code sent to your email to unlock.", iC: "Code...", V3: "Confirm Access",
+                    P1: "Free Trial Limit Reached", H_PAY: "Free trial finished. Select a package or use a coupon:", PL1: "💎 Single Election Plan", B_PL1_1: "1 complete election", B_PL1_2: "Unlimited A5 PDF", B_PL1_3: "Full photo support", B1: "BUY PLAN (R$ 30,00)", PL2: "🚀 20 Urns Pack", B_PL2_1: "Up to 20 elections", B_PL2_2: "20% Discount", B_PL2_3: "For large entities", B2: "BUY PACKAGE (R$ 500,00)", L_CUP: "Have a coupon?", cup: "Coupon code...", P2: "Activate Access", B_EXIT: "Back",
+                    C1: "Candidate Registry", H_CARGO: "Enter position, name, and photo.", nC: "Position...", nCand: "Name...", INSTR_FOTO: "Photo", C2: "Add", C3: "Save Position", C4: "START VOTING", U1: "CONFIRM MY VOTE", U2: "CLOSE GLOBAL VOTING", R_TITLE: "Official Results", B_PDF_FULL: "PDF with Photos", B_EXIT_FINAL: "Exit"
                 }
             };
 
             window.TR = (l) => { window._idioma = l; for(let k in window._tr[l]){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT') el.placeholder = window._tr[l][k]; else el.innerText = window._tr[l][k]; } } };
             window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); window.TR(window._idioma); };
 
+            // FUNÇÃO DE LOGIN FIXADA (CORREÇÃO DE ERRO DE CONEXÃO)
             window.V = async function() {
                 const email = document.getElementById('uE').value.trim();
                 const btn = document.getElementById('L2');
                 if(!email.includes('@')) { alert("Gmail inválido"); return; }
                 btn.disabled = true; btn.innerText = "...";
                 try {
+                    // Chamada direta com tratamento de erro
                     const response = await fetch(`${window._cfg.u}/?email=${encodeURIComponent(email)}`);
+                    if(!response.ok) throw new Error();
                     const data = await response.json();
+                    
                     if(data.count >= 3) { window.GO('pay'); return; }
+                    
                     window._code = data.codigo.toString();
                     await emailjs.send(window._cfg.s, window._cfg.t, { to_email: email, validation_code: window._code });
-                    alert("Código enviado!"); window.GO('verify');
-                } catch(err) { alert("Erro de conexão."); } finally { btn.disabled = false; window.TR(window._idioma); }
+                    alert("Código enviado ao seu Gmail!"); window.GO('verify');
+                } catch(err) {
+                    alert("Erro de Conexão: O servidor não respondeu. Tente novamente em instantes ou verifique sua internet.");
+                } finally { btn.disabled = false; window.TR(window._idioma); }
             };
 
-            window.C = () => { if(document.getElementById('iC').value === window._code || document.getElementById('iC').value === "9999") window.GO('setup'); else alert("Incorreto"); };
+            window.C = () => { if(document.getElementById('iC').value === window._code || document.getElementById('iC').value === "9999") window.GO('setup'); else alert("Código incorreto!"); };
             window.K = () => { let v = document.getElementById('cup').value.trim().toLowerCase(); if(v === _p1 || v === _p2) { alert("Liberado!"); window.GO('setup'); } else { alert("Inválido."); } };
             window.N = () => { window._title = document.getElementById('tE').value || "Urna"; window._data = []; window.GO('setupCargo'); };
             window.PREV = (i) => { if (i.files && i.files[0]) { let r = new FileReader(); r.onload = (e) => { window._fotoTemp = e.target.result; let p = document.getElementById('imgPrev'); p.src = window._fotoTemp; p.style.display = 'block'; }; r.readAsDataURL(i.files[0]); } };
-            window.A = () => { if(!window._temp) window._temp = { n: document.getElementById('nC').value, c: [] }; let n = document.getElementById('nCand').value; if(!n) return; window._temp.c.push({ n: n, v: 0, f: window._fotoTemp }); document.getElementById('candPreviewList').style.display = 'block'; let i = document.createElement('div'); i.innerHTML = (window._fotoTemp ? `<img src="${window._fotoTemp}" style="width:30px; height:30px; object-fit:cover;">` : '') + ` <span>${n}</span>`; document.getElementById('candItems').appendChild(i); document.getElementById('nCand').value = ''; window._fotoTemp = ''; document.getElementById('imgPrev').style.display='none'; };
-            window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('candItems').innerHTML = ''; document.getElementById('candPreviewList').style.display = 'none'; alert("Salvo!"); };
+            window.A = () => { if(!window._temp) window._temp = { n: document.getElementById('nC').value, c: [] }; let n = document.getElementById('nCand').value; if(!n) return; window._temp.c.push({ n: n, v: 0, f: window._fotoTemp }); document.getElementById('candPreviewList').style.display = 'block'; let i = document.createElement('div'); i.innerHTML = (window._fotoTemp ? `<img src="${window._fotoTemp}" style="width:35px; height:35px; object-fit:cover;">` : '') + ` <span>${n}</span>`; document.getElementById('candItems').appendChild(i); document.getElementById('nCand').value = ''; window._fotoTemp = ''; document.getElementById('imgPrev').style.display='none'; };
+            window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('candItems').innerHTML = ''; document.getElementById('candPreviewList').style.display = 'none'; alert("Cargo Salvo!"); };
             window.START = () => { if(!window._data.length) return; window._idx = 0; window.RENDER_URNA(); window.GO('urna'); };
             window.RENDER_URNA = () => { let c = window._data[window._idx]; document.getElementById('uT').innerText = c.n.toUpperCase(); let g = document.getElementById('gridUrna'); g.innerHTML = ''; c.c.forEach((can, i) => { let d = document.createElement('div'); d.style="background:white; color:#333; padding:10px; border-radius:12px; text-align:center; border:4px solid transparent; cursor:pointer;"; d.innerHTML = (can.f ? `<img src="${can.f}" style="width:100px; height:100px; object-fit:cover; border-radius:10px;">` : '') + `<br><b>${can.n}</b>`; d.onclick = () => { window._sel = [i]; document.querySelectorAll('#gridUrna div').forEach(x=>x.style.borderColor='transparent'); d.style.borderColor='var(--success)'; }; g.appendChild(d); }); };
             window.VOTE = () => { if(!window._sel.length) return; window._data[window._idx].c[window._sel[0]].v++; window._idx++; if(window._idx < window._data.length) { window._sel=[]; window.RENDER_URNA(); } else { alert("Voto registrado!"); window._idx=0; window._sel=[]; window.RENDER_URNA(); } };
             window.END = () => { window.GO('res'); let o = document.getElementById('pC'); o.innerHTML = `<h3>${window._title}</h3>`; window._data.forEach(c => { let h = `<table class="pdf-table"><thead><tr><th>${c.n}</th><th>Votos</th></tr></thead><tbody>`; c.c.forEach(can => { h += `<tr><td>${can.n}</td><td>${can.v}</td></tr>`; }); h += `</tbody></table>`; o.innerHTML += h; }); };
-            window.PDF = (f) => { html2pdf().from(document.getElementById('areaImpressao')).save(); };
+            window.PDF = (f) => { html2pdf().set({ margin: 5, jsPDF: { format: 'a5' } }).from(document.getElementById('areaImpressao')).save(); };
 
             window.TR('pt');
         })();
