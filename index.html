@@ -14,18 +14,15 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         h2 { text-align: center; color: var(--primary); margin-bottom: 5px; }
         .info-box { text-align: center; font-size: 14px; color: #eee; margin: 15px 0; background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 8px; border-left: 5px solid var(--accent); line-height: 1.5; }
-        input, button, textarea { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
+        input, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:active { transform: scale(0.98); }
         input { background: #fff; color: #333; }
         .pay-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
         .price-tag { font-size: 26px; font-weight: bold; color: var(--accent); display: block; margin: 10px 0; text-align: center; }
         .benefit-list { font-size: 13px; color: #ccc; margin-bottom: 15px; padding-left: 20px; list-style: none; }
         .benefit-list li::before { content: "✔ "; color: var(--success); margin-right: 5px; }
         .img-preview { width: 140px !important; height: 140px !important; object-fit: cover; border-radius: 15px; display: none; margin: 15px auto; border: 4px solid white; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
-        #areaImpressao { width: 480px; margin: 0 auto; background: white !important; color: #333 !important; padding: 25px; box-sizing: border-box; border: 1px solid #ddd; overflow: hidden; }
-        .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; }
-        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 10px; text-align: left; font-size: 11px; }
-        .pdf-table td { padding: 10px; border-bottom: 1px solid #eee; color: #333 !important; font-size: 13px; vertical-align: middle; word-wrap: break-word; }
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
         .lang-box button { width: auto; padding: 6px 14px; background: rgba(0,0,0,0.8); font-size: 11px; border: 1px solid var(--primary); color: white; }
     </style>
@@ -38,9 +35,19 @@
         <button onclick="window.TR('es')">Español</button>
     </div>
 
-    <div id="login" class="screen active"><h2 id="L1"></h2><div class="info-box" id="H_LOGIN"></div><input id="uE" type="email"><button onclick="window.V()" id="L2"></button></div>
-    <div id="verify" class="screen"><h2 id="V1"></h2><div class="info-box" id="H_VERIFY"></div><input id="iC" type="text" maxlength="4"><button onclick="window.C()" id="V3"></button></div>
-    <div id="setup" class="screen"><h2 id="S1"></h2><div class="info-box" id="H_SETUP"></div><input id="tE" type="text"><button onclick="window.N()" id="S2"></button></div>
+    <div id="login" class="screen active">
+        <h2 id="L1"></h2>
+        <div class="info-box" id="H_LOGIN"></div>
+        <input id="uE" type="email">
+        <button onclick="window.V()" id="L2"></button>
+    </div>
+
+    <div id="verify" class="screen">
+        <h2 id="V1"></h2>
+        <div class="info-box" id="H_VERIFY"></div>
+        <input id="iC" type="text" maxlength="4">
+        <button onclick="window.C()" id="V3"></button>
+    </div>
 
     <div id="pay" class="screen">
         <h2 id="P1"></h2><div class="info-box" id="H_PAY"></div>
@@ -50,15 +57,10 @@
         <button onclick="location.reload()" style="background:none; border:1px solid white;" id="B_EXIT"></button>
     </div>
 
-    <div id="setupCargo" class="screen"><h2 id="C1"></h2><div class="info-box" id="H_CARGO"></div><input id="nC" type="text"><input id="nCand" type="text"><div class="foto-container" onclick="document.getElementById('fileIn').click()"><span id="L_FOTO_ICON" style="font-size:35px">📷</span><br><span id="INSTR_FOTO"></span><img id="imgPrev" class="img-preview"></div><input type="file" id="fileIn" hidden accept="image/*" onchange="window.PREV(this)"><button onclick="window.A()" id="C2"></button><div class="cand-list-box" id="candPreviewList" style="display:none;"><strong id="L_ADDED"></strong><div id="candItems"></div></div><button onclick="window.SAVE()" id="C3" style="background:var(--success)"></button><button onclick="window.START_VOTE_PROCESS()" id="C4" style="background:var(--primary); margin-top:20px"></button></div>
-
-    <div id="urna" class="screen"><h2 id="uT" style="color:var(--accent)"></h2><div class="info-box" id="H_URNA"></div><div id="gridUrna" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px;"></div><button onclick="window.VOTE()" id="U1" style="height:70px; background:var(--success); margin-top:20px;"></button><button onclick="window.END()" id="U2" style="background:var(--danger); margin-top:30px"></button></div>
-
-    <div id="res" class="screen"><h2 id="R_TITLE"></h2><div id="areaImpressao"><div style="text-align:center; border-bottom:3px solid #0a2a66; padding-bottom:5px; margin-bottom:15px;"><h2 id="pdf_h1" style="color:#0a2a66; margin:0;"></h2></div><div id="pC"></div><p id="pdf-audit" style="text-align:center; font-size:9px; color:#999; margin-top:10px;"></p></div><button onclick="window.PDF(false)" id="B_PDF_SIMPLE" style="background:var(--primary); margin-top:20px"></button><button onclick="window.PDF(true)" id="B_PDF_FULL" style="background:var(--success); margin-top:10px"></button><button onclick="location.reload()" style="background:var(--danger); margin-top:30px" id="B_EXIT_FINAL"></button></div>
-
     <script>
         (function(){
             // MATRIZ DE SEGURANÇA FINAL - OFUSCADA EM BASE64
+            // Service_ID, Template_ID, Public_Key, URL_Backend, orion001, mais3gratis
             const _0xM = ['c2VydmljZV9vcWZieXJt','dGVtcGxhdGVfdDNhaW84Zg==','X1BLTDRPajkybzQ4S3VyU0Y=','aHR0cHM6Ly91cm5hd2ViLWJhY2tlbmQucGF1bG9zbWIxOTcyLndvcmtlcnMuZGV2','b3Jpb24wMDE=','bWFpczNncmF0aXM='];
             const _0xK = (i) => atob(_0xM[i]);
             
@@ -66,30 +68,62 @@
             const _p1 = _0xK(4); const _p2 = _0xK(5);
 
             emailjs.init(window._cfg.k);
-            window._code=''; window._idioma='pt'; window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp='';
+            window._code=''; window._idioma='pt';
 
             window._tr = {
                 pt: { 
-                    L1: "Portal de Identificação Digital", H_LOGIN: "Informe seu Gmail para validar seu acesso. Novos usuários possuem 3 eleições grátis para testes.", uE: "Seu Gmail...", L2: "Solicitar Código de Acesso",
-                    V1: "Verificação de Identidade", H_VERIFY: "Insira o código enviado ao seu e-mail para desbloquear o sistema.", iC: "Código...", V3: "Confirmar Identidade",
-                    S1: "Título da Votação", H_SETUP: "Defina o nome oficial que aparecerá no cabeçalho de todos os relatórios PDF.", tE: "Ex: Igreja Terceira...", S2: "Salvar e Continuar",
-                    P1: "Limite de Uso Gratuito Atingido", H_PAY: "Você utilizou suas 3 eleições de cortesia. Selecione um dos pacotes abaixo ou ative seu acesso através de um cupom promocional.", 
-                    PL1: "💎 Plano Eleição Individual", B_PL1_1: "Válido para 1 eleição completa", B_PL1_2: "Relatórios A5 sem limites", B_PL1_3: "Suporte total a fotos de candidatos", B1: "ADQUIRIR PLANO (R$ 30,00)", 
-                    PL2: "🚀 Pacote Corporativo 20 Urnas", B_PL2_1: "Crédito para até 20 eleições profissionais", B_PL2_2: "Desconto especial de 20%", B_PL2_3: "Ideal para instituições e sindicatos", B2: "ADQUIRIR PACOTE (R$ 500,00)", 
-                    L_CUP: "Já possui um código de desconto ou cupom?", cup: "Digite seu cupom aqui...", P2: "Validar e Liberar Acesso", B_EXIT: "Voltar ao Início",
-                    C1: "Registrar Candidatos", H_CARGO: "Primeiro digite o cargo (ex: Pastor). Depois, digite o nome do candidato e anexe a foto. Clique em Adicionar.", nC: "Nome do Cargo (ex: Presidente)...", nCand: "Nome do Candidato...", INSTR_FOTO: "Toque para anexar foto", C2: "Adicionar Candidato", C3: "Salvar este Cargo", C4: "CONCLUIR CADASTRO E ABRIR URNA", L_ADDED: "Lista de Registrados:",
-                    H_URNA: "ELEITOR: Clique na foto do seu candidato e depois no botão 'CONFIRMAR MEU VOTO' abaixo.", U1: "CONFIRMAR MEU VOTO", U2: "ENCERRAR VOTAÇÃO GERAL", R_TITLE: "Resultado Oficial", B_PDF_SIMPLE: "PDF Sem Fotos", B_PDF_FULL: "PDF Com Fotos", B_EXIT_FINAL: "Sair Agora", alert_voto: "Voto registrado!"
+                    L1: "Identificação Digital", H_LOGIN: "Informe seu Gmail para validar seu acesso. Novos usuários possuem 3 eleições grátis para testes.", uE: "Seu Gmail...", L2: "Solicitar Código de Acesso",
+                    V1: "Verificação", H_VERIFY: "Insira o código enviado ao seu e-mail.", iC: "Código...", V3: "Confirmar Identidade",
+                    P1: "Limite Excedido", H_PAY: "Suas 3 eleições grátis acabaram. Escolha um pacote ou use um cupom:", 
+                    PL1: "💎 Plano Único", B_PL1_1: "Válido para 1 eleição completa", B_PL1_2: "Relatórios A5 ilimitados", B_PL1_3: "Suporte total a fotos", B1: "ADQUIRIR PLANO (R$ 30,00)", 
+                    PL2: "🚀 Pacote 20 Urnas", B_PL2_1: "Crédito para até 20 eleições", B_PL2_2: "Desconto especial de 20%", B2: "ADQUIRIR PACOTE (R$ 500,00)", L_CUP: "Tem um cupom?", cup: "Digite aqui...", P2: "Liberar Acesso", B_EXIT: "Voltar ao Início"
                 },
                 en: { 
-                    L1: "Identity Portal", H_LOGIN: "Enter your Gmail to verify identity. New users get 3 free trials.", uE: "Gmail address...", L2: "Next",
-                    P1: "Free Trial Limit Reached", H_PAY: "You used your 3 free credits. Choose a plan or use a coupon:", 
-                    PL1: "💎 Single Election Plan", B_PL1_1: "Full access for 1 complete election", B_PL1_2: "Unlimited A5 PDF reports", B_PL1_3: "Full candidate photo support", B1: "BUY PLAN (R$ 30,00)", 
-                    PL2: "🚀 20 Urns Corporate Pack", B_PL2_1: "Credits for up to 20 professional elections", B_PL2_2: "Special 20% discount included", B_PL2_3: "Ideal for institutions and unions", B2: "BUY PACKAGE (R$ 500,00)", L_CUP: "Have a coupon code?", cup: "Enter coupon code here...", P2: "Validate & Release Access", B_EXIT: "Back to Home",
-                    C1: "Register Candidates", H_CARGO: "Enter position name, candidate name, and attach photo.", nC: "Position (ex: President)...", nCand: "Candidate Full Name...", INSTR_FOTO: "Tap to attach photo", C2: "Add Candidate", C3: "Save This Position", C4: "FINISH SETUP & OPEN URN", L_ADDED: "Ready List:",
-                    H_URNA: "VOTER: Click on your chosen candidate's photo, then click the green 'CONFIRM MY VOTE' button.", U1: "CONFIRM MY VOTE", U2: "CLOSE GLOBAL VOTING", R_TITLE: "Official Results", B_PDF_SIMPLE: "Generate Simple PDF", B_PDF_FULL: "Generate Photo PDF", B_EXIT_FINAL: "Exit Now", alert_voto: "Vote recorded!"
+                    L1: "Digital Identity", H_LOGIN: "Enter your Gmail to verify. New users get 3 free trials.", uE: "Gmail address...", L2: "Next",
+                    P1: "Limit Reached", H_PAY: "Free trial over. Select a plan or use a coupon:", 
+                    PL1: "💎 Single Plan", B_PL1_1: "Full access for 1 election", B_PL1_2: "Unlimited A5 PDF reports", B_PL1_3: "Full photo support", B1: "BUY PLAN (R$ 30,00)", 
+                    PL2: "🚀 20 Urns Pack", B_PL2_1: "Up to 20 elections", B2: "BUY PACKAGE (R$ 500,00)", L_CUP: "Have a coupon?", cup: "Enter code...", P2: "Activate", B_EXIT: "Back"
                 },
                 es: { 
-                    L1: "Portal de Identificación", H_LOGIN: "Ingrese su Gmail para validar. Las cuentas nuevas reciben 3 elecciones gratis para pruebas.", uE: "Su Gmail...", L2: "Siguiente",
-                    P1: "Límite Gratuito Alcanzado", H_PAY: "Has agotado tus 3 elecciones de cortesía. Elige un paquete de créditos o usa un código promocional:", 
-                    PL1: "💎 Plan Elección Individual", B_PL1_1: "Acceso completo para 1 elección", B_PL1_2: "Informes A5 ilimitados", B_PL1_3: "Soporte total para fotos", B1: "COMPRAR PLAN (R$ 30,00)", 
-                    PL2: "🚀 Paquete Corporativo 20 Urnas",
+                    L1: "Identificación Digital", H_LOGIN: "Ingrese su Gmail. Cuentas nuevas reciben 3 gratis.", uE: "Gmail...", L2: "Siguiente",
+                    P1: "Límite Alcanzado", H_PAY: "Prueba terminada. Elija un paquete o use un cupón:", 
+                    PL1: "💎 Plan Único", B1: "COMPRAR PLAN (R$ 30,00)", 
+                    PL2: "🚀 Paquete 20", B2: "COMPRAR PAQUETE (R$ 500,00)", L_CUP: "¿Cupón?", P2: "Liberar Acceso", B_EXIT: "Volver"
+                }
+            };
+
+            window.TR = (l) => { window._idioma = l; for(let k in window._tr[l]){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT') el.placeholder = window._tr[l][k]; else el.innerText = window._tr[l][k]; } } };
+            window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); window.TR(window._idioma); };
+
+            window.V = async function() {
+                const email = document.getElementById('uE').value.trim();
+                if(!email.includes('@')) { alert("E-mail inválido"); return; }
+                
+                try {
+                    // MODO NO-CORS PARA EVITAR BLOQUEIO DO NAVEGADOR
+                    const response = await fetch(`${window._cfg.u}/?email=${encodeURIComponent(email)}`, {
+                        method: 'GET',
+                        mode: 'cors',
+                        headers: { 'Accept': 'application/json' }
+                    });
+
+                    if(!response.ok) throw new Error("HTTP_" + response.status);
+                    
+                    const data = await response.json();
+                    if(data.count >= 3) { window.GO('pay'); return; }
+                    
+                    window._code = data.codigo.toString();
+                    await emailjs.send(window._cfg.s, window._cfg.t, { to_email: email, validation_code: window._code });
+                    window.GO('verify');
+                } catch(err) {
+                    console.error("Connection Error:", err);
+                    alert("Erro de Conexão: O servidor não respondeu. Certifique-se de que o Cloudflare Worker está publicado e aceitando requisições (CORS).");
+                }
+            };
+
+            window.K = () => { let v = document.getElementById('cup').value.trim().toLowerCase(); if(v === _p1 || v === _p2) { alert("Acesso Liberado!"); window.GO('setup'); } else { alert("Cupom Inválido."); } };
+            window.TR('pt');
+        })();
+    </script>
+</body>
+</html>
