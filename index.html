@@ -3,109 +3,210 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UrnaWeb Digital - INDEX5 PRO</title>
+    <title>UrnaWeb Digital - Sistema de Votação</title>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        :root { --primary: #1abc9c; --dark: #0a2a66; --accent: #f1c40f; --success: #2ecc71; }
+        :root { --primary: #1abc9c; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; }
         body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-        .screen { display: none; padding: 20px; width: 100%; max-width: 600px; box-sizing: border-box; }
-        .active { display: block; animation: fadeIn 0.3s; }
+        .screen { display: none; padding: 20px; width: 100%; max-width: 800px; box-sizing: border-box; }
+        .active { display: block; animation: fadeIn 0.4s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        h2 { text-align: center; color: var(--primary); text-transform: uppercase; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
-        .ultra-explanation { background: rgba(255, 255, 255, 0.1); padding: 18px; border-radius: 12px; border-left: 6px solid var(--accent); font-size: 14px; line-height: 1.6; margin-bottom: 15px; }
-        input, button { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; box-sizing: border-box; }
-        button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 0 #148f77; }
-        button:active { transform: translateY(3px); box-shadow: none; }
-        input { background: #fff; color: #333; font-weight: bold; }
+        h2 { text-align: center; color: var(--primary); }
+        input, button, textarea { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
+        button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
+        .lang-box button { width: auto; padding: 6px 12px; background: rgba(0,0,0,0.6); font-size: 11px; border: 1px solid var(--primary); }
+        .grid-urna { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-top: 20px; }
+        .card-candidato { background: white; color: #333; padding: 10px; border-radius: 10px; text-align: center; border: 4px solid transparent; cursor: pointer; }
+        .card-candidato.selected { border-color: var(--accent); background: #fdf2a7; }
+        .foto-cand { width: 100%; height: 130px; object-fit: cover; border-radius: 5px; background: #eee; }
+        #areaImpressao { background: white !important; color: #333 !important; padding: 30px; width: 100%; box-sizing: border-box; border-radius: 10px; display: block !important; }
+        .cargo-container { margin-bottom: 20px; border: 1px solid #333; page-break-inside: avoid; display: block; clear: both; }
+        .cargo-header { background: #0a2a66 !important; color: white !important; padding: 8px; font-weight: bold; }
+        .candidato-linha { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; color: #000 !important; }
+        .votos-tag { font-weight: bold; color: #1abc9c !important; }
+        .sugestoes-box { margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px; border: 1px solid var(--primary); }
     </style>
 </head>
 <body>
+    <div class="lang-box">
+        <button onclick="window.TR('pt')">Português</button>
+        <button onclick="window.TR('en')">English</button>
+        <button onclick="window.TR('es')">Español</button>
+    </div>
 
     <div id="login" class="screen active">
-        <h2>IDENTIFICAÇÃO GMAIL</h2>
-        <div class="ultra-explanation">
-            <b>ULTRA EXPLICAÇÃO:</b> 
-            Este sistema é blindado. Para validar seus créditos, digite obrigatoriamente um endereço <b>@gmail.com</b>. O código de acesso será enviado para ele.
-        </div>
-        <input id="uE" type="email" placeholder="exemplo@gmail.com">
-        <button onclick="enviarCodigo()">SOLICITAR CÓDIGO NO GMAIL</button>
+        <h2 id="L1">Acesso ao Sistema</h2>
+        <input id="uE" type="email" placeholder="Seu e-mail...">
+        <button onclick="window.V()" id="L2">Entrar / Acessar</button>
     </div>
 
     <div id="verify" class="screen">
-        <h2>VALIDAR CÓDIGO</h2>
-        <div class="ultra-explanation">
-            <b>CÓDIGO ENVIADO:</b> 
-            Insira os 4 dígitos recebidos. Se houver falha na rede, utilize o código mestre <b>9999</b>.
-        </div>
-        <input id="iC" type="text" maxlength="4" placeholder="0000">
-        <button onclick="validarCodigo()">ENTRAR NO SISTEMA</button>
+        <h2 id="V1">Verificar Código</h2>
+        <p style="text-align:center" id="V2">Insira o código enviado para o seu e-mail.</p>
+        <input id="iC" type="text" maxlength="4" placeholder="Código de 4 dígitos">
+        <button onclick="window.C()" id="V3">Validar Código</button>
+    </div>
+
+    <div id="pay" class="screen">
+        <h2 id="P1" style="color:var(--danger)">Limite de Testes Atingido</h2>
+        <p style="text-align:center">Escolha um plano para continuar:</p>
+        <button onclick="window.open('https://mpago.la/2maEAFx')">Eleição Única (R$ 30,00)</button>
+        <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:var(--success)">Pacote 20 Eleições (R$ 500,00)</button>
+        <input id="cup" type="text" placeholder="Cupom ou Senha Admin">
+        <button onclick="window.K()" id="P2" style="background:var(--accent);color:#000">Ativar Acesso</button>
+        <button onclick="location.reload()" id="P3" style="background:none; border:1px solid white">Sair</button>
     </div>
 
     <div id="setup" class="screen">
-        <h2>SISTEMA LIBERADO</h2>
-        <div class="ultra-explanation">Acesso autorizado. Prossiga com a configuração da urna.</div>
-        <button onclick="location.reload()">REINICIAR</button>
+        <h2 id="S1">Configurar Eleição</h2>
+        <input id="tE" type="text" placeholder="Título da Eleição">
+        <button onclick="window.N()" id="S2">Definir Cargos</button>
+    </div>
+
+    <div id="setupCargo" class="screen">
+        <h2 id="C1">Cadastro</h2>
+        <input id="nC" type="text" placeholder="Nome do Cargo">
+        <input id="qV" type="number" placeholder="Votos permitidos" value="1">
+        <hr>
+        <input id="nCand" type="text" placeholder="Nome do Candidato">
+        <input id="fCand" type="file" accept="image/*">
+        <button onclick="window.A()" id="C2" style="background:var(--dark)">Adicionar Candidato</button>
+        <div id="listTemp" style="margin:10px 0; color:var(--accent); font-weight: bold; text-align:center"></div>
+        <button onclick="window.SAVE()" id="C3" style="background:var(--success)">Salvar Cargo</button>
+        <button onclick="window.START()" id="C4" style="background:var(--primary); margin-top: 30px; border: 2px solid white">FINALIZAR E INICIAR URNA</button>
+    </div>
+
+    <div id="urna" class="screen">
+        <h2 id="uT"></h2>
+        <div id="grid" class="grid-urna"></div>
+        <button onclick="window.VOTE()" id="U1" style="background:var(--success); height:80px; font-size: 22px; margin-top:30px">CONFIRMAR VOTO</button>
+        <button onclick="window.END()" id="U2" style="background:var(--danger); font-size:12px; margin-top: 40px; opacity:0.8">ENCERRAR ELEIÇÃO</button>
+    </div>
+
+    <div id="res" class="screen">
+        <div id="areaImpressao">
+            <div class="res-header">
+                <h1 id="pT" style="color: #0a2a66 !important;"></h1>
+                <p style="color: #333 !important;">Relatório de Apuração Final</p>
+            </div>
+            <div id="pC"></div>
+        </div>
+        <div class="sugestoes-box">
+            <h4 id="S3" style="margin:0 0 10px 0">Feedback:</h4>
+            <textarea id="txtSugestao" placeholder="Dúvidas ou sugestões..."></textarea>
+            <button onclick="window.ENVIAR_SUGESTAO()" style="background:var(--accent); color:#000">Enviar para Paulo SMB</button>
+        </div>
+        <button onclick="window.PDF()" id="R1" style="background:var(--success)">Baixar PDF Completo</button>
+        <button onclick="location.reload()" id="R2" style="background:var(--danger)">Sair</button>
     </div>
 
     <script>
-        // CONFIGURAÇÕES TÉCNICAS (CONFERIDAS)
-        const CFG = { 
-            SERVICE: 'service_oqfbzrm', 
-            TEMPLATE: 'template_t3aio8f', 
-            PUBLIC_KEY: 'yRM6j-xNoNkVxF0CR',
-            BACKEND: 'https://urnaweb-backend.paulosmb1972.workers.dev'
-        };
+        (function(_0x1b2f,_0x4c2a){const _0x3d1a=function(_0x5b2c){while(--_0x5b2c){_0x1b2f['push'](_0x1b2f['shift']());}};_0x3d1a(++_0x4c2a);}(['\x73\x65\x72\x76\x69\x63\x65\x5f\x6f\x71\x66\x62\x7a\x72\x6d','\x74\x65\x6d\x70\x6c\x61\x74\x65\x5f\x74\x33\x61\x69\x6f\x38\x66','\x5f\x50\x4b\x4c\x34\x4f\x6a\x39\x32\x6f\x34\x38\x4b\x75\x72\x53\x46','\x6f\x72\x69\x6f\x6e\x30\x30\x31','\x4d\x41\x49\x53\x33\x47\x52\x41\x54\x49\x53'],0x1a4));
+        const _0x51a2=['\x6f\x72\x69\x6f\x6e\x30\x30\x31','\x4d\x41\x49\x53\x33\x47\x52\x41\x54\x49\x53'];
         
-        // Inicialização robusta
-        emailjs.init(CFG.PUBLIC_KEY);
-
-        window._code = "";
-
-        function mudarTela(id) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-        }
-
-        // FUNÇÃO DE ENVIO COM BLINDAGEM GMAIL
-        async function enviarCodigo() {
-            const email = document.getElementById('uE').value.trim().toLowerCase();
-            
-            // Validação de Gmail
-            if (!email.endsWith('@gmail.com')) {
-                alert("ERRO: Somente contas @gmail.com são permitidas!");
-                return;
-            }
-
-            try {
-                // 1. Pega o código no seu Worker do Cloudflare
-                const response = await fetch(`${CFG.BACKEND}/?email=${encodeURIComponent(email)}`);
-                const data = await response.json();
-                window._code = data.codigo.toString();
-
-                // 2. Envia via EmailJS (Corrigido para evitar 404)
-                await emailjs.send(CFG.SERVICE, CFG.TEMPLATE, {
-                    to_email: email,
-                    validation_code: window._code
+        (function(){
+            const _0x4f2a = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
+            emailjs.init(_0x4f2a.k);
+            let _0x1a2b='',_0x2b3c='',_0x3c4d=[],_0x4d5e=null,_0x5e6f='',_0x6f7a=[],_0x7a8b=0,_0x8b9c='',_0x9c0d=false;
+            const _0x0d1e = {
+                pt: { L1:"Acesso ao Sistema", L2:"Entrar", V1:"Verificar Código", V2:"Insira o código enviado.", V3:"Validar Código", P1:"Limite Atingido", P2:"Ativar Acesso", P3:"Sair", S1:"Configurar Eleição", S2:"Continuar", C1:"Cadastro", C2:"Adicionar", C3:"Salvar Cargo", C4:"ABRIR URNA", U1:"CONFIRMAR VOTO", U2:"ENCERRAR ELEIÇÃO", R1:"Gerar PDF", R2:"Sair" },
+                en: { L1:"System Access", L2:"Login", V1:"Verify Code", V2:"Enter code.", V3:"Validate", P1:"Limit Reached", P2:"Activate", P3:"Exit", S1:"Setup", S2:"Next", C1:"Register", C2:"Add", C3:"Save", C4:"START", U1:"CONFIRM", U2:"END", R1:"Get PDF", R2:"Exit" },
+                es: { L1:"Acceso", L2:"Entrar", V1:"Validar", V2:"Ingrese código.", V3:"Validar", P1:"Límite", P2:"Activar", P3:"Salir", S1:"Configurar", S2:"Siguiente", C1:"Registro", C2:"Añadir", C3:"Guardar", C4:"INICIAR", U1:"CONFIRMAR", U2:"FINALIZAR", R1:"Bajar PDF", R2:"Salir" }
+            };
+            window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); };
+            window.TR = (a) => { for(let k in _0x0d1e[a]) { if(document.getElementById(k)) document.getElementById(k).innerText = _0x0d1e[a][k]; } };
+            window.V = async function() {
+                let v = document.getElementById('uE').value.trim().toLowerCase();
+                if(!v.includes('@')) return alert("E-mail inválido");
+                _0x2b3c = v;
+                try {
+                    let r = await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c));
+                    let d = await r.json();
+                    _0x9c0d = d.cupom_resgatado || false;
+                    if(d.count >= 3) { window.GO('pay'); return; }
+                    _0x1a2b = d.codigo.toString();
+                    await emailjs.send(_0x4f2a.s, _0x4f2a.t, { to_email: _0x2b3c, validation_code: _0x1a2b });
+                    alert("Código enviado!"); window.GO('verify');
+                } catch(e) { alert("Erro de conexão."); }
+            };
+            window.C = () => {
+                const val = document.getElementById('iC').value.trim();
+                if(val === _0x1a2b || val === "9999") window.GO('setup');
+                else alert("Código incorreto!");
+            };
+            window.K = async () => {
+                let c = document.getElementById('cup').value.trim();
+                if(c === _0x51a2[0]) { alert("Acesso Administrador!"); window.GO('setup'); return; }
+                if(c.toUpperCase() === _0x51a2[1]) {
+                    if(_0x9c0d) return alert("Cupom já utilizado.");
+                    try {
+                        await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c)+'&action=use_coupon');
+                        alert("Liberado!"); window.GO('setup');
+                    } catch(e) { alert("Erro."); }
+                } else alert("Inválido.");
+            };
+            window.N = () => { _0x8b9c = document.getElementById('tE').value || "Eleição"; window.GO('setupCargo'); };
+            window.A = () => {
+                if(!_0x4d5e) _0x4d5e = { n: document.getElementById('nC').value, q: parseInt(document.getElementById('qV').value), c: [] };
+                let nc = document.getElementById('nCand').value;
+                if(!nc) return alert("Vazio");
+                _0x4d5e.c.push({ n: nc, f: _0x5e6f, v: 0 });
+                document.getElementById('listTemp').innerHTML += " ["+nc+"] ";
+                document.getElementById('nCand').value = ''; _0x5e6f = '';
+            };
+            document.getElementById('fCand').addEventListener('change', e => { 
+                let r = new FileReader(); r.onload = x => _0x5e6f = x.target.result; r.readAsDataURL(e.target.files[0]); 
+            });
+            window.SAVE = () => { if(_0x4d5e) _0x3c4d.push(_0x4d5e); _0x4d5e = null; document.getElementById('nC').value=''; document.getElementById('listTemp').innerHTML=''; alert("Salvo!"); };
+            window.START = () => { if(_0x4d5e) _0x3c4d.push(_0x4d5e); _0x7a8b=0; window.M(); window.GO('urna'); };
+            window.M = () => {
+                let c = _0x3c4d[_0x7a8b]; document.getElementById('uT').innerText = c.n;
+                let g = document.getElementById('grid'); g.innerHTML = '';
+                c.c.forEach((can, i) => {
+                    let d = document.createElement('div'); d.className = 'card-candidato';
+                    d.innerHTML = (can.f ? '<img src="'+can.f+'" class="foto-cand"><br>' : '') + '<strong>'+can.n+'</strong>';
+                    d.onclick = () => {
+                        if(_0x6f7a.includes(i)) { _0x6f7a = _0x6f7a.filter(x=>x!==i); d.classList.remove('selected'); }
+                        else if(_0x6f7a.length < c.q) { _0x6f7a.push(i); d.classList.add('selected'); }
+                    };
+                    g.appendChild(d);
                 });
-
-                alert("Sucesso! Código enviado para: " + email);
-                mudarTela('verify');
-
-            } catch (error) {
-                console.error("Erro no envio:", error);
-                alert("Aviso: Falha na comunicação. Use o código 9999 para entrar.");
-                mudarTela('verify');
-            }
-        }
-
-        function validarCodigo() {
-            const digitado = document.getElementById('iC').value;
-            if (digitado === window._code || digitado === "9999") {
-                mudarTela('setup');
-            } else {
-                alert("Código incorreto!");
-            }
-        }
+            };
+            window.VOTE = () => {
+                if(_0x6f7a.length === 0) return alert("Vote!");
+                _0x6f7a.forEach(i => _0x3c4d[_0x7a8b].c[i].v++);
+                _0x7a8b++;
+                if(_0x7a8b < _0x3c4d.length) window.M(); else { alert("Confirmado!"); _0x7a8b = 0; _0x6f7a = []; window.M(); }
+            };
+            window.END = async () => {
+                if(!confirm("Encerrar?")) return;
+                try { await fetch(_0x4f2a.u+'/?email='+encodeURIComponent(_0x2b3c)+'&action=increment'); } catch(e){}
+                document.getElementById('pT').innerText = _0x8b9c;
+                let out = document.getElementById('pC'); out.innerHTML = '';
+                _0x3c4d.forEach(cargo => {
+                    let html = '<div class="cargo-container"><div class="cargo-header">'+cargo.n+'</div>';
+                    cargo.c.sort((a,b) => b.v - a.v).forEach(cand => {
+                        html += '<div class="candidato-linha"><span>'+cand.n+'</span><span class="votos-tag">'+cand.v+' votos</span></div>';
+                    });
+                    html += '</div>';
+                    out.innerHTML += html;
+                });
+                window.GO('res');
+            };
+            window.PDF = () => {
+                const element = document.getElementById('areaImpressao');
+                const opt = { margin: 10, filename: 'Resultado.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, scrollY: 0 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+                html2pdf().set(opt).from(element).save();
+            };
+            window.ENVIAR_SUGESTAO = () => {
+                let m = document.getElementById('txtSugestao').value;
+                if(!m) return;
+                emailjs.send(_0x4f2a.s, _0x4f2a.t, { to_email: 'paulosmb1972@gmail.com', validation_code: 'FEEDBACK: '+m });
+                alert("Enviado!");
+            };
+        })();
     </script>
 </body>
 </html>
