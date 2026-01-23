@@ -7,21 +7,21 @@
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         :root { --primary: #1abc9c; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; }
-        body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
+        body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         .screen { display: none; padding: 20px; width: 100%; max-width: 600px; box-sizing: border-box; }
         .active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        h2 { text-align: center; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; }
-        .info-box { text-align: justify; font-size: 14px; color: #eee; margin: 15px 0; background: rgba(255, 255, 255, 0.1); padding: 18px; border-radius: 12px; border-left: 6px solid var(--accent); line-height: 1.6; }
+        h2 { text-align: center; color: var(--primary); text-transform: uppercase; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        .info-box { background: rgba(255, 255, 255, 0.1); padding: 18px; border-radius: 12px; border-left: 6px solid var(--accent); font-size: 14px; margin-bottom: 15px; }
         
-        input { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; box-sizing: border-box; background: #fff; color: #333; font-weight: bold; }
-        button { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; background: var(--primary); color: white; transition: 0.3s; box-shadow: 0 4px 0 #148f77; }
+        input, button { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; box-sizing: border-box; }
+        button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 0 #148f77; }
         button:active { transform: translateY(3px); box-shadow: none; }
-        .btn-green { background: var(--success) !important; box-shadow: 0 4px 0 #239b56 !important; }
+        .btn-pay { background: var(--success) !important; box-shadow: 0 4px 0 #239b56 !important; margin-top: 20px; }
 
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 8px; }
-        .lang-box button { width: auto; padding: 8px 15px; background: rgba(0,0,0,0.85); font-size: 11px; border: 1px solid var(--primary); color: white; border-radius: 8px; box-shadow: none; }
+        .lang-box button { width: auto; padding: 8px 15px; background: rgba(0,0,0,0.85); font-size: 11px; border: 1px solid var(--primary); }
     </style>
 </head>
 <body>
@@ -34,42 +34,42 @@
 
     <div id="login" class="screen active">
         <h2 id="L1">Identificação</h2>
-        <div class="info-box"><b id="H_TIT">ULTRA EXPLICAÇÃO:</b> <span id="H_TXT">Informe seu Gmail. Se você já usou suas 3 eleições grátis, o sistema o levará para a tela de pagamento.</span></div>
-        <input id="uE" type="email" placeholder="digite-seu-email@gmail.com">
-        <button onclick="window.V()" id="L2">SOLICITAR CÓDIGO E ENTRAR</button>
-    </div>
-
-    <div id="verify" class="screen">
-        <h2 id="V1">Verificar Código</h2>
-        <div class="info-box"><b>CÓDIGO ENVIADO:</b> <span>Se o e-mail não chegar em 1 minuto, use o código mestre <b>9999</b>.</span></div>
-        <input id="iC" type="text" maxlength="4" placeholder="0000">
-        <button onclick="window.C()" id="V3">CONFIRMAR E ENTRAR</button>
+        <div class="info-box"><b id="H_TIT">ULTRA EXPLICAÇÃO:</b> <span id="H_LOGIN">Informe seu Gmail. Se atingir o limite de 3 usos, você será enviado para a área de pagamento.</span></div>
+        <input id="uE" type="email" placeholder="seu-email@gmail.com">
+        <button onclick="window.V()" id="L2">ENTRAR NO SISTEMA</button>
     </div>
 
     <div id="pay" class="screen">
         <h2 id="P1">Créditos Esgotados</h2>
-        <div class="info-box"><b>AVISO:</b> <span>Você atingiu o limite de 3 eleições gratuitas. Escolha um plano abaixo.</span></div>
-        <button onclick="window.open('https://mpago.la/2maEAFx')" class="btn-green">COMPRAR ELEIÇÃO ÚNICA (R$ 30,00)</button>
-        <button onclick="location.reload()" style="background:none; border: 1px solid white; margin-top:20px;">Voltar</button>
+        <div class="info-box"><b>LIMITE ATINGIDO:</b> <span>Você já utilizou suas 3 eleições gratuitas com este e-mail. Escolha um plano para continuar.</span></div>
+        <button onclick="window.open('https://mpago.la/2maEAFx')" class="btn-pay">ADQUIRIR ELEIÇÃO ÚNICA (R$ 30,00)</button>
+        <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9; box-shadow: 0 4px 0 #1f6391;">PACOTE 20 URNAS (R$ 500,00)</button>
+        <button onclick="location.reload()" style="background:none; border:1px solid white; margin-top:20px;">Voltar</button>
+    </div>
+
+    <div id="verify" class="screen">
+        <h2 id="V1">Verificar Código</h2>
+        <div class="info-box"><span>Insira o código de 4 dígitos enviado ao seu Gmail.</span></div>
+        <input id="iC" type="text" maxlength="4" placeholder="0000">
+        <button onclick="window.C()" id="V3">CONFIRMAR</button>
     </div>
 
     <div id="setup" class="screen">
-        <h2 id="S1">Título da Eleição</h2>
-        <input id="tE" type="text" placeholder="Ex: Eleição Diretoria 2026">
-        <button onclick="alert('Configuração Iniciada')">CONTINUAR</button>
+        <h2 id="S1">Configuração</h2>
+        <input id="tE" type="text" placeholder="Título da Eleição">
+        <button onclick="alert('Iniciando...')">CONTINUAR</button>
     </div>
 
     <script>
-        // CONFIGURAÇÕES RÍGIDAS
-        const CONFIG = {
-            service: 'service_oqfbzrm',
-            template: 'template_t3aio8f',
-            key: 'yRM6j-xNoNkVxF0CR',
-            worker: 'https://urnaweb-backend.paulosmb1972.workers.dev'
+        const CFG = {
+            s: 'service_oqfbzrm',
+            t: 'template_t3aio8f',
+            k: 'yRM6j-xNoNkVxF0CR',
+            u: 'https://urnaweb-backend.paulosmb1972.workers.dev'
         };
 
-        emailjs.init(CONFIG.key);
-        window._code = "";
+        emailjs.init(CFG.k);
+        window._code = '';
 
         window.GO = (id) => {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -78,64 +78,44 @@
 
         window.V = async function() {
             const email = document.getElementById('uE').value.trim().toLowerCase();
-            if (!email.endsWith('@gmail.com')) { alert("Use apenas @gmail.com"); return; }
-
-            // Destravar o botão para não congelar a tela
-            const btn = document.getElementById('L2');
-            btn.disabled = true;
-            btn.innerText = "PROCESSANDO...";
+            if (!email.endsWith('@gmail.com')) { alert("Use apenas Gmail!"); return; }
 
             try {
-                // 1. Consulta o Worker da Cloudflare
-                const response = await fetch(`${CONFIG.worker}/?email=${encodeURIComponent(email)}`);
+                const response = await fetch(`${CFG.u}/?email=${encodeURIComponent(email)}`);
                 const data = await response.json();
 
-                // 2. Se o contador for >= 3, vai direto para pagamento
+                // CORREÇÃO DO FLUXO DE PAGAMENTO:
                 if (data.count >= 3) {
-                    window.GO('pay');
+                    window.GO('pay'); // Primeiro muda a tela
+                    setTimeout(() => { alert("Limite de eleições gratuitas atingido!"); }, 100); // Depois avisa
                     return; 
                 }
 
                 window._code = data.codigo.toString();
 
-                // 3. Tenta enviar o e-mail via EmailJS
-                await emailjs.send(CONFIG.service, CONFIG.template, {
+                await emailjs.send(CFG.s, CFG.t, {
                     to_email: email,
                     validation_code: window._code
                 });
 
-                alert("Código enviado ao Gmail!");
+                alert("Código enviado!");
                 window.GO('verify');
 
             } catch (err) {
-                console.error("Erro detectado:", err);
-                // Se der qualquer erro (inclusive 404), libera para a tela de verificação para usar o 9999
-                alert("Falha no servidor de e-mail. Use o código reserva 9999.");
-                window.GO('verify');
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "SOLICITAR CÓDIGO E ENTRAR";
+                console.error(err);
+                window.GO('verify'); // Em caso de erro, permite o código 9999
             }
         };
 
         window.C = () => {
-            const digitado = document.getElementById('iC').value;
-            if (digitado === window._code || digitado === "9999") {
-                window.GO('setup');
-            } else {
-                alert("Código incorreto!");
-            }
+            const val = document.getElementById('iC').value;
+            if (val === window._code || val === "9999") window.GO('setup');
+            else alert("Incorreto!");
         };
 
-        // Traduções simples para teste de fluxo
         window.TR = (l) => {
-            const t = {
-                pt: { L1: "Identificação", L2: "SOLICITAR CÓDIGO E ENTRAR" },
-                en: { L1: "Identification", L2: "REQUEST CODE AND LOGIN" },
-                es: { L1: "Identificación", L2: "SOLICITAR CÓDIGO" }
-            };
-            document.getElementById('L1').innerText = t[l].L1;
-            document.getElementById('L2').innerText = t[l].L2;
+            const t = { pt: "Identificação", en: "Identification", es: "Identificación" };
+            document.getElementById('L1').innerText = t[l];
         };
 
         window.TR('pt');
