@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UrnaWeb Digital - INDEX5 PRO</title>
+    <title>UrnaWeb Digital - INDEX5 PRO (Contador)</title>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
@@ -12,143 +12,130 @@
         .screen { display: none; padding: 20px; width: 100%; max-width: 600px; box-sizing: border-box; }
         .active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        h2 { text-align: center; color: var(--primary); text-transform: uppercase; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
-        .info-box { background: rgba(255, 255, 255, 0.1); padding: 18px; border-radius: 12px; border-left: 6px solid var(--accent); font-size: 14px; line-height: 1.6; margin-bottom: 15px; }
+        h2 { text-align: center; color: var(--primary); text-transform: uppercase; margin-bottom: 5px; }
+        .ultra-explanation { background: rgba(255, 255, 255, 0.1); padding: 18px; border-radius: 12px; border-left: 6px solid var(--accent); font-size: 14px; line-height: 1.6; margin-bottom: 15px; }
         input, button { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 0 #148f77; }
         button:active { transform: translateY(3px); box-shadow: none; }
         input { background: #fff; color: #333; font-weight: bold; }
-        .pay-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
-        .price-tag { font-size: 28px; font-weight: bold; color: var(--accent); display: block; margin: 10px 0; text-align: center; }
-        .benefit-list { font-size: 13px; color: #ccc; margin-bottom: 15px; padding-left: 10px; list-style: none; }
-        .benefit-list li::before { content: "✔ "; color: var(--success); margin-right: 5px; }
-        .lang-box { position: fixed; top: 10px; right: 10px; display: flex; gap: 8px; z-index: 100; }
-        .lang-box button { width: auto; padding: 8px 15px; background: rgba(0,0,0,0.85); font-size: 11px; border: 1px solid var(--primary); }
+        #gridUrna { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; width: 100%; }
+        .cand-card { background: white; color: #333; padding: 15px; border-radius: 12px; text-align: center; border: 4px solid transparent; cursor: pointer; }
+        .counter-badge { background: var(--accent); color: black; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 12px; display: inline-block; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="lang-box">
-        <button onclick="window.TR('pt')">PT</button>
-        <button onclick="window.TR('en')">EN</button>
-        <button onclick="window.TR('es')">ES</button>
+    <div id="login" class="screen active">
+        <h2 id="L1">IDENTIFICAÇÃO DIGITAL</h2>
+        <div class="ultra-explanation"><b id="H_LOGIN_T">EXPLICAÇÃO:</b> <span id="H_LOGIN">Este sistema utiliza seu e-mail para validar créditos. Novos usuários ganham 3 eleições grátis.</span></div>
+        <input id="uE" type="email" placeholder="Gmail...">
+        <button onclick="GO('setup')">ENTRAR AGORA</button>
     </div>
 
-    <div id="pay" class="screen active">
-        <h2 id="P1">LIMITE ESGOTADO</h2>
-        <div class="info-box"><b id="H_PAY_T">ULTRA EXPLICAÇÃO:</b> <span id="H_PAY">Suas 3 eleições grátis acabaram. Escolha um plano para liberar o sistema.</span></div>
-        
-        <div class="pay-card">
-            <h3 id="PL1">💎 Eleição Única</h3>
-            <ul class="benefit-list">
-                <li id="B_PL1_1">Crédito para 1 eleição completa</li>
-                <li id="B_PL1_2">PDF A5 ilimitado</li>
-                <li id="B_PL1_3">Suporte a fotos</li>
-            </ul>
-            <span class="price-tag">R$ 30,00</span>
-            <button onclick="window.open('https://mpago.la/2maEAFx')" id="B1">COMPRAR AGORA</button>
-        </div>
+    <div id="setup" class="screen">
+        <h2 id="S1">TÍTULO DA VOTAÇÃO</h2>
+        <input id="tE" type="text" placeholder="Ex: Eleição Igreja 2026">
+        <button onclick="GO('setupCargo')">SALVAR TÍTULO</button>
+    </div>
 
-        <div class="pay-card">
-            <h3 id="PL2">🚀 Pacote 20 Urnas</h3>
-            <ul class="benefit-list">
-                <li id="B_PL2_1">Crédito para até 20 eleições</li>
-                <li id="B_PL2_2">Economia de 20%</li>
-                <li id="B_PL2_3">Ideal para Instituições</li>
-            </ul>
-            <span class="price-tag">R$ 500,00</span>
-            <button onclick="window.open('https://mpago.la/1VakcdN')" id="B2">COMPRAR AGORA</button>
-        </div>
+    <div id="setupCargo" class="screen">
+        <h2 id="C1">REGISTRO DE NOMES</h2>
+        <input id="nC" type="text" placeholder="Cargo (Ex: Pastor)">
+        <input id="nCand" type="text" placeholder="Candidato">
+        <button onclick="ADD_CAND()">ADICIONAR</button>
+        <button onclick="SAVE_CARGO()" style="background:var(--success)">SALVAR CARGO</button>
+        <button onclick="START_URNA()" style="background:var(--primary); margin-top:40px">ABRIR URNA</button>
+    </div>
 
-        <div class="pay-card" style="border: 2px solid var(--accent);">
-            <p id="L_CUP" style="text-align:center; font-weight:bold;"></p>
-            <input id="cup" type="text" placeholder="...">
-            <button onclick="window.K()" id="P2" style="background:var(--accent); color:black"></button>
+    <div id="urna" class="screen">
+        <div style="text-align: center;">
+            <div class="counter-badge"><span id="txt_eleitores">ELEITORES:</span> <span id="votosTotaisDisplay">0</span></div>
         </div>
-        
-        <button onclick="location.reload()" style="background:none; border:1px solid white;" id="B_EXIT"></button>
+        <h2 id="uT">CARGO</h2>
+        <div id="gridUrna"></div>
+        <button onclick="VOTE()" id="btnVoto" style="background:var(--success); height: 80px; margin-top: 30px;">CONFIRMAR MEU VOTO</button>
+        <button onclick="END_SYSTEM()" style="background:var(--danger); margin-top: 100px;">⏻ ENCERRAR VOTAÇÃO</button>
+    </div>
+
+    <div id="res" class="screen">
+        <h2 id="R1">RESULTADO FINAL</h2>
+        <div id="finalData" style="background: white; color: black; padding: 20px; border-radius: 10px;"></div>
+        <button onclick="location.reload()" style="background:var(--primary); margin-top: 20px;">NOVA VOTAÇÃO</button>
     </div>
 
     <script>
-        window._cfg = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
-        
+        // --- BLINDAGEM DE VARIÁVEIS (NÃO MEXER) ---
+        let _data = []; let _temp = null; let _idx = 0; let _sel = null; 
+        let _votosTotais = 0; // Nova variável de funcionalidade
+
+        // --- DICIONÁRIO ULTRA EXTREMO (MODIFICAÇÕES TEXTUAIS AQUI) ---
         const DICT = {
-            pt: {
-                P1: "LIMITE DE TESTES ESGOTADO",
-                H_PAY_T: "ULTRA EXPLICAÇÃO DOS PLANOS:",
-                H_PAY: "Você atingiu o limite de 3 eleições gratuitas. Escolha uma das opções abaixo para continuar utilizando o sistema UrnaWeb.",
-                PL1: "💎 Eleição Avulsa",
-                B_PL1_1: "Crédito para 1 eleição completa",
-                B_PL1_2: "PDF A5 ilimitado",
-                B_PL1_3: "Suporte a fotos",
-                B1: "COMPRAR AGORA (R$ 30,00)",
-                PL2: "🚀 Pacote Institucional",
-                B_PL2_1: "Crédito para até 20 eleições",
-                B_PL2_2: "Economia de 20%",
-                B_PL2_3: "Ideal para Instituições",
-                B2: "COMPRAR AGORA (R$ 500,00)",
-                L_CUP: "Tem um cupom de desconto?",
-                cup: "Digite seu cupom aqui...",
-                P2: "ATIVAR CUPOM",
-                B_EXIT: "VOLTAR AO INÍCIO"
-            },
-            en: {
-                P1: "TRIAL LIMIT REACHED",
-                H_PAY_T: "ULTRA PLAN EXPLANATION:",
-                H_PAY: "You have reached the 3-free elections limit. Choose one of the plans below to continue using the UrnaWeb system.",
-                PL1: "💎 Single Election",
-                B_PL1_1: "Credit for 1 full election",
-                B_PL1_2: "Unlimited A5 PDF",
-                B_PL1_3: "Photo support",
-                B1: "BUY NOW (R$ 30,00)",
-                PL2: "🚀 Institutional Pack",
-                B_PL2_1: "Credit for up to 20 elections",
-                B_PL2_2: "20% Discount",
-                B_PL2_3: "Ideal for Institutions",
-                B2: "BUY NOW (R$ 500,00)",
-                L_CUP: "Have a coupon code?",
-                cup: "Enter coupon code here...",
-                P2: "ACTIVATE CODE",
-                B_EXIT: "GO BACK"
-            },
-            es: {
-                P1: "LÍMITE DE PRUEBA AGOTADO",
-                H_PAY_T: "ULTRA EXPLICACIÓN DE PLANES:",
-                H_PAY: "Ha alcanzado el límite de 3 elecciones gratuitas. Elija un plan para continuar usando el sistema UrnaWeb.",
-                PL1: "💎 Elección Individual",
-                B_PL1_1: "Crédito para 1 elección completa",
-                B_PL1_2: "PDF A5 ilimitado",
-                B_PL1_3: "Soporte para fotos",
-                B1: "COMPRAR AHORA (R$ 30,00)",
-                PL2: "🚀 Paquete Institucional",
-                B_PL2_1: "Crédito para hasta 20 elecciones",
-                B_PL2_2: "Ahorro del 20%",
-                B_PL2_3: "Ideal para Instituciones",
-                B2: "COMPRAR AHORA (R$ 500,00)",
-                L_CUP: "¿Tiene un cupón?",
-                cup: "Ingrese cupón aquí...",
-                P2: "ACTIVAR CÓDIGO",
-                B_EXIT: "VOLVER"
+            pt: { L1: "IDENTIFICAÇÃO DIGITAL", txt_eleitores: "ELEITORES ATENDIDOS:", btnVoto: "CONFIRMAR MEU VOTO", R1: "AUDITORIA FINAL" },
+            en: { L1: "DIGITAL IDENTITY", txt_eleitores: "VOTERS ATTENDED:", btnVoto: "CONFIRM MY VOTE", R1: "FINAL AUDIT" },
+            es: { L1: "IDENTIFICACIÓN DIGITAL", txt_eleitores: "VOTANTES ATENDIDOS:", btnVoto: "CONFIRMAR VOTO", R1: "AUDITORÍA FINAL" }
+        };
+
+        function GO(a) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(a).classList.add('active'); }
+        
+        function ADD_CAND() {
+            if(!_temp) _temp = { n: document.getElementById('nC').value, c: [] };
+            _temp.c.push({ n: document.getElementById('nCand').value, v: 0 });
+            document.getElementById('nCand').value = '';
+        }
+
+        function SAVE_CARGO() {
+            if(_temp) _data.push(_temp);
+            _temp = null; document.getElementById('nC').value = '';
+            alert("Cargo salvo!");
+        }
+
+        function START_URNA() {
+            if(_data.length === 0) return alert("Adicione os dados!");
+            _idx = 0; RENDER_URNA(); GO('urna');
+        }
+
+        function RENDER_URNA() {
+            const cargo = _data[_idx];
+            document.getElementById('uT').innerText = cargo.n.toUpperCase();
+            const grid = document.getElementById('gridUrna');
+            grid.innerHTML = '';
+            cargo.c.forEach((can, i) => {
+                const div = document.createElement('div');
+                div.className = 'cand-card';
+                div.innerHTML = `<b>${can.n}</b>`;
+                div.onclick = () => { _sel = i; document.querySelectorAll('.cand-card').forEach(c => c.style.borderColor = 'transparent'); div.style.borderColor = 'var(--success)'; };
+                grid.appendChild(div);
+            });
+        }
+
+        function VOTE() {
+            if(_sel === null) return alert("Selecione!");
+            _data[_idx].c[_sel].v++;
+            _sel = null; _idx++;
+            if(_idx < _data.length) {
+                RENDER_URNA();
+            } else {
+                // Fim de um ciclo de votação completo
+                _votosTotais++;
+                document.getElementById('votosTotaisDisplay').innerText = _votosTotais;
+                alert("Voto Gravado!"); 
+                _idx = 0; 
+                RENDER_URNA(); 
             }
-        };
+        }
 
-        window.TR = (l) => {
-            const d = DICT[l];
-            for (let k in d) {
-                const el = document.getElementById(k);
-                if (el) {
-                    if (el.tagName === 'INPUT') el.placeholder = d[k];
-                    else el.innerText = d[k];
-                }
+        function END_SYSTEM() {
+            if(prompt("SENHA ADMIN:") === "0000") {
+                const container = document.getElementById('finalData');
+                container.innerHTML = `<h3>RELATÓRIO: ${document.getElementById('tE').value}</h3>`;
+                container.innerHTML += `<p><b>Total de Eleitores: ${_votosTotais}</b></p><hr>`;
+                _data.forEach(cargo => {
+                    container.innerHTML += `<div><b>${cargo.n}:</b></div>`;
+                    cargo.c.forEach(can => { container.innerHTML += `<div>${can.n}: ${can.v} votos</div>`; });
+                });
+                GO('res');
             }
-        };
-
-        window.K = () => { 
-            let v = document.getElementById('cup').value.trim().toLowerCase(); 
-            if(v === 'orion001') alert("CUPOM ATIVADO!"); 
-        };
-
-        window.TR('pt');
+        }
     </script>
 </body>
 </html>
