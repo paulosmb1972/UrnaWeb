@@ -156,41 +156,64 @@ window.GO = (id)=>{
     window.TR(window._idioma);
 };
 
-window.V = async ()=>{
-    let e=document.getElementById('uE').value.trim().toLowerCase();
-    if(!e.endsWith('@gmail.com')) return alert("Use Gmail");
+/* ================= LOGIN & ENVIO REAL ================= */
+window.V = async () => {
+    let e = document.getElementById('uE').value.trim().toLowerCase();
     
-    let btn = document.getElementById('L2');
-    btn.disabled = true; btn.innerText = "...";
+    // Validação de domínio obrigatória
+    if (!e.endsWith('@gmail.com')) {
+        alert(window._tr[window._idioma].alert_gmail || "Use apenas @gmail.com");
+        return;
+    }
 
-    try{
-        let r=await fetch(window._cfg.u+'/?email='+encodeURIComponent(e));
-        let d=await r.json();
-        if(d.count>=3){ window.GO('pay'); return; }
+    let btn = document.getElementById('L2');
+    btn.disabled = true; 
+    btn.innerText = "...";
+
+    try {
+        // 1. Busca código e verifica limite no seu Worker Cloudflare
+        let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e));
+        if (!r.ok) throw new Error("Erro na rede");
         
-        window._code=String(d.codigo);
-        
+        let d = await r.json();
+
+        // 2. Redirecionamento automático se atingir 3 eleições
+        if (d.count >= 3) { 
+            window.GO('pay'); 
+            return; 
+        }
+
+        window._code = String(d.codigo);
+
+        // 3. Envio Real via EmailJS (Sem bypass)
         await emailjs.send(window._cfg.s, window._cfg.t, {
             to_email: e,
             validation_code: window._code
         });
-        
-        alert("Código enviado!");
+
+        alert(window._tr[window._idioma].alert_code_sent || "Código enviado com sucesso!");
         window.GO('verify');
-    }catch(err){
-        alert("Erro no servidor. Use 9999.");
-        window._code="9999";
-        window.GO('verify');
+
+    } catch (err) {
+        console.error("Falha no envio:", err);
+        // REMOVIDO O CÓDIGO 9999 - AGORA EXIBE ERRO REAL
+        alert("FALHA TÉCNICA: Não foi possível enviar o e-mail. Verifique sua conexão ou tente mais tarde.");
     } finally {
         btn.disabled = false;
         window.TR(window._idioma);
     }
 };
 
-window.C=()=>{
-    let v=document.getElementById('iC').value.trim();
-    if(v===window._code || v==="9999") window.GO('setup');
-    else alert("Código inválido");
+/* ================= VALIDAÇÃO RESTRITA ================= */
+window.C = () => {
+    let v = document.getElementById('iC').value.trim();
+    
+    // Apenas o código gerado pelo servidor é aceito
+    if (window._code !== "" && v === window._code) {
+        window.GO('setup');
+    } else {
+        alert(window._tr[window._idioma].alert_err_code || "Código Inválido!");
+    }
 };
 
 window.N=()=>{
@@ -291,4 +314,5 @@ window.TR('pt');
 
 </body>
 </html>
+
 
