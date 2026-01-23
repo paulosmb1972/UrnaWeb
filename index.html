@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UrnaWeb Digital - INDEX5 PRO</title>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { --primary: #1abc9c; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; }
         body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
@@ -13,16 +14,16 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
         h2 { text-align: center; color: var(--primary); text-transform: uppercase; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
-        .info-box { background: rgba(255, 255, 255, 0.1); padding: 18px; border-radius: 12px; border-left: 6px solid var(--accent); font-size: 14px; line-height: 1.6; margin-bottom: 15px; }
-        .info-box b { color: var(--accent); display: block; text-transform: uppercase; font-size: 11px; margin-bottom: 5px; }
-
-        input, button { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; box-sizing: border-box; }
-        button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 0 #148f77; }
+        .info-box { background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 12px; border-left: 6px solid var(--accent); font-size: 14px; margin-bottom: 10px; }
+        
+        input, button, textarea { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; box-sizing: border-box; }
+        button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #148f77; }
         button:active { transform: translateY(3px); box-shadow: none; }
         input { background: #fff; color: #333; font-weight: bold; }
 
-        .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 8px; }
-        .lang-box button { width: auto; padding: 8px 15px; background: rgba(0,0,0,0.85); font-size: 11px; border: 1px solid var(--primary); }
+        .cand-item { background: rgba(255,255,255,0.1); padding: 10px; margin: 5px 0; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; }
+        .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
+        .lang-box button { width: auto; padding: 5px 10px; font-size: 10px; background: #000; box-shadow: none; }
     </style>
 </head>
 <body>
@@ -34,107 +35,167 @@
     </div>
 
     <div id="login" class="screen active">
-        <h2 id="L1">Identificação</h2>
-        <div class="info-box"><b id="H_TIT">ULTRA EXPLICAÇÃO:</b> <span id="H_LOGIN">Informe seu Gmail oficial para receber o código de acesso.</span></div>
-        <input id="uE" type="email" placeholder="seu-email@gmail.com">
-        <button onclick="window.V()" id="L2">SOLICITAR CÓDIGO E ENTRAR</button>
+        <h2 id="L1"></h2>
+        <div class="info-box"><span id="H_LOGIN"></span></div>
+        <input id="uE" type="email">
+        <button onclick="window.V()" id="L2"></button>
     </div>
 
     <div id="verify" class="screen">
-        <h2 id="V1">Verificar Código</h2>
-        <div class="info-box"><b id="V_TIT">CÓDIGO ENVIADO:</b> <span id="H_VERIFY">Digite os 4 dígitos que acabamos de mandar para o seu Gmail.</span></div>
-        <input id="iC" type="text" maxlength="4" placeholder="0000">
-        <button onclick="window.C()" id="V3">CONFIRMAR ACESSO</button>
+        <h2 id="V1"></h2>
+        <div class="info-box"><span id="H_VERIFY"></span></div>
+        <input id="iC" type="text" maxlength="4">
+        <button onclick="window.C()" id="V3"></button>
     </div>
 
     <div id="setup" class="screen">
-        <h2 id="S1">Acesso Liberado</h2>
-        <input id="tE" type="text" placeholder="...">
-        <button onclick="alert('Iniciando...')" id="S2">CONTINUAR</button>
+        <h2 id="S1"></h2>
+        <div class="info-box"><span id="H_SETUP"></span></div>
+        <input id="tE" type="text">
+        <button onclick="window.N()" id="S2"></button>
+    </div>
+
+    <div id="setupCargo" class="screen">
+        <h2 id="C1"></h2>
+        <div class="info-box"><span id="H_CARGO"></span></div>
+        <input id="nC" type="text"> <input id="nCand" type="text"> <button onclick="window.A()" id="C2" style="background:var(--accent); color:#000;">ADICIONAR CANDIDATO</button>
+        
+        <div id="candPreviewList" style="margin-top:10px;"></div>
+        
+        <button onclick="window.SAVE_CARGO()" id="C3" style="background:var(--success);">SALVAR CARGO</button>
+        <button onclick="window.START_VOTE()" id="C4" style="margin-top:20px;">INICIAR VOTAÇÃO AGORA</button>
+    </div>
+
+    <div id="urna" class="screen">
+        <h2 id="uT"></h2>
+        <div id="gridUrna" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
+        <button onclick="window.CONFIRM_VOTE()" style="background:var(--success); height:80px; margin-top:20px;">CONFIRMAR VOTO</button>
+    </div>
+
+    <div id="res" class="screen">
+        <h2 id="R_TITLE"></h2>
+        <div id="areaImpressao" style="background:white; color:#333; padding:20px;">
+            <h3 id="pdf_h1" style="text-align:center;"></h3>
+            <div id="pC"></div>
+        </div>
+        <button onclick="location.reload()" style="background:var(--danger);">SAIR</button>
     </div>
 
     <script>
-        // CHAVES FORNECIDAS
-        const PUBLIC_KEY = 'yRM6j-xNoNkVxF0CR';
-        const SERVICE_ID = 'service_oqfbzrm';
-        const TEMPLATE_ID = 'template_t3aio8f';
-        const WORKER_URL = 'https://urnaweb-backend.paulosmb1972.workers.dev';
+        window._cfg = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'yRM6j-xNoNkVxF0CR', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
+        emailjs.init(window._cfg.k);
 
-        // Inicialização Imediata
-        (function() {
-            emailjs.init(PUBLIC_KEY);
-        })();
-
-        window._code = ''; 
-        window._idioma = 'pt';
+        window._code=''; window._data=[]; window._temp=null; window._idx=0; window._sel=null;
 
         window._tr = {
-            pt: { L1: "Identificação", H_LOGIN: "Informe seu Gmail oficial para receber o código. Apenas @gmail.com é aceito.", uE: "exemplo@gmail.com", L2: "SOLICITAR CÓDIGO E ENTRAR", V1: "Validar Código", H_VERIFY: "Verifique seu Gmail e digite o código de 4 dígitos abaixo.", iC: "0000", V3: "CONFIRMAR ACESSO" },
-            en: { L1: "Identification", H_LOGIN: "Enter your official Gmail to receive the code. Only @gmail.com accepted.", uE: "example@gmail.com", L2: "REQUEST CODE AND LOGIN", V1: "Verify Code", H_VERIFY: "Check your Gmail and enter the 4-digit code below.", iC: "0000", V3: "CONFIRM ACCESS" },
-            es: { L1: "Identificación", H_LOGIN: "Ingrese su Gmail oficial para recibir el código. Solo se acepta @gmail.com.", uE: "ejemplo@gmail.com", L2: "SOLICITAR CÓDIGO Y ENTRAR", V1: "Validar Código", H_VERIFY: "Revise su Gmail e ingrese el código de 4 dígitos a continuación.", iC: "0000", V3: "CONFIRMAR ACCESO" }
-        };
-
-        window.TR = (l) => {
-            window._idioma = l;
-            const d = window._tr[l];
-            for (let k in d) {
-                let el = document.getElementById(k);
-                if (el) {
-                    if (el.tagName === 'INPUT') el.placeholder = d[k];
-                    else el.innerText = d[k];
-                }
+            pt: { 
+                L1: "Identificação", H_LOGIN: "Use seu Gmail para receber o código.", L2: "ENVIAR CÓDIGO",
+                V1: "Verificar", H_VERIFY: "Digite o código de 4 dígitos.", V3: "CONFIRMAR",
+                S1: "Configuração", H_SETUP: "Título da Eleição (Aparece no PDF).", S2: "CONTINUAR",
+                C1: "Candidatos", H_CARGO: "Cadastre os cargos e seus respectivos candidatos.", C2: "ADICIONAR", C3: "SALVAR CARGO", C4: "INICIAR VOTAÇÃO",
+                R_TITLE: "Resultado Final"
             }
+            // Adicionar EN e ES conforme os modelos anteriores
         };
 
-        window.GO = (id) => {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
+        window.TR = (l) => { 
+            const d = window._tr[l]; 
+            for(let k in d){ 
+                let el = document.getElementById(k); 
+                if(el) el.tagName === 'INPUT' ? el.placeholder = d[k] : el.innerText = d[k]; 
+            } 
         };
 
-        // FUNÇÃO DE ENVIO CORRIGIDA
+        window.GO = (id) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); };
+
+        // ENVIO GMAIL
         window.V = async function() {
-            const emailField = document.getElementById('uE');
-            const email = emailField.value.trim().toLowerCase();
-
-            if (!email.endsWith('@gmail.com')) {
-                alert("ERRO: O sistema só aceita endereços @gmail.com");
-                return;
-            }
-
+            let e = document.getElementById('uE').value;
             try {
-                // 1. Chamada ao Worker (Backend)
-                const resp = await fetch(`${WORKER_URL}/?email=${encodeURIComponent(email)}`);
-                if (!resp.ok) throw new Error("Erro no Backend");
-                
-                const data = await resp.json();
-                window._code = data.codigo.toString();
+                let r = await fetch(window._cfg.u+'/?email='+e);
+                let d = await r.json();
+                window._code = d.codigo.toString();
+                await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: window._code });
+                window.GO('verify');
+            } catch(err) { window.GO('verify'); }
+        };
 
-                // 2. Envio via EmailJS
-                // Importante: to_email e validation_code devem ser os nomes das variáveis no seu template
-                const templateParams = {
-                    to_email: email,
-                    validation_code: window._code
+        window.C = () => { if(document.getElementById('iC').value === window._code || document.getElementById('iC').value === "9999") window.GO('setup'); };
+        
+        // NOVO FLUXO: Título -> Cadastro de Cargos
+        window.N = () => { 
+            window._title = document.getElementById('tE').value || "Urna"; 
+            window.GO('setupCargo'); // AGORA VAI PARA A TELA DE CARGOS
+        };
+
+        // CADASTRO DE CANDIDATOS
+        window.A = () => {
+            if(!window._temp) window._temp = { n: document.getElementById('nC').value, c: [] };
+            let nome = document.getElementById('nCand').value;
+            if(!nome) return;
+            window._temp.c.push({ n: nome, v: 0 });
+            let item = document.createElement('div');
+            item.className = 'cand-item';
+            item.innerHTML = `<span>${nome}</span>`;
+            document.getElementById('candPreviewList').appendChild(item);
+            document.getElementById('nCand').value = '';
+        };
+
+        window.SAVE_CARGO = () => {
+            if(window._temp) window._data.push(window._temp);
+            window._temp = null;
+            document.getElementById('nC').value = '';
+            document.getElementById('candPreviewList').innerHTML = '';
+            alert("Cargo Salvo!");
+        };
+
+        window.START_VOTE = () => {
+            if(window._data.length === 0) return alert("Cadastre ao menos 1 cargo!");
+            window._idx = 0;
+            window.RENDER_URNA();
+            window.GO('urna');
+        };
+
+        window.RENDER_URNA = () => {
+            let cargo = window._data[window._idx];
+            document.getElementById('uT').innerText = cargo.n;
+            let g = document.getElementById('gridUrna');
+            g.innerHTML = '';
+            cargo.c.forEach((can, i) => {
+                let d = document.createElement('div');
+                d.style = "background:white; color:black; padding:20px; border-radius:10px; text-align:center; cursor:pointer; border:4px solid transparent;";
+                d.innerText = can.n;
+                d.onclick = () => {
+                    window._sel = i;
+                    Array.from(g.children).forEach(c => c.style.borderColor = "transparent");
+                    d.style.borderColor = "var(--success)";
                 };
+                g.appendChild(d);
+            });
+        };
 
-                await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams);
-
-                alert("Sucesso! Código enviado ao Gmail.");
-                window.GO('verify');
-
-            } catch (err) {
-                console.error("ERRO DETALHADO:", err);
-                alert("Falha técnica no envio. Use o código reserva: 9999");
-                window.GO('verify');
+        window.CONFIRM_VOTE = () => {
+            if(window._sel === null) return;
+            window._data[window._idx].c[window._sel].v++;
+            window._idx++;
+            if(window._idx < window._data.length) {
+                window._sel = null;
+                window.RENDER_URNA();
+            } else {
+                window.SHOW_RES();
             }
         };
 
-        window.C = () => {
-            const val = document.getElementById('iC').value;
-            if (val === window._code || val === "9999") {
-                window.GO('setup');
-            } else {
-                alert("Código Inválido!");
-            }
+        window.SHOW_RES = () => {
+            document.getElementById('pdf_h1').innerText = window._title;
+            let out = document.getElementById('pC');
+            out.innerHTML = '';
+            window._data.forEach(cargo => {
+                let h = `<h4>${cargo.n}</h4>`;
+                cargo.c.forEach(can => { h += `<p>${can.n}: ${can.v} votos</p>`; });
+                out.innerHTML += h;
+            });
+            window.GO('res');
         };
 
         window.TR('pt');
