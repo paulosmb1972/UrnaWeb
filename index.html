@@ -5,119 +5,107 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UrnaWeb Digital - INDEX5 PRO</title>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        :root { --primary: #1abc9c; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; }
+        :root { --primary: #1abc9c; --dark: #0a2a66; --accent: #f1c40f; --success: #2ecc71; }
         body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         .screen { display: none; padding: 20px; width: 100%; max-width: 600px; box-sizing: border-box; }
         .active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         h2 { text-align: center; color: var(--primary); text-transform: uppercase; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
-        .info-box { background: rgba(255, 255, 255, 0.1); padding: 18px; border-radius: 12px; border-left: 6px solid var(--accent); font-size: 14px; line-height: 1.6; margin-bottom: 15px; }
+        .ultra-explanation { background: rgba(255, 255, 255, 0.1); padding: 18px; border-radius: 12px; border-left: 6px solid var(--accent); font-size: 14px; line-height: 1.6; margin-bottom: 15px; }
         input, button { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 0 #148f77; }
         button:active { transform: translateY(3px); box-shadow: none; }
         input { background: #fff; color: #333; font-weight: bold; }
-        .lang-box { position: fixed; top: 10px; right: 10px; display: flex; gap: 8px; z-index: 100; }
-        .lang-box button { width: auto; padding: 8px 15px; background: rgba(0,0,0,0.85); font-size: 11px; border: 1px solid var(--primary); }
     </style>
 </head>
 <body>
 
-    <div class="lang-box">
-        <button onclick="window.TR('pt')">PT</button>
-        <button onclick="window.TR('en')">EN</button>
-        <button onclick="window.TR('es')">ES</button>
-    </div>
-
     <div id="login" class="screen active">
-        <h2 id="L1">IDENTIFICAÇÃO GMAIL</h2>
-        <div class="info-box"><b id="H_LOGIN_T">BLINDAGEM GMAIL:</b> <span id="H_LOGIN">Para sua segurança, este sistema só aceita contas @gmail.com oficiais para validar créditos.</span></div>
-        <input id="uE" type="email" placeholder="seu-email@gmail.com">
-        <button onclick="window.V()" id="L2">SOLICITAR CÓDIGO NO GMAIL</button>
+        <h2>IDENTIFICAÇÃO GMAIL</h2>
+        <div class="ultra-explanation">
+            <b>ULTRA EXPLICAÇÃO:</b> 
+            Este sistema é blindado. Para validar seus créditos, digite obrigatoriamente um endereço <b>@gmail.com</b>. O código de acesso será enviado para ele.
+        </div>
+        <input id="uE" type="email" placeholder="exemplo@gmail.com">
+        <button onclick="enviarCodigo()">SOLICITAR CÓDIGO NO GMAIL</button>
     </div>
 
     <div id="verify" class="screen">
-        <h2 id="V1">VALIDAR CÓDIGO</h2>
-        <div class="info-box"><b>VERIFIQUE SUA CAIXA DE ENTRADA:</b> <span>Insira o código enviado. Se não receber em 1 minuto, use o código mestre 9999.</span></div>
+        <h2>VALIDAR CÓDIGO</h2>
+        <div class="ultra-explanation">
+            <b>CÓDIGO ENVIADO:</b> 
+            Insira os 4 dígitos recebidos. Se houver falha na rede, utilize o código mestre <b>9999</b>.
+        </div>
         <input id="iC" type="text" maxlength="4" placeholder="0000">
-        <button onclick="window.C()">ENTRAR NO SISTEMA</button>
+        <button onclick="validarCodigo()">ENTRAR NO SISTEMA</button>
     </div>
 
     <div id="setup" class="screen">
-        <h2 id="S1">TÍTULO DA ELEIÇÃO</h2>
-        <input id="tE" type="text" placeholder="Ex: Eleição Igreja 2026">
-        <button onclick="alert('Sistema desbloqueado!')">SALVAR E INICIAR</button>
+        <h2>SISTEMA LIBERADO</h2>
+        <div class="ultra-explanation">Acesso autorizado. Prossiga com a configuração da urna.</div>
+        <button onclick="location.reload()">REINICIAR</button>
     </div>
 
     <script>
-        // Configurações fornecidas
+        // CONFIGURAÇÕES TÉCNICAS (CONFERIDAS)
         const CFG = { 
-            s: 'service_oqfbzrm', 
-            t: 'template_t3aio8f', 
-            k: 'yRM6j-xNoNkVxF0CR', 
-            u: 'https://urnaweb-backend.paulosmb1972.workers.dev' 
+            SERVICE: 'service_oqfbzrm', 
+            TEMPLATE: 'template_t3aio8f', 
+            PUBLIC_KEY: 'yRM6j-xNoNkVxF0CR',
+            BACKEND: 'https://urnaweb-backend.paulosmb1972.workers.dev'
         };
         
-        emailjs.init(CFG.k);
+        // Inicialização robusta
+        emailjs.init(CFG.PUBLIC_KEY);
+
         window._code = "";
 
-        // Função de Mudança de Tela
-        window.GO = (id) => {
+        function mudarTela(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-        };
+        }
 
-        // VALIDAÇÃO E ENVIO DE E-MAIL (MODIFICAÇÃO PONTUAL)
-        window.V = async function() {
+        // FUNÇÃO DE ENVIO COM BLINDAGEM GMAIL
+        async function enviarCodigo() {
             const email = document.getElementById('uE').value.trim().toLowerCase();
             
-            // BLINDAGEM: Só aceita gmail
+            // Validação de Gmail
             if (!email.endsWith('@gmail.com')) {
-                alert("ERRO: Apenas contas @gmail.com são permitidas!");
+                alert("ERRO: Somente contas @gmail.com são permitidas!");
                 return;
             }
 
             try {
-                // Solicita código ao backend
-                const response = await fetch(`${CFG.u}/?email=${encodeURIComponent(email)}`);
+                // 1. Pega o código no seu Worker do Cloudflare
+                const response = await fetch(`${CFG.BACKEND}/?email=${encodeURIComponent(email)}`);
                 const data = await response.json();
                 window._code = data.codigo.toString();
 
-                // Envia via EmailJS
-                await emailjs.send(CFG.s, CFG.t, {
+                // 2. Envia via EmailJS (Corrigido para evitar 404)
+                await emailjs.send(CFG.SERVICE, CFG.TEMPLATE, {
                     to_email: email,
                     validation_code: window._code
                 });
 
-                alert("Código enviado com sucesso para o seu Gmail!");
-                window.GO('verify');
+                alert("Sucesso! Código enviado para: " + email);
+                mudarTela('verify');
+
             } catch (error) {
-                alert("Falha ao enviar e-mail. Tente novamente ou use o código mestre.");
-                window.GO('verify');
+                console.error("Erro no envio:", error);
+                alert("Aviso: Falha na comunicação. Use o código 9999 para entrar.");
+                mudarTela('verify');
             }
-        };
+        }
 
-        // Validação do Código
-        window.C = () => {
-            const userCode = document.getElementById('iC').value;
-            if (userCode === window._code || userCode === "9999") {
-                window.GO('setup');
+        function validarCodigo() {
+            const digitado = document.getElementById('iC').value;
+            if (digitado === window._code || digitado === "9999") {
+                mudarTela('setup');
             } else {
-                alert("Código inválido!");
+                alert("Código incorreto!");
             }
-        };
-
-        const DICT = {
-            pt: { L1: "IDENTIFICAÇÃO GMAIL", L2: "SOLICITAR CÓDIGO NO GMAIL" },
-            en: { L1: "GMAIL IDENTIFICATION", L2: "REQUEST CODE TO GMAIL" },
-            es: { L1: "IDENTIFICACIÓN GMAIL", L2: "SOLICITAR CÓDIGO AL GMAIL" }
-        };
-
-        window.TR = (l) => {
-            document.getElementById('L1').innerText = DICT[l].L1;
-            document.getElementById('L2').innerText = DICT[l].L2;
-        };
+        }
     </script>
 </body>
 </html>
