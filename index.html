@@ -15,6 +15,7 @@
         
         h2 { text-align: center; color: var(--primary); text-transform: uppercase; margin-bottom: 15px; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
         
+        /* CAIXA DE EXPLICAÇÃO ULTRA EXTREMA BLINDADA */
         .ultra-explanation { background: rgba(255, 255, 255, 0.1); padding: 18px; border-radius: 12px; border-left: 6px solid var(--accent); font-size: 14px; line-height: 1.6; margin-bottom: 15px; color: #fff; text-align: justify; }
         .ultra-explanation b { color: var(--accent); display: block; text-transform: uppercase; font-size: 12px; margin-bottom: 5px; letter-spacing: 1px; }
 
@@ -25,25 +26,11 @@
         input { background: #fff; color: #333; font-weight: bold; }
         
         #gridUrna { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; width: 100%; }
-        .cand-card { background: white; color: #333; padding: 15px; border-radius: 12px; text-align: center; border: 4px solid transparent; cursor: pointer; font-size: 18px; }
+        .cand-card { background: white; color: #333; padding: 10px; border-radius: 12px; text-align: center; border: 4px solid transparent; cursor: pointer; }
         
-        /* BOTÃO DE CONFIRMAÇÃO (GRANDE E SEGURO) */
-        .btn-confirm-voto { background: var(--success) !important; height: 90px !important; font-size: 20px !important; box-shadow: 0 6px 0 #239b56 !important; }
-
-        /* ÍCONE DE ENCERRAMENTO - DISTÂNCIA SEGURA (150PX) */
-        .btn-shutdown-admin { 
-            background: var(--danger) !important; 
-            margin-top: 150px !important; 
-            box-shadow: 0 4px 0 #b03a2e !important; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 15px; 
-            font-size: 15px !important;
-            opacity: 0.9;
-        }
-        .icon-power { font-size: 22px; }
-
+        /* BOTÃO DE ENCERRAMENTO X VERMELHO AFASTADO */
+        .btn-exit-urna { background: var(--danger) !important; margin-top: 120px !important; box-shadow: 0 4px 0 #b03a2e !important; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 14px; }
+        
         #areaImpressao { background: white; color: black; padding: 30px; border-radius: 10px; }
     </style>
 </head>
@@ -67,7 +54,7 @@
         <h2>VERIFICAÇÃO DE SEGURANÇA</h2>
         <div class="ultra-explanation">
             <b>ULTRA EXPLICAÇÃO DO CÓDIGO:</b>
-            Insira os 4 números enviados para o seu e-mail. Caso o e-mail não chegue por falha de rede, você pode usar o CÓDIGO MESTRE 9999 para continuar seus testes.
+            Insira os 4 números enviados para o seu e-mail. Caso o e-mail não chegue por falha de rede ou queda de servidor, você pode usar o CÓDIGO MESTRE 9999 para continuar seus testes.
         </div>
         <input id="iC" type="text" maxlength="4" placeholder="Digite os 4 dígitos...">
         <button onclick="window.C()">VALIDAR E ENTRAR NO SISTEMA</button>
@@ -87,7 +74,7 @@
         <h2>REGISTRO DE CANDIDATOS</h2>
         <div class="ultra-explanation">
             <b>ULTRA EXPLICAÇÃO DO CADASTRO:</b>
-            Primeiro cadastre o cargo (ex: Presidente), adicione os candidatos e clique em SALVAR CARGO. Repita para outros cargos se houver.
+            Organize por grupos. Primeiro cadastre o cargo (ex: Presidente), adicione os candidatos desse cargo e clique em SALVAR CARGO para gravar na memória.
         </div>
         <input id="nC" type="text" placeholder="Nome do Cargo (Ex: Pastor)">
         <input id="nCand" type="text" placeholder="Nome do Candidato">
@@ -103,12 +90,10 @@
             Toque na foto ou nome do seu candidato escolhido. A borda ficará verde. Depois clique no botão verde abaixo para confirmar.
         </div>
         <div id="gridUrna"></div>
+        <button onclick="window.VOTE()" style="background:var(--success); height: 90px; margin-top: 30px;">CONFIRMAR MEU VOTO AGORA</button>
         
-        <button onclick="window.VOTE()" class="btn-confirm-voto">CONFIRMAR MEU VOTO AGORA</button>
-        
-        <button onclick="window.END_S()" class="btn-shutdown-admin">
-            <span class="icon-power">⏻</span> 
-            ENCERRAR VOTAÇÃO GERAL (RESTRITO AO ADMIN)
+        <button onclick="window.END_S()" class="btn-exit-urna">
+            ✖ ENCERRAR VOTAÇÃO GERAL (ACESSO ADMIN)
         </button>
     </div>
 
@@ -135,8 +120,8 @@
                     const r = await fetch(`${CFG.u}/?email=${encodeURIComponent(e)}`);
                     const d = await r.json(); window._code = d.codigo.toString();
                     await emailjs.send(CFG.s, CFG.t, { to_email: e, validation_code: window._code });
-                    alert("CÓDIGO ENVIADO AO SEU GMAIL!"); window.GO('verify');
-                } catch(err) { alert("MODO DE SEGURANÇA: USE O CÓDIGO 9999."); window.GO('verify'); }
+                    alert("CÓDIGO ENVIADO AO GMAIL!"); window.GO('verify');
+                } catch(err) { alert("ERRO DE REDE. USE O CÓDIGO 9999."); window.GO('verify'); }
             };
 
             window.C = () => { if(document.getElementById('iC').value === window._code || document.getElementById('iC').value === "9999") window.GO('setup'); else alert("CÓDIGO INCORRETO!"); };
@@ -173,20 +158,19 @@
                 window._data[window._idx].c[window._sel].v++;
                 window._sel = null; window._idx++;
                 if(window._idx < window._data.length) window.RENDER_U();
-                else { alert("VOTO CONFIRMADO COM SUCESSO!"); window._idx = 0; window.RENDER_U(); }
+                else { alert("VOTO CONFIRMADO!"); window._idx = 0; window.RENDER_U(); }
             };
 
             window.END_S = () => {
-                const pass = prompt("SEGURANÇA: DIGITE A SENHA DE ADMINISTRADOR PARA ENCERRAR A VOTAÇÃO (0000):");
-                if(pass === "0000") {
+                if(prompt("DIGITE A SENHA PARA ENCERRAR (0000):") === "0000") {
                     const p = document.getElementById('pC');
-                    p.innerHTML = `<h3 style="text-align:center; border-bottom:2px solid #000; padding-bottom:10px;">${window._title.toUpperCase()}</h3>`;
+                    p.innerHTML = `<h3 style="text-align:center;">${window._title.toUpperCase()}</h3>`;
                     window._data.forEach(cargo => {
-                        p.innerHTML += `<div style="margin-top:15px; border-bottom:1px solid #000; background:#eee; padding:5px;"><b>CARGO: ${cargo.n}</b></div>`;
-                        cargo.c.forEach(can => { p.innerHTML += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee;"><span>${can.n}</span> <b>${can.v} VOTOS</b></div>`; });
+                        p.innerHTML += `<div style="margin-top:15px; border-bottom:1px solid #000;"><b>CARGO: ${cargo.n}</b></div>`;
+                        cargo.c.forEach(can => { p.innerHTML += `<div style="display:flex; justify-content:space-between; padding:5px 0;"><span>${can.n}</span> <b>${can.v} VOTOS</b></div>`; });
                     });
                     window.GO('res');
-                } else if(pass !== null) { alert("SENHA INCORRETA! ACESSO AO RELATÓRIO NEGADO."); }
+                } else { alert("SENHA INCORRETA!"); }
             };
 
             window.PDF = () => { html2pdf().set({ margin: 10, jsPDF: { format: 'a5' } }).from(document.getElementById('areaImpressao')).save(); };
