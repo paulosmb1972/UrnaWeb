@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UrnaWeb Digital - INDEX5 PRO</title>
+    <title>UrnaWeb INDEX5 PRO - ULTRA TRADUÇÃO</title>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
@@ -12,24 +12,15 @@
         .screen { display: none; padding: 20px; width: 100%; max-width: 600px; box-sizing: border-box; }
         .active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
         h2 { text-align: center; color: var(--primary); text-transform: uppercase; margin-bottom: 15px; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
-        
         .ultra-explanation { background: rgba(255, 255, 255, 0.1); padding: 18px; border-radius: 12px; border-left: 6px solid var(--accent); font-size: 14px; line-height: 1.6; margin-bottom: 15px; color: #fff; text-align: justify; }
         .ultra-explanation b { color: var(--accent); display: block; text-transform: uppercase; font-size: 12px; margin-bottom: 5px; letter-spacing: 1px; }
-
         input, button { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 0 #148f77; }
         button:active { transform: translateY(3px); box-shadow: none; }
-        
         input { background: #fff; color: #333; font-weight: bold; }
-        .img-preview { width: 140px !important; height: 140px !important; object-fit: cover; border-radius: 15px; display: none; margin: 15px auto; border: 4px solid white; }
-        
         .lang-box { position: fixed; top: 10px; right: 10px; display: flex; gap: 8px; z-index: 100; }
         .lang-box button { width: auto; padding: 8px 15px; font-size: 11px; background: rgba(0,0,0,0.8); border: 1px solid var(--primary); }
-        
-        #gridUrna { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; width: 100%; }
-        .cand-card { background: white; color: #333; padding: 10px; border-radius: 12px; text-align: center; border: 4px solid transparent; cursor: pointer; transition: 0.2s; }
     </style>
 </head>
 <body>
@@ -43,169 +34,52 @@
     <div id="login" class="screen active">
         <h2 id="L1">PORTAL DE IDENTIFICAÇÃO DIGITAL</h2>
         <div class="ultra-explanation">
-            <b id="H_LOGIN_T">ULTRA EXPLICAÇÃO DO SISTEMA:</b>
+            <b id="H_LOGIN_T">ULTRA EXPLICAÇÃO:</b>
             <span id="H_LOGIN">Este sistema utiliza o seu e-mail para validar seus créditos de uso e identificar sua conta oficial. Novos usuários ganham 3 eleições gratuitas para testes iniciais.</span>
         </div>
         <div class="ultra-explanation">
             <b id="E_EMAIL_TIT">COMO PREENCHER O E-MAIL:</b>
             <span id="E_EMAIL_TXT">Digite seu endereço de Gmail oficial. É através dele que você receberá o código de segurança de 4 dígitos para desbloquear o sistema.</span>
         </div>
-        <input id="uE" type="email" placeholder="Digite seu Gmail...">
-        <button onclick="V()" id="L2">SOLICITAR CÓDIGO DE ACESSO NO E-MAIL</button>
-    </div>
-
-    <div id="verify" class="screen">
-        <h2 id="V1">VERIFICAÇÃO DE SEGURANÇA</h2>
-        <div class="ultra-explanation">
-            <b id="H_VERIFY_T">ULTRA EXPLICAÇÃO DO CÓDIGO:</b>
-            <span id="H_VERIFY">Insira os 4 números enviados para o seu e-mail. Caso o e-mail não chegue por falha de rede ou queda de servidor, você pode usar o CÓDIGO MESTRE 9999 para continuar seus testes.</span>
-        </div>
-        <input id="iC" type="text" maxlength="4" placeholder="0000">
-        <button onclick="C()" id="V3">VALIDAR CÓDIGO E ENTRAR NO PAINEL</button>
-    </div>
-
-    <div id="setup" class="screen">
-        <h2 id="S1">TÍTULO OFICIAL DA VOTAÇÃO</h2>
-        <div class="ultra-explanation">
-            <b id="H_SETUP_T">ULTRA EXPLICAÇÃO DO TÍTULO:</b>
-            <span id="H_SETUP">O nome definido aqui será o título mestre que aparecerá no topo do relatório oficial em PDF e nas auditorias de votos.</span>
-        </div>
-        <input id="tE" type="text" placeholder="Ex: Eleição Diretoria 2026">
-        <button onclick="N()" id="S2">SALVAR TÍTULO E CADASTRAR CANDIDATOS</button>
-    </div>
-
-    <div id="setupCargo" class="screen">
-        <h2 id="C1">REGISTRO DE CANDIDATOS</h2>
-        <div class="ultra-explanation">
-            <b id="H_CARGO_T">ULTRA EXPLICAÇÃO DO CADASTRO:</b>
-            <span id="H_CARGO">Organize por grupos. Primeiro cadastre o cargo (ex: Presidente), adicione os candidatos desse cargo e clique em SALVAR CARGO para gravar na memória.</span>
-        </div>
-        <input id="nC" type="text" placeholder="Nome do Cargo...">
-        <input id="nCand" type="text" placeholder="Nome do Candidato...">
-        <div style="border:3px dashed #1abc9c; padding:20px; text-align:center; cursor:pointer; border-radius:10px;" onclick="document.getElementById('fileIn').click()">
-            📷 <br><span id="INSTR_FOTO">TOQUE PARA ANEXAR FOTO DO CANDIDATO (140px)</span>
-            <img id="imgPrev" class="img-preview">
-        </div>
-        <input type="file" id="fileIn" hidden onchange="PREV(this)">
-        <button onclick="A()" id="C2">ADICIONAR CANDIDATO À LISTA</button>
-        <button onclick="SAVE()" id="C3" style="background:var(--success)">SALVAR E FINALIZAR ESTE CARGO</button>
-        <button onclick="START_VOTE()" id="C4" style="background:var(--primary); margin-top:20px">CONCLUIR TUDO E ABRIR URNA ELETRÔNICA</button>
-    </div>
-
-    <div id="urna" class="screen">
-        <h2 id="uT"></h2>
-        <div class="ultra-explanation">
-            <b id="U_HELP_T">INSTRUÇÃO AO ELEITOR:</b>
-            <span id="U_HELP">Toque na foto ou nome do seu candidato. A borda ficará verde. Depois clique no botão verde abaixo para confirmar.</span>
-        </div>
-        <div id="gridUrna"></div>
-        <button onclick="VOTE()" style="background:var(--success); height: 80px; margin-top: 20px;" id="U1">CONFIRMAR MEU VOTO AGORA</button>
+        <input id="uE" type="email" placeholder="Gmail...">
+        <button onclick="V()" id="L2">SOLICITAR CÓDIGO DE ACESSO</button>
     </div>
 
     <script>
         const CFG = { s: "service_oqfbzrm", t: "template_t3aio8f", k: "yRM6j-xNoNkVxF0CR", u: "https://urnaweb-backend.paulosmb1972.workers.dev" };
         emailjs.init(CFG.k);
         
-        let _code=''; let _idioma='pt'; let _data=[]; let _temp=null; let _title=''; let _fotoTemp=''; let _idx=0; let _sel=null;
-
         const DICT = {
             pt: {
                 L1: "PORTAL DE IDENTIFICAÇÃO DIGITAL",
-                H_LOGIN_T: "ULTRA EXPLICAÇÃO DO SISTEMA:",
+                H_LOGIN_T: "ULTRA EXPLICAÇÃO:",
                 H_LOGIN: "Este sistema utiliza o seu e-mail para validar seus créditos de uso e identificar sua conta oficial. Novos usuários ganham 3 eleições gratuitas para testes iniciais.",
                 E_EMAIL_TIT: "COMO PREENCHER O E-MAIL:",
                 E_EMAIL_TXT: "Digite seu endereço de Gmail oficial. É através dele que você receberá o código de segurança de 4 dígitos para desbloquear o sistema.",
-                uE: "Digite seu Gmail aqui...",
-                L2: "SOLICITAR CÓDIGO DE ACESSO NO E-MAIL",
-                V1: "VERIFICAÇÃO DE SEGURANÇA",
-                H_VERIFY_T: "ULTRA EXPLICAÇÃO DO CÓDIGO:",
-                H_VERIFY: "Insira os 4 números enviados para o seu e-mail. Caso o e-mail não chegue por falha de rede ou queda de servidor, você pode usar o CÓDIGO MESTRE 9999 para continuar seus testes.",
-                iC: "Digite o código de 4 dígitos...",
-                V3: "VALIDAR CÓDIGO E ENTRAR NO PAINEL",
-                S1: "TÍTULO OFICIAL DA VOTAÇÃO",
-                H_SETUP_T: "ULTRA EXPLICAÇÃO DO TÍTULO:",
-                H_SETUP: "O nome definido aqui será o título mestre que aparecerá no topo do relatório oficial em PDF e nas auditorias de votos.",
-                tE: "Ex: Eleição Diretoria 2026",
-                S2: "SALVAR TÍTULO E CADASTRAR CANDIDATOS",
-                C1: "REGISTRO DE CANDIDATOS",
-                H_CARGO_T: "ULTRA EXPLICAÇÃO DO CADASTRO:",
-                H_CARGO: "Organize por grupos. Primeiro cadastre o cargo (ex: Presidente), adicione os candidatos desse cargo e clique em SALVAR CARGO para gravar na memória.",
-                nC: "Nome do Cargo...",
-                nCand: "Nome do Candidato...",
-                INSTR_FOTO: "TOQUE PARA ANEXAR FOTO DO CANDIDATO (140px)",
-                C2: "ADICIONAR CANDIDATO À LISTA",
-                C3: "SALVAR E FINALIZAR ESTE CARGO",
-                C4: "CONCLUIR TUDO E ABRIR URNA ELETRÔNICA",
-                U_HELP_T: "INSTRUÇÃO AO ELEITOR:",
-                U_HELP: "Toque na foto ou nome do seu candidato. A borda ficará verde. Depois clique no botão verde abaixo para confirmar.",
-                U1: "CONFIRMAR MEU VOTO AGORA"
+                L2: "SOLICITAR CÓDIGO DE ACESSO",
+                uE: "Digite seu Gmail aqui..."
             },
             en: {
                 L1: "DIGITAL IDENTITY PORTAL",
-                H_LOGIN_T: "ULTRA SYSTEM EXPLANATION:",
-                H_LOGIN: "This system uses your email to validate usage credits and identify your official account. New users get 3 free elections for initial tests.",
-                E_EMAIL_TIT: "HOW TO FILL EMAIL:",
-                E_EMAIL_TXT: "Enter your official Gmail address. You will receive a 4-digit security code to unlock the system.",
-                uE: "Enter your Gmail here...",
-                L2: "REQUEST ACCESS CODE BY EMAIL",
-                V1: "SECURITY VERIFICATION",
-                H_VERIFY_T: "ULTRA CODE EXPLANATION:",
-                H_VERIFY: "Enter the 4 numbers sent to your email. If the email doesn't arrive due to network failure, you can use MASTER CODE 9999.",
-                iC: "Enter 4-digit code...",
-                V3: "VALIDATE CODE AND ENTER PANEL",
-                S1: "OFFICIAL ELECTION TITLE",
-                H_SETUP_T: "ULTRA TITLE EXPLANATION:",
-                H_SETUP: "The name set here will be the master title that appears at the top of the official PDF report.",
-                tE: "Ex: Board Election 2026",
-                S2: "SAVE TITLE AND REGISTER CANDIDATES",
-                C1: "CANDIDATE REGISTRATION",
-                H_CARGO_T: "ULTRA REGISTRATION EXPLANATION:",
-                H_CARGO: "Organize by groups. First register the position (e.g. President), add candidates, and click SAVE POSITION.",
-                nC: "Position Name...",
-                nCand: "Candidate Name...",
-                INSTR_FOTO: "TAP TO ATTACH CANDIDATE PHOTO (140px)",
-                C2: "ADD CANDIDATE TO LIST",
-                C3: "SAVE AND FINISH THIS POSITION",
-                C4: "FINISH ALL AND OPEN ELECTRONIC URN",
-                U_HELP_T: "VOTER INSTRUCTION:",
-                U_HELP: "Tap the candidate's photo or name. The border will turn green. Then click the green button below to confirm.",
-                U1: "CONFIRM MY VOTE NOW"
+                H_LOGIN_T: "ULTRA EXPLANATION:",
+                H_LOGIN: "This system uses your email to validate usage credits and identify your official account. New users get 3 free elections for initial testing.",
+                E_EMAIL_TIT: "HOW TO FILL THE EMAIL:",
+                E_EMAIL_TXT: "Enter your official Gmail address. This is how you will receive the 4-digit security code to unlock the system.",
+                L2: "REQUEST ACCESS CODE",
+                uE: "Enter your Gmail here..."
             },
             es: {
                 L1: "PORTAL DE IDENTIDAD DIGITAL",
-                H_LOGIN_T: "ULTRA EXPLICACIÓN DEL SISTEMA:",
-                H_LOGIN: "Este sistema utiliza su correo para validar créditos. Nuevos usuarios obtienen 3 elecciones gratis para pruebas iniciales.",
-                E_EMAIL_TIT: "CÓMO LLENAR EL CORREO:",
-                E_EMAIL_TXT: "Ingrese su Gmail oficial. Recibirá un código de seguridad de 4 dígitos para desbloquear el sistema.",
-                uE: "Ingrese su Gmail aquí...",
-                L2: "SOLICITAR CÓDIGO POR CORREO",
-                V1: "VERIFICACIÓN DE SEGURIDAD",
-                H_VERIFY_T: "ULTRA EXPLICACIÓN DEL CÓDIGO:",
-                H_VERIFY: "Ingrese los 4 números enviados a su correo. Si falla, puede usar el CÓDIGO MAESTRO 9999 para continuar.",
-                iC: "Ingrese el código de 4 dígitos...",
-                V3: "VALIDAR CÓDIGO E ENTRAR AL PANEL",
-                S1: "TÍTULO OFICIAL DE LA VOTACIÓN",
-                H_SETUP_T: "ULTRA EXPLICACIÓN DEL TÍTULO:",
-                H_SETUP: "El nombre definido aquí será el título maestro que aparecerá en el informe PDF oficial.",
-                tE: "Ej: Elección Directiva 2026",
-                S2: "GUARDAR TÍTULO Y REGISTRAR CANDIDATOS",
-                C1: "REGISTRO DE CANDIDATOS",
-                H_CARGO_T: "ULTRA EXPLICACIÓN DEL REGISTRO:",
-                H_CARGO: "Organice por grupos. Primero registre el cargo (ej: Presidente), agregue los candidatos y haga clic en GUARDAR CARGO.",
-                nC: "Nombre del Cargo...",
-                nCand: "Nombre del Candidato...",
-                INSTR_FOTO: "TOQUE PARA ADJUNTAR FOTO (140px)",
-                C2: "AÑADIR CANDIDATO A LA LISTA",
-                C3: "GUARDAR Y FINALIZAR ESTE CARGO",
-                C4: "CONCLUIR TODO Y ABRIR URNA ELECTRÓNICA",
-                U_HELP_T: "INSTRUCCIÓN AL VOTANTE:",
-                U_HELP: "Toque la foto o el nombre del candidato. El borde se volverá verde. Luego haga clic en el botón verde para confirmar.",
-                U1: "CONFIRMAR MI VOTO AHORA"
+                H_LOGIN_T: "ULTRA EXPLICACIÓN:",
+                H_LOGIN: "Este sistema utiliza su correo electrónico para validar sus créditos de uso e identificar su cuenta oficial. Los nuevos usuarios obtienen 3 elecciones gratuitas para pruebas iniciales.",
+                E_EMAIL_TIT: "CÓMO COMPLETAR EL CORREO:",
+                E_EMAIL_TXT: "Ingrese su dirección oficial de Gmail. A través de ella recibirá el código de seguridad de 4 dígitos para desbloquear el sistema.",
+                L2: "SOLICITAR CÓDIGO DE ACCESO",
+                uE: "Ingrese su Gmail aquí..."
             }
         };
 
         function TR(l) {
-            _idioma = l;
             const d = DICT[l];
             for (let k in d) {
                 const el = document.getElementById(k);
@@ -216,72 +90,16 @@
             }
         }
 
-        function GO(a) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(a).classList.add('active');
-        }
-
         async function V() {
             const email = document.getElementById('uE').value.trim();
             if(!email.includes('@')) return;
             try {
                 const response = await fetch(`${CFG.u}/?email=${encodeURIComponent(email)}`);
                 const data = await response.json();
-                _code = data.codigo.toString();
-                await emailjs.send(CFG.s, CFG.t, { to_email: email, validation_code: _code });
-                GO('verify');
-            } catch(e) { GO('verify'); }
-        }
-
-        function C() { if(document.getElementById('iC').value === _code || document.getElementById('iC').value === "9999") GO('setup'); }
-        function N() { _title = document.getElementById('tE').value; GO('setupCargo'); }
-        function PREV(i) { if (i.files && i.files[0]) { let r = new FileReader(); r.onload = (e) => { _fotoTemp = e.target.result; document.getElementById('imgPrev').src = _fotoTemp; document.getElementById('imgPrev').style.display='block'; }; r.readAsDataURL(i.files[0]); } }
-        function A() { 
-            if(!_temp) _temp = { n: document.getElementById('nC').value, c: [] }; 
-            _temp.c.push({ n: document.getElementById('nCand').value, v: 0, f: _fotoTemp }); 
-            document.getElementById('nCand').value = ''; _fotoTemp = ''; document.getElementById('imgPrev').style.display='none';
-            alert("Candidato Adicionado!"); 
-        }
-        function SAVE() { if(_temp) _data.push(_temp); _temp = null; document.getElementById('nC').value=''; alert("Cargo Salvo!"); }
-
-        function START_VOTE() {
-            if(_temp) { _data.push(_temp); _temp = null; }
-            if(_data.length === 0) { alert("Cadastre candidatos primeiro!"); return; }
-            _idx = 0;
-            RENDER_URNA();
-            GO('urna');
-        }
-
-        function RENDER_URNA() {
-            const cargo = _data[_idx];
-            document.getElementById('uT').innerText = cargo.n.toUpperCase();
-            const grid = document.getElementById('gridUrna');
-            grid.innerHTML = '';
-            cargo.c.forEach((can, i) => {
-                const div = document.createElement('div');
-                div.className = 'cand-card';
-                div.innerHTML = (can.f ? `<img src="${can.f}" style="width:110px; height:110px; object-fit:cover; border-radius:10px;">` : '') + `<br><b>${can.n}</b>`;
-                div.onclick = () => {
-                    _sel = i;
-                    document.querySelectorAll('.cand-card').forEach(c => c.style.borderColor = 'transparent');
-                    div.style.borderColor = 'var(--success)';
-                };
-                grid.appendChild(div);
-            });
-        }
-
-        function VOTE() {
-            if(_sel === null) { alert("Selecione um candidato!"); return; }
-            _data[_idx].c[_sel].v++;
-            _sel = null;
-            _idx++;
-            if(_idx < _data.length) {
-                RENDER_URNA();
-            } else {
-                alert("Voto Confirmado!");
-                _idx = 0;
-                RENDER_URNA();
-            }
+                const code = data.codigo.toString();
+                await emailjs.send(CFG.s, CFG.t, { to_email: email, validation_code: code });
+                alert("Código enviado!");
+            } catch(e) { alert("Use o código 9999."); }
         }
     </script>
 </body>
