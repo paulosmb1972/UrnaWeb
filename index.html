@@ -13,20 +13,19 @@
         .active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         h2 { text-align: center; color: var(--primary); text-transform: uppercase; margin-bottom: 5px; letter-spacing: 1px; }
-        
-        /* BOX DE EXPLICAÇÃO ULTRA EXTREMA */
-        .ultra-explanation { background: rgba(255, 255, 255, 0.08); padding: 15px; border-radius: 10px; border-left: 5px solid var(--accent); font-size: 13px; line-height: 1.6; margin-bottom: 15px; color: #fff; text-align: justify; }
-        .ultra-explanation b { color: var(--accent); display: block; margin-bottom: 5px; text-transform: uppercase; font-size: 11px; }
-
-        input, button { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; box-sizing: border-box; }
+        .info-box { text-align: center; font-size: 14px; color: #eee; margin: 15px 0; background: rgba(255, 255, 255, 0.1); padding: 18px; border-radius: 12px; border-left: 6px solid var(--accent); line-height: 1.6; }
+        input, button, textarea { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 0 #148f77; }
         button:active { transform: translateY(3px); box-shadow: none; }
+        button:disabled { background: #666; cursor: wait; }
         input { background: #fff; color: #333; border: 2px solid transparent; }
         input:focus { border-color: var(--primary); outline: none; }
-
         .img-preview { width: 140px !important; height: 140px !important; object-fit: cover; border-radius: 15px; display: none; margin: 15px auto; border: 4px solid white; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
-        .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
-        .lang-box button { width: auto; padding: 6px 12px; background: rgba(0,0,0,0.8); font-size: 10px; border: 1px solid var(--primary); color: white; box-shadow: none; }
+        .pay-card { background: rgba(255,255,255,0.05); padding: 25px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
+        .price-tag { font-size: 32px; font-weight: bold; color: var(--accent); display: block; text-align: center; margin: 10px 0; }
+        .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 8px; }
+        .lang-box button { width: auto; padding: 8px 16px; background: rgba(0,0,0,0.8); font-size: 11px; border: 1px solid var(--primary); color: white; box-shadow: none; }
+        #areaImpressao { width: 480px; margin: 0 auto; background: white !important; color: #333 !important; padding: 25px; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
@@ -39,107 +38,93 @@
 
     <div id="login" class="screen active">
         <h2 id="L1"></h2>
-        <div class="ultra-explanation" id="H_LOGIN"></div>
-        <div class="ultra-explanation"><b id="E_EMAIL_TIT"></b> <span id="E_EMAIL_TXT"></span></div>
+        <div class="info-box" id="H_LOGIN"></div>
         <input id="uE" type="email">
         <button onclick="window.V()" id="L2"></button>
     </div>
 
     <div id="verify" class="screen">
         <h2 id="V1"></h2>
-        <div class="ultra-explanation" id="H_VERIFY"></div>
-        <div class="ultra-explanation"><b id="E_CODE_TIT"></b> <span id="E_CODE_TXT"></span></div>
+        <div class="info-box" id="H_VERIFY"></div>
         <input id="iC" type="text" maxlength="4">
         <button onclick="window.C()" id="V3"></button>
     </div>
 
     <div id="setup" class="screen">
         <h2 id="S1"></h2>
-        <div class="ultra-explanation" id="H_SETUP"></div>
-        <div class="ultra-explanation"><b id="E_TIT_TIT"></b> <span id="E_TIT_TXT"></span></div>
+        <div class="info-box" id="H_SETUP"></div>
         <input id="tE" type="text">
         <button onclick="window.N()" id="S2"></button>
     </div>
 
+    <div id="pay" class="screen">
+        <h2 id="P1"></h2><div class="info-box" id="H_PAY"></div>
+        <div class="pay-card">
+            <h3 id="PL1"></h3><span class="price-tag">R$ 30,00</span>
+            <button onclick="window.open('https://mpago.la/2maEAFx')" id="B1" style="background:var(--success)"></button>
+        </div>
+        <div class="pay-card" style="border: 2px solid var(--accent);">
+            <p id="L_CUP"></p><input id="cup" type="text">
+            <button onclick="window.K()" id="P2" style="background:var(--accent); color:black"></button>
+        </div>
+        <button onclick="location.reload()" id="B_EXIT" style="background:none; border:1px solid white;"></button>
+    </div>
+
     <div id="setupCargo" class="screen">
-        <h2 id="C1"></h2>
-        <div class="ultra-explanation" id="H_CARGO"></div>
-        
-        <div class="ultra-explanation"><b id="E_CARGO_TIT"></b> <span id="E_CARGO_TXT"></span></div>
+        <h2 id="C1"></h2><div class="info-box" id="H_CARGO"></div>
         <input id="nC" type="text">
-        
-        <div class="ultra-explanation"><b id="E_CAND_TIT"></b> <span id="E_CAND_TXT"></span></div>
         <input id="nCand" type="text">
-        
-        <div class="ultra-explanation"><b id="E_FOTO_TIT"></b> <span id="E_FOTO_TXT"></span></div>
-        <div style="border:2px dashed #1abc9c; padding:15px; text-align:center; cursor:pointer;" onclick="document.getElementById('fileIn').click()">
+        <div style="border:2px dashed #1abc9c; padding:20px; text-align:center; cursor:pointer;" onclick="document.getElementById('fileIn').click()">
             📷 <br><span id="INSTR_FOTO"></span>
             <img id="imgPrev" class="img-preview">
         </div>
         <input type="file" id="fileIn" hidden onchange="window.PREV(this)">
-        
         <button onclick="window.A()" id="C2"></button>
         <button onclick="window.SAVE()" id="C3" style="background:var(--success)"></button>
         <button onclick="window.START_URNA()" id="C4" style="background:var(--primary); margin-top:20px"></button>
     </div>
 
     <div id="urna" class="screen">
-        <h2 id="uT"></h2>
-        <div class="ultra-explanation" id="H_URNA"></div>
+        <h2 id="uT"></h2><div class="info-box" id="H_URNA"></div>
         <div id="gridUrna" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:15px;"></div>
         <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success); margin-top:20px;"></button>
+        <button onclick="window.END()" id="U2" style="background:var(--danger); margin-top:30px"></button>
     </div>
 
     <div id="res" class="screen">
-        <h2 id="R_TITLE"></h2>
-        <div id="areaImpressao" style="background:white; color:black; padding:20px;"><div id="pC"></div></div>
+        <h2 id="R_TITLE"></h2><div id="areaImpressao"><div id="pC"></div></div>
         <button onclick="window.PDF()" id="B_PDF" style="background:var(--success); margin-top:10px"></button>
-        <button onclick="location.reload()" id="B_EXIT" style="background:var(--danger); margin-top:30px"></button>
+        <button onclick="location.reload()" id="B_EXIT_FINAL" style="background:var(--danger); margin-top:30px"></button>
     </div>
 
     <script>
         (function(){
             const CFG = { s: "service_oqfbzrm", t: "template_t3aio8f", k: "yRM6j-xNoNkVxF0CR", u: "https://urnaweb-backend.paulosmb1972.workers.dev" };
             emailjs.init(CFG.k);
-            window._code=''; window._idioma='pt'; window._data=[]; window._temp=null; window._title=''; window._fotoTemp='';
+            window._code=''; window._idioma='pt'; window._data=[]; window._temp=null; window._idx=0; window._title=''; window._fotoTemp='';
 
             window._tr = {
                 pt: { 
-                    L1: "Portal de Identificação Digital", 
-                    H_LOGIN: "ULTRA EXPLICAÇÃO: Este sistema utiliza o e-mail para validar seus créditos de uso. Novos usuários recebem 3 eleições gratuitas para testes.",
-                    E_EMAIL_TIT: "CAMPO E-MAIL:", E_EMAIL_TXT: "Digite seu endereço Gmail completo. Ele será usado para enviar seu código de segurança e salvar seus dados.",
-                    L2: "SOLICITAR CÓDIGO DE VALIDAÇÃO",
-                    V1: "Verificação de Identidade",
-                    H_VERIFY: "ULTRA EXPLICAÇÃO: Verifique sua caixa de entrada. O código prova que você é o proprietário do e-mail informado.",
-                    E_CODE_TIT: "CAMPO CÓDIGO:", E_CODE_TXT: "Insira os 4 dígitos numéricos recebidos no seu Gmail.",
-                    V3: "CONFIRMAR E ACESSAR PAINEL",
-                    S1: "Configuração do Evento",
-                    H_SETUP: "ULTRA EXPLICAÇÃO: O título é a identidade oficial da sua eleição. Ele sairá no topo do relatório PDF final.",
-                    E_TIT_TIT: "CAMPO TÍTULO:", E_TIT_TXT: "Exemplo: Eleição da Terceira Igreja 2026. Evite títulos muito longos.",
-                    S2: "SALVAR E IR PARA CANDIDATOS",
-                    C1: "Quadro de Candidatos e Cargos",
-                    H_CARGO: "ULTRA EXPLICAÇÃO: Organize sua eleição por cargos. Exemplo: Primeiro cadastre todos os 'Diretores', salve, e depois cadastre os 'Conselheiros'.",
-                    E_CARGO_TIT: "CAMPO CARGO:", E_CARGO_TXT: "Digite o nome da função que está sendo disputada (Ex: Presidente).",
-                    E_CAND_TIT: "CAMPO CANDIDATO:", E_CAND_TXT: "Digite o nome completo do candidato que ocupará a vaga no cargo acima.",
-                    E_FOTO_TIT: "ANEXO DE FOTO:", E_FOTO_TXT: "Clique no ícone de câmera. A foto será calibrada para 140px para visualização perfeita na urna.",
-                    INSTR_FOTO: "Clique aqui para anexar foto",
-                    C2: "ADICIONAR CANDIDATO À LISTA",
-                    C3: "SALVAR CARGO E LIMPAR CAMPOS",
-                    C4: "CONCLUIR CADASTRO E ABRIR URNA",
-                    H_URNA: "ULTRA EXPLICAÇÃO: Clique na foto do candidato. A moldura verde indica seleção. Após clicar, use o botão de confirmar no rodapé.",
-                    U1: "CONFIRMAR VOTO AGORA", R_TITLE: "RESULTADO OFICIAL", B_PDF: "GERAR PDF A5 COM FOTOS", B_EXIT: "SAIR COM SEGURANÇA",
-                    alert_voto: "Voto registrado com sucesso!"
+                    L1: "PORTAL DE IDENTIFICAÇÃO ULTRA SEGURO", H_LOGIN: "ULTRA EXPLICAÇÃO: Para garantir a total integridade da sua eleição e o controle rigoroso de créditos, informe seu e-mail Gmail oficial. Novos usuários ganham um bônus de 3 eleições gratuitas para testes completos de campo. Um código de 4 dígitos será enviado para autenticar sua conta de forma exclusiva.", uE: "Digite seu e-mail Gmail aqui...", L2: "SOLICITAR CÓDIGO DE ACESSO IMEDIATO",
+                    V1: "AUTENTICAÇÃO DE IDENTIDADE DIGITAL", H_VERIFY: "ULTRA EXPLICAÇÃO: Verifique sua caixa de entrada agora. O sistema gerou e enviou uma chave numérica de segurança privada. Digite o código de 4 dígitos abaixo para provar sua identidade e desbloquear o painel profissional de criação da urna eletrônica.", iC: "Digite o código de 4 dígitos recebido no e-mail...", V3: "VALIDAR IDENTIDADE E DESBLOQUEAR SISTEMA",
+                    S1: "TÍTULO OFICIAL DA VOTAÇÃO", H_SETUP: "ULTRA EXPLICAÇÃO: Defina o nome oficial da sua votação (ex: Eleição Terceira Igreja 2026). Este título é a certidão de nascimento da sua eleição e será impresso de forma permanente no cabeçalho de todos os relatórios e auditorias oficiais em PDF.", tE: "Ex: Assembleia Geral Extraordinária...", S2: "SALVAR TÍTULO E AVANÇAR PARA CANDIDATOS",
+                    P1: "LIMITE DE CRÉDITOS DE CORTESIA EXCEDIDO", H_PAY: "ULTRA EXPLICAÇÃO: Detectamos que este e-mail já utilizou as 3 eleições de cortesia gratuitas do sistema. Para continuar realizando votações profissionais com suporte total a fotos e relatórios PDF ilimitados, adquira créditos ou utilize um cupom.", PL1: "💎 PLANO ELEIÇÃO INDIVIDUAL COMPLETO", B1: "ADQUIRIR PLANO PROFISSIONAL (R$ 30,00)", L_CUP: "VOCÊ POSSUI UM CUPOM DE ATIVAÇÃO?", cup: "Digite o código do cupom aqui...", P2: "VALIDAR CUPOM E LIBERAR ACESSO AGORA", B_EXIT: "VOLTAR AO PORTAL DE INÍCIO",
+                    C1: "REGISTRO DE CANDIDATOS E CARGOS", H_CARGO: "ULTRA EXPLICAÇÃO: 1º Defina o nome do Cargo. 2º Digite o Nome do Candidato. 3º Anexe a Foto oficial (o sistema calibra automaticamente para 140px). 4º Clique em 'ADICIONAR'. 5º Ao terminar os nomes daquele cargo, clique em 'SALVAR CARGO'. Repita para múltiplos cargos antes de abrir a urna.", nC: "Nome do Cargo (ex: Pastor, Diretor, Presidente)...", nCand: "Nome Completo do Candidato...", INSTR_FOTO: "Toque para anexar foto (Calibrada em 140px)", C2: "ADICIONAR CANDIDATO À LISTA TEMPORÁRIA", C3: "SALVAR E FINALIZAR ESTE CARGO NA MEMÓRIA", C4: "CONCLUIR CADASTRO E ABRIR URNA ELETRÔNICA", L_ADDED: "Candidatos na lista atual para este cargo:",
+                    H_URNA: "ULTRA EXPLICAÇÃO PARA O ELEITOR: Toque sobre a foto ou sobre o nome do seu candidato escolhido. A moldura ficará verde indicando que sua seleção foi feita com sucesso. Após escolher, clique no botão 'CONFIRMAR MEU VOTO' no final da tela para gravar sua escolha de forma definitiva.", U1: "CONFIRMAR MEU VOTO AGORA", U2: "ENCERRAR VOTAÇÃO GERAL E VER RESULTADO", R_TITLE: "PAINEL DE RESULTADOS OFICIAIS E AUDITORIA", B_PDF: "GERAR RELATÓRIO PDF OFICIAL COM FOTOS (A5)", B_EXIT_FINAL: "SAIR DO SISTEMA COM SEGURANÇA", alert_voto: "Voto registrado com sucesso!", alert_error: "Erro: Adicione cargos e candidatos primeiro!"
                 },
                 en: { 
-                    L1: "Digital Identity Portal", 
-                    H_LOGIN: "ULTRA EXPLANATION: This system uses email to validate your usage credits. New users get 3 free elections.",
-                    E_EMAIL_TIT: "EMAIL FIELD:", E_EMAIL_TXT: "Enter your full Gmail address to receive the security code.",
-                    L2: "REQUEST VALIDATION CODE",
-                    V1: "Identity Verification",
-                    H_VERIFY: "ULTRA EXPLANATION: Check your inbox. This code proves you own the provided email address.",
-                    E_CODE_TIT: "CODE FIELD:", E_CODE_TXT: "Enter the 4 digits received in your Gmail.",
-                    V3: "CONFIRM AND ACCESS PANEL"
-                    // ... Outras traduções seguem o mesmo padrão ultra explicativo
+                    L1: "ULTRA SECURE IDENTITY PORTAL", H_LOGIN: "ULTRA EXPLANATION: To ensure election integrity, enter your official Gmail. New users get 3 free trials. A 4-digit code will be sent to authenticate your account.", uE: "Enter your Gmail here...", L2: "REQUEST IMMEDIATE ACCESS CODE",
+                    V1: "DIGITAL IDENTITY AUTHENTICATION", H_VERIFY: "ULTRA EXPLANATION: Check your inbox. Enter the 4-digit code to prove your identity and unlock the professional urn creation panel.", iC: "Enter 4-digit code...", V3: "VALIDATE AND UNLOCK SYSTEM",
+                    S1: "OFFICIAL VOTE TITLE", H_SETUP: "ULTRA EXPLANATION: Define the official name of your vote. This title will be permanently printed on all PDF reports and audits.", tE: "Ex: General Assembly 2026...", S2: "SAVE TITLE AND PROCEED TO CANDIDATES",
+                    P1: "FREE CREDIT LIMIT REACHED", H_PAY: "ULTRA EXPLANATION: This email has used the 3 free courtesy elections. To continue with professional features, buy credits or use a coupon.", PL1: "💎 FULL SINGLE ELECTION PLAN", B1: "BUY PROFESSIONAL PLAN (R$ 30,00)", L_CUP: "HAVE AN ACTIVATION COUPON?", cup: "Enter coupon code...", P2: "VALIDATE COUPON AND ACCESS NOW", B_EXIT: "BACK TO START",
+                    C1: "CANDIDATE AND POSITION REGISTRY", H_CARGO: "ULTRA EXPLANATION: 1st Define Position. 2nd Enter Name. 3rd Attach Photo (140px). 4th Click 'ADD'. 5th When done, click 'SAVE POSITION'. You can save multiple positions before opening the urn.", nC: "Position (ex: Director, President)...", nCand: "Candidate Full Name...", INSTR_FOTO: "Tap to attach photo (Calibrated 140px)", C2: "ADD CANDIDATE TO LIST", C3: "SAVE AND FINISH THIS POSITION", C4: "FINISH SETUP AND OPEN ELECTRONIC URN", L_ADDED: "Candidates in current list:",
+                    H_URNA: "ULTRA EXPLANATION FOR VOTER: Tap the photo or name of your chosen candidate. The frame will turn green. After choosing, click 'CONFIRM MY VOTE' at the bottom of the screen.", U1: "CONFIRM MY VOTE NOW", U2: "CLOSE VOTING AND VIEW RESULTS", R_TITLE: "OFFICIAL RESULTS AND AUDIT PANEL", B_PDF: "GENERATE OFFICIAL PDF REPORT WITH PHOTOS (A5)", B_EXIT_FINAL: "SECURE EXIT", alert_voto: "Vote successfully recorded!", alert_error: "Error: Add candidates first!"
+                },
+                es: { 
+                    L1: "PORTAL DE IDENTIDAD ULTRA SEGURO", H_LOGIN: "ULTRA EXPLICACIÓN: Ingrese su Gmail oficial. Cuentas nuevas reciben 3 gratis. Se enviará un código de 4 dígitos para autenticar.", uE: "Gmail...", L2: "SOLICITAR CÓDIGO",
+                    V1: "AUTENTICACIÓN DIGITAL", H_VERIFY: "ULTRA EXPLICACIÓN: Verifique su correo. Ingrese el código de 4 dígitos para desbloquear el sistema.", iC: "Ingrese el código...", V3: "VALIDAR Y ENTRAR",
+                    PL1: "💎 PLAN ELECCIÓN INDIVIDUAL", B1: "COMPRAR AHORA (R$ 30,00)", L_CUP: "¿TIENE UN CUPÓN?", P2: "LIBERAR ACCESO", B_EXIT: "VOLVER",
+                    C1: "REGISTRO DE CANDIDATOS", H_CARGO: "ULTRA EXPLICACIÓN: 1º Cargo. 2º Nombre. 3º Foto. 4º Añadir. 5º Guardar Cargo.", C4: "INICIAR URNA ELECTRÓNICA", U1: "CONFIRMAR VOTO AHORA", R_TITLE: "RESULTADOS OFICIALES Y AUDITORÍA", B_PDF: "INFORME PDF CON FOTOS", B_EXIT_FINAL: "SALIR", alert_voto: "¡Voto registrado!", alert_error: "¡Añada candidatos!"
                 }
             };
 
@@ -148,17 +133,20 @@
 
             window.V = async function() {
                 const email = document.getElementById('uE').value.trim();
-                if(!email.includes('@')) { alert("E-mail inválido"); return; }
+                if(!email.includes('@')) { alert("Gmail inválido"); return; }
+                const btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
                 try {
                     const response = await fetch(`${CFG.u}/?email=${encodeURIComponent(email)}`);
                     const data = await response.json();
+                    if(data.count >= 3) { window.GO('pay'); return; }
                     window._code = data.codigo.toString();
                     await emailjs.send(CFG.s, CFG.t, { to_email: email, validation_code: window._code });
-                    alert("Código enviado!"); window.GO('verify');
-                } catch(err) { alert("Use o código mestre 9999."); window.GO('verify'); }
+                    alert("Código enviado ao Gmail!"); window.GO('verify');
+                } catch(err) { alert("Atenção: Use o código 9999."); window.GO('verify'); } finally { btn.disabled = false; window.TR(window._idioma); }
             };
 
             window.C = () => { if(document.getElementById('iC').value === window._code || document.getElementById('iC').value === "9999") window.GO('setup'); else alert("Incorreto"); };
+            window.K = () => { let v = document.getElementById('cup').value.trim().toLowerCase(); if(v === "orion001" || v === "mais3gratis") { alert("Liberado!"); window.GO('setup'); } else alert("Inválido"); };
             window.N = () => { window._title = document.getElementById('tE').value || "Urna"; window._data = []; window.GO('setupCargo'); };
             window.PREV = (i) => { if (i.files && i.files[0]) { let r = new FileReader(); r.onload = (e) => { window._fotoTemp = e.target.result; document.getElementById('imgPrev').src = window._fotoTemp; document.getElementById('imgPrev').style.display='block'; }; r.readAsDataURL(i.files[0]); } };
             
@@ -167,14 +155,13 @@
                 let n = document.getElementById('nCand').value; if(!n) return;
                 window._temp.c.push({ n: n, v: 0, f: window._fotoTemp });
                 document.getElementById('nCand').value = ''; window._fotoTemp = ''; document.getElementById('imgPrev').style.display='none';
-                alert("Adicionado!");
             };
 
             window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp = null; document.getElementById('nC').value=''; alert("Cargo Salvo!"); };
             
             window.START_URNA = () => { 
                 if(window._temp) { window._data.push(window._temp); window._temp = null; }
-                if(!window._data.length) { alert("Adicione candidatos primeiro!"); return; }
+                if(!window._data.length) { alert(window._tr[window._idioma].alert_error); return; }
                 window._idx = 0; window.RENDER_URNA(); window.GO('urna'); 
             };
 
@@ -184,7 +171,7 @@
                 c.c.forEach((can, i) => {
                     let d = document.createElement('div');
                     d.style="background:white; color:#333; padding:15px; border-radius:12px; text-align:center; cursor:pointer; border:4px solid transparent;";
-                    d.innerHTML = (can.f ? `<img src="${can.f}" style="width:110px; height:110px; object-fit:cover; border-radius:10px;">` : '') + `<br><b>${can.n}</b>`;
+                    d.innerHTML = (can.f ? `<img src="${can.f}" style="width:110px; height:110px; object-fit:cover; border-radius:10px;">` : '') + `<br><b style="font-size:18px;">${can.n}</b>`;
                     d.onclick = () => { window._sel = [i]; document.querySelectorAll('#gridUrna div').forEach(x=>x.style.borderColor='transparent'); d.style.borderColor='var(--success)'; };
                     g.appendChild(d);
                 });
@@ -199,7 +186,7 @@
             };
 
             window.END = () => {
-                window.GO('res'); let o = document.getElementById('pC'); o.innerHTML = `<h3>${window._title.toUpperCase()}</h3>`;
+                window.GO('res'); let o = document.getElementById('pC'); o.innerHTML = `<h3 style="text-align:center;">${window._title.toUpperCase()}</h3>`;
                 window._data.forEach(c => {
                     let h = `<table style="width:100%; border-collapse:collapse; margin-bottom:15px;"><thead><tr style="background:#eee;"><th>${c.n}</th><th style="text-align:right">Votos</th></tr></thead><tbody>`;
                     c.c.forEach(can => { h += `<tr><td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`; });
