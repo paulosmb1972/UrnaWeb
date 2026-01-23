@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UrnaWeb Digital - INDEX5 PRO</title>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         :root { --primary: #1abc9c; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; }
         body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
@@ -13,16 +12,17 @@
         .active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        h2 { text-align: center; color: var(--primary); text-transform: uppercase; }
-        .info-box { font-size: 14px; color: #eee; margin: 15px 0; background: rgba(255, 255, 255, 0.1); padding: 18px; border-radius: 12px; border-left: 6px solid var(--accent); }
-        .info-box b { color: var(--accent); display: block; font-size: 11px; margin-bottom: 5px; }
-        
-        input { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; box-sizing: border-box; background: #fff; color: #333; font-weight: bold; }
-        button { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; background: var(--primary); color: white; transition: 0.3s; box-shadow: 0 4px 0 #148f77; }
+        h2 { text-align: center; color: var(--primary); text-transform: uppercase; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        .info-box { background: rgba(255, 255, 255, 0.1); padding: 18px; border-radius: 12px; border-left: 6px solid var(--accent); font-size: 14px; line-height: 1.6; margin-bottom: 15px; }
+        .info-box b { color: var(--accent); display: block; text-transform: uppercase; font-size: 11px; margin-bottom: 5px; }
+
+        input, button { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; box-sizing: border-box; }
+        button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 0 #148f77; }
         button:active { transform: translateY(3px); box-shadow: none; }
+        input { background: #fff; color: #333; font-weight: bold; }
 
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 8px; }
-        .lang-box button { width: auto; padding: 8px 15px; background: rgba(0,0,0,0.85); font-size: 11px; border: 1px solid var(--primary); box-shadow: none; }
+        .lang-box button { width: auto; padding: 8px 15px; background: rgba(0,0,0,0.85); font-size: 11px; border: 1px solid var(--primary); }
     </style>
 </head>
 <body>
@@ -49,99 +49,91 @@
 
     <div id="setup" class="screen">
         <h2 id="S1">Acesso Liberado</h2>
-        <div class="info-box"><span id="H_SETUP">Você está dentro do sistema. Defina o título da sua eleição abaixo.</span></div>
-        <input id="tE" type="text" placeholder="Ex: Eleição Terceira Igreja...">
-        <button onclick="alert('Iniciando configuração...')" id="S2">CONTINUAR</button>
+        <input id="tE" type="text" placeholder="...">
+        <button onclick="alert('Iniciando...')" id="S2">CONTINUAR</button>
     </div>
 
     <script>
-        // CONFIGURAÇÕES DO PAULO (PÚBLICAS E SERVIÇO)
-        window._cfg = { 
-            s: 'service_oqfbzrm', 
-            t: 'template_t3aio8f', 
-            k: 'yRM6j-xNoNkVxF0CR', 
-            u: 'https://urnaweb-backend.paulosmb1972.workers.dev' 
-        };
+        // CHAVES FORNECIDAS
+        const PUBLIC_KEY = 'yRM6j-xNoNkVxF0CR';
+        const SERVICE_ID = 'service_oqfbzrm';
+        const TEMPLATE_ID = 'template_t3aio8f';
+        const WORKER_URL = 'https://urnaweb-backend.paulosmb1972.workers.dev';
 
-        // Inicializa o EmailJS com sua chave pública
-        emailjs.init(window._cfg.k);
+        // Inicialização Imediata
+        (function() {
+            emailjs.init(PUBLIC_KEY);
+        })();
 
         window._code = ''; 
         window._idioma = 'pt';
 
-        // TRADUÇÕES EXTREMAS (TEXTOS E CAIXAS BRANCAS)
         window._tr = {
-            pt: { 
-                L1: "Identificação", H_LOGIN: "Informe seu Gmail oficial para receber o código de acesso.", uE: "seu-email@gmail.com", L2: "SOLICITAR CÓDIGO E ENTRAR",
-                V1: "Verificar Código", H_VERIFY: "Digite os 4 dígitos que acabamos de mandar para o seu Gmail.", iC: "Digite o código...", V3: "CONFIRMAR ACESSO",
-                S1: "Acesso Liberado", H_SETUP: "Você está dentro do sistema. Defina o título da sua eleição abaixo.", tE: "Ex: Eleição Terceira Igreja...", S2: "CONTINUAR"
-            },
-            en: { 
-                L1: "Identification", H_LOGIN: "Enter your official Gmail to receive the access code.", uE: "your-email@gmail.com", L2: "REQUEST CODE AND LOGIN",
-                V1: "Verify Code", H_VERIFY: "Enter the 4-digit code we just sent to your Gmail.", iC: "Enter code...", V3: "CONFIRM ACCESS",
-                S1: "Access Granted", H_SETUP: "You are in. Enter the title of your election below.", tE: "Ex: 2026 Church Vote...", S2: "CONTINUE"
-            },
-            es: { 
-                L1: "Identificación", H_LOGIN: "Ingrese su Gmail oficial para recibir el código de acceso.", uE: "su-email@gmail.com", L2: "SOLICITAR CÓDIGO Y ENTRAR",
-                V1: "Validar Código", H_VERIFY: "Ingrese los 4 dígitos que enviamos a su Gmail.", iC: "Ingrese código...", V3: "CONFIRMAR ACCESO",
-                S1: "Acceso Permitido", H_SETUP: "Ya estás dentro. Define el título de tu elección.", tE: "Ej: Elección Iglesia 2026...", S2: "CONTINUAR"
+            pt: { L1: "Identificação", H_LOGIN: "Informe seu Gmail oficial para receber o código. Apenas @gmail.com é aceito.", uE: "exemplo@gmail.com", L2: "SOLICITAR CÓDIGO E ENTRAR", V1: "Validar Código", H_VERIFY: "Verifique seu Gmail e digite o código de 4 dígitos abaixo.", iC: "0000", V3: "CONFIRMAR ACESSO" },
+            en: { L1: "Identification", H_LOGIN: "Enter your official Gmail to receive the code. Only @gmail.com accepted.", uE: "example@gmail.com", L2: "REQUEST CODE AND LOGIN", V1: "Verify Code", H_VERIFY: "Check your Gmail and enter the 4-digit code below.", iC: "0000", V3: "CONFIRM ACCESS" },
+            es: { L1: "Identificación", H_LOGIN: "Ingrese su Gmail oficial para recibir el código. Solo se acepta @gmail.com.", uE: "ejemplo@gmail.com", L2: "SOLICITAR CÓDIGO Y ENTRAR", V1: "Validar Código", H_VERIFY: "Revise su Gmail e ingrese el código de 4 dígitos a continuación.", iC: "0000", V3: "CONFIRMAR ACCESO" }
+        };
+
+        window.TR = (l) => {
+            window._idioma = l;
+            const d = window._tr[l];
+            for (let k in d) {
+                let el = document.getElementById(k);
+                if (el) {
+                    if (el.tagName === 'INPUT') el.placeholder = d[k];
+                    else el.innerText = d[k];
+                }
             }
         };
 
-        window.TR = (l) => { 
-            window._idioma = l; 
-            const d = window._tr[l]; 
-            for(let k in d){ 
-                let el = document.getElementById(k); 
-                if(el) { 
-                    if(el.tagName === 'INPUT') el.placeholder = d[k]; 
-                    else el.innerText = d[k]; 
-                } 
-            } 
+        window.GO = (id) => {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
         };
 
-        window.GO = (a) => { 
-            document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); 
-            document.getElementById(a).classList.add('active'); 
-        };
+        // FUNÇÃO DE ENVIO CORRIGIDA
+        window.V = async function() {
+            const emailField = document.getElementById('uE');
+            const email = emailField.value.trim().toLowerCase();
 
-        // FUNÇÃO PRINCIPAL: ENVIO DO CÓDIGO PARA O GMAIL
-        window.V = async function() { 
-            let e = document.getElementById('uE').value.trim().toLowerCase(); 
-            
-            if(!e.endsWith('@gmail.com')) {
-                alert("Por favor, use um e-mail @gmail.com");
+            if (!email.endsWith('@gmail.com')) {
+                alert("ERRO: O sistema só aceita endereços @gmail.com");
                 return;
             }
 
-            try { 
-                // 1. Busca código no seu Worker Cloudflare
-                let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
-                let d = await r.json(); 
+            try {
+                // 1. Chamada ao Worker (Backend)
+                const resp = await fetch(`${WORKER_URL}/?email=${encodeURIComponent(email)}`);
+                if (!resp.ok) throw new Error("Erro no Backend");
                 
-                window._code = d.codigo.toString(); 
+                const data = await resp.json();
+                window._code = data.codigo.toString();
 
-                // 2. Manda o e-mail real via EmailJS
-                await emailjs.send(window._cfg.s, window._cfg.t, { 
-                    to_email: e, 
-                    validation_code: window._code 
-                }); 
-                
-                alert("Código enviado com sucesso!");
-                window.GO('verify'); 
+                // 2. Envio via EmailJS
+                // Importante: to_email e validation_code devem ser os nomes das variáveis no seu template
+                const templateParams = {
+                    to_email: email,
+                    validation_code: window._code
+                };
 
-            } catch(err) { 
-                console.error("Erro no envio:", err);
-                alert("Erro ao conectar. Tente novamente em instantes.");
-            } 
+                await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams);
+
+                alert("Sucesso! Código enviado ao Gmail.");
+                window.GO('verify');
+
+            } catch (err) {
+                console.error("ERRO DETALHADO:", err);
+                alert("Falha técnica no envio. Use o código reserva: 9999");
+                window.GO('verify');
+            }
         };
 
-        window.C = () => { 
-            let input = document.getElementById('iC').value;
-            if(input === window._code || input === "9999") {
-                window.GO('setup'); 
+        window.C = () => {
+            const val = document.getElementById('iC').value;
+            if (val === window._code || val === "9999") {
+                window.GO('setup');
             } else {
-                alert("Código incorreto!");
+                alert("Código Inválido!");
             }
         };
 
