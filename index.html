@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UrnaWeb INDEX5 PRO - ULTRA TRADUÇÃO</title>
+    <title>UrnaWeb Digital - INDEX5 PRO</title>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
@@ -12,15 +12,22 @@
         .screen { display: none; padding: 20px; width: 100%; max-width: 600px; box-sizing: border-box; }
         .active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
         h2 { text-align: center; color: var(--primary); text-transform: uppercase; margin-bottom: 15px; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
         .ultra-explanation { background: rgba(255, 255, 255, 0.1); padding: 18px; border-radius: 12px; border-left: 6px solid var(--accent); font-size: 14px; line-height: 1.6; margin-bottom: 15px; color: #fff; text-align: justify; }
         .ultra-explanation b { color: var(--accent); display: block; text-transform: uppercase; font-size: 12px; margin-bottom: 5px; letter-spacing: 1px; }
+
         input, button { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 0 #148f77; }
         button:active { transform: translateY(3px); box-shadow: none; }
+        
         input { background: #fff; color: #333; font-weight: bold; }
+        .img-preview { width: 140px !important; height: 140px !important; object-fit: cover; border-radius: 15px; display: none; margin: 15px auto; border: 4px solid white; }
         .lang-box { position: fixed; top: 10px; right: 10px; display: flex; gap: 8px; z-index: 100; }
         .lang-box button { width: auto; padding: 8px 15px; font-size: 11px; background: rgba(0,0,0,0.8); border: 1px solid var(--primary); }
+        #gridUrna { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; width: 100%; }
+        .cand-card { background: white; color: #333; padding: 10px; border-radius: 12px; text-align: center; border: 4px solid transparent; cursor: pointer; transition: 0.2s; }
+        .result-item { background: rgba(255,255,255,0.1); padding: 10px; margin: 5px 0; border-radius: 8px; display: flex; justify-content: space-between; }
     </style>
 </head>
 <body>
@@ -32,74 +39,131 @@
     </div>
 
     <div id="login" class="screen active">
-        <h2 id="L1">PORTAL DE IDENTIFICAÇÃO DIGITAL</h2>
+        <h2 id="L1">PORTAL DIGITAL</h2>
         <div class="ultra-explanation">
-            <b id="H_LOGIN_T">ULTRA EXPLICAÇÃO:</b>
+            <b id="H_LOGIN_T">EXPLICAÇÃO:</b>
             <span id="H_LOGIN">Este sistema utiliza o seu e-mail para validar seus créditos de uso e identificar sua conta oficial. Novos usuários ganham 3 eleições gratuitas para testes iniciais.</span>
         </div>
-        <div class="ultra-explanation">
-            <b id="E_EMAIL_TIT">COMO PREENCHER O E-MAIL:</b>
-            <span id="E_EMAIL_TXT">Digite seu endereço de Gmail oficial. É através dele que você receberá o código de segurança de 4 dígitos para desbloquear o sistema.</span>
-        </div>
         <input id="uE" type="email" placeholder="Gmail...">
-        <button onclick="V()" id="L2">SOLICITAR CÓDIGO DE ACESSO</button>
+        <button onclick="V()" id="L2">SOLICITAR CÓDIGO</button>
+    </div>
+
+    <div id="verify" class="screen">
+        <h2 id="V1">VERIFICAÇÃO</h2>
+        <input id="iC" type="text" maxlength="4" placeholder="0000">
+        <button onclick="C()" id="V3">ENTRAR</button>
+    </div>
+
+    <div id="setup" class="screen">
+        <h2 id="S1">TÍTULO</h2>
+        <input id="tE" type="text" placeholder="Título da Eleição...">
+        <button onclick="N()">PRÓXIMO</button>
+    </div>
+
+    <div id="setupCargo" class="screen">
+        <h2 id="C1">CADASTRO</h2>
+        <input id="nC" type="text" placeholder="Cargo (Ex: Presidente)">
+        <input id="nCand" type="text" placeholder="Candidato">
+        <button onclick="A()">ADICIONAR CANDIDATO</button>
+        <button onclick="SAVE()" style="background:var(--success)">SALVAR CARGO</button>
+        <button onclick="START_VOTE()" style="background:var(--primary); margin-top:30px">ABRIR URNA</button>
+    </div>
+
+    <div id="urna" class="screen">
+        <h2 id="uT"></h2>
+        <div id="gridUrna"></div>
+        
+        <button onclick="VOTE()" style="background:var(--success); height: 80px; margin-top: 40px;" id="btnVoto">CONFIRMAR VOTO</button>
+        
+        <button onclick="END_VOTE()" style="background:var(--danger); margin-top: 80px; opacity: 0.8;" id="btnFim">ENCERRAR VOTAÇÃO (ADMIN)</button>
+    </div>
+
+    <div id="results" class="screen">
+        <h2 id="R1">RESULTADO FINAL</h2>
+        <div id="finalData"></div>
+        <button onclick="location.reload()" style="background:var(--primary)">NOVA ELEIÇÃO</button>
     </div>
 
     <script>
         const CFG = { s: "service_oqfbzrm", t: "template_t3aio8f", k: "yRM6j-xNoNkVxF0CR", u: "https://urnaweb-backend.paulosmb1972.workers.dev" };
         emailjs.init(CFG.k);
         
+        let _code=''; let _idioma='pt'; let _data=[]; let _temp=null; let _title=''; let _fotoTemp=''; let _idx=0; let _sel=null;
+
         const DICT = {
             pt: {
-                L1: "PORTAL DE IDENTIFICAÇÃO DIGITAL",
-                H_LOGIN_T: "ULTRA EXPLICAÇÃO:",
-                H_LOGIN: "Este sistema utiliza o seu e-mail para validar seus créditos de uso e identificar sua conta oficial. Novos usuários ganham 3 eleições gratuitas para testes iniciais.",
-                E_EMAIL_TIT: "COMO PREENCHER O E-MAIL:",
-                E_EMAIL_TXT: "Digite seu endereço de Gmail oficial. É através dele que você receberá o código de segurança de 4 dígitos para desbloquear o sistema.",
-                L2: "SOLICITAR CÓDIGO DE ACESSO",
-                uE: "Digite seu Gmail aqui..."
+                L1: "PORTAL DE IDENTIFICAÇÃO DIGITAL", H_LOGIN: "Este sistema utiliza o seu e-mail para validar seus créditos de uso e identificar sua conta oficial. Novos usuários ganham 3 eleições gratuitas para testes iniciais.",
+                btnVoto: "CONFIRMAR VOTO", btnFim: "ENCERRAR VOTAÇÃO (ADMIN)", R1: "AUDITORIA DE VOTOS"
             },
             en: {
-                L1: "DIGITAL IDENTITY PORTAL",
-                H_LOGIN_T: "ULTRA EXPLANATION:",
-                H_LOGIN: "This system uses your email to validate usage credits and identify your official account. New users get 3 free elections for initial testing.",
-                E_EMAIL_TIT: "HOW TO FILL THE EMAIL:",
-                E_EMAIL_TXT: "Enter your official Gmail address. This is how you will receive the 4-digit security code to unlock the system.",
-                L2: "REQUEST ACCESS CODE",
-                uE: "Enter your Gmail here..."
+                L1: "DIGITAL IDENTITY PORTAL", H_LOGIN: "This system uses your email to validate usage credits and identify your official account. New users get 3 free elections for initial testing.",
+                btnVoto: "CONFIRM VOTE", btnFim: "END ELECTION (ADMIN)", R1: "VOTING AUDIT"
             },
             es: {
-                L1: "PORTAL DE IDENTIDAD DIGITAL",
-                H_LOGIN_T: "ULTRA EXPLICACIÓN:",
-                H_LOGIN: "Este sistema utiliza su correo electrónico para validar sus créditos de uso e identificar su cuenta oficial. Los nuevos usuarios obtienen 3 elecciones gratuitas para pruebas iniciales.",
-                E_EMAIL_TIT: "CÓMO COMPLETAR EL CORREO:",
-                E_EMAIL_TXT: "Ingrese su dirección oficial de Gmail. A través de ella recibirá el código de seguridad de 4 dígitos para desbloquear el sistema.",
-                L2: "SOLICITAR CÓDIGO DE ACCESO",
-                uE: "Ingrese su Gmail aquí..."
+                L1: "PORTAL DE IDENTIDAD DIGITAL", H_LOGIN: "Este sistema utiliza su correo electrónico para validar sus créditos de uso e identificar su cuenta oficial. Los nuevos usuarios obtienen 3 elecciones gratuitas para pruebas iniciales.",
+                btnVoto: "CONFIRMAR VOTO", btnFim: "FINALIZAR ELECCIÓN (ADMIN)", R1: "AUDITORÍA DE VOTOS"
             }
         };
 
         function TR(l) {
-            const d = DICT[l];
-            for (let k in d) {
-                const el = document.getElementById(k);
-                if (el) {
-                    if (el.tagName === 'INPUT') el.placeholder = d[k];
-                    else el.innerText = d[k];
-                }
+            _idioma = l; const d = DICT[l];
+            for (let k in d) { const el = document.getElementById(k); if (el) el.innerText = d[k]; }
+        }
+
+        function GO(a) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(a).classList.add('active'); }
+        async function V() { GO('verify'); } // Simplificado para teste
+        function C() { GO('setup'); }
+        function N() { _title = document.getElementById('tE').value; GO('setupCargo'); }
+        function A() { if(!_temp) _temp = { n: document.getElementById('nC').value, c: [] }; _temp.c.push({ n: document.getElementById('nCand').value, v: 0, f: '' }); alert("Ok!"); }
+        function SAVE() { if(_temp) _data.push(_temp); _temp = null; alert("Salvo!"); }
+
+        function START_VOTE() { 
+            if(_data.length === 0) return alert("Adicione cargos!");
+            _idx = 0; RENDER_URNA(); GO('urna'); 
+        }
+
+        function RENDER_URNA() {
+            const cargo = _data[_idx];
+            document.getElementById('uT').innerText = cargo.n.toUpperCase();
+            const grid = document.getElementById('gridUrna');
+            grid.innerHTML = '';
+            cargo.c.forEach((can, i) => {
+                const div = document.createElement('div');
+                div.className = 'cand-card';
+                div.innerHTML = `<b>${can.n}</b>`;
+                div.onclick = () => { _sel = i; document.querySelectorAll('.cand-card').forEach(c => c.style.borderColor = 'transparent'); div.style.borderColor = 'var(--success)'; };
+                grid.appendChild(div);
+            });
+        }
+
+        function VOTE() {
+            if(_sel === null) return alert("Selecione!");
+            _data[_idx].c[_sel].v++;
+            _sel = null; _idx++;
+            if(_idx < _data.length) RENDER_URNA();
+            else { alert("Voto Gravado!"); _idx = 0; RENDER_URNA(); }
+        }
+
+        // FUNÇÃO DE ENCERRAMENTO COM SENHA
+        function END_VOTE() {
+            const senha = prompt("DIGITE A SENHA DE ADMINISTRADOR PARA ENCERRAR:");
+            if(senha === "0000") {
+                SHOW_RESULTS();
+            } else {
+                alert("SENHA INCORRETA! ACESSO NEGADO.");
             }
         }
 
-        async function V() {
-            const email = document.getElementById('uE').value.trim();
-            if(!email.includes('@')) return;
-            try {
-                const response = await fetch(`${CFG.u}/?email=${encodeURIComponent(email)}`);
-                const data = await response.json();
-                const code = data.codigo.toString();
-                await emailjs.send(CFG.s, CFG.t, { to_email: email, validation_code: code });
-                alert("Código enviado!");
-            } catch(e) { alert("Use o código 9999."); }
+        function SHOW_RESULTS() {
+            const container = document.getElementById('finalData');
+            container.innerHTML = `<h3>${_title}</h3>`;
+            _data.forEach(cargo => {
+                container.innerHTML += `<div style="margin-top:20px; color:var(--accent)"><b>${cargo.n}</b></div>`;
+                cargo.c.forEach(can => {
+                    container.innerHTML += `<div class="result-item"><span>${can.n}</span> <b>${can.v} votos</b></div>`;
+                });
+            });
+            GO('results');
         }
     </script>
 </body>
