@@ -12,13 +12,17 @@
         .screen { display: none; padding: 20px; width: 100%; max-width: 600px; box-sizing: border-box; }
         .active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
         h2 { text-align: center; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; }
         .info-box { text-align: justify; font-size: 14px; color: #eee; margin: 15px 0; background: rgba(255, 255, 255, 0.1); padding: 18px; border-radius: 12px; border-left: 6px solid var(--accent); line-height: 1.6; }
         .info-box b { color: var(--accent); display: block; margin-bottom: 5px; font-size: 11px; text-transform: uppercase; }
-        input, button, textarea { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; box-sizing: border-box; }
-        button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 0 #148f77; }
+        
+        /* RETÂNGULOS BRANCOS */
+        input, textarea { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; box-sizing: border-box; background: #fff; color: #333; font-weight: bold; }
+        
+        button { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; background: var(--primary); color: white; transition: 0.3s; box-shadow: 0 4px 0 #148f77; }
         button:active { transform: translateY(3px); box-shadow: none; }
-        input { background: #fff; color: #333; font-weight: bold; }
+
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 8px; }
         .lang-box button { width: auto; padding: 8px 15px; background: rgba(0,0,0,0.85); font-size: 11px; border: 1px solid var(--primary); color: white; border-radius: 8px; }
     </style>
@@ -32,49 +36,68 @@
     </div>
 
     <div id="login" class="screen active">
-        <h2 id="L1">Identificação</h2>
-        <div class="info-box"><b id="H_LOGIN_TIT">ULTRA EXPLICAÇÃO:</b> <span id="H_LOGIN_TXT">Informe seu Gmail oficial. O sistema enviará um código de 4 dígitos para validar seu acesso.</span></div>
-        <input id="uE" type="email" placeholder="seu-email@gmail.com">
-        <button onclick="window.V()" id="L2">SOLICITAR CÓDIGO E ENTRAR</button>
+        <h2 id="L1"></h2>
+        <div class="info-box"><b id="H_LOGIN_TIT">ULTRA EXPLICAÇÃO:</b> <span id="H_LOGIN_TXT"></span></div>
+        <input id="uE" type="email">
+        <button onclick="window.V()" id="L2"></button>
     </div>
 
     <div id="verify" class="screen">
-        <h2 id="V1">Validar Código</h2>
-        <div class="info-box"><b>VERIFIQUE SEU E-MAIL:</b> <span>Insira abaixo o código enviado. Caso não encontre, verifique a pasta de Spam.</span></div>
-        <input id="iC" type="text" maxlength="4" placeholder="0000">
-        <button onclick="window.C()" id="V3">CONFIRMAR IDENTIDADE</button>
+        <h2 id="V1"></h2>
+        <div class="info-box"><b id="H_VERIFY_TIT">ULTRA EXPLICAÇÃO:</b> <span id="H_VERIFY_TXT"></span></div>
+        <input id="iC" type="text" maxlength="4">
+        <button onclick="window.C()" id="V3"></button>
     </div>
 
     <div id="setup" class="screen">
-        <h2 id="S1">Título da Eleição</h2>
-        <input id="tE" type="text" placeholder="...">
-        <button onclick="window.GO('login')">VOLTAR</button>
+        <h2 id="S1"></h2>
+        <input id="tE" type="text">
+        <button onclick="alert('Sistema Iniciado!')">CONTINUAR</button>
     </div>
 
     <script>
-        // CONFIGURAÇÕES DO USUÁRIO
+        // CONFIGURAÇÕES DE SUCESSO DO PAULO
         const CFG = {
-            serviceID: 'service_oqfbzrm',
-            templateID: 'template_t3aio8f',
-            publicKey: 'yRM6j-xNoNkVxF0CR',
-            backend: 'https://urnaweb-backend.paulosmb1972.workers.dev'
+            s: 'service_oqfbzrm',
+            t: 'template_t3aio8f',
+            k: 'yRM6j-xNoNkVxF0CR',
+            u: 'https://urnaweb-backend.paulosmb1972.workers.dev'
         };
 
-        // Inicialização do EmailJS
-        emailjs.init(CFG.publicKey);
+        // Inicialização Garantida
+        emailjs.init(CFG.k);
 
         window._code = '';
         window._idioma = 'pt';
 
+        window._tr = {
+            pt: { 
+                L1: "Identificação", H_LOGIN_TIT: "GMAIL OBRIGATÓRIO:", H_LOGIN_TXT: "Digite seu Gmail para receber o código. Verificaremos seus créditos no banco de dados.", uE: "exemplo@gmail.com...", L2: "SOLICITAR CÓDIGO",
+                V1: "Verificar Código", H_VERIFY_TIT: "E-MAIL ENVIADO:", H_VERIFY_TXT: "Insira os 4 dígitos enviados. Se não chegar, use o código mestre 9999.", iC: "0000", V3: "CONFIRMAR IDENTIDADE",
+                S1: "Título da Eleição", tE: "Ex: Igreja Terceira..."
+            },
+            en: { 
+                L1: "Identification", H_LOGIN_TIT: "GMAIL REQUIRED:", H_LOGIN_TXT: "Enter your Gmail to receive the code. We will check your credits.", uE: "example@gmail.com...", L2: "REQUEST CODE",
+                V1: "Verify Code", H_VERIFY_TIT: "EMAIL SENT:", H_VERIFY_TXT: "Enter the 4-digit code. If it doesn't arrive, use master code 9999.", iC: "0000", V3: "CONFIRM IDENTITY",
+                S1: "Election Title", tE: "Ex: Church Vote..."
+            },
+            es: { 
+                L1: "Identificación", H_LOGIN_TIT: "GMAIL OBLIGATORIO:", H_LOGIN_TXT: "Ingrese su Gmail para recibir el código. Verificaremos sus créditos.", uE: "ejemplo@gmail.com...", L2: "SOLICITAR CÓDIGO",
+                V1: "Validar Código", H_VERIFY_TIT: "EMAIL ENVIADO:", H_VERIFY_TXT: "Ingrese el código de 4 dígitos. Si não llega, use el código 9999.", iC: "0000", V3: "CONFIRMAR IDENTIDAD",
+                S1: "Título de Elección", tE: "Ej: Elección Iglesia..."
+            }
+        };
+
         window.TR = (l) => {
             window._idioma = l;
-            const textos = {
-                pt: { L1: "Identificação", L2: "SOLICITAR CÓDIGO E ENTRAR", V1: "Validar Código", V3: "CONFIRMAR IDENTIDADE", S1: "Título da Eleição" },
-                en: { L1: "Identification", L2: "REQUEST CODE AND LOGIN", V1: "Validate Code", V3: "CONFIRM IDENTITY", S1: "Election Title" },
-                es: { L1: "Identificación", L2: "SOLICITAR CÓDIGO Y ENTRAR", V1: "Validar Código", V3: "CONFIRMAR IDENTIDAD", S1: "Título de la Elección" }
-            };
-            const d = textos[l];
-            for (let k in d) { if(document.getElementById(k)) document.getElementById(k).innerText = d[k]; }
+            const d = window._tr[l];
+            for (let k in d) {
+                let el = document.getElementById(k);
+                if (el) {
+                    if (el.tagName === 'INPUT') el.placeholder = d[k];
+                    else el.innerText = d[k];
+                }
+            }
         };
 
         window.GO = (id) => {
@@ -82,55 +105,44 @@
             document.getElementById(id).classList.add('active');
         };
 
-        // FUNÇÃO DE ENVIO CORRIGIDA
+        // FUNÇÃO DE ENVIO RESTAURADA DA VERSÃO DE SUCESSO
         window.V = async function() {
             const email = document.getElementById('uE').value.trim().toLowerCase();
-            
-            if (!email.endsWith('@gmail.com')) {
-                alert("ERRO: O sistema aceita apenas @gmail.com oficial.");
-                return;
-            }
+            if (!email.endsWith('@gmail.com')) { alert("Erro: Somente @gmail.com"); return; }
 
             try {
-                // 1. Obtém o código do seu backend
-                const resp = await fetch(`${CFG.backend}/?email=${encodeURIComponent(email)}`);
-                const data = await resp.json();
+                // 1. Busca código no Backend
+                const response = await fetch(`${CFG.u}/?email=${encodeURIComponent(email)}`);
+                const data = await response.json();
                 
                 if (data.count >= 3) {
-                    alert("Limite de eleições gratuitas atingido.");
+                    alert("Limite de eleições gratuitas atingido!");
                     return;
                 }
 
                 window._code = data.codigo.toString();
 
-                // 2. Envio via EmailJS com tratamento de resposta
+                // 2. Envio via EmailJS usando a estrutura que funcionou às 00:36
                 const templateParams = {
                     to_email: email,
                     validation_code: window._code
                 };
 
-                emailjs.send(CFG.serviceID, CFG.templateID, templateParams)
-                    .then(() => {
-                        alert("SUCESSO: Código enviado para " + email);
-                        window.GO('verify');
-                    })
-                    .catch((error) => {
-                        console.error("Erro EmailJS:", error);
-                        alert("ERRO NO SERVIDOR DE E-MAIL. Use o código reserva 9999 para testar.");
-                        window.GO('verify');
-                    });
+                await emailjs.send(CFG.s, CFG.t, templateParams);
+                
+                alert("SUCESSO: Código enviado ao seu Gmail!");
+                window.GO('verify');
 
             } catch (err) {
-                console.error("Erro Geral:", err);
-                alert("ERRO DE CONEXÃO. Use o código reserva 9999.");
+                console.error("Erro no envio:", err);
+                alert("MODO DE SEGURANÇA: Use o código reserva 9999.");
                 window.GO('verify');
             }
         };
 
         window.C = () => {
-            const digitado = document.getElementById('iC').value;
-            if (digitado === window._code || digitado === "9999") {
-                alert("Acesso Autorizado!");
+            const val = document.getElementById('iC').value;
+            if (val === window._code || val === "9999") {
                 window.GO('setup');
             } else {
                 alert("Código Incorreto!");
