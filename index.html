@@ -21,18 +21,15 @@
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 0 #148f77; }
         button:active { transform: translateY(3px); box-shadow: none; }
         input { background: #fff; color: #333; font-weight: bold; }
+        textarea { height: 100px; resize: none; color: #333; background: #fff; }
 
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 8px; }
-        .lang-box button { width: auto; padding: 8px 15px; background: rgba(0,0,0,0.85); font-size: 11px; border: 1px solid var(--primary); color: white; border-radius: 8px; }
+        .lang-box button { width: auto; padding: 8px 15px; background: rgba(0,0,0,0.85); font-size: 11px; border: 1px solid var(--primary); color: white; border-radius: 8px; box-shadow: none; }
         
-        .pay-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
-        .price-tag { font-size: 28px; font-weight: bold; color: var(--accent); display: block; margin: 10px 0; text-align: center; }
-        .benefit-list { font-size: 13px; color: #ccc; margin-bottom: 15px; padding-left: 10px; list-style: none; }
-        .benefit-list li::before { content: "✔ "; color: var(--success); margin-right: 5px; }
-
         #areaImpressao { width: 480px; margin: 0 auto; background: white !important; color: #333 !important; padding: 30px; box-sizing: border-box; border: 1px solid #ddd; }
         .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; font-size: 12px; }
+        .pdf-table td { padding: 10px; border-bottom: 1px solid #eee; font-size: 14px; color: #333 !important; }
     </style>
 </head>
 <body>
@@ -44,48 +41,112 @@
     </div>
 
     <div id="login" class="screen active">
-        <h2 id="L1">Identificação</h2>
-        <div class="info-box"><b id="H_LOGIN_T">ULTRA EXPLICAÇÃO:</b> <span id="H_LOGIN">Informe seu Gmail para validar sua conta oficial. Novos usuários ganham 3 eleições gratuitas para testes iniciais de sistema.</span></div>
+        <h2 id="L1"></h2>
+        <div class="info-box">
+            <b id="H_LOGIN_T">EXPLICAÇÃO:</b>
+            <span id="H_LOGIN"></span>
+        </div>
         <input id="uE" type="email">
-        <button onclick="window.V()" id="L2">Entrar no Sistema</button>
+        <button onclick="window.GO('res')" id="L2"></button>
     </div>
 
-    <div id="pay" class="screen">
-        <h2 id="P1">Período Esgotado</h2>
-        <div class="info-box"><b id="H_PAY_T">ULTRA EXPLICAÇÃO:</b> <span id="H_PAY">Suas 3 eleições gratuitas acabaram. Escolha um plano abaixo para liberar novas votações completas.</span></div>
-        <div class="pay-card">
-            <h3 id="PL1">💎 Eleição Única</h3>
-            <ul class="benefit-list"><li id="B_PL1_1">Crédito para 1 eleição completa</li><li id="B_PL1_2">PDF A5 ilimitado</li><li id="B_PL1_3">Suporte a fotos</li></ul>
-            <span class="price-tag">R$ 30,00</span>
-            <button onclick="window.open('https://mpago.la/2maEAFx')" id="B1">Comprar Agora</button>
+    <div id="res" class="screen">
+        <h2 id="R_TITLE"></h2>
+        <div id="areaImpressao">
+            <div style="text-align:center; border-bottom:3px solid #0a2a66; padding-bottom:5px; margin-bottom:15px;">
+                <h2 id="pdf_h1" style="color:#0a2a66; margin:0; font-size:20px;">RELATÓRIO</h2>
+            </div>
+            <div id="pC">
+                </div>
+            <p id="pdf-audit" style="text-align:center; font-size:9px; color:#999; margin-top:10px;"></p>
         </div>
-        <div class="pay-card" style="border: 2px solid var(--accent);">
-            <p id="L_CUP" style="text-align:center; font-weight:bold;"></p>
-            <input id="cup" type="text">
-            <button onclick="window.K()" id="P2" style="background:var(--accent); color:black"></button>
+        <button onclick="window.PDF(false)" id="B_PDF_SIMPLE"></button>
+        <button onclick="window.PDF(true)" id="B_PDF_FULL"></button>
+        
+        <div class="feedback-box" style="margin-top:30px;">
+            <h3 id="F1" style="text-align:center;"></h3>
+            <div class="info-box"><b id="H_FEED_T">CONTATO:</b> <span id="H_FEED"></span></div>
+            <textarea id="txtSugestao"></textarea>
+            <button onclick="alert('Enviado')" id="F2"></button>
         </div>
-        <button onclick="location.reload()" style="background:none; border:1px solid white;" id="B_EXIT"></button>
+        <button onclick="location.reload()" id="B_EXIT_FINAL" style="background:var(--danger); margin-top:30px"></button>
     </div>
 
     <script>
-        window._cfg = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
-        
+        window._idioma = 'pt';
+        window._title = "ELEIÇÃO OFICIAL";
+
         window._tr = {
             pt: { 
-                L1: "Portal de Identificação Digital", H_LOGIN_T: "ULTRA EXPLICAÇÃO DO SISTEMA:", H_LOGIN: "Informe seu Gmail para validar sua conta. Novos usuários possuem 3 eleições grátis para testes iniciais de sistema.", uE: "Digite seu Gmail oficial aqui...", L2: "SOLICITAR ACESSO E ENTRAR",
-                P1: "Limite de Créditos Esgotado", H_PAY_T: "ULTRA EXPLICAÇÃO FINANCEIRA:", H_PAY: "Suas 3 eleições grátis acabaram. Escolha um plano abaixo para liberar o sistema para novas votações completas.", PL1: "💎 Eleição Única", B_PL1_1: "Crédito para 1 eleição completa", B_PL1_2: "Relatório PDF A5 ilimitado", B_PL1_3: "Suporte total a fotos", B1: "COMPRAR AGORA (R$ 30,00)", L_CUP: "Você possui um cupom?", cup: "Digite o código do cupom...", P2: "Ativar Cupom", B_EXIT: "Voltar ao Início"
+                L1: "Identificação do Usuário", H_LOGIN: "Informe seu Gmail oficial para validar seu acesso e créditos.", L2: "Entrar no Sistema",
+                R_TITLE: "Resultado Oficial", 
+                pdf_audit_label: "Emissão: ", 
+                B_PDF_SIMPLE: "PDF Sem Fotos", 
+                B_PDF_FULL: "PDF Com Fotos", 
+                F1: "Sugestões", 
+                H_FEED: "Deixe seu pedido abaixo.", 
+                H_FEED_T: "CONTATO:",
+                F2: "Enviar", 
+                B_EXIT_FINAL: "Sair Agora",
+                uE: "Digite seu Gmail aqui...",
+                txtSugestao: "Escreva aqui sua sugestão..."
             },
             en: { 
-                L1: "Digital Identity Portal", H_LOGIN_T: "ULTRA SYSTEM EXPLANATION:", H_LOGIN: "Enter your Gmail to validate your account. New users get 3 free elections for initial testing.", uE: "Type your official Gmail here...", L2: "REQUEST ACCESS AND ENTER",
-                P1: "Credit Limit Reached", H_PAY_T: "ULTRA FINANCIAL EXPLANATION:", H_PAY: "Your 3 free elections are over. Choose a plan below to unlock the system for new full polls.", PL1: "💎 Single Election", B_PL1_1: "Credit for 1 full election", B_PL1_2: "Unlimited A5 PDF report", B_PL1_3: "Full photo support", B1: "BUY NOW (R$ 30,00)", L_CUP: "Do you have a coupon?", cup: "Enter coupon code...", P2: "Activate Coupon", B_EXIT: "Go Back"
+                L1: "User Identification", H_LOGIN: "Enter your official Gmail to validate your access and credits.", L2: "Enter System",
+                R_TITLE: "Official Result", 
+                pdf_audit_label: "Issued on: ", 
+                B_PDF_SIMPLE: "PDF No Photos", 
+                B_PDF_FULL: "PDF With Photos", 
+                F1: "Suggestions", 
+                H_FEED: "Leave your request below.", 
+                H_FEED_T: "CONTACT:",
+                F2: "Send", 
+                B_EXIT_FINAL: "Exit Now",
+                uE: "Enter your Gmail here...",
+                txtSugestao: "Write your suggestion here..."
             },
             es: { 
-                L1: "Portal de Identidad Digital", H_LOGIN_T: "ULTRA EXPLICACIÓN DEL SISTEMA:", H_LOGIN: "Ingrese su Gmail para validar su cuenta. Nuevos usuarios tienen 3 elecciones gratis para pruebas iniciales.", uE: "Escriba su Gmail oficial aquí...", L2: "SOLICITAR ACCESO Y ENTRAR",
-                P1: "Límite de Créditos Agotado", H_PAY_T: "ULTRA EXPLICACIÓN FINANCIERA:", H_PAY: "Tus 3 elecciones gratis terminaron. Elige un plan a continuación para desbloquear el sistema.", PL1: "💎 Elección Individual", B_PL1_1: "Crédito para 1 elección completa", B_PL1_2: "Informe PDF A5 ilimitado", B_PL1_3: "Soporte total para fotos", B1: "COMPRAR AHORA (R$ 30,00)", L_CUP: "¿Tienes un cupón?", cup: "Escribe el código aquí...", P2: "Activar Cupón", B_EXIT: "Volver al Inicio"
+                L1: "Identificación de Usuario", H_LOGIN: "Ingrese su Gmail oficial para validar su acceso y créditos.", L2: "Entrar al Sistema",
+                R_TITLE: "Resultado Oficial", 
+                pdf_audit_label: "Emisión: ", 
+                B_PDF_SIMPLE: "PDF Sin Fotos", 
+                B_PDF_FULL: "PDF Con Fotos", 
+                F1: "Sugerencias", 
+                H_FEED: "Deje su pedido abajo.", 
+                H_FEED_T: "CONTACTO:",
+                F2: "Enviar", 
+                B_EXIT_FINAL: "Salir Ahora",
+                uE: "Ingrese su Gmail aquí...",
+                txtSugestao: "Escriba su sugerencia aquí..."
             }
         };
 
-        window.TR = (l) => { window._idioma = l; for(let k in window._tr[l]){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT') el.placeholder = window._tr[l][k]; else el.innerText = window._tr[l][k]; } } };
+        window.TR = (l) => {
+            window._idioma = l;
+            const d = window._tr[l];
+            for (let k in d) {
+                const el = document.getElementById(k);
+                if (el) {
+                    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = d[k];
+                    else el.innerText = d[k];
+                }
+            }
+            window.UPDATE_AUDIT();
+        };
+
+        window.GO = (id) => {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            window.TR(window._idioma);
+        };
+
+        window.UPDATE_AUDIT = () => {
+            const label = window._tr[window._idioma].pdf_audit_label;
+            document.getElementById('pdf-audit').innerText = label + new Date().toLocaleString();
+        };
+
+        window.PDF = (fotos) => { alert("PDF Gerado!"); };
+
         window.TR('pt');
     </script>
 </body>
