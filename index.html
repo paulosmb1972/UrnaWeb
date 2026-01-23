@@ -9,171 +9,156 @@
     <style>
         :root { --primary: #1abc9c; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; }
         body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-        
         .screen { display: none; padding: 20px; width: 100%; max-width: 600px; box-sizing: border-box; }
         .active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        h2 { text-align: center; color: var(--primary); text-transform: uppercase; margin-bottom: 5px; letter-spacing: 1px; }
+        h2 { text-align: center; color: var(--primary); text-transform: uppercase; margin-bottom: 15px; }
 
-        /* CAIXA DE EXPLICAÇÃO ULTRA EXTREMA - DIDÁTICA */
+        /* CAIXA DE EXPLICAÇÃO ULTRA EXTREMA */
         .ultra-explanation { 
             background: rgba(255, 255, 255, 0.1); 
-            padding: 18px; 
+            padding: 15px; 
             border-radius: 12px; 
             border-left: 6px solid var(--accent); 
-            font-size: 13px; 
+            font-size: 14px; 
             line-height: 1.6; 
-            margin-bottom: 20px; 
+            margin-bottom: 15px; 
             color: #fff; 
-            text-align: justify; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
         }
-        .ultra-explanation b { color: var(--accent); display: block; margin-bottom: 5px; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; }
+        .ultra-explanation b { color: var(--accent); display: block; text-transform: uppercase; font-size: 12px; margin-bottom: 4px; }
 
         input, button { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; box-sizing: border-box; }
-        button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 0 #148f77; }
+        button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #148f77; }
         button:active { transform: translateY(3px); box-shadow: none; }
-        
-        input { background: #fff; color: #333; border: 2px solid transparent; font-weight: bold; }
-        input:focus { border-color: var(--primary); outline: none; }
+        input { background: #fff; color: #333; font-weight: bold; }
 
-        .img-preview { width: 140px !important; height: 140px !important; object-fit: cover; border-radius: 15px; display: none; margin: 15px auto; border: 4px solid white; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
-        
-        .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 8px; }
-        .lang-box button { width: auto; padding: 8px 15px; background: rgba(0,0,0,0.8); font-size: 11px; border: 1px solid var(--primary); color: white; box-shadow: none; }
+        .img-preview { width: 140px !important; height: 140px !important; object-fit: cover; border-radius: 15px; display: none; margin: 15px auto; border: 4px solid white; }
+        .lang-box { position: fixed; top: 10px; right: 10px; display: flex; gap: 5px; }
+        .lang-box button { width: auto; padding: 5px 10px; font-size: 10px; background: #000; }
     </style>
 </head>
 <body>
 
     <div class="lang-box">
-        <button onclick="window.TR('pt')">Português</button>
-        <button onclick="window.TR('en')">English</button>
-        <button onclick="window.TR('es')">Español</button>
+        <button onclick="window.TR('pt')">PT</button>
+        <button onclick="window.TR('en')">EN</button>
+        <button onclick="window.TR('es')">ES</button>
     </div>
 
     <div id="login" class="screen active">
-        <h2 id="L1"></h2>
-        <div class="ultra-explanation" id="H_LOGIN"></div>
-        <div class="ultra-explanation"><b id="E_EMAIL_TIT"></b> <span id="E_EMAIL_TXT"></span></div>
-        <input id="uE" type="email" placeholder="email@gmail.com">
-        <button onclick="window.V()" id="L2"></button>
+        <h2 id="txt_L1">Portal de Identificação Digital</h2>
+        <div class="ultra-explanation">
+            <b id="txt_H_LOGIN_T">ULTRA EXPLICAÇÃO DO ACESSO:</b>
+            <span id="txt_H_LOGIN">Para garantir a segurança, usamos seu Gmail para validar créditos. Novos usuários ganham 3 eleições grátis.</span>
+        </div>
+        <div class="ultra-explanation">
+            <b id="txt_E_EMAIL_T">COMO PREENCHER:</b>
+            <span id="txt_E_EMAIL">Digite seu e-mail Gmail oficial para receber o código de 4 dígitos.</span>
+        </div>
+        <input id="uE" type="email" placeholder="Seu e-mail Gmail...">
+        <button onclick="window.V()" id="txt_L2">SOLICITAR CÓDIGO DE ACESSO</button>
     </div>
 
     <div id="verify" class="screen">
-        <h2 id="V1"></h2>
-        <div class="ultra-explanation" id="H_VERIFY"></div>
-        <div class="ultra-explanation"><b id="E_CODE_TIT"></b> <span id="E_CODE_TXT"></span></div>
+        <h2 id="txt_V1">Verificação de Segurança</h2>
+        <div class="ultra-explanation">
+            <b id="txt_H_VERIFY_T">ULTRA EXPLICAÇÃO DO CÓDIGO:</b>
+            <span id="txt_H_VERIFY">Insira os 4 números enviados ao seu e-mail. Se houver erro de rede, use o CÓDIGO MESTRE 9999.</span>
+        </div>
         <input id="iC" type="text" maxlength="4" placeholder="0000">
-        <button onclick="window.C()" id="V3"></button>
+        <button onclick="window.C()" id="txt_V3">VALIDAR E ENTRAR NO SISTEMA</button>
     </div>
 
     <div id="setup" class="screen">
-        <h2 id="S1"></h2>
-        <div class="ultra-explanation" id="H_SETUP"></div>
-        <div class="ultra-explanation"><b id="E_TIT_TIT"></b> <span id="E_TIT_TXT"></span></div>
-        <input id="tE" type="text" placeholder="...">
-        <button onclick="window.N()" id="S2"></button>
+        <h2 id="txt_S1">Título da Votação</h2>
+        <div class="ultra-explanation">
+            <b id="txt_H_SETUP_T">ULTRA EXPLICAÇÃO DO TÍTULO:</b>
+            <span id="txt_H_SETUP">O nome que você digitar aqui sairá no topo do relatório oficial em PDF.</span>
+        </div>
+        <input id="tE" type="text" placeholder="Ex: Eleição Igreja 2026">
+        <button onclick="window.N()" id="txt_S2">SALVAR E CADASTRAR CANDIDATOS</button>
     </div>
 
     <div id="setupCargo" class="screen">
-        <h2 id="C1"></h2>
-        <div class="ultra-explanation" id="H_CARGO"></div>
-        
-        <div class="ultra-explanation"><b id="E_CARGO_TIT"></b> <span id="E_CARGO_TXT"></span></div>
-        <input id="nC" type="text">
-        
-        <div class="ultra-explanation"><b id="E_CAND_TIT"></b> <span id="E_CAND_TXT"></span></div>
-        <input id="nCand" type="text">
-        
-        <div class="ultra-explanation"><b id="E_FOTO_TIT"></b> <span id="E_FOTO_TXT"></span></div>
-        <div style="border:2px dashed #1abc9c; padding:20px; text-align:center; cursor:pointer; border-radius:10px;" onclick="document.getElementById('fileIn').click()">
-            📷 <br><span id="INSTR_FOTO"></span>
+        <h2 id="txt_C1">Registro de Candidatos</h2>
+        <div class="ultra-explanation">
+            <b id="txt_H_CARGO_T">ULTRA EXPLICAÇÃO DO CADASTRO:</b>
+            <span id="txt_H_CARGO">Defina o cargo, o nome e a foto. Clique em Adicionar e depois em Salvar Cargo para gravar.</span>
+        </div>
+        <input id="nC" type="text" placeholder="Cargo (Ex: Presidente)">
+        <input id="nCand" type="text" placeholder="Nome do Candidato">
+        <div style="border:2px dashed #1abc9c; padding:20px; text-align:center; cursor:pointer;" onclick="document.getElementById('fileIn').click()">
+            📷 <br><span id="txt_INSTR_FOTO">Toque para anexar foto (140px)</span>
             <img id="imgPrev" class="img-preview">
         </div>
         <input type="file" id="fileIn" hidden onchange="window.PREV(this)">
-        
-        <button onclick="window.A()" id="C2"></button>
-        <button onclick="window.SAVE()" id="C3" style="background:var(--success)"></button>
-        <button onclick="window.START_URNA()" id="C4" style="background:var(--primary); margin-top:20px"></button>
+        <button onclick="window.A()" id="txt_C2">ADICIONAR À LISTA</button>
+        <button onclick="window.SAVE()" id="txt_C3" style="background:var(--success)">SALVAR ESTE CARGO</button>
+        <button onclick="window.START_URNA()" id="txt_C4" style="background:var(--primary); margin-top:20px">CONCLUIR E ABRIR URNA</button>
     </div>
 
     <script>
         (function(){
-            // CONFIGURAÇÕES GERAIS
-            window._idioma = 'pt';
-            window._data = [];
-            window._temp = null;
+            // Configuração e Funções
+            const CFG = { s: "service_oqfbzrm", t: "template_t3aio8f", k: "yRM6j-xNoNkVxF0CR", u: "https://urnaweb-backend.paulosmb1972.workers.dev" };
+            emailjs.init(CFG.k);
+            window._code=''; window._idioma='pt'; window._data=[]; window._temp=null; window._title=''; window._fotoTemp='';
 
-            // DICIONÁRIO ULTRA EXTREMO DE TRADUÇÃO E EXPLICAÇÃO
+            // Dicionário para Tradução (IDs batendo com os prefixos txt_)
             window._tr = {
-                pt: { 
-                    L1: "PORTAL DE IDENTIFICAÇÃO DIGITAL",
-                    H_LOGIN: "ULTRA EXPLICAÇÃO: Este sistema utiliza seu Gmail para validar sua identidade e gerenciar seus créditos de votação. Cada eleição é única e segura.",
-                    E_EMAIL_TIT: "COMO PREENCHER O E-MAIL:", 
-                    E_EMAIL_TXT: "Digite seu Gmail oficial. É através dele que você receberá o código de 4 dígitos para desbloquear o sistema e salvar seus relatórios futuros.",
-                    L2: "SOLICITAR CÓDIGO DE ACESSO",
-                    
-                    V1: "VERIFICAÇÃO DE SEGURANÇA",
-                    H_VERIFY: "ULTRA EXPLICAÇÃO: A verificação garante que apenas você possa configurar esta eleição. Verifique sua caixa de entrada no Gmail.",
-                    E_CODE_TIT: "COMO USAR O CÓDIGO:", 
-                    E_CODE_TXT: "Abra seu Gmail, localize o e-mail enviado pela UrnaWeb e digite os 4 números abaixo. Se não receber, use o código mestre de suporte 9999.",
-                    V3: "VALIDAR E ENTRAR NO PAINEL",
-
-                    S1: "CONFIGURAÇÃO DA VOTAÇÃO",
-                    H_SETUP: "ULTRA EXPLICAÇÃO: O título é o nome oficial que aparecerá no topo do relatório PDF final de apuração. Escolha um nome claro e profissional.",
-                    E_TIT_TIT: "COMO DEFINIR O TÍTULO:", 
-                    E_TIT_TXT: "Exemplo: 'Eleição para Diretoria 2026' ou 'Votação de Novos Diáconos'. Este campo identifica o propósito do evento.",
-                    S2: "SALVAR TÍTULO E CADASTRAR NOMES",
-
-                    C1: "REGISTRO DE CARGOS E CANDIDATOS",
-                    H_CARGO: "ULTRA EXPLICAÇÃO: Organize a votação por grupos. Primeiro cadastre todos os nomes de um cargo (ex: Presidente), salve, e depois passe para o próximo cargo.",
-                    E_CARGO_TIT: "COMO DEFINIR O CARGO:", 
-                    E_CARGO_TXT: "Digite a função que está em disputa. Exemplo: Presidente, Pastor ou Secretário.",
-                    E_CAND_TIT: "COMO DEFINIR O CANDIDATO:", 
-                    E_CAND_TXT: "Digite o nome completo da pessoa que deseja cadastrar para o cargo acima.",
-                    E_FOTO_TIT: "COMO ANEXAR A FOTO:", 
-                    E_FOTO_TXT: "Toque no ícone da câmera. O sistema fará um ajuste automático para 140px, garantindo que a foto fique perfeita na tela da urna eletrônica.",
-                    INSTR_FOTO: "Toque aqui para escolher a foto",
-                    C2: "ADICIONAR ESTE CANDIDATO",
-                    C3: "SALVAR E FINALIZAR CARGO ATUAL",
-                    C4: "CONCLUIR TUDO E ABRIR URNA"
+                pt: {
+                    txt_L1: "Portal de Identificação Digital", txt_L2: "SOLICITAR CÓDIGO DE ACESSO",
+                    txt_H_LOGIN_T: "ULTRA EXPLICAÇÃO DO ACESSO:", txt_H_LOGIN: "Para garantir a segurança, usamos seu Gmail para validar créditos. Novos usuários ganham 3 eleições grátis.",
+                    txt_V1: "Verificação de Segurança", txt_V3: "VALIDAR E ENTRAR NO SISTEMA",
+                    txt_S1: "Título da Votação", txt_S2: "SALVAR E CADASTRAR CANDIDATOS",
+                    txt_C1: "Registro de Candidatos", txt_C2: "ADICIONAR À LISTA", txt_C3: "SALVAR ESTE CARGO", txt_C4: "CONCLUIR E ABRIR URNA",
+                    txt_INSTR_FOTO: "Toque para anexar foto (140px)"
                 },
-                en: { /* ... Versão English ... */ },
-                es: { /* ... Versão Español ... */ }
+                en: {
+                    txt_L1: "Digital Identity Portal", txt_L2: "REQUEST ACCESS CODE",
+                    txt_H_LOGIN_T: "ULTRA ACCESS EXPLANATION:", txt_H_LOGIN: "To ensure security, we use your Gmail to validate credits. New users get 3 free elections.",
+                    txt_V1: "Security Verification", txt_V3: "VALIDATE AND ENTER SYSTEM",
+                    txt_S1: "Election Title", txt_S2: "SAVE & REGISTER CANDIDATES",
+                    txt_C1: "Candidate Registration", txt_C2: "ADD TO LIST", txt_C3: "SAVE THIS POSITION", txt_C4: "FINISH AND OPEN URN",
+                    txt_INSTR_FOTO: "Tap to attach photo (140px)"
+                }
             };
 
-            // FUNÇÃO DE TRADUÇÃO DINÂMICA
-            window.TR = (l) => { 
-                window._idioma = l; 
-                let d = window._tr[l];
-                for(let k in d){ 
-                    let el = document.getElementById(k);
-                    if(el) {
-                        if(el.tagName === 'INPUT') el.placeholder = d[k];
-                        else el.innerText = d[k];
-                    }
-                } 
+            window.TR = (l) => {
+                window._idioma = l;
+                const d = window._tr[l];
+                for (let k in d) {
+                    const el = document.getElementById(k);
+                    if (el) el.innerText = d[k];
+                }
             };
 
-            // NAVEGAÇÃO ENTRE TELAS
-            window.GO = (a) => { 
+            window.GO = (a) => {
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                 document.getElementById(a).classList.add('active');
-                window.TR(window._idioma);
             };
 
-            // FUNÇÕES DE APOIO (STUBS PARA O PRÓXIMO PASSO)
-            window.V = () => { alert("Simulando envio de código..."); window.GO('verify'); };
-            window.C = () => { window.GO('setup'); };
-            window.N = () => { window.GO('setupCargo'); };
-            window.PREV = (i) => { if (i.files && i.files[0]) { let r = new FileReader(); r.onload = (e) => { document.getElementById('imgPrev').src = e.target.result; document.getElementById('imgPrev').style.display='block'; }; r.readAsDataURL(i.files[0]); } };
-            window.A = () => { alert("Candidato adicionado!"); };
-            window.SAVE = () => { alert("Cargo salvo!"); };
+            // Funções de Ação
+            window.V = async function() {
+                const email = document.getElementById('uE').value.trim();
+                if(!email.includes('@')) return;
+                try {
+                    const response = await fetch(`${CFG.u}/?email=${encodeURIComponent(email)}`);
+                    const data = await response.json();
+                    window._code = data.codigo.toString();
+                    await emailjs.send(CFG.s, CFG.t, { to_email: email, validation_code: window._code });
+                    window.GO('verify');
+                } catch(e) { window.GO('verify'); }
+            };
+
+            window.C = () => { if(document.getElementById('iC').value === window._code || document.getElementById('iC').value === "9999") window.GO('setup'); else alert("Código incorreto!"); };
+            window.N = () => { window._title = document.getElementById('tE').value; window.GO('setupCargo'); };
+            window.PREV = (i) => { if (i.files && i.files[0]) { let r = new FileReader(); r.onload = (e) => { window._fotoTemp = e.target.result; document.getElementById('imgPrev').src = window._fotoTemp; document.getElementById('imgPrev').style.display='block'; }; r.readAsDataURL(i.files[0]); } };
+            window.A = () => { if(!window._temp) window._temp = { n: document.getElementById('nC').value, c: [] }; window._temp.c.push({ n: document.getElementById('nCand').value, v: 0, f: window._fotoTemp }); alert("Adicionado!"); };
+            window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp = null; alert("Cargo Salvo!"); };
             window.START_URNA = () => { alert("Urna aberta!"); };
 
-            // INICIALIZAÇÃO
-            window.TR('pt');
         })();
     </script>
 </body>
