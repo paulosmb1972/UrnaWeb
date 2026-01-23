@@ -25,7 +25,7 @@
         input { background: #fff; color: #333; font-weight: bold; }
         
         #gridUrna { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; width: 100%; }
-        .cand-card { background: white; color: #333; padding: 15px; border-radius: 12px; text-align: center; border: 4px solid transparent; cursor: pointer; font-size: 18px; }
+        .cand-card { background: white; color: #333; padding: 15px; border-radius: 12px; text-align: center; border: 4px solid transparent; cursor: pointer; font-size: 18px; font-weight: bold; }
         
         .btn-confirm-voto { background: var(--success) !important; height: 90px !important; font-size: 20px !important; box-shadow: 0 6px 0 #239b56 !important; }
         .btn-shutdown-admin { background: var(--danger) !important; margin-top: 150px !important; box-shadow: 0 4px 0 #b03a2e !important; display: flex; align-items: center; justify-content: center; gap: 15px; font-size: 15px !important; opacity: 0.9; }
@@ -98,3 +98,228 @@
             <span id="U_HELP">Toque na foto ou nome do seu candidato escolhido. A borda ficará verde. Depois clique no botão verde abaixo para confirmar.</span>
         </div>
         <div id="gridUrna"></div>
+        <button onclick="window.VOTE()" id="U1" class="btn-confirm-voto">CONFIRMAR MEU VOTO AGORA</button>
+        <button onclick="window.END_S()" class="btn-shutdown-admin" id="U2">⏻ ENCERRAR VOTAÇÃO GERAL (ADMIN)</button>
+    </div>
+
+    <div id="res" class="screen">
+        <h2 id="R1">RESULTADO E AUDITORIA</h2>
+        <div id="areaImpressao"><div id="pC"></div></div>
+        <button onclick="window.PDF()" id="R2" style="background:var(--success); margin-top:10px">GERAR PDF FINAL (A5)</button>
+        <button onclick="location.reload()" id="R3" style="background:var(--danger); margin-top:30px">SAIR DO SISTEMA</button>
+    </div>
+
+    <script>
+        (function(){
+            const CFG = { s: "service_oqfbzrm", t: "template_t3aio8f", k: "yRM6j-xNoNkVxF0CR", u: "https://urnaweb-backend.paulosmb1972.workers.dev" };
+            emailjs.init(CFG.k);
+
+            window._code=''; window._data=[]; window._temp=null; window._idx=0; window._sel=null; window._title=''; window._idioma='pt';
+
+            const DICT = {
+                pt: {
+                    L1: "PORTAL DE IDENTIFICAÇÃO DIGITAL",
+                    H_LOGIN_T: "ULTRA EXPLICAÇÃO DO ACESSO:",
+                    H_LOGIN: "Este sistema utiliza o seu e-mail para validar seus créditos de uso e identificar sua conta oficial. Novos usuários ganham 3 eleições gratuitas para testes iniciais.",
+                    E_EMAIL_TIT: "COMO PREENCHER O E-MAIL:",
+                    E_EMAIL_TXT: "Digite seu endereço de Gmail oficial. É através dele que você receberá o código de segurança de 4 dígitos para desbloquear o sistema.",
+                    uE: "Digite seu Gmail aqui...",
+                    L2: "SOLICITAR CÓDIGO DE ACESSO",
+                    V1: "VERIFICAÇÃO DE SEGURANÇA",
+                    H_VERIFY_T: "ULTRA EXPLICAÇÃO DO CÓDIGO:",
+                    H_VERIFY: "Insira os 4 números enviados para o seu e-mail. Caso o e-mail não chegue por falha de rede, você pode usar o CÓDIGO MESTRE 9999 para continuar seus testes.",
+                    iC: "Digite os 4 dígitos...",
+                    V3: "VALIDAR E ENTRAR NO SISTEMA",
+                    S1: "CONFIGURAÇÃO DA VOTAÇÃO",
+                    H_SETUP_T: "ULTRA EXPLICAÇÃO DO TÍTULO:",
+                    H_SETUP: "O nome definido aqui será o título mestre que aparecerá no topo do relatório oficial em PDF e nas auditorias de votos.",
+                    tE: "Ex: Eleição Terceira Igreja 2026",
+                    S2: "SALVAR TÍTULO E CONTINUAR",
+                    C1: "REGISTRO DE CANDIDATOS",
+                    H_CARGO_T: "ULTRA EXPLICAÇÃO DO CADASTRO:",
+                    H_CARGO: "Organize por grupos. Primeiro cadastre o cargo (ex: Presidente), adicione os candidatos desse cargo e clique em SALVAR CARGO.",
+                    nC: "Nome do Cargo (Ex: Pastor)",
+                    nCand: "Nome do Candidato",
+                    C2: "ADICIONAR CANDIDATO À LISTA",
+                    C3: "SALVAR E FINALIZAR ESTE CARGO",
+                    C4: "CONCLUIR TUDO E ABRIR URNA",
+                    U_HELP_T: "INSTRUÇÃO AO ELEITOR:",
+                    U_HELP: "Toque na foto ou nome do seu candidato escolhido. A borda ficará verde. Depois clique no botão verde abaixo para confirmar.",
+                    U1: "CONFIRMAR MEU VOTO AGORA",
+                    U2: "⏻ ENCERRAR VOTAÇÃO GERAL (ADMIN)",
+                    R1: "RESULTADO E AUDITORIA",
+                    R2: "GERAR PDF FINAL (A5)",
+                    R3: "SAIR DO SISTEMA",
+                    alert_email: "CÓDIGO ENVIADO AO SEU GMAIL!",
+                    alert_suporte: "MODO DE SEGURANÇA: USE O CÓDIGO 9999.",
+                    alert_code_err: "CÓDIGO INCORRETO!",
+                    alert_cargo: "CARGO SALVO!",
+                    alert_cand: "CANDIDATO ADICIONADO!",
+                    alert_empty: "CADASTRE DADOS PRIMEIRO!",
+                    alert_voto: "VOTO CONFIRMADO COM SUCESSO!",
+                    alert_sel: "SELECIONE UM CANDIDATO!",
+                    prompt_pass: "SEGURANÇA: DIGITE A SENHA ADMIN (0000):",
+                    alert_pass_err: "SENHA INCORRETA!",
+                    pdf_cargo_title: "CARGO: "
+                },
+                en: {
+                    L1: "DIGITAL IDENTITY PORTAL",
+                    H_LOGIN_T: "ULTRA ACCESS EXPLANATION:",
+                    H_LOGIN: "This system uses your email to validate usage credits and identify your official account. New users get 3 free elections for initial testing.",
+                    E_EMAIL_TIT: "HOW TO FILL THE EMAIL:",
+                    E_EMAIL_TXT: "Enter your official Gmail address. This is how you will receive the 4-digit security code to unlock the system.",
+                    uE: "Enter your Gmail here...",
+                    L2: "REQUEST ACCESS CODE",
+                    V1: "SECURITY VERIFICATION",
+                    H_VERIFY_T: "ULTRA CODE EXPLANATION:",
+                    H_VERIFY: "Enter the 4 numbers sent to your email. If the email doesn't arrive due to network failure, you can use MASTER CODE 9999 to continue.",
+                    iC: "Enter 4 digits...",
+                    V3: "VALIDATE AND ENTER SYSTEM",
+                    S1: "VOTING CONFIGURATION",
+                    H_SETUP_T: "ULTRA TITLE EXPLANATION:",
+                    H_SETUP: "The name set here will be the master title that appears at the top of the official PDF report and voting audits.",
+                    tE: "Ex: 2026 Church Election",
+                    S2: "SAVE TITLE AND CONTINUE",
+                    C1: "CANDIDATE REGISTRATION",
+                    H_CARGO_T: "ULTRA REGISTRATION EXPLANATION:",
+                    H_CARGO: "Organize by groups. First register the position (e.g. President), add candidates for that position and click SAVE POSITION.",
+                    nC: "Position Name (Ex: Pastor)",
+                    nCand: "Candidate Name",
+                    C2: "ADD CANDIDATE TO LIST",
+                    C3: "SAVE AND FINISH THIS POSITION",
+                    C4: "FINISH ALL AND OPEN URN",
+                    U_HELP_T: "VOTER INSTRUCTION:",
+                    U_HELP: "Tap the photo or name of your chosen candidate. The border will turn green. Then click the green button below to confirm.",
+                    U1: "CONFIRM MY VOTE NOW",
+                    U2: "⏻ END GLOBAL VOTING (ADMIN)",
+                    R1: "RESULTS AND AUDIT",
+                    R2: "GENERATE FINAL PDF (A5)",
+                    R3: "EXIT SYSTEM",
+                    alert_email: "CODE SENT TO YOUR GMAIL!",
+                    alert_suporte: "SECURITY MODE: USE CODE 9999.",
+                    alert_code_err: "INCORRECT CODE!",
+                    alert_cargo: "POSITION SAVED!",
+                    alert_cand: "CANDIDATE ADDED!",
+                    alert_empty: "REGISTER DATA FIRST!",
+                    alert_voto: "VOTE SUCCESSFULLY CONFIRMED!",
+                    alert_sel: "SELECT A CANDIDATE!",
+                    prompt_pass: "SECURITY: ENTER ADMIN PASSWORD (0000):",
+                    alert_pass_err: "INCORRECT PASSWORD!",
+                    pdf_cargo_title: "POSITION: "
+                },
+                es: {
+                    L1: "PORTAL DE IDENTIDAD DIGITAL",
+                    H_LOGIN_T: "ULTRA EXPLICACIÓN DE ACCESO:",
+                    H_LOGIN: "Este sistema utiliza su correo para validar sus créditos e identificar su cuenta. Nuevos usuarios obtienen 3 elecciones gratis para pruebas.",
+                    E_EMAIL_TIT: "CÓMO COMPLETAR EL CORREO:",
+                    E_EMAIL_TXT: "Ingrese su dirección oficial de Gmail. Recibirá un código de seguridad de 4 dígitos para desbloquear el sistema.",
+                    uE: "Ingrese su Gmail aquí...",
+                    L2: "SOLICITAR CÓDIGO DE ACCESO",
+                    V1: "VERIFICACIÓN DE SEGURIDAD",
+                    H_VERIFY_T: "ULTRA EXPLICACIÓN DEL CÓDIGO:",
+                    H_VERIFY: "Ingrese los 4 números enviados a su correo. Si falla, puede usar el CÓDIGO MAESTRO 9999 para continuar sus pruebas.",
+                    iC: "Ingrese los 4 dígitos...",
+                    V3: "VALIDAR E ENTRAR AL SISTEMA",
+                    S1: "CONFIGURACIÓN DE VOTACIÓN",
+                    H_SETUP_T: "ULTRA EXPLICACIÓN DEL TÍTULO:",
+                    H_SETUP: "El nombre definido aquí será el título maestro que aparecerá en la parte superior del informe oficial en PDF.",
+                    tE: "Ej: Elección Iglesia 2026",
+                    S2: "GUARDAR TÍTULO Y CONTINUAR",
+                    C1: "REGISTRO DE CANDIDATOS",
+                    H_CARGO_T: "ULTRA EXPLICACIÓN DEL REGISTRO:",
+                    H_CARGO: "Organice por grupos. Primero registre el cargo (ej: Presidente), agregue los candidatos y haga clic en GUARDAR CARGO.",
+                    nC: "Nombre del Cargo (Ej: Pastor)",
+                    nCand: "Nombre del Candidato",
+                    C2: "AÑADIR CANDIDATO A LA LISTA",
+                    C3: "GUARDAR Y FINALIZAR ESTE CARGO",
+                    C4: "CONCLUIR TODO Y ABRIR URNA",
+                    U_HELP_T: "INSTRUCCIÓN AL VOTANTE:",
+                    U_HELP: "Toque la foto o nombre de su candidato. El borde se volverá verde. Luego haga clic en el botón verde para confirmar.",
+                    U1: "CONFIRMAR MI VOTO AHORA",
+                    U2: "⏻ FINALIZAR VOTACIÓN (ADMIN)",
+                    R1: "RESULTADO Y AUDITORÍA",
+                    R2: "GENERAR PDF FINAL (A5)",
+                    R3: "SALIR DEL SISTEMA",
+                    alert_email: "¡CÓDIGO ENVIADO A SU GMAIL!",
+                    alert_suporte: "MODO DE SEGURIDAD: EL CÓDIGO 9999.",
+                    alert_code_err: "¡CÓDIGO INCORRETO!",
+                    alert_cargo: "¡CARGO GUARDADO!",
+                    alert_cand: "¡CANDIDATO AÑADIDO!",
+                    alert_empty: "¡REGISTRE DATOS PRIMERO!",
+                    alert_voto: "¡VOTO CONFIRMADO CON ÉXITO!",
+                    alert_sel: "¡SELECCIONE UN CANDIDATO!",
+                    prompt_pass: "SEGURIDAD: INGRESE CONTRASEÑA ADMIN (0000):",
+                    alert_pass_err: "¡CONTRASEÑA INCORRECTA!",
+                    pdf_cargo_title: "CARGO: "
+                }
+            };
+
+            window.TR = (l) => {
+                window._idioma = l; const d = DICT[l];
+                for (let k in d) {
+                    const el = document.getElementById(k);
+                    if (el) {
+                        if (el.tagName === 'INPUT') el.placeholder = d[k];
+                        else el.innerText = d[k];
+                    }
+                }
+            };
+
+            window.GO = (a) => { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(a).classList.add('active'); };
+
+            window.V = async function() {
+                const e = document.getElementById('uE').value.trim();
+                if(!e.includes('@')) return;
+                try {
+                    const r = await fetch(`${CFG.u}/?email=${encodeURIComponent(e)}`);
+                    const d = await r.json(); window._code = d.codigo.toString();
+                    await emailjs.send(CFG.s, CFG.t, { to_email: e, validation_code: window._code });
+                    alert(DICT[window._idioma].alert_email); window.GO('verify');
+                } catch(err) { alert(DICT[window._idioma].alert_suporte); window.GO('verify'); }
+            };
+
+            window.C = () => { if(document.getElementById('iC').value === window._code || document.getElementById('iC').value === "9999") window.GO('setup'); else alert(DICT[window._idioma].alert_code_err); };
+            window.N = () => { window._title = document.getElementById('tE').value; window.GO('setupCargo'); };
+            window.ADD_C = () => { if(!window._temp) window._temp = { n: document.getElementById('nC').value, c: [] }; window._temp.c.push({ n: document.getElementById('nCand').value, v: 0 }); document.getElementById('nCand').value = ''; alert(DICT[window._idioma].alert_cand); };
+            window.SAVE_C = () => { if(window._temp) window._data.push(window._temp); window._temp = null; document.getElementById('nC').value = ''; alert(DICT[window._idioma].alert_cargo); };
+            window.START_U = () => { if(window._temp) window._data.push(window._temp); if(window._data.length === 0) return alert(DICT[window._idioma].alert_empty); window._idx = 0; window.RENDER_U(); window.GO('urna'); };
+
+            window.RENDER_U = () => {
+                const cargo = window._data[window._idx];
+                document.getElementById('uT').innerText = cargo.n.toUpperCase();
+                const g = document.getElementById('gridUrna'); g.innerHTML = '';
+                cargo.c.forEach((can, i) => {
+                    const d = document.createElement('div');
+                    d.className = 'cand-card'; d.innerHTML = `<b>${can.n}</b>`;
+                    d.onclick = () => { window._sel = i; document.querySelectorAll('.cand-card').forEach(c => c.style.borderColor = 'transparent'); d.style.borderColor = 'var(--success)'; };
+                    g.appendChild(d);
+                });
+            };
+
+            window.VOTE = () => {
+                if(window._sel === null) return alert(DICT[window._idioma].alert_sel);
+                window._data[window._idx].c[window._sel].v++;
+                window._sel = null; window._idx++;
+                if(window._idx < window._data.length) window.RENDER_U();
+                else { alert(DICT[window._idioma].alert_voto); window._idx = 0; window.RENDER_U(); }
+            };
+
+            window.END_S = () => {
+                const pass = prompt(DICT[window._idioma].prompt_pass);
+                if(pass === "0000") {
+                    const p = document.getElementById('pC');
+                    p.innerHTML = `<h3 style="text-align:center; border-bottom:2px solid #000; padding-bottom:10px;">${window._title.toUpperCase()}</h3>`;
+                    window._data.forEach(cargo => {
+                        p.innerHTML += `<div style="margin-top:15px; border-bottom:1px solid #000; background:#eee; padding:5px;"><b>${DICT[window._idioma].pdf_cargo_title}${cargo.n}</b></div>`;
+                        cargo.c.forEach(can => { p.innerHTML += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee;"><span>${can.n}</span> <b>${can.v}</b></div>`; });
+                    });
+                    window.GO('res');
+                } else if(pass !== null) { alert(DICT[window._idioma].alert_pass_err); }
+            };
+
+            window.PDF = () => { html2pdf().set({ margin: 10, jsPDF: { format: 'a5' } }).from(document.getElementById('areaImpressao')).save(); };
+
+        })();
+    </script>
+</body>
+</html>
