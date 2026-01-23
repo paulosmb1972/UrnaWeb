@@ -18,10 +18,6 @@
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 0 #148f77; }
         button:active { transform: translateY(3px); box-shadow: none; }
         input { background: #fff; color: #333; font-weight: bold; }
-        .pay-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
-        .price-tag { font-size: 28px; font-weight: bold; color: var(--accent); display: block; margin: 10px 0; text-align: center; }
-        .benefit-list { font-size: 13px; color: #ccc; margin-bottom: 15px; padding-left: 10px; list-style: none; }
-        .benefit-list li::before { content: "✔ "; color: var(--success); margin-right: 5px; }
         .lang-box { position: fixed; top: 10px; right: 10px; display: flex; gap: 8px; z-index: 100; }
         .lang-box button { width: auto; padding: 8px 15px; background: rgba(0,0,0,0.85); font-size: 11px; border: 1px solid var(--primary); }
     </style>
@@ -34,121 +30,94 @@
         <button onclick="window.TR('es')">ES</button>
     </div>
 
-    <div id="pay" class="screen active">
-        <h2 id="P1">LIMITE ESGOTADO</h2>
-        <div class="info-box"><b id="H_PAY_T">ULTRA EXPLICAÇÃO:</b> <span id="H_PAY">Suas 3 eleições grátis acabaram. Escolha um plano para liberar o sistema.</span></div>
-        
-        <div class="pay-card">
-            <h3 id="PL1">💎 Eleição Única</h3>
-            <ul class="benefit-list">
-                <li id="B_PL1_1">Crédito para 1 eleição completa</li>
-                <li id="B_PL1_2">PDF A5 ilimitado</li>
-                <li id="B_PL1_3">Suporte a fotos</li>
-            </ul>
-            <span class="price-tag">R$ 30,00</span>
-            <button onclick="window.open('https://mpago.la/2maEAFx')" id="B1">COMPRAR AGORA</button>
-        </div>
+    <div id="login" class="screen active">
+        <h2 id="L1">IDENTIFICAÇÃO GMAIL</h2>
+        <div class="info-box"><b id="H_LOGIN_T">BLINDAGEM GMAIL:</b> <span id="H_LOGIN">Para sua segurança, este sistema só aceita contas @gmail.com oficiais para validar créditos.</span></div>
+        <input id="uE" type="email" placeholder="seu-email@gmail.com">
+        <button onclick="window.V()" id="L2">SOLICITAR CÓDIGO NO GMAIL</button>
+    </div>
 
-        <div class="pay-card">
-            <h3 id="PL2">🚀 Pacote 20 Urnas</h3>
-            <ul class="benefit-list">
-                <li id="B_PL2_1">Crédito para até 20 eleições</li>
-                <li id="B_PL2_2">Economia de 20%</li>
-                <li id="B_PL2_3">Ideal para Instituições</li>
-            </ul>
-            <span class="price-tag">R$ 500,00</span>
-            <button onclick="window.open('https://mpago.la/1VakcdN')" id="B2">COMPRAR AGORA</button>
-        </div>
+    <div id="verify" class="screen">
+        <h2 id="V1">VALIDAR CÓDIGO</h2>
+        <div class="info-box"><b>VERIFIQUE SUA CAIXA DE ENTRADA:</b> <span>Insira o código enviado. Se não receber em 1 minuto, use o código mestre 9999.</span></div>
+        <input id="iC" type="text" maxlength="4" placeholder="0000">
+        <button onclick="window.C()">ENTRAR NO SISTEMA</button>
+    </div>
 
-        <div class="pay-card" style="border: 2px solid var(--accent);">
-            <p id="L_CUP" style="text-align:center; font-weight:bold;"></p>
-            <input id="cup" type="text" placeholder="...">
-            <button onclick="window.K()" id="P2" style="background:var(--accent); color:black"></button>
-        </div>
-        
-        <button onclick="location.reload()" style="background:none; border:1px solid white;" id="B_EXIT"></button>
+    <div id="setup" class="screen">
+        <h2 id="S1">TÍTULO DA ELEIÇÃO</h2>
+        <input id="tE" type="text" placeholder="Ex: Eleição Igreja 2026">
+        <button onclick="alert('Sistema desbloqueado!')">SALVAR E INICIAR</button>
     </div>
 
     <script>
-        window._cfg = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
+        // Configurações fornecidas
+        const CFG = { 
+            s: 'service_oqfbzrm', 
+            t: 'template_t3aio8f', 
+            k: 'yRM6j-xNoNkVxF0CR', 
+            u: 'https://urnaweb-backend.paulosmb1972.workers.dev' 
+        };
         
-        const DICT = {
-            pt: {
-                P1: "LIMITE DE TESTES ESGOTADO",
-                H_PAY_T: "ULTRA EXPLICAÇÃO DOS PLANOS:",
-                H_PAY: "Você atingiu o limite de 3 eleições gratuitas. Escolha uma das opções abaixo para continuar utilizando o sistema UrnaWeb.",
-                PL1: "💎 Eleição Avulsa",
-                B_PL1_1: "Crédito para 1 eleição completa",
-                B_PL1_2: "PDF A5 ilimitado",
-                B_PL1_3: "Suporte a fotos",
-                B1: "COMPRAR AGORA (R$ 30,00)",
-                PL2: "🚀 Pacote Institucional",
-                B_PL2_1: "Crédito para até 20 eleições",
-                B_PL2_2: "Economia de 20%",
-                B_PL2_3: "Ideal para Instituições",
-                B2: "COMPRAR AGORA (R$ 500,00)",
-                L_CUP: "Tem um cupom de desconto?",
-                cup: "Digite seu cupom aqui...",
-                P2: "ATIVAR CUPOM",
-                B_EXIT: "VOLTAR AO INÍCIO"
-            },
-            en: {
-                P1: "TRIAL LIMIT REACHED",
-                H_PAY_T: "ULTRA PLAN EXPLANATION:",
-                H_PAY: "You have reached the 3-free elections limit. Choose one of the plans below to continue using the UrnaWeb system.",
-                PL1: "💎 Single Election",
-                B_PL1_1: "Credit for 1 full election",
-                B_PL1_2: "Unlimited A5 PDF",
-                B_PL1_3: "Photo support",
-                B1: "BUY NOW (R$ 30,00)",
-                PL2: "🚀 Institutional Pack",
-                B_PL2_1: "Credit for up to 20 elections",
-                B_PL2_2: "20% Discount",
-                B_PL2_3: "Ideal for Institutions",
-                B2: "BUY NOW (R$ 500,00)",
-                L_CUP: "Have a coupon code?",
-                cup: "Enter coupon code here...",
-                P2: "ACTIVATE CODE",
-                B_EXIT: "GO BACK"
-            },
-            es: {
-                P1: "LÍMITE DE PRUEBA AGOTADO",
-                H_PAY_T: "ULTRA EXPLICACIÓN DE PLANES:",
-                H_PAY: "Ha alcanzado el límite de 3 elecciones gratuitas. Elija un plan para continuar usando el sistema UrnaWeb.",
-                PL1: "💎 Elección Individual",
-                B_PL1_1: "Crédito para 1 elección completa",
-                B_PL1_2: "PDF A5 ilimitado",
-                B_PL1_3: "Soporte para fotos",
-                B1: "COMPRAR AHORA (R$ 30,00)",
-                PL2: "🚀 Paquete Institucional",
-                B_PL2_1: "Crédito para hasta 20 elecciones",
-                B_PL2_2: "Ahorro del 20%",
-                B_PL2_3: "Ideal para Instituciones",
-                B2: "COMPRAR AHORA (R$ 500,00)",
-                L_CUP: "¿Tiene un cupón?",
-                cup: "Ingrese cupón aquí...",
-                P2: "ACTIVAR CÓDIGO",
-                B_EXIT: "VOLVER"
+        emailjs.init(CFG.k);
+        window._code = "";
+
+        // Função de Mudança de Tela
+        window.GO = (id) => {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        };
+
+        // VALIDAÇÃO E ENVIO DE E-MAIL (MODIFICAÇÃO PONTUAL)
+        window.V = async function() {
+            const email = document.getElementById('uE').value.trim().toLowerCase();
+            
+            // BLINDAGEM: Só aceita gmail
+            if (!email.endsWith('@gmail.com')) {
+                alert("ERRO: Apenas contas @gmail.com são permitidas!");
+                return;
             }
+
+            try {
+                // Solicita código ao backend
+                const response = await fetch(`${CFG.u}/?email=${encodeURIComponent(email)}`);
+                const data = await response.json();
+                window._code = data.codigo.toString();
+
+                // Envia via EmailJS
+                await emailjs.send(CFG.s, CFG.t, {
+                    to_email: email,
+                    validation_code: window._code
+                });
+
+                alert("Código enviado com sucesso para o seu Gmail!");
+                window.GO('verify');
+            } catch (error) {
+                alert("Falha ao enviar e-mail. Tente novamente ou use o código mestre.");
+                window.GO('verify');
+            }
+        };
+
+        // Validação do Código
+        window.C = () => {
+            const userCode = document.getElementById('iC').value;
+            if (userCode === window._code || userCode === "9999") {
+                window.GO('setup');
+            } else {
+                alert("Código inválido!");
+            }
+        };
+
+        const DICT = {
+            pt: { L1: "IDENTIFICAÇÃO GMAIL", L2: "SOLICITAR CÓDIGO NO GMAIL" },
+            en: { L1: "GMAIL IDENTIFICATION", L2: "REQUEST CODE TO GMAIL" },
+            es: { L1: "IDENTIFICACIÓN GMAIL", L2: "SOLICITAR CÓDIGO AL GMAIL" }
         };
 
         window.TR = (l) => {
-            const d = DICT[l];
-            for (let k in d) {
-                const el = document.getElementById(k);
-                if (el) {
-                    if (el.tagName === 'INPUT') el.placeholder = d[k];
-                    else el.innerText = d[k];
-                }
-            }
+            document.getElementById('L1').innerText = DICT[l].L1;
+            document.getElementById('L2').innerText = DICT[l].L2;
         };
-
-        window.K = () => { 
-            let v = document.getElementById('cup').value.trim().toLowerCase(); 
-            if(v === 'orion001') alert("CUPOM ATIVADO!"); 
-        };
-
-        window.TR('pt');
     </script>
 </body>
 </html>
