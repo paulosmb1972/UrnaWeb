@@ -164,4 +164,22 @@
 
         /* ================= VALIDAÇÃO RESTRITA ================= */
         window.C = () => {
-            let
+            let v = document.getElementById('iC').value.trim();
+            if (window._code !== "" && v === window._code) {
+                window.GO('setup');
+            } else {
+                alert("Código Inválido!");
+            }
+        };
+
+        window.N = () => {
+            window._title = document.getElementById('tE').value.trim();
+            if (!window._title) return;
+            alert("Sistema Pronto!");
+        };
+
+        window.TR('pt');
+    </script>
+</body>
+</html>
+
