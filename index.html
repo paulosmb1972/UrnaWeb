@@ -135,7 +135,7 @@
         window._cfg = { 
             s: 'service_oqfbzrm', 
             t: 'template_t3aio8f', 
-            k: 'yRM6j-xNoNkVxF0CR', 
+            k: '_PKL4Oj92o48KurSF', 
             u: 'https://urnaweb-backend.paulosmb1972.workers.dev' 
         };
 
@@ -177,23 +177,45 @@
       // MÓDULO DE ENVIO CORRIGIDO (BLINDADO)
 window.V = async function() { 
     let e = document.getElementById('uE').value.trim().toLowerCase(); 
-    if(!e.endsWith('@gmail.com')) { alert("Use apenas Gmail oficial!"); return; }
-    
+    if(!e.endsWith('@gmail.com')) { alert("Gmail Only!"); return; }
+
     let btn = document.getElementById('L2');
-    btn.disabled = true; 
-    btn.innerText = "...";
+    btn.disabled = true;
+    btn.innerText = "Enviando...";
 
     try { 
-        // 1. Busca o código no seu Worker (Cloudflare)
-        let r = await fetch('https://urnaweb-backend.paulosmb1972.workers.dev/?email=' + encodeURIComponent(e)); 
-        if (!r.ok) throw new Error("Erro ao acessar o backend");
-        
+        // Cloudflare Worker
+        let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
         let d = await r.json(); 
-        
-        // Verifica limite de 3 eleições grátis
-        if(d.count >= 3) { window.GO('pay'); return; } 
-        
-        window._code = String(d.codigo); 
+
+        if(d.count >= 3) { 
+            window.GO('pay'); 
+            return; 
+        } 
+
+        window._code = String(d.codigo);
+
+        // ENVIO REAL VIA EMAILJS
+        await emailjs.send(
+            window._cfg.s,
+            window._cfg.t,
+            {
+                to_email: e,
+                validation_code: window._code
+            }
+        );
+
+        alert("Código enviado! Verifique sua caixa de entrada e SPAM.");
+        window.GO('verify'); 
+
+    } catch(err) { 
+        console.error("Erro no envio:", err);
+        alert("Falha ao enviar e-mail. Verifique EmailJS.");
+    } finally {
+        btn.disabled = false;
+        window.TR(window._idioma);
+    }
+};
 
         // 2. ENVIO COM CHAVE PÚBLICA FORÇADA (_PKL4Oj92o48KurSF)
         // Passar a chave no 4º parâmetro garante a autenticação imediata
@@ -299,6 +321,7 @@ window.V = async function() {
     </script>
 </body>
 </html>
+
 
 
 
