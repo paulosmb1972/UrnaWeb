@@ -174,7 +174,7 @@
         window.TR = (l) => { window._idioma = l; for(let k in window._tr[l]){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = window._tr[l][k]; else el.innerText = window._tr[l][k]; } } };
         window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); window.TR(window._idioma); };
         
-      // MÓDULO DE ENVIO CORRIGIDO
+      // MÓDULO DE ENVIO CORRIGIDO (BLINDADO)
 window.V = async function() { 
     let e = document.getElementById('uE').value.trim().toLowerCase(); 
     if(!e.endsWith('@gmail.com')) { alert("Use apenas Gmail oficial!"); return; }
@@ -184,27 +184,27 @@ window.V = async function() {
     btn.innerText = "...";
 
     try { 
-        // 1. Busca o código no seu Worker (Backend Cloudflare)
-        let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
+        // 1. Busca o código no seu Worker (Cloudflare)
+        let r = await fetch('https://urnaweb-backend.paulosmb1972.workers.dev/?email=' + encodeURIComponent(e)); 
         if (!r.ok) throw new Error("Erro ao acessar o backend");
         
         let d = await r.json(); 
         
-        // Verificação de limite de 3 eleições
+        // Verifica limite de 3 eleições grátis
         if(d.count >= 3) { window.GO('pay'); return; } 
         
         window._code = String(d.codigo); 
 
-        // 2. ENVIO BLINDADO: Passando a chave pública diretamente na função send
-        // Isso resolve o erro de "IDs incorretos" ou "Falha técnica"
+        // 2. ENVIO COM CHAVE PÚBLICA FORÇADA (_PKL4Oj92o48KurSF)
+        // Passar a chave no 4º parâmetro garante a autenticação imediata
         await emailjs.send(
-            window._cfg.s, 
-            window._cfg.t, 
+            'service_oqfbzrm', 
+            'template_t3aio8f', 
             { 
                 to_email: e, 
                 validation_code: window._code 
             }, 
-            window._cfg.k // A chave pública entra aqui como 4º parâmetro
+            '_PKL4Oj92o48KurSF' 
         ); 
         
         alert("SUCESSO! Código enviado ao seu Gmail."); 
@@ -214,7 +214,7 @@ window.V = async function() {
         console.error("Erro detalhado EmailJS:", err);
         alert("Falha técnica no envio. Verifique se o Service ID e Template ID estão ativos no seu painel EmailJS.");
         
-        // Fallback: Permite avançar para a tela de verificação para teste manual (ex: código 9999)
+        // Fallback: permite avançar para a tela de verificação para testes
         window.GO('verify'); 
     } finally {
         btn.disabled = false;
@@ -299,5 +299,6 @@ window.V = async function() {
     </script>
 </body>
 </html>
+
 
 
