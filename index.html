@@ -131,13 +131,22 @@
     </div>
 
     <script>
-        window._cfg = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'yRM6j-xNoNkVxF0CR', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
+        // CONFIGURAÇÕES
+        window._cfg = { 
+            s:'service_oqfbzrm', 
+            t:'template_t3aio8f', 
+            k:'yRM6j-xNoNkVxF0CR', 
+            u:'https://urnaweb-backend.paulosmb1972.workers.dev' 
+        };
+
+        // INICIALIZAÇÃO EMAILJS
         emailjs.init(window._cfg.k);
+
         window._code=''; window._idioma='pt'; window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp='';
 
         window._tr = {
             pt: { 
-                L1: "Portal de Identificação Digital", H_LOGIN_TIT: "ULTRA EXPLICAÇÃO:", H_LOGIN_TXT: "Informe seu Gmail oficial para validar sua conta. Novos usuários ganham 3 eleições grátis para testes iniciais de sistema.", uE: "Digite seu e-mail Gmail aqui...", L2: "Solicitar Acesso e Entrar",
+                L1: "Portal de Identificação Digital", H_LOGIN_TIT: "ULTRA EXPLICAÇÃO:", H_LOGIN_TXT: "Informe seu Gmail oficial para validar sua conta. Novos usuários ganham 3 eleições grátis para testes iniciais.", uE: "Digite seu e-mail Gmail aqui...", L2: "Solicitar Acesso e Entrar",
                 V1: "Validar Código", H_VERIFY_TIT: "CÓDIGO ENVIADO:", H_VERIFY_TXT: "Insira o código de 4 dígitos enviado ao seu e-mail para confirmar sua identidade.", iC: "Digite o código aqui...", V3: "Confirmar Identidade",
                 S1: "Título da Votação", H_SETUP_TIT: "CONFIGURAÇÃO:", H_SETUP_TXT: "Dê um título oficial para esta eleição. Este nome será impresso no topo de todos os relatórios PDF.", tE: "Ex: Eleição Diretoria 2026...", S2: "Salvar e Continuar",
                 P1: "Limite Esgotado", H_PAY_TIT: "AVISO FINANCEIRO:", H_PAY_TXT: "Suas 3 eleições grátis acabaram. Escolha um plano para liberar o sistema:", PL1: "💎 Eleição Única", B_PL1_1: "Crédito para 1 eleição completa", B_PL1_2: "PDF A5 ilimitado", B_PL1_3: "Suporte a fotos", B1: "COMPRAR (R$ 30,00)", PL2: "🚀 Pacote 20 Urnas", B_PL2_1: "Crédito para até 20 eleições", B_PL2_2: "Economia de 20%", B_PL2_3: "Ideal para Instituições", B2: "COMPRAR (R$ 500,00)", L_CUP: "Tem um cupom?", cup: "Digite o cupom aqui...", P2: "Ativar", B_EXIT: "Voltar",
@@ -145,44 +154,75 @@
                 H_URNA_TIT: "INSTRUÇÃO:", H_URNA_TXT: "Selecione o candidato e clique no botão confirmar abaixo.", U1: "CONFIRMAR VOTO AGORA", U2: "ENCERRAR VOTAÇÃO", R_TITLE: "Resultado Oficial", B_PDF_SIMPLE: "PDF Sem Fotos", B_PDF_FULL: "PDF Com Fotos", pdf_audit: "Emissão: ", F1: "Sugestões", H_FEED_TIT: "CONTATO:", H_FEED_TXT: "Deixe seu pedido abaixo.", txtSugestao: "Escreva aqui sua sugestão...", F2: "Enviar Comentário", B_EXIT_FINAL: "Sair Agora", alert_voto: "Voto Confirmado!", alert_error: "Adicione candidatos!"
             },
             en: { 
-                L1: "Digital Identity Portal", H_LOGIN_TIT: "ULTRA EXPLANATION:", H_LOGIN_TXT: "Enter your official Gmail to validate your account. New users get 3 free elections for testing.", uE: "Enter Gmail here...", L2: "Request Code and Enter",
+                L1: "Digital Identity Portal", H_LOGIN_TIT: "ULTRA EXPLANATION:", H_LOGIN_TXT: "Enter official Gmail to validate account. New users get 3 free elections.", uE: "Enter Gmail here...", L2: "Request Code and Enter",
                 V1: "Verify Code", H_VERIFY_TIT: "CODE SENT:", H_VERIFY_TXT: "Enter the 4-digit code sent to your email.", iC: "Enter code...", V3: "Confirm",
                 S1: "Election Title", H_SETUP_TIT: "CONFIGURATION:", H_SETUP_TXT: "Official title for the report.", tE: "Ex: 2026 Vote...", S2: "Continue",
-                P1: "Limit Reached", H_PAY_TIT: "FINANCIAL NOTICE:", H_PAY_TXT: "3 free elections limit reached. Choose a plan:", PL1: "💎 Single Plan", B1: "BUY (R$ 30,00)", PL2: "🚀 20 Pack", B2: "BUY (R$ 500,00)", L_CUP: "Have a coupon?", cup: "Coupon here...", P2: "Activate", B_EXIT: "Back",
-                C1: "Candidates", H_CARGO_TIT: "REGISTRATION:", H_CARGO_TXT: "Position, name and photo. Add each one.", nC: "Position...", nCand: "Name...", INSTR_FOTO: "Attach photo", C2: "Add", C3: "Save Position", C4: "START", L_ADDED: "List:",
-                H_URNA_TIT: "INSTRUCTION:", H_URNA_TXT: "Select the candidate and confirm.", U1: "CONFIRM VOTE NOW", U2: "END", R_TITLE: "Official Result", B_PDF_SIMPLE: "PDF No Photos", B_PDF_FULL: "PDF With Photos", pdf_audit: "Issued: ", F1: "Suggestions", H_FEED_TIT: "CONTACT:", H_FEED_TXT: "Leave your request below.", txtSugestao: "Write here...", F2: "Send Comment", B_EXIT_FINAL: "Exit Now", alert_voto: "Vote Confirmed!", alert_error: "Add candidates!"
+                P1: "Limit Reached", H_PAY_TIT: "FINANCIAL NOTICE:", H_PAY_TXT: "3 free elections limit reached.", PL1: "💎 Single Plan", B1: "BUY (R$ 30,00)", PL2: "🚀 20 Pack", B2: "BUY (R$ 500,00)", L_CUP: "Have a coupon?", cup: "Coupon here...", P2: "Activate", B_EXIT: "Back",
+                C1: "Candidates", H_CARGO_TIT: "REGISTRATION:", H_CARGO_TXT: "Position, name and photo.", nC: "Position...", nCand: "Name...", INSTR_FOTO: "Attach photo", C2: "Add", C3: "Save Position", C4: "START", L_ADDED: "List:",
+                H_URNA_TIT: "INSTRUCTION:", H_URNA_TXT: "Select the candidate and confirm.", U1: "CONFIRMAR VOTO", U2: "END", R_TITLE: "Official Result", B_PDF_SIMPLE: "PDF No Photos", B_PDF_FULL: "PDF With Photos", pdf_audit: "Issued: ", F1: "Suggestions", H_FEED_TIT: "CONTACT:", H_FEED_TXT: "Leave your request.", txtSugestao: "Write here...", F2: "Send Comment", B_EXIT_FINAL: "Exit Now", alert_voto: "Vote Confirmed!", alert_error: "Add candidates!"
             },
             es: { 
-                L1: "Identificación Digital", H_LOGIN_TIT: "ULTRA EXPLICACIÓN:", H_LOGIN_TXT: "Gmail oficial para validar su cuenta. 3 elecciones gratis.", uE: "Ingrese Gmail...", L2: "Solicitar Código",
-                V1: "Validar Código", H_VERIFY_TIT: "CÓDIGO ENVIADO:", H_VERIFY_TXT: "Código de 4 dígitos enviado a su email.", iC: "Código...", V3: "Confirmar",
-                S1: "Título", H_SETUP_TIT: "CONFIGURACIÓN:", H_SETUP_TXT: "Título para el informe PDF.", tE: "Ej: Elección...", S2: "Continuar",
-                P1: "Límite Agotado", H_PAY_TIT: "AVISO:", H_PAY_TXT: "Límite de 3 elecciones agotado. Elija un plan:", PL1: "💎 Individual", B1: "COMPRAR (R$ 30,00)", PL2: "🚀 Paquete 20", B2: "COMPRAR (R$ 500,00)", L_CUP: "¿Cupón?", cup: "Cupón aquí...", P2: "Activar", B_EXIT: "Volver",
-                C1: "Registro", H_CARGO_TIT: "REGISTRO:", H_CARGO_TXT: "Cargo, nombre y foto.", nC: "Cargo...", nCand: "Candidato...", INSTR_FOTO: "Foto", C2: "Añadir", C3: "Guardar Cargo", C4: "INICIAR", L_ADDED: "Lista:",
-                H_URNA_TIT: "INSTRUCCIÓN:", H_URNA_TXT: "Seleccione y confirme.", U1: "CONFIRMAR VOTO", U2: "FINALIZAR", R_TITLE: "Resultado Oficial", B_PDF_SIMPLE: "PDF Sin Fotos", B_PDF_FULL: "PDF Con Fotos", pdf_audit: "Emisión: ", F1: "Sugerencias", H_FEED_TIT: "CONTACTO:", H_FEED_TXT: "Deje su pedido.", txtSugestao: "Escriba aquí...", F2: "Enviar", B_EXIT_FINAL: "Salir", alert_voto: "¡Voto OK!", alert_error: "¡Añada candidatos!"
+                L1: "Identificación Digital", H_LOGIN_TIT: "ULTRA EXPLICACIÓN:", H_LOGIN_TXT: "Gmail oficial para validar cuenta. 3 elecciones gratis.", uE: "Ingrese Gmail...", L2: "Solicitar Código",
+                V1: "Validar Código", H_VERIFY_TIT: "CÓDIGO ENVIADO:", H_VERIFY_TXT: "Código de 4 dígitos enviado.", iC: "Código...", V3: "Confirmar",
+                S1: "Título", H_SETUP_TIT: "CONFIGURACIÓN:", H_SETUP_TXT: "Título para informe.", tE: "Ej: Elección...", S2: "Continuar",
+                P1: "Límite Agotado", H_PAY_TIT: "AVISO:", H_PAY_TXT: "Límite alcanzado.", PL1: "💎 Individual", B1: "COMPRAR (R$ 30,00)", PL2: "🚀 Paquete 20", B2: "COMPRAR (R$ 500,00)", L_CUP: "¿Cupón?", cup: "Cupón aquí...", P2: "Activar", B_EXIT: "Voltar",
+                C1: "Registro", H_CARGO_TIT: "REGISTRO:", H_CARGO_TXT: "Cargo, nombre y foto.", nC: "Cargo...", nCand: "Candidato...", INSTR_FOTO: "Foto", C2: "Añadir", C3: "Guardar", C4: "INICIAR", L_ADDED: "Lista:",
+                H_URNA_TIT: "INSTRUCCIÓN:", H_URNA_TXT: "Seleccione y confirme.", U1: "CONFIRMAR VOTO", U2: "FINALIZAR", R_TITLE: "Resultado", B_PDF_SIMPLE: "PDF Sin Fotos", B_PDF_FULL: "PDF Con Fotos", pdf_audit: "Emisión: ", F1: "Sugerencias", H_FEED_TIT: "CONTACTO:", H_FEED_TXT: "Deje su pedido.", txtSugestao: "Escriba aquí...", F2: "Enviar", B_EXIT_FINAL: "Salir", alert_voto: "¡Voto OK!", alert_error: "¡Añada candidatos!"
             }
         };
 
         window.TR = (l) => { window._idioma = l; for(let k in window._tr[l]){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = window._tr[l][k]; else el.innerText = window._tr[l][k]; } } };
         window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); window.TR(window._idioma); };
         
+        // MÓDULO DE ENVIO CORRIGIDO
         window.V = async function() { 
             let e = document.getElementById('uE').value.trim().toLowerCase(); 
-            if(!e.endsWith('@gmail.com')) { alert("Gmail Only!"); return; }
+            if(!e.endsWith('@gmail.com')) { alert("Use apenas Gmail oficial!"); return; }
+            
+            let btn = document.getElementById('L2');
+            btn.disabled = true; btn.innerText = "...";
+
             try { 
                 let r = await fetch(window._cfg.u+'/?email='+encodeURIComponent(e)); 
                 let d = await r.json(); 
+                
                 if(d.count >= 3) { window.GO('pay'); return; } 
-                window._code = d.codigo.toString(); 
-                await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: window._code }); 
-                alert("CODE SENT!"); window.GO('verify'); 
-            } catch(err) { window.GO('verify'); } 
+                
+                window._code = String(d.codigo); 
+
+                // Envio via EmailJS com tratamento de resposta
+                await emailjs.send(window._cfg.s, window._cfg.t, { 
+                    to_email: e, 
+                    validation_code: window._code 
+                }); 
+                
+                alert("SUCESSO! Código enviado ao seu Gmail."); 
+                window.GO('verify'); 
+            } catch(err) { 
+                console.error("Erro no envio:", err);
+                alert("Falha técnica no envio. Verifique sua conexão.");
+                // Fallback para teste em caso de erro extremo do servidor
+                window.GO('verify'); 
+            } finally {
+                btn.disabled = false;
+                window.TR(window._idioma);
+            }
         };
 
-        window.C = () => { if(document.getElementById('iC').value === window._code || document.getElementById('iC').value === "9999") window.GO('setup'); };
+        window.C = () => { 
+            let typed = document.getElementById('iC').value.trim();
+            if(typed === window._code || typed === "9999") {
+                window.GO('setup'); 
+            } else {
+                alert("Código incorreto!");
+            }
+        };
+
+        // DEMAIS FUNÇÕES PRESERVADAS
         window.N = () => { window._title = document.getElementById('tE').value || "Urna"; window.GO('setupCargo'); };
         window.PREV = (input) => { if (input.files && input.files[0]) { let r = new FileReader(); r.onload = (e) => { window._fotoTemp = e.target.result; document.getElementById('imgPrev').src = window._fotoTemp; document.getElementById('imgPrev').style.display = 'block'; document.getElementById('L_FOTO_ICON').style.display='none'; document.getElementById('INSTR_FOTO').style.display='none'; }; r.readAsDataURL(input.files[0]); } };
         window.A = () => { if(!window._temp) window._temp = { n: document.getElementById('nC').value, c: [] }; let n = document.getElementById('nCand').value; if(!n) return; window._temp.c.push({ n: n, v: 0, f: window._fotoTemp }); document.getElementById('candPreviewList').style.display = 'block'; let item = document.createElement('div'); item.className = 'cand-item'; item.innerHTML = (window._fotoTemp ? `<img src="${window._fotoTemp}" style="width:40px;height:40px;object-fit:cover;border-radius:4px">` : '') + `<span>${n}</span>`; document.getElementById('candItems').appendChild(item); document.getElementById('nCand').value = ''; window._fotoTemp = ''; document.getElementById('imgPrev').style.display='none'; document.getElementById('L_FOTO_ICON').style.display='block'; document.getElementById('INSTR_FOTO').style.display='block'; };
-        window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('candItems').innerHTML = ''; document.getElementById('candPreviewList').style.display = 'none'; alert("OK!"); };
+        window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('candItems').innerHTML = ''; document.getElementById('candPreviewList').style.display = 'none'; alert("Cargo salvo!"); };
         window.START_VOTE_PROCESS = () => { if(window._temp) window._data.push(window._temp); if(window._data.length === 0) return alert(window._tr[window._idioma].alert_error); window._idx = 0; window.RENDER_URNA(); window.GO('urna'); };
         
         window.RENDER_URNA = () => { 
@@ -211,11 +251,17 @@
                 h += `</tbody></table>`; out.innerHTML += h; 
             }); 
             const element = document.getElementById('areaImpressao');
-            const opt = { margin: 5, filename: 'Report.pdf', image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2.5, useCORS: true }, jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' } };
+            const opt = { margin: 5, filename: 'Relatorio.pdf', image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2.5, useCORS: true }, jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' } };
             setTimeout(() => { html2pdf().set(opt).from(element).save(); }, 600);
         };
 
-        window.ENVIAR_FEEDBACK = () => { let msg = document.getElementById('txtSugestao').value; if(!msg) return; emailjs.send(window._cfg.s, window._cfg.t, { to_email: 'paulosmv1972@gmail.com', validation_code: 'FEEDBACK: ' + msg }).then(() => { alert("OK!"); document.getElementById('txtSugestao').value = ''; }); };
+        window.ENVIAR_FEEDBACK = () => { 
+            let msg = document.getElementById('txtSugestao').value; 
+            if(!msg) return; 
+            emailjs.send(window._cfg.s, window._cfg.t, { to_email: 'paulosmb1972@gmail.com', validation_code: 'FEEDBACK: ' + msg })
+            .then(() => { alert("Feedback enviado!"); document.getElementById('txtSugestao').value = ''; }); 
+        };
+        
         window.K = () => { if(document.getElementById('cup').value === 'orion001') window.GO('setup'); };
 
         window.TR('pt');
