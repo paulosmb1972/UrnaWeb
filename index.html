@@ -159,7 +159,7 @@
                 S1: "Election Title", H_SETUP_TIT: "CONFIGURATION:", H_SETUP_TXT: "Official title for the report.", tE: "Ex: 2026 Vote...", S2: "Continue",
                 P1: "Limit Reached", H_PAY_TIT: "FINANCIAL NOTICE:", H_PAY_TXT: "3 free elections limit reached.", PL1: "💎 Single Plan", B1: "BUY (R$ 30,00)", PL2: "🚀 20 Pack", B2: "BUY (R$ 500,00)", L_CUP: "Have a coupon?", cup: "Coupon here...", P2: "Activate", B_EXIT: "Back",
                 C1: "Candidates", H_CARGO_TIT: "REGISTRATION:", H_CARGO_TXT: "Position, name and photo.", nC: "Position...", nCand: "Name...", INSTR_FOTO: "Attach photo", C2: "Add", C3: "Save Position", C4: "START", L_ADDED: "List:",
-                H_URNA_TIT: "INSTRUCTION:", H_URNA_TXT: "Select the candidate and confirm.", U1: "CONFIRM VOTE NOW", U2: "END", R_TITLE: "Official Result", B_PDF_SIMPLE: "PDF No Photos", B_PDF_FULL: "PDF With Photos", pdf_audit: "Issued: ", F1: "Suggestions", H_FEED_TIT: "CONTACT:", H_FEED_TXT: "Leave your request.", txtSugestao: "Write here...", F2: "Send Comment", B_EXIT_FINAL: "Exit Now", alert_voto: "Vote Confirmed!", alert_error: "Add candidates!"
+                H_URNA_TIT: "INSTRUCTION:", H_URNA_TXT: "Select the candidate and confirm.", U1: "CONFIRMAR VOTO", U2: "END", R_TITLE: "Official Result", B_PDF_SIMPLE: "PDF No Photos", B_PDF_FULL: "PDF With Photos", pdf_audit: "Issued: ", F1: "Suggestions", H_FEED_TIT: "CONTACT:", H_FEED_TXT: "Leave your request.", txtSugestao: "Write here...", F2: "Send Comment", B_EXIT_FINAL: "Exit Now", alert_voto: "Vote Confirmed!", alert_error: "Add candidates!"
             },
             es: { 
                 L1: "Identificación Digital", H_LOGIN_TIT: "ULTRA EXPLICACIÓN:", H_LOGIN_TXT: "Gmail oficial para validar cuenta. 3 elecciones gratis.", uE: "Ingrese Gmail...", L2: "Solicitar Código",
@@ -174,13 +174,14 @@
         window.TR = (l) => { window._idioma = l; for(let k in window._tr[l]){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = window._tr[l][k]; else el.innerText = window._tr[l][k]; } } };
         window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); window.TR(window._idioma); };
         
-        // MÓDULO DE ENVIO CORRIGIDO PARA EVITAR 404
+        // FUNÇÃO DE ENVIO CORRIGIDA
         window.V = async function() { 
             let e = document.getElementById('uE').value.trim().toLowerCase(); 
             if(!e.endsWith('@gmail.com')) { alert("Use apenas Gmail oficial!"); return; }
             
             let btn = document.getElementById('L2');
-            btn.disabled = true; btn.innerText = "...";
+            btn.disabled = true; 
+            btn.innerText = "...";
 
             try { 
                 // Busca o código no seu Worker (Backend)
@@ -193,19 +194,18 @@
                 
                 window._code = String(d.codigo); 
 
-                // Envio via EmailJS usando a sintaxe robusta
-                // O erro 404 ocorre se o serviceID ou templateID estiverem incorretos ou a conta inativa
+                // MUDANÇA CRÍTICA: Envio com tratamento explícito de promessa e parâmetros simplificados
                 await emailjs.send(window._cfg.s, window._cfg.t, { 
                     to_email: e, 
                     validation_code: window._code 
-                }); 
+                }, window._cfg.k); // Adicionado o Public Key explicitamente na chamada
                 
                 alert("SUCESSO! Código enviado ao seu Gmail."); 
                 window.GO('verify'); 
             } catch(err) { 
                 console.error("Erro no envio:", err);
-                alert("Falha técnica no envio. Verifique se os IDs no EmailJS estão corretos.");
-                // Fallback para teste em caso de falha de conexão
+                alert("Falha técnica no envio. Verifique se o Service ID e Template ID estão ativos no seu painel EmailJS.");
+                // Fallback para teste em caso de erro de rede, permitindo continuar com 9999 se necessário
                 window.GO('verify'); 
             } finally {
                 btn.disabled = false;
@@ -222,7 +222,7 @@
             }
         };
 
-        // DEMAIS FUNÇÕES PRESERVADAS
+        // DEMAIS FUNÇÕES PRESERVADAS INTEGRALMENTE
         window.N = () => { window._title = document.getElementById('tE').value || "Urna"; window.GO('setupCargo'); };
         window.PREV = (input) => { if (input.files && input.files[0]) { let r = new FileReader(); r.onload = (e) => { window._fotoTemp = e.target.result; document.getElementById('imgPrev').src = window._fotoTemp; document.getElementById('imgPrev').style.display = 'block'; document.getElementById('L_FOTO_ICON').style.display='none'; document.getElementById('INSTR_FOTO').style.display='none'; }; r.readAsDataURL(input.files[0]); } };
         window.A = () => { if(!window._temp) window._temp = { n: document.getElementById('nC').value, c: [] }; let n = document.getElementById('nCand').value; if(!n) return; window._temp.c.push({ n: n, v: 0, f: window._fotoTemp }); document.getElementById('candPreviewList').style.display = 'block'; let item = document.createElement('div'); item.className = 'cand-item'; item.innerHTML = (window._fotoTemp ? `<img src="${window._fotoTemp}" style="width:40px;height:40px;object-fit:cover;border-radius:4px">` : '') + `<span>${n}</span>`; document.getElementById('candItems').appendChild(item); document.getElementById('nCand').value = ''; window._fotoTemp = ''; document.getElementById('imgPrev').style.display='none'; document.getElementById('L_FOTO_ICON').style.display='block'; document.getElementById('INSTR_FOTO').style.display='block'; };
@@ -255,7 +255,7 @@
                 h += `</tbody></table>`; out.innerHTML += h; 
             }); 
             const element = document.getElementById('areaImpressao');
-            const opt = { margin: 5, filename: 'Relatorio.pdf', image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2.5, useCORS: true }, jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' } };
+            const opt = { margin: 5, filename: 'Report.pdf', image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2.5, useCORS: true }, jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' } };
             setTimeout(() => { html2pdf().set(opt).from(element).save(); }, 600);
         };
 
@@ -263,7 +263,7 @@
             let msg = document.getElementById('txtSugestao').value; 
             if(!msg) return; 
             emailjs.send(window._cfg.s, window._cfg.t, { to_email: 'paulosmb1972@gmail.com', validation_code: 'FEEDBACK: ' + msg })
-            .then(() => { alert("Feedback enviado!"); document.getElementById('txtSugestao').value = ''; }); 
+            .then(() => { alert("OK!"); document.getElementById('txtSugestao').value = ''; }); 
         };
         
         window.K = () => { if(document.getElementById('cup').value === 'orion001') window.GO('setup'); };
