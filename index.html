@@ -14,11 +14,16 @@
         .screen{display:none;padding:20px;width:100%;max-width:600px;box-sizing:border-box}
         .active{display:block;animation:fadeIn 0.3s}
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
         h2 { text-align: center; color: var(--primary); text-transform: uppercase; margin-bottom: 5px; }
-        .info-box { background:rgba(255,255,255,0.1); padding:15px; border-radius:10px; border-left:5px solid var(--accent); margin-bottom:15px; font-size:14px; }
-        input,button{width:100%;padding:16px;margin:10px 0;border-radius:10px;border:none;font-size:16px;box-sizing:border-box}
-        button{background:var(--primary);color:#fff;font-weight:bold;cursor:pointer;box-shadow:0 4px 0 #148f77}
+        .info-box { background:rgba(255,255,255,0.1); padding:15px; border-radius:10px; border-left:5px solid var(--accent); margin-bottom:15px; font-size:14px; text-align:justify; line-height:1.5; }
+        .info-box b { color:var(--accent); display:block; margin-bottom:5px; text-transform:uppercase; font-size:11px; }
+        
+        input,button,textarea{width:100%;padding:16px;margin:10px 0;border-radius:10px;border:none;font-size:16px;box-sizing:border-box}
+        button{background:var(--primary);color:#fff;font-weight:bold;cursor:pointer;transition:0.2s;box-shadow:0 4px 0 #148f77}
+        button:active{transform:translateY(2px);box-shadow:none}
         input{background:#fff;color:#333;font-weight:bold}
+        
         .lang-box { position:fixed; top:10px; right:10px; display:flex; gap:5px; z-index:100 }
         .lang-box button { width:auto; padding:8px 12px; font-size:11px; background:rgba(0,0,0,0.8); border:1px solid var(--primary); }
     </style>
@@ -33,41 +38,41 @@
 
     <div id="login" class="screen active">
         <h2 id="L1">Identificação</h2>
-        <div class="info-box"><b>ACESSO:</b><br>Informe seu Gmail oficial. O código será enviado agora.</div>
+        <div class="info-box"><b id="H_LOGIN_TIT">ACESSO RESTRITO:</b><span id="H_LOGIN_TXT">Informe seu Gmail oficial. O sistema enviará um código real para validar seu acesso.</span></div>
         <input id="uE" type="email" placeholder="seu-email@gmail.com">
         <button onclick="window.V()" id="L2">SOLICITAR CÓDIGO</button>
     </div>
 
     <div id="verify" class="screen">
-        <h2 id="V1">Verificar</h2>
-        <div class="info-box">Digite o código de 4 dígitos enviado ao seu Gmail.</div>
+        <h2 id="V1">Validar Acesso</h2>
+        <div class="info-box"><b id="H_VERIFY_TIT">CÓDIGO ENVIADO:</b><span id="H_VERIFY_TXT">Verifique sua caixa de entrada e Spam. Digite os 4 dígitos abaixo.</span></div>
         <input id="iC" type="text" maxlength="4" placeholder="0000">
-        <button onclick="window.C()" id="V3">CONFIRMAR</button>
+        <button onclick="window.C()" id="V3">CONFIRMAR CÓDIGO</button>
     </div>
 
     <div id="setup" class="screen">
-        <h2 id="S1">Título</h2>
-        <input id="tE" type="text" placeholder="Nome da Eleição">
-        <button onclick="alert('Iniciando...')">CONTINUAR</button>
+        <h2 id="S1">Título da Eleição</h2>
+        <input id="tE" type="text" placeholder="Ex: Eleição Diretoria 2026...">
+        <button onclick="window.N()" id="S2">CONTINUAR</button>
     </div>
 
     <div id="pay" class="screen">
-        <h2>Limite Atingido</h2>
-        <div class="info-box">Você atingiu o limite de 3 eleições grátis.</div>
+        <h2 id="P1">Créditos Esgotados</h2>
+        <div class="info-box"><b>LIMITE ATINGIDO:</b><span>Você usou suas 3 eleições grátis. Adquira créditos para continuar.</span></div>
         <button onclick="window.open('https://mpago.la/2maEAFx')" style="background:var(--success)">PAGAR R$ 30,00</button>
     </div>
 
     <script>
-        // 2. INICIALIZAÇÃO IMEDIATA APÓS CARREGAMENTO DO DOM
-        document.addEventListener('DOMContentLoaded', function() {
-            emailjs.init("yRM6j-xNoNkVxF0CR");
-        });
-
+        // CONFIGURAÇÕES GLOBAIS
         window._cfg = {
-            s:'service_oqfbzrm',
-            t:'template_t3aio8f',
-            u:'https://urnaweb-backend.paulosmb1972.workers.dev'
+            s: 'service_oqfbzrm',
+            t: 'template_t3aio8f',
+            k: 'yRM6j-xNoNkVxF0CR',
+            u: 'https://urnaweb-backend.paulosmb1972.workers.dev'
         };
+
+        // INICIALIZAÇÃO IMEDIATA
+        emailjs.init(window._cfg.k);
 
         window._code = '';
         window._idioma = 'pt';
@@ -77,40 +82,41 @@
             document.getElementById(id).classList.add('active');
         };
 
-        // 3. FUNÇÃO DE ENVIO REFEITA (BLINDADA)
+        // FUNÇÃO DE ENVIO REPARADA
         window.V = async function() {
             const email = document.getElementById('uE').value.trim().toLowerCase();
-            if (!email.endsWith('@gmail.com')) { alert("Use Gmail!"); return; }
+            if (!email.endsWith('@gmail.com')) { alert("Use apenas Gmail!"); return; }
 
             const btn = document.getElementById('L2');
             btn.disabled = true;
             btn.innerText = "ENVIANDO...";
 
             try {
-                // Passo A: Pegar código no Worker
-                const resp = await fetch(`${window._cfg.u}/?email=${encodeURIComponent(email)}`);
-                const data = await resp.json();
+                // 1. Consulta o Worker da Cloudflare
+                const r = await fetch(`${window._cfg.u}/?email=${encodeURIComponent(email)}`);
+                const d = await r.json();
 
-                if (data.count >= 3) {
+                if (d.count >= 3) {
                     window.GO('pay');
                     return;
                 }
 
-                window._code = String(data.codigo);
+                window._code = String(d.codigo);
 
-                // Passo B: Envio Real via EmailJS
-                // Note que usamos as strings diretas para garantir que não haja erro de referência
-                await emailjs.send("service_oqfbzrm", "template_t3aio8f", {
+                // 2. Envio Real via EmailJS (Sintaxe de Alta Compatibilidade)
+                const templateParams = {
                     to_email: email,
                     validation_code: window._code
-                });
+                };
 
-                alert("Sucesso! Verifique seu Gmail.");
+                await emailjs.send(window._cfg.s, window._cfg.t, templateParams);
+                
+                alert("SUCESSO: Código enviado ao Gmail!");
                 window.GO('verify');
 
             } catch (err) {
-                console.error("ERRO CRÍTICO:", err);
-                alert("Falha no envio. Verifique se o serviço EmailJS está ativo.");
+                console.error("Erro no envio:", err);
+                alert("ERRO DE COMUNICAÇÃO: Verifique se o serviço EmailJS está ativo no seu painel.");
             } finally {
                 btn.disabled = false;
                 btn.innerText = "SOLICITAR CÓDIGO";
@@ -118,11 +124,11 @@
         };
 
         window.C = () => {
-            const val = document.getElementById('iC').value.trim();
-            if (val === window._code && window._code !== "") {
+            const digitado = document.getElementById('iC').value.trim();
+            if (digitado === window._code && window._code !== "") {
                 window.GO('setup');
             } else {
-                alert("Código Inválido!");
+                alert("Código Incorreto!");
             }
         };
 
@@ -131,6 +137,8 @@
             const t = { pt: "Identificação", en: "Identification", es: "Identificación" };
             document.getElementById('L1').innerText = t[l];
         };
+
+        window.TR('pt');
     </script>
 </body>
 </html>
