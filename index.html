@@ -11,7 +11,6 @@
     <style>
         :root { --primary:#1abc9c; --dark:#0a2a66; --accent:#f1c40f; --danger:#e74c3c; --success:#2ecc71; }
         body{margin:0;font-family:'Segoe UI',Arial;background:var(--dark);color:white;display:flex;flex-direction:column;align-items:center;min-height:100vh;overflow-x:hidden}
-        
         .screen{display:none;padding:20px;width:100%;max-width:600px;box-sizing:border-box}
         .active{display:block;animation:fadeIn 0.3s}
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -20,18 +19,15 @@
         .info-box { background:rgba(255,255,255,0.1); padding:18px; border-radius:12px; border-left:6px solid var(--accent); margin-bottom:15px; font-size:14px; text-align:justify; line-height:1.6; }
         .info-box b { color:var(--accent); display:block; margin-bottom:5px; text-transform:uppercase; font-size:11px; }
         
-        /* RETÂNGULOS BRANCOS (INPUTS) */
+        /* RETÂNGULOS BRANCOS */
         input, textarea { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; box-sizing: border-box; background: #fff; color: #333; font-weight: bold; }
         
-        /* BOTÕES COLORIDOS */
         button { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; background: var(--primary); color: white; transition: 0.3s; box-shadow: 0 4px 0 #148f77; }
         button:active { transform: translateY(3px); box-shadow: none; }
         .btn-green { background: var(--success) !important; box-shadow: 0 4px 0 #239b56 !important; }
 
         .lang-box { position:fixed; top:10px; right:10px; display:flex; gap:8px; z-index:100 }
-        .lang-box button { width:auto; padding:8px 15px; background:rgba(0,0,0,0.85); font-size:11px; border:1px solid var(--primary); border-radius:8px; box-shadow: none; }
-        
-        #areaImpressao { background: white !important; color: #333 !important; padding: 25px; }
+        .lang-box button { width:auto; padding:8px 15px; background:rgba(0,0,0,0.85); font-size:11px; border: 1px solid var(--primary); border-radius:8px; box-shadow: none; }
     </style>
 </head>
 <body>
@@ -75,35 +71,33 @@
         window._cfg = {
             s: 'service_oqfbzrm',
             t: 'template_t3aio8f',
-            k: 'yRM6j-xNoNkVxF0CR',
+            k: '_PKL4Oj92o48KurSF', // NOVA CHAVE PÚBLICA APLICADA
             u: 'https://urnaweb-backend.paulosmb1972.workers.dev'
         };
 
-        // Inicialização do motor EmailJS
+        // Inicialização com a nova chave
         emailjs.init(window._cfg.k);
 
-        window._code = ''; 
-        window._idioma = 'pt';
-        window._title = '';
+        window._code = ''; window._idioma = 'pt';
 
-        /* ================= TRADUÇÃO ULTRA EXTREMA ================= */
+        /* ================= TRADUÇÕES ================= */
         window._tr = {
             pt: { 
-                L1: "Portal de Identificação", H_LOGIN_TIT: "ULTRA EXPLICAÇÃO:", H_LOGIN_TXT: "Informe seu Gmail oficial. Novos usuários possuem 3 eleições grátis para testes iniciais.", uE: "seu-email@gmail.com...", L2: "SOLICITAR CÓDIGO",
+                L1: "Portal de Identificação", H_LOGIN_TIT: "ULTRA EXPLICAÇÃO:", H_LOGIN_TXT: "Informe seu Gmail oficial. Novos usuários possuem 3 eleições grátis para testes.", uE: "digite-seu-email@gmail.com...", L2: "SOLICITAR CÓDIGO",
                 V1: "Validar Acesso", H_VERIFY_TIT: "CÓDIGO ENVIADO:", H_VERIFY_TXT: "Digite o código de 4 dígitos enviado ao seu Gmail para confirmar sua identidade.", iC: "0000", V3: "CONFIRMAR CÓDIGO",
-                P1: "Limite Atingido", H_PAY_TIT: "AVISO FINANCEIRO:", H_PAY_TXT: "Seu limite gratuito de 3 eleições terminou. Adquira créditos abaixo para liberar o sistema.",
-                S1: "Título da Eleição", H_SETUP_TIT: "CONFIGURAÇÃO:", H_SETUP_TXT: "Dê um título para a eleição (Este nome aparecerá no PDF).", tE: "Ex: Igreja Terceira 2026...", S2: "SALVAR E CONTINUAR"
+                P1: "Limite Atingido", H_PAY_TIT: "AVISO FINANCEIRO:", H_PAY_TXT: "Seu limite gratuito de 3 eleições terminou. Adquira créditos abaixo para continuar.",
+                S1: "Título da Eleição", H_SETUP_TIT: "CONFIGURAÇÃO:", H_SETUP_TXT: "Dê um título para a eleição (Aparecerá no PDF).", tE: "Ex: Igreja Terceira 2026...", S2: "SALVAR E CONTINUAR"
             },
             en: { 
                 L1: "Identification Portal", H_LOGIN_TIT: "ULTRA EXPLANATION:", H_LOGIN_TXT: "Enter your official Gmail. New users get 3 free elections for testing.", uE: "your-email@gmail.com...", L2: "REQUEST CODE",
-                V1: "Verify Access", H_VERIFY_TIT: "CODE SENT:", H_VERIFY_TXT: "Enter the 4-digit code sent to your Gmail to confirm your identity.", iC: "0000", V3: "CONFIRM CODE",
-                P1: "Limit Reached", H_PAY_TIT: "FINANCIAL NOTICE:", H_PAY_TXT: "Your 3 free elections limit has ended. Please purchase credits to unlock the system.",
-                S1: "Election Title", H_SETUP_TIT: "CONFIGURATION:", H_SETUP_TXT: "Enter a title for the election (Appears on PDF).", tE: "Ex: 2026 Vote...", S2: "SAVE AND CONTINUE"
+                V1: "Verify Access", H_VERIFY_TIT: "CODE SENT:", H_VERIFY_TXT: "Enter the 4-digit code sent to your Gmail.", iC: "0000", V3: "CONFIRM CODE",
+                P1: "Limit Reached", H_PAY_TIT: "NOTICE:", H_PAY_TXT: "Free limit reached. Purchase credits below.",
+                S1: "Election Title", H_SETUP_TIT: "CONFIGURATION:", H_SETUP_TXT: "Enter election title (PDF).", tE: "Ex: 2026 Vote...", S2: "SAVE AND CONTINUE"
             },
             es: { 
-                L1: "Portal de Identificación", H_LOGIN_TIT: "ULTRA EXPLICACIÓN:", H_LOGIN_TXT: "Ingrese su Gmail oficial. 3 elecciones gratis para nuevos usuarios.", uE: "su-email@gmail.com...", L2: "SOLICITAR CÓDIGO",
+                L1: "Portal de Identificación", H_LOGIN_TIT: "ULTRA EXPLICACIÓN:", H_LOGIN_TXT: "Ingrese su Gmail oficial. 3 elecciones gratis.", uE: "su-email@gmail.com...", L2: "SOLICITAR CÓDIGO",
                 V1: "Validar Código", H_VERIFY_TIT: "CÓDIGO ENVIADO:", H_VERIFY_TXT: "Ingrese el código de 4 dígitos enviado a su Gmail.", iC: "0000", V3: "CONFIRMAR CÓDIGO",
-                P1: "Límite Agotado", H_PAY_TIT: "AVISO:", H_PAY_TXT: "Su límite gratuito de 3 elecciones terminó. Adquira créditos abajo.",
+                P1: "Límite Agotado", H_PAY_TIT: "AVISO:", H_PAY_TXT: "Límite gratuito terminado. Adquira créditos.",
                 S1: "Título", H_SETUP_TIT: "CONFIGURACIÓN:", H_SETUP_TXT: "Título para el informe PDF.", tE: "Ej: Elección 2026...", S2: "GUARDAR Y CONTINUAR"
             }
         };
@@ -126,7 +120,7 @@
             window.TR(window._idioma);
         };
 
-        /* ================= MOTOR DE ENVIO (RESTAURADO) ================= */
+        /* ================= MOTOR DE ENVIO ================= */
         window.V = async function() {
             let email = document.getElementById('uE').value.trim().toLowerCase();
             if(!email.endsWith('@gmail.com')) { alert("Use apenas Gmail!"); return; }
@@ -135,51 +129,41 @@
             btn.disabled = true; btn.innerText = "...";
 
             try {
-                // 1. Busca código no Worker
+                // 1. Worker Cloudflare
                 let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(email));
                 let d = await r.json();
                 
-                // 2. Verifica Limite
                 if (d.count >= 3) { window.GO('pay'); return; }
                 
                 window._code = String(d.codigo);
 
-                // 3. Envio Real via EmailJS (Sem 9999)
+                // 2. EmailJS com a NOVA CHAVE
                 await emailjs.send(window._cfg.s, window._cfg.t, {
                     to_email: email,
                     validation_code: window._code
                 });
 
-                alert("Sucesso! Código enviado ao seu Gmail.");
+                alert("Sucesso! Código enviado.");
                 window.GO('verify');
 
             } catch (err) {
                 console.error("Erro no envio:", err);
-                alert("Falha técnica no envio do e-mail. Verifique sua conexão.");
+                alert("Falha técnica no envio. Verifique o serviço EmailJS.");
             } finally {
                 btn.disabled = false;
                 window.TR(window._idioma);
             }
         };
 
-        /* ================= VALIDAÇÃO RESTRITA ================= */
         window.C = () => {
             let v = document.getElementById('iC').value.trim();
-            if (window._code !== "" && v === window._code) {
-                window.GO('setup');
-            } else {
-                alert("Código Inválido!");
-            }
+            if (window._code !== "" && v === window._code) window.GO('setup');
+            else alert("Código Inválido!");
         };
 
-        window.N = () => {
-            window._title = document.getElementById('tE').value.trim();
-            if (!window._title) return;
-            alert("Sistema Pronto!");
-        };
+        window.N = () => { window.GO('login'); }; // Fluxo de teste
 
         window.TR('pt');
     </script>
 </body>
 </html>
-
