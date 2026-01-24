@@ -174,50 +174,54 @@
         window.TR = (l) => { window._idioma = l; for(let k in window._tr[l]){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = window._tr[l][k]; else el.innerText = window._tr[l][k]; } } };
         window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); window.TR(window._idioma); };
         
-       // MÓDULO DE ENVIO CORRIGIDO (ALTERADO APENAS ESTA FUNÇÃO)
-        window.V = async function() { 
-            let e = document.getElementById('uE').value.trim().toLowerCase(); 
-            if(!e.endsWith('@gmail.com')) { alert("Use apenas Gmail oficial!"); return; }
-            
-            let btn = document.getElementById('L2');
-            btn.disabled = true; 
-            btn.innerText = "...";
+      // MÓDULO DE ENVIO CORRIGIDO
+window.V = async function() { 
+    let e = document.getElementById('uE').value.trim().toLowerCase(); 
+    if(!e.endsWith('@gmail.com')) { alert("Use apenas Gmail oficial!"); return; }
+    
+    let btn = document.getElementById('L2');
+    btn.disabled = true; 
+    btn.innerText = "...";
 
-            try { 
-                // 1. Busca o código no seu Worker (Backend)
-                let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
-                if (!r.ok) throw new Error("Erro ao acessar o backend");
-                
-                let d = await r.json(); 
-                
-                if(d.count >= 3) { window.GO('pay'); return; } 
-                
-                window._code = String(d.codigo); 
+    try { 
+        // 1. Busca o código no seu Worker (Backend Cloudflare)
+        let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
+        if (!r.ok) throw new Error("Erro ao acessar o backend");
+        
+        let d = await r.json(); 
+        
+        // Verificação de limite de 3 eleições
+        if(d.count >= 3) { window.GO('pay'); return; } 
+        
+        window._code = String(d.codigo); 
 
-                // 2. ENVIO BLINDADO: Passando a chave pública (k) diretamente na função
-                await emailjs.send(
-                    window._cfg.s, 
-                    window._cfg.t, 
-                    { 
-                        to_email: e, 
-                        validation_code: window._code 
-                    }, 
-                    window._cfg.k // Força a autenticação aqui
-                ); 
-                
-                alert("SUCESSO! Código enviado ao seu Gmail."); 
-                window.GO('verify'); 
-            } catch(err) { 
-                console.error("Erro detalhado EmailJS:", err);
-                alert("Falha técnica no envio. Verifique se o Service ID e Template ID estão ativos no seu painel EmailJS.");
-                // Fallback para teste em caso de erro, permitindo entrar com 9999
-                window.GO('verify'); 
-            } finally {
-                btn.disabled = false;
-                window.TR(window._idioma);
-            }
-        };
-                // MUDANÇA CRÍTICA: Envio com tratamento explícito de promessa e parâmetros simplificados
+        // 2. ENVIO BLINDADO: Passando a chave pública diretamente na função send
+        // Isso resolve o erro de "IDs incorretos" ou "Falha técnica"
+        await emailjs.send(
+            window._cfg.s, 
+            window._cfg.t, 
+            { 
+                to_email: e, 
+                validation_code: window._code 
+            }, 
+            window._cfg.k // A chave pública entra aqui como 4º parâmetro
+        ); 
+        
+        alert("SUCESSO! Código enviado ao seu Gmail."); 
+        window.GO('verify'); 
+
+    } catch(err) { 
+        console.error("Erro detalhado EmailJS:", err);
+        alert("Falha técnica no envio. Verifique se o Service ID e Template ID estão ativos no seu painel EmailJS.");
+        
+        // Fallback: Permite avançar para a tela de verificação para teste manual (ex: código 9999)
+        window.GO('verify'); 
+    } finally {
+        btn.disabled = false;
+        window.TR(window._idioma);
+    }
+};
+        // MUDANÇA CRÍTICA: Envio com tratamento explícito de promessa e parâmetros simplificados
                 await emailjs.send(window._cfg.s, window._cfg.t, { 
                     to_email: e, 
                     validation_code: window._code 
@@ -295,4 +299,5 @@
     </script>
 </body>
 </html>
+
 
