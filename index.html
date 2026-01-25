@@ -192,7 +192,7 @@
         // Isso impede que o sistema se perca ao trocar de tela
         window._code = String(d.codigo).trim(); 
 
-        // 1. FUNÇÃO DE ENVIO (Garante que o código seja salvo como TEXTO puro)
+        // 1. MÓDULO DE ENVIO (Substitua apenas este bloco)
 window.V = async function() { 
     let e = document.getElementById('uE').value.trim().toLowerCase(); 
     if(!e.endsWith('@gmail.com')) { alert("Gmail Only!"); return; }
@@ -206,23 +206,17 @@ window.V = async function() {
         
         if(d.count >= 3) { window.GO('pay'); return; } 
         
-        // CORREÇÃO: Força o código a ser String e remove espaços
-        window._code = String(d.codigo).trim(); 
+        // SALVAMENTO BLINDADO: Guarda no navegador para não sumir
+        let codigoGerado = String(d.codigo).trim();
+        localStorage.setItem('temp_code', codigoGerado);
+        window._code = codigoGerado; 
 
         await emailjs.send(window._cfg.s, window._cfg.t, { 
             to_email: e, 
-            validation_code: window._code 
+            validation_code: codigoGerado 
         }, window._cfg.k); 
         
-        alert("CÓDIGO ENVIADO!"); 
-        window.GO('verify'); 
-    } catch(err) { 
-        alert("Erro no envio.");
-    } finally {
-        btn.disabled = false;
-        window.TR(window._idioma);
-    }
-};
+        alert("CÓDIGO ENVIADO PARA: " + e
 
 // 2. FUNÇÃO DE CONFERÊNCIA (Garante a comparação correta)
 window.C = () => { 
@@ -286,6 +280,7 @@ window.C = () => {
     </script>
 </body>
 </html>
+
 
 
 
