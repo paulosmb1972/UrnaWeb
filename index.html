@@ -106,7 +106,6 @@
 
     <div id="urna" class="screen">
         <h2 id="uT" style="color:var(--accent)"></h2>
-        <div class="info-box"><b id="H_URNA_TIT"></b><span id="H_URNA_TXT"></span></div>
         <div id="gridUrna" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px;"></div>
         <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success); margin-top:20px; font-size:22px;"></button>
         <button onclick="window.END()" id="U2" style="background:var(--danger); margin-top:30px"></button>
@@ -139,7 +138,7 @@
             u: 'https://urnaweb-backend.paulosmb1972.workers.dev' 
         };
 
-        // INICIALIZAÇÃO EMAILJS
+        // INICIALIZAÇÃO
         emailjs.init(window._cfg.k);
 
         window._code=''; window._idioma='pt'; window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp='';
@@ -159,7 +158,7 @@
                 S1: "Election Title", H_SETUP_TIT: "CONFIGURATION:", H_SETUP_TXT: "Official title for the report.", tE: "Ex: 2026 Vote...", S2: "Continue",
                 P1: "Limit Reached", H_PAY_TIT: "FINANCIAL NOTICE:", H_PAY_TXT: "3 free elections limit reached.", PL1: "💎 Single Plan", B1: "BUY (R$ 30,00)", PL2: "🚀 20 Pack", B2: "BUY (R$ 500,00)", L_CUP: "Have a coupon?", cup: "Coupon here...", P2: "Activate", B_EXIT: "Back",
                 C1: "Candidates", H_CARGO_TIT: "REGISTRATION:", H_CARGO_TXT: "Position, name and photo.", nC: "Position...", nCand: "Name...", INSTR_FOTO: "Attach photo", C2: "Add", C3: "Save Position", C4: "START", L_ADDED: "List:",
-                H_URNA_TIT: "INSTRUCTION:", H_URNA_TXT: "Select the candidate and confirm.", U1: "CONFIRMAR VOTO", U2: "END", R_TITLE: "Official Result", B_PDF_SIMPLE: "PDF No Photos", B_PDF_FULL: "PDF With Photos", pdf_audit: "Issued: ", F1: "Suggestions", H_FEED_TIT: "CONTACT:", H_FEED_TXT: "Leave your request.", txtSugestao: "Write here...", F2: "Send Comment", B_EXIT_FINAL: "Exit Now", alert_voto: "Vote Confirmed!", alert_error: "Add candidates!"
+                H_URNA_TIT: "INSTRUCTION:", H_URNA_TXT: "Select the candidate and confirm.", U1: "CONFIRM VOTE NOW", U2: "END", R_TITLE: "Official Result", B_PDF_SIMPLE: "PDF No Photos", B_PDF_FULL: "PDF With Photos", pdf_audit: "Issued: ", F1: "Suggestions", H_FEED_TIT: "CONTACT:", H_FEED_TXT: "Leave your request.", txtSugestao: "Write here...", F2: "Send Comment", B_EXIT_FINAL: "Exit Now", alert_voto: "Vote Confirmed!", alert_error: "Add candidates!"
             },
             es: { 
                 L1: "Identificación Digital", H_LOGIN_TIT: "ULTRA EXPLICACIÓN:", H_LOGIN_TXT: "Gmail oficial para validar cuenta. 3 elecciones gratis.", uE: "Ingrese Gmail...", L2: "Solicitar Código",
@@ -167,94 +166,50 @@
                 S1: "Título", H_SETUP_TIT: "CONFIGURACIÓN:", H_SETUP_TXT: "Título para informe.", tE: "Ej: Elección...", S2: "Continuar",
                 P1: "Límite Agotado", H_PAY_TIT: "AVISO:", H_PAY_TXT: "Límite alcanzado.", PL1: "💎 Individual", B1: "COMPRAR (R$ 30,00)", PL2: "🚀 Paquete 20", B2: "COMPRAR (R$ 500,00)", L_CUP: "¿Cupón?", cup: "Cupón aquí...", P2: "Activar", B_EXIT: "Voltar",
                 C1: "Registro", H_CARGO_TIT: "REGISTRO:", H_CARGO_TXT: "Cargo, nombre y foto.", nC: "Cargo...", nCand: "Candidato...", INSTR_FOTO: "Foto", C2: "Añadir", C3: "Guardar", C4: "INICIAR", L_ADDED: "Lista:",
-                H_URNA_TIT: "INSTRUCCIÓN:", H_URNA_TXT: "Seleccione y confirme.", U1: "CONFIRMAR VOTO", U2: "FINALIZAR", R_TITLE: "Resultado", B_PDF_SIMPLE: "PDF Sin Fotos", B_PDF_FULL: "PDF Con Fotos", pdf_audit: "Emisión: ", F1: "Sugerencias", H_FEED_TIT: "CONTACTO:", H_FEED_TXT: "Deje su pedido.", txtSugestao: "Escriba aquí...", F2: "Enviar", B_EXIT_FINAL: "Salir", alert_voto: "¡Voto OK!", alert_error: "¡Añada candidatos!"
+                H_URNA_TIT: "INSTRUÇÃO:", H_URNA_TXT: "Seleccione y confirme.", U1: "CONFIRMAR VOTO", U2: "FINALIZAR", R_TITLE: "Resultado", B_PDF_SIMPLE: "PDF Sin Fotos", B_PDF_FULL: "PDF Con Fotos", pdf_audit: "Emisión: ", F1: "Sugerencias", H_FEED_TIT: "CONTACTO:", H_FEED_TXT: "Deje su pedido.", txtSugestao: "Escriba aquí...", F2: "Enviar", B_EXIT_FINAL: "Salir", alert_voto: "¡Voto OK!", alert_error: "¡Añada candidatos!"
             }
         };
 
         window.TR = (l) => { window._idioma = l; for(let k in window._tr[l]){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = window._tr[l][k]; else el.innerText = window._tr[l][k]; } } };
         window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); window.TR(window._idioma); };
         
-      // MÓDULO DE ENVIO CORRIGIDO (BLINDADO)
-window.V = async function() { 
-    let e = document.getElementById('uE').value.trim().toLowerCase(); 
-    if(!e.endsWith('@gmail.com')) { alert("Gmail Only!"); return; }
+        // MÓDULO DE ENVIO CORRIGIDO (BLINDADO)
+        window.V = async function() { 
+            let e = document.getElementById('uE').value.trim().toLowerCase(); 
+            if(!e.endsWith('@gmail.com')) { alert("Gmail Only!"); return; }
+            
+            let btn = document.getElementById('L2');
+            btn.disabled = true; 
+            btn.innerText = "...";
 
-    let btn = document.getElementById('L2');
-    btn.disabled = true;
-    btn.innerText = "Enviando...";
+            try { 
+                // Busca o código no seu Worker (Backend Cloudflare)
+                let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
+                if (!r.ok) throw new Error("Erro ao acessar o backend");
+                
+                let d = await r.json(); 
+                
+                if(d.count >= 3) { window.GO('pay'); return; } 
+                
+                window._code = String(d.codigo); 
 
-    try { 
-        // Cloudflare Worker
-        let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
-        let d = await r.json(); 
-
-        if(d.count >= 3) { 
-            window.GO('pay'); 
-            return; 
-        } 
-
-        window._code = String(d.codigo);
-
-        // ENVIO REAL VIA EMAILJS
-        await emailjs.send(
-            window._cfg.s,
-            window._cfg.t,
-            {
-                to_email: e,
-                validation_code: window._code
-            }
-        );
-
-        alert("Código enviado! Verifique sua caixa de entrada e SPAM.");
-        window.GO('verify'); 
-
-    } catch(err) { 
-        console.error("Erro no envio:", err);
-        alert("Falha ao enviar e-mail. Verifique EmailJS.");
-    } finally {
-        btn.disabled = false;
-        window.TR(window._idioma);
-    }
-};
-
-        // 2. ENVIO COM CHAVE PÚBLICA FORÇADA (_PKL4Oj92o48KurSF)
-        // Passar a chave no 4º parâmetro garante a autenticação imediata
-        await emailjs.send(
-            'service_oqfbzrm', 
-            'template_t3aio8f', 
-            { 
-                to_email: e, 
-                validation_code: window._code 
-            }, 
-            '_PKL4Oj92o48KurSF' 
-        ); 
-        
-        alert("SUCESSO! Código enviado ao seu Gmail."); 
-        window.GO('verify'); 
-
-    } catch(err) { 
-        console.error("Erro detalhado EmailJS:", err);
-        alert("Falha técnica no envio. Verifique se o Service ID e Template ID estão ativos no seu painel EmailJS.");
-        
-        // Fallback: permite avançar para a tela de verificação para testes
-        window.GO('verify'); 
-    } finally {
-        btn.disabled = false;
-        window.TR(window._idioma);
-    }
-};
-        // MUDANÇA CRÍTICA: Envio com tratamento explícito de promessa e parâmetros simplificados
-                await emailjs.send(window._cfg.s, window._cfg.t, { 
-                    to_email: e, 
-                    validation_code: window._code 
-                }, window._cfg.k); // Adicionado o Public Key explicitamente na chamada
+                // Envio Real via EmailJS com autenticação direta
+                await emailjs.send(
+                    window._cfg.s, 
+                    window._cfg.t, 
+                    { 
+                        to_email: e, 
+                        validation_code: window._code 
+                    }, 
+                    window._cfg.k // Força o uso da Public Key atualizada
+                ); 
                 
                 alert("SUCESSO! Código enviado ao seu Gmail."); 
                 window.GO('verify'); 
             } catch(err) { 
                 console.error("Erro no envio:", err);
-                alert("Falha técnica no envio. Verifique se o Service ID e Template ID estão ativos no seu painel EmailJS.");
-                // Fallback para teste em caso de erro de rede, permitindo continuar com 9999 se necessário
+                alert("Falha técnica no envio. Verifique se o Service ID e Template ID estão ativos.");
+                // Fallback para teste em caso de erro extremo de rede
                 window.GO('verify'); 
             } finally {
                 btn.disabled = false;
@@ -304,7 +259,7 @@ window.V = async function() {
                 h += `</tbody></table>`; out.innerHTML += h; 
             }); 
             const element = document.getElementById('areaImpressao');
-            const opt = { margin: 5, filename: 'Report.pdf', image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2.5, useCORS: true }, jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' } };
+            const opt = { margin: 5, filename: 'Relatorio.pdf', image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2.5, useCORS: true }, jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' } };
             setTimeout(() => { html2pdf().set(opt).from(element).save(); }, 600);
         };
 
@@ -312,7 +267,7 @@ window.V = async function() {
             let msg = document.getElementById('txtSugestao').value; 
             if(!msg) return; 
             emailjs.send(window._cfg.s, window._cfg.t, { to_email: 'paulosmb1972@gmail.com', validation_code: 'FEEDBACK: ' + msg })
-            .then(() => { alert("OK!"); document.getElementById('txtSugestao').value = ''; }); 
+            .then(() => { alert("Feedback enviado!"); document.getElementById('txtSugestao').value = ''; }); 
         };
         
         window.K = () => { if(document.getElementById('cup').value === 'orion001') window.GO('setup'); };
