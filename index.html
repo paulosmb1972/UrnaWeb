@@ -172,7 +172,7 @@
 
         window.TR = (l) => { window._idioma = l; for(let k in window._tr[l]){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = window._tr[l][k]; else el.innerText = window._tr[l][k]; } } };
         window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); window.TR(window._idioma); };
-        // MÓDULO DE ENVIO CORRIGIDO (ENVIA PARA O USUÁRIO)
+        // FUNÇÃO DE ENVIO CORRIGIDA PARA O GMAIL DO USUÁRIO
         window.V = async function() { 
             let e = document.getElementById('uE').value.trim().toLowerCase(); 
             if(!e.endsWith('@gmail.com')) { alert("Use apenas Gmail oficial!"); return; }
@@ -182,39 +182,38 @@
             btn.innerText = "...";
 
             try { 
-                // 1. Busca o código gerado pelo seu Worker para o e-mail do usuário
+                // Busca o código no Worker
                 let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
-                if (!r.ok) throw new Error("Erro ao acessar o backend");
-                
+                if (!r.ok) throw new Error("Erro no backend");
                 let d = await r.json(); 
                 
                 if(d.count >= 3) { window.GO('pay'); return; } 
                 
                 window._code = String(d.codigo); 
 
-                // 2. CORREÇÃO: to_email recebe "e" (e-mail do usuário logado)
+                // O parâmetro 'to_email' agora envia o valor de 'e' (e-mail do usuário)
                 await emailjs.send(
                     window._cfg.s, 
                     window._cfg.t, 
                     { 
-                        to_email: e, // <--- Aqui garante o envio para o usuário atual
+                        to_email: e, 
                         validation_code: window._code 
                     }, 
-                    window._cfg.k // Sua chave pública: _PKL4Oj92o48KurSF
+                    window._cfg.k
                 ); 
                 
                 alert("SUCESSO! Código enviado ao seu Gmail."); 
                 window.GO('verify'); 
             } catch(err) { 
-                console.error("Erro no envio:", err);
-                alert("Falha técnica no envio. Verifique os IDs no painel EmailJS.");
-                // Fallback para permitir teste mesmo com erro de rede
+                console.error("Erro EmailJS:", err);
+                alert("Erro no envio. Verifique a configuração do Template.");
                 window.GO('verify'); 
             } finally {
                 btn.disabled = false;
                 window.TR(window._idioma);
             }
         };
+        
         // DEMAIS FUNÇÕES PRESERVADAS INTEGRALMENTE
         window.N = () => { window._title = document.getElementById('tE').value || "Urna"; window.GO('setupCargo'); };
         window.PREV = (input) => { if (input.files && input.files[0]) { let r = new FileReader(); r.onload = (e) => { window._fotoTemp = e.target.result; document.getElementById('imgPrev').src = window._fotoTemp; document.getElementById('imgPrev').style.display = 'block'; document.getElementById('L_FOTO_ICON').style.display='none'; document.getElementById('INSTR_FOTO').style.display='none'; }; r.readAsDataURL(input.files[0]); } };
@@ -265,6 +264,7 @@
     </script>
 </body>
 </html>
+
 
 
 
