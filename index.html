@@ -154,10 +154,40 @@ window.V = async function() {
     btn.innerText = "...";
 
     try { 
-        // Consulta o Worker da Cloudflare passando o e-mail do usuário
+        // 1. Consulta o Worker para verificar o limite de uso
         let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
-        if (!r.ok) throw new Error("Falha no servidor");
         let d = await r.json(); 
+        
+        // 2. CORREÇÃO DO TRAVAMENTO: Se d.count for 3 ou mais, redireciona IMEDIATAMENTE
+        // O uso do 'return' após window.GO('pay') impede que o código continue tentando enviar e-mail
+        if(d.count >= 3) { 
+            alert("Limite de 3 eleições atingido para este e-mail.");
+            window.GO('pay'); 
+            return; 
+        } 
+        
+        // 3. Se estiver dentro do limite, processa o envio do código
+        let cod = String(d.codigo).trim();
+        localStorage.setItem('urna_vault', cod);
+        
+        await emailjs.send(
+            window._cfg.s, 
+            window._cfg.t, 
+            { to_email: e, validation_code: cod }, 
+            window._cfg.k
+        ); 
+        
+        alert("Código enviado com sucesso para: " + e); 
+        window.GO('verify'); 
+
+    } catch(err) { 
+        console.error("Erro no fluxo de login:", err);
+        alert("Erro de conexão. Tente novamente em instantes."); 
+    } finally { 
+        btn.disabled = false; 
+        window.TR(window._idioma); 
+    }
+}; 
         
         // CONTROLE DE ACESSO: Se o banco retornar 3 ou mais acessos, redireciona para pagamento
         if(d.count >= 3) { 
@@ -318,4 +348,5 @@ window.ENVIAR_FEEDBACK = () => {
     </script>
 </body>
 </html>
+
 
