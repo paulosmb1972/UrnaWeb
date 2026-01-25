@@ -172,47 +172,47 @@
 
         window.TR = (l) => { window._idioma = l; for(let k in window._tr[l]){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = window._tr[l][k]; else el.innerText = window._tr[l][k]; } } };
         window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); window.TR(window._idioma); };
-        // FUNÇÃO DE ENVIO CORRIGIDA PARA O GMAIL DO USUÁRIO
         window.V = async function() { 
-            let e = document.getElementById('uE').value.trim().toLowerCase(); 
-            if(!e.endsWith('@gmail.com')) { alert("Use apenas Gmail oficial!"); return; }
-            
-            let btn = document.getElementById('L2');
-            btn.disabled = true; 
-            btn.innerText = "...";
+    let e = document.getElementById('uE').value.trim().toLowerCase(); 
+    if(!e.endsWith('@gmail.com')) { alert("Gmail Only!"); return; }
+    
+    let btn = document.getElementById('L2');
+    btn.disabled = true; 
+    btn.innerText = "...";
 
-            try { 
-                // Busca o código no Worker
-                let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
-                if (!r.ok) throw new Error("Erro no backend");
-                let d = await r.json(); 
-                
-                if(d.count >= 3) { window.GO('pay'); return; } 
-                
-                window._code = String(d.codigo); 
+    try { 
+        // 1. Busca código no Worker
+        let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
+        if (!r.ok) throw new Error("Worker Offline");
+        let d = await r.json(); 
+        
+        if(d.count >= 3) { window.GO('pay'); return; } 
+        
+        // 2. CORREÇÃO CRÍTICA: Força o código a ser String global
+        // Isso impede que o sistema se perca ao trocar de tela
+        window._code = String(d.codigo).trim(); 
 
-                // O parâmetro 'to_email' agora envia o valor de 'e' (e-mail do usuário)
-                await emailjs.send(
-                    window._cfg.s, 
-                    window._cfg.t, 
-                    { 
-                        to_email: e, 
-                        validation_code: window._code 
-                    }, 
-                    window._cfg.k
-                ); 
-                
-                alert("SUCESSO! Código enviado ao seu Gmail."); 
-                window.GO('verify'); 
-            } catch(err) { 
-                console.error("Erro EmailJS:", err);
-                alert("Erro no envio. Verifique a configuração do Template.");
-                window.GO('verify'); 
-            } finally {
-                btn.disabled = false;
-                window.TR(window._idioma);
-            }
-        };
+        // 3. ENVIO REAL: to_email recebe 'e'
+        await emailjs.send(
+            window._cfg.s, 
+            window._cfg.t, 
+            { 
+                to_email: e, 
+                validation_code: window._code 
+            }, 
+            window._cfg.k
+        ); 
+        
+        alert("CÓDIGO ENVIADO PARA: " + e); 
+        window.GO('verify'); 
+    } catch(err) { 
+        console.error("Erro:", err);
+        alert("Falha no envio. Tente novamente.");
+    } finally {
+        btn.disabled = false;
+        window.TR(window._idioma);
+    }
+};
         
         // DEMAIS FUNÇÕES PRESERVADAS INTEGRALMENTE
         window.N = () => { window._title = document.getElementById('tE').value || "Urna"; window.GO('setupCargo'); };
@@ -264,6 +264,7 @@
     </script>
 </body>
 </html>
+
 
 
 
