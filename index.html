@@ -116,4 +116,150 @@
         <h2 id="R_TITLE"></h2>
         <div id="areaImpressao">
             <div style="text-align:center; border-bottom:3px solid #0a2a66; padding-bottom:5px; margin-bottom:15px;">
-                <h2 id="pdf_h1" style="color:#0a2a66; margin:0; font-size:20
+                <h2 id="pdf_h1" style="color:#0a2a66; margin:0; font-size:20px;"></h2>
+            </div>
+            <div id="pC"></div>
+            <p id="pdf-audit" style="text-align:center; font-size:9px; color:#999; margin-top:10px;"></p>
+        </div>
+        <button onclick="window.PDF(false)" id="B_PDF_SIMPLE" style="margin-top:20px">PDF SÓ TEXTO</button>
+        <button onclick="window.PDF(true)" id="B_PDF_FULL" style="background:var(--success); margin-top:10px">PDF COM FOTOS</button>
+        <div class="feedback-box" style="margin-top:30px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
+            <h3 id="F1"></h3>
+            <textarea id="txtSugestao"></textarea>
+            <button onclick="window.ENVIAR_FEEDBACK()" id="F2"></button>
+        </div>
+        <button onclick="location.reload()" id="B_EXIT_FINAL" style="background:var(--danger); margin-top:30px"></button>
+    </div>
+
+    <script>
+        /* [TÍTULO: JS - CONFIGURAÇÕES E CHAVES] */
+        window._cfg = { s: 'service_oqfbzrm', t: 'template_t3aio8f', k: '_PKL4Oj92o48KurSF', u: 'https://urnaweb-backend.paulosmb1972.workers.dev' };
+        emailjs.init(window._cfg.k);
+        
+        window.AUDIO_FIM = () => {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'square'; osc.frequency.setValueAtTime(440, ctx.currentTime);
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(); osc.stop(ctx.currentTime + 1);
+        };
+
+        window._code=''; window._idioma='pt'; window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp=''; window._maxVotos=1;
+
+        /* [TÍTULO: JS - DICIONÁRIO DE TRADUÇÃO EXTREMA] */
+        window._tr = {
+            pt: { 
+                L1: "Acesso ao Sistema", H_LOGIN_TIT: "VALIDAÇÃO GMAIL:", H_LOGIN_TXT: "Novos usuários possuem 3 eleições grátis registradas por e-mail.", uE: "Gmail oficial...", L2: "RECEBER CÓDIGO",
+                V1: "Segurança", H_VERIFY_TIT: "CÓDIGO:", H_VERIFY_TXT: "Enviamos um código de 4 dígitos para o seu Gmail.", iC: "0000", V3: "CONFIRMAR",
+                S1: "Setup Eleição", H_SETUP_TIT: "CONFIGURAÇÃO:", H_SETUP_TXT: "Defina o nome e quantos candidatos podem ser votados por vez.", tE: "Título da Eleição", maxV: "Qtd de escolhas", S2: "SALVAR E CONTINUAR",
+                P1: "Limite Atingido", H_PAY_TIT: "PLANOS:", H_PAY_TXT: "Suas 3 eleições grátis acabaram. Escolha um plano abaixo:", PL1: "💎 Eleição Única", B1: "ADQUIRIR 1 CRÉDITO", PL2: "🚀 Pacote 20 Urnas", B2: "ADQUIRIR 20 CRÉDITOS", L_CUP: "Cupom de bônus?", P2: "ATIVAR AGORA", B_EXIT: "VOLTAR",
+                C1: "Candidatos", H_CARGO_TIT: "CADASTRO:", H_CARGO_TXT: "Defina cargo, nome e foto e clique em ADICIONAR.", nC: "Cargo", nCand: "Candidato", INSTR_FOTO: "📷 Foto", C2: "ADICIONAR", C3: "SALVAR CARGO", C4: "INICIAR URNA",
+                H_URNA_TIT: "VOTAÇÃO:", H_URNA_TXT: "Selecione seus candidatos e confirme. O 'Piii' indica sucesso.", U1: "CONFIRMAR VOTO", U2: "ENCERRAR", R_TITLE: "Resultados", F1: "Sugestões e Pedidos", F2: "ENVIAR COMENTÁRIO", B_EXIT_FINAL: "SAIR"
+            }
+        };
+
+        /* [TÍTULO: JS - MOTOR DE TRADUÇÃO E NAVEGAÇÃO] */
+        window.TR = (l) => { window._idioma = l; const d = window._tr[l]; for(let k in d){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT') el.placeholder = d[k]; else el.innerText = d[k]; } } };
+        window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); window.TR(window._idioma); };
+
+        /* [TÍTULO: JS - FUNÇÃO DE ENVIO DE E-MAIL COM CONTROLE GMAIL (window.V)] */
+        window.V = async function() { 
+            let e = document.getElementById('uE').value.trim().toLowerCase(); 
+            if(!e.endsWith('@gmail.com')) return alert("Use Gmail!");
+            let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
+            try { 
+                let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
+                let d = await r.json(); 
+                if(d.count >= 3) { window.GO('pay'); return; } 
+                let cod = String(d.codigo).trim();
+                localStorage.setItem('urna_vault', cod);
+                await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod }, window._cfg.k); 
+                alert("Créditos restantes: " + (3 - d.count) + ". Código enviado!"); window.GO('verify'); 
+            } catch(err) { alert("Erro de conexão."); } finally { btn.disabled = false; window.TR(window._idioma); }
+        };
+
+        /* [TÍTULO: JS - FUNÇÃO DE CONFERÊNCIA (window.C)] */
+        window.C = () => { 
+            let digitado = document.getElementById('iC').value.trim();
+            if(digitado === localStorage.getItem('urna_vault')) { window.GO('setup'); } 
+            else { alert("Código Inválido!"); }
+        };
+
+        /* [TÍTULO: JS - LÓGICA DE CADASTRO E FOTOS] */
+        window.N = () => { window._title = document.getElementById('tE').value; window._maxVotos = parseInt(document.getElementById('maxV').value) || 1; window.GO('setupCargo'); };
+        window.PREV = (input) => { if (input.files && input.files[0]) { let r = new FileReader(); r.onload = (e) => { window._fotoTemp = e.target.result; document.getElementById('imgPrev').src = e.target.result; document.getElementById('imgPrev').style.display = 'block'; }; r.readAsDataURL(input.files[0]); } };
+        window.A = () => { 
+            let c = document.getElementById('nC').value, n = document.getElementById('nCand').value;
+            if(!window._temp) window._temp = { n: c, c: [] };
+            window._temp.c.push({ n: n, v: 0, f: window._fotoTemp });
+            let list = document.getElementById('listaTemporaria'); list.style.display = 'block';
+            list.innerHTML += `<div class="cand-item-small">👤 ${n}</div>`;
+            document.getElementById('nCand').value = ''; window._fotoTemp = ''; document.getElementById('imgPrev').style.display = 'none';
+        };
+        window.SAVE = () => { window._data.push(window._temp); window._temp = null; document.getElementById('nC').value = ''; document.getElementById('listaTemporaria').innerHTML = ''; document.getElementById('listaTemporaria').style.display = 'none'; alert("Cargo salvo!"); };
+
+        /* [TÍTULO: JS - MOTOR DA URNA] */
+        window.START_VOTE_PROCESS = () => { window._idx = 0; window.RENDER_URNA(); window.GO('urna'); };
+        window.RENDER_URNA = () => { 
+            let cargo = window._data[window._idx]; document.getElementById('uT').innerText = cargo.n.toUpperCase(); 
+            let g = document.getElementById('gridUrna'); g.innerHTML = ''; window._sel = [];
+            cargo.c.forEach((can, i) => { 
+                let d = document.createElement('div'); d.style="background:white; color:black; padding:10px; border-radius:10px; text-align:center; border:4px solid transparent; cursor:pointer;"; 
+                d.innerHTML = (can.f ? `<img src="${can.f}" style="width:100%; height:110px; object-fit:cover; border-radius:8px;"><br>` : '') + `<b>${can.n}</b>`; 
+                d.onclick = () => { 
+                    const pos = window._sel.indexOf(i);
+                    if(pos > -1) { window._sel.splice(pos, 1); d.classList.remove('selected-card'); }
+                    else if(window._sel.length < window._maxVotos) { window._sel.push(i); d.classList.add('selected-card'); }
+                }; 
+                g.appendChild(d); 
+            }); 
+        };
+        window.VOTE = () => { 
+            if(!window._sel.length) return alert("Escolha um candidato!"); 
+            window.AUDIO_FIM();
+            window._sel.forEach(idx => window._data[window._idx].c[idx].v++);
+            window._idx++; 
+            if(window._idx < window._data.length) { window._sel=[]; window.RENDER_URNA(); } 
+            else { alert("Voto Confirmado!"); window._idx=0; window._sel=[]; window.RENDER_URNA(); } 
+        };
+
+        /* [TÍTULO: JS - GERAÇÃO DE RESULTADO E PDF] */
+        window.END = () => { 
+            document.getElementById('pdf_h1').innerText = window._title.toUpperCase(); 
+            document.getElementById('pdf-audit').innerText = "Emissão: " + new Date().toLocaleString();
+            let out = document.getElementById('pC'); out.innerHTML = ''; 
+            let totalGeral = 0; window._data.forEach(cargo => cargo.c.forEach(c => totalGeral += c.v));
+            out.innerHTML = `<div style="text-align:center; padding:10px; border:1px solid #000; margin-bottom:10px;"><b>TOTAL GERAL DE VOTOS: ${totalGeral}</b></div>`;
+            window._data.forEach(cargo => { 
+                let h = `<h3>${cargo.n}</h3><table class="pdf-table">`;
+                cargo.c.sort((a,b) => b.v - a.v).forEach(can => { h += `<tr><td>${can.n}</td><td>${can.v} votos</td></tr>`; });
+                out.innerHTML += h + `</table>`;
+            });
+            window.GO('res'); 
+        };
+        window.PDF = (comFoto) => { 
+            let out = document.getElementById('pC'); out.innerHTML = ''; 
+            window._data.forEach(cargo => { 
+                let sorted = [...cargo.c].sort((a,b) => b.v - a.v); 
+                let h = `<table class="pdf-table"><thead><tr>${comFoto ? '<th>Foto</th>' : ''}<th>${cargo.n}</th><th>Votos</th></tr></thead><tbody>`; 
+                sorted.forEach(can => { h += `<tr>${comFoto ? `<td><img src="${can.f || ''}" style="width:40px;"></td>` : ''}<td>${can.n}</td><td>${can.v}</td></tr>`; }); 
+                out.innerHTML += h + `</tbody></table>`; 
+            }); 
+            html2pdf().from(document.getElementById('areaImpressao')).save(); 
+        };
+
+        window.ENVIAR_FEEDBACK = () => { 
+            let msg = document.getElementById('txtSugestao').value; 
+            emailjs.send(window._cfg.s, window._cfg.t, { to_email: 'paulosmb1972@gmail.com', validation_code: 'FEEDBACK: ' + msg }, window._cfg.k)
+            .then(() => { alert("Feedback enviado!"); document.getElementById('txtSugestao').value = ''; }); 
+        };
+        
+        window.K = () => { if(document.getElementById('cup').value === 'mais3gratis') { alert("Ativado!"); window.GO('setup'); } };
+
+        window.TR('pt');
+    </script>
+</body>
+</html>
+
