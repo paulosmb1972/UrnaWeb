@@ -55,12 +55,11 @@
         <button onclick="window.C()" id="V3"></button>
     </div>
 
-<div id="setup" class="screen">
-        <h2 id="S1">Configuração</h2>
-        <div class="info-box"><b>DETALHES:</b><br>Informe o título e quantos candidatos o eleitor pode escolher (Ex: selecione até 3).</div>
-        <input id="tE" type="text" placeholder="Título da Eleição...">
-        <input id="maxV" type="number" placeholder="Qtd de votos permitidos (Ex: 1, 2, 5)..." min="1" value="1">
-        <button onclick="window.N()" id="S2">SALVAR E CONTINUAR</button>
+    <div id="setup" class="screen">
+        <h2 id="S1"></h2>
+        <div class="info-box"><b id="H_SETUP_TIT"></b><span id="H_SETUP_TXT"></span></div>
+        <input id="tE" type="text">
+        <button onclick="window.N()" id="S2"></button>
     </div>
 
     <div id="pay" class="screen">
@@ -148,18 +147,14 @@
             if(!e.endsWith('@gmail.com')) return alert("Use Gmail!");
             let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
             try { 
-                // Chamada ao Worker para verificar e-mail e contar acesso
                 let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
                 let d = await r.json(); 
-                
-                // Se o contador do banco de dados for 3 ou mais, trava e cobra
                 if(d.count >= 3) { window.GO('pay'); return; } 
-                
                 let cod = String(d.codigo).trim();
                 localStorage.setItem('urna_vault', cod);
                 await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod }, window._cfg.k); 
                 alert("Código enviado!"); window.GO('verify'); 
-            } catch(err) { alert("Erro de conexão com o servidor."); } finally { btn.disabled = false; window.TR(window._idioma); }
+            } catch(err) { alert("Erro de conexão."); } finally { btn.disabled = false; window.TR(window._idioma); }
         };
 
         /* [TÍTULO: JS - FUNÇÃO DE CONFERÊNCIA (window.C)] */
@@ -171,11 +166,7 @@
         };
 
         /* [TÍTULO: JS - LÓGICA DE CADASTRO E FOTOS] */
-        window.N = () => { 
-            window._title = document.getElementById('tE').value; 
-            window._maxVotos = parseInt(document.getElementById('maxV').value) || 1; // Armazena o limite de escolha
-            window.GO('setupCargo'); 
-        };
+        window.N = () => { window._title = document.getElementById('tE').value; window.GO('setupCargo'); };
         window.PREV = (input) => { if (input.files && input.files[0]) { let r = new FileReader(); r.onload = (e) => { window._fotoTemp = e.target.result; document.getElementById('imgPrev').src = e.target.result; document.getElementById('imgPrev').style.display = 'block'; }; r.readAsDataURL(input.files[0]); } };
         window.A = () => { if(!window._temp) window._temp = { n: document.getElementById('nC').value, c: [] }; window._temp.c.push({ n: document.getElementById('nCand').value, v: 0, f: window._fotoTemp }); document.getElementById('nCand').value = ''; window._fotoTemp = ''; document.getElementById('imgPrev').style.display='none'; alert("OK!"); };
         window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; alert("Salvo!"); };
@@ -206,17 +197,11 @@
             window.GO('res'); 
         };
         window.PDF = () => { const element = document.getElementById('areaImpressao'); html2pdf().from(element).set({ margin: 10, filename: 'resultado.pdf', jsPDF: { format: 'a5' } }).save(); };
-window.K = () => { 
-            let cupom = document.getElementById('cup').value.trim();
-            // Aceita o cupom antigo orion001 e o novo mais3gratis
-            if(cupom === 'orion001' || cupom === 'mais3gratis') { 
-                alert("Cupom Ativado! +3 Eleições Liberadas.");
-                window.GO('setup'); 
-            } else {
-                alert("Cupom inválido ou expirado.");
-            }
-        };
+        window.K = () => { if(document.getElementById('cup').value === 'orion001') window.GO('setup'); };
+
         window.TR('pt');
     </script>
 </body>
 </html>
+
+
