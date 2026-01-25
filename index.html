@@ -192,25 +192,47 @@
         // Isso impede que o sistema se perca ao trocar de tela
         window._code = String(d.codigo).trim(); 
 
-        // 3. ENVIO REAL: to_email recebe 'e'
-        await emailjs.send(
-            window._cfg.s, 
-            window._cfg.t, 
-            { 
-                to_email: e, 
-                validation_code: window._code 
-            }, 
-            window._cfg.k
-        ); 
+        // 1. FUNÇÃO DE ENVIO (Garante que o código seja salvo como TEXTO puro)
+window.V = async function() { 
+    let e = document.getElementById('uE').value.trim().toLowerCase(); 
+    if(!e.endsWith('@gmail.com')) { alert("Gmail Only!"); return; }
+    
+    let btn = document.getElementById('L2');
+    btn.disabled = true; btn.innerText = "...";
+
+    try { 
+        let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
+        let d = await r.json(); 
         
-        alert("CÓDIGO ENVIADO PARA: " + e); 
+        if(d.count >= 3) { window.GO('pay'); return; } 
+        
+        // CORREÇÃO: Força o código a ser String e remove espaços
+        window._code = String(d.codigo).trim(); 
+
+        await emailjs.send(window._cfg.s, window._cfg.t, { 
+            to_email: e, 
+            validation_code: window._code 
+        }, window._cfg.k); 
+        
+        alert("CÓDIGO ENVIADO!"); 
         window.GO('verify'); 
     } catch(err) { 
-        console.error("Erro:", err);
-        alert("Falha no envio. Tente novamente.");
+        alert("Erro no envio.");
     } finally {
         btn.disabled = false;
         window.TR(window._idioma);
+    }
+};
+
+// 2. FUNÇÃO DE CONFERÊNCIA (Garante a comparação correta)
+window.C = () => { 
+    let digitado = document.getElementById('iC').value.trim();
+    
+    // Compara como texto para evitar erro com códigos que começam com "0"
+    if(window._code !== "" && digitado === window._code) {
+        window.GO('setup'); 
+    } else {
+        alert("Código Inválido! Verifique seu Gmail.");
     }
 };
         
@@ -264,6 +286,7 @@
     </script>
 </body>
 </html>
+
 
 
 
