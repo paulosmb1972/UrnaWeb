@@ -89,8 +89,7 @@
         <div class="info-box"><b id="H_URNA_TIT">VOTAÇÃO:</b><span id="H_URNA_TXT">Selecione e confirme. O som indica sucesso.</span></div>
         <div id="gridUrna" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
         <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success); margin-top:20px"></button>
-        <button onclick="window.END()" id="U2" style="background:var(--danger)"></button>
-    </div>
+<button onclick="window.GO('login')" id="B_RESTART" style="background:var(--danger)">INICIAR NOVA SESSÃO</button>    </div>
 
 <div id="res" class="screen">
     <h2 id="R_TITLE">Resultado Oficial</h2>
@@ -155,8 +154,19 @@ window._tr.pt = {
         };
 
         window.TR = (l) => { window._idioma=l; const d=window._tr[l]; for(let k in d){ let el=document.getElementById(k); if(el) el.innerText=d[k]; } };
-        window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); window.TR(window._idioma); };
-
+/* [TÍTULO: JS - MOTOR DE TRADUÇÃO E NAVEGAÇÃO] */
+        window.GO = (a) => { 
+            // Se voltar para o login, limpa os dados da eleição anterior para não travar
+            if(a === 'login') {
+                localStorage.removeItem('urna_vault');
+                window._data = [];
+                window._sel = [];
+                window._idx = 0;
+            }
+            document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); 
+            document.getElementById(a).classList.add('active'); 
+            window.TR(window._idioma); 
+        };
         /* [TÍTULO: LÓGICA] */
         /* [TÍTULO: JS - FUNÇÃO DE ENVIO DE E-MAIL (window.V)] */
 window.V = async function() { 
@@ -227,7 +237,17 @@ window.V = async function() {
                 g.appendChild(d);
             });
         };
-
+/* [TÍTULO: JS - GERAÇÃO DE RESULTADO E CUPOM] */
+        window.K = () => { 
+            let c = document.getElementById('cup').value.trim();
+            // Aceita sua senha clássica e o cupom promocional
+            if(c === 'orion001' || c === 'mais3gratis') { 
+                alert("ACESSO LIBERADO: Crédito Extra Adicionado!"); 
+                window.GO('setup'); 
+            } else { 
+                alert("Código Inválido!"); 
+            }
+        };
         window.VOTE = () => {
             if(!window._sel.length) return alert("Selecione!");
             window.AUDIO_FIM();
