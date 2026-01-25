@@ -20,7 +20,6 @@
         button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 0 #148f77; }
         button:active { transform: translateY(3px); box-shadow: none; }
         input { background: #fff; color: #333; font-weight: bold; }
-        textarea { height: 100px; resize: none; color: #333; background: #fff; }
         .pay-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
         .price-tag { font-size: 28px; font-weight: bold; color: var(--accent); display: block; margin: 10px 0; text-align: center; }
         .foto-container { border: 2px dashed var(--primary); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.05); }
@@ -31,6 +30,8 @@
         .pdf-table td { padding: 10px; border-bottom: 1px solid #eee; color: #333 !important; font-size: 13px; word-wrap: break-word; }
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 8px; }
         .lang-box button { width: auto; padding: 8px 15px; background: rgba(0,0,0,0.85); font-size: 11px; border: 1px solid var(--primary); color: white; border-radius: 8px; }
+        /* Estilo para múltiplos selecionados */
+        .selected-card { border-color: var(--success) !important; background: #e8f8f5 !important; }
     </style>
 </head>
 <body>
@@ -42,105 +43,98 @@
     </div>
 
     <div id="login" class="screen active">
-        <h2 id="L1"></h2>
-        <div class="info-box"><b id="H_LOGIN_TIT"></b><span id="H_LOGIN_TXT"></span></div>
-        <input id="uE" type="email">
-        <button onclick="window.V()" id="L2"></button>
+        <h2 id="L1">Identificação Digital</h2>
+        <div class="info-box"><b id="H_LOGIN_TIT">ACESSO:</b><span id="H_LOGIN_TXT">Informe seu Gmail oficial. Limite: 3 eleições grátis.</span></div>
+        <input id="uE" type="email" placeholder="seu-email@gmail.com">
+        <button onclick="window.V()" id="L2">SOLICITAR CÓDIGO</button>
     </div>
 
     <div id="verify" class="screen">
-        <h2 id="V1"></h2>
-        <div class="info-box"><b id="H_VERIFY_TIT"></b><span id="H_VERIFY_TXT"></span></div>
+        <h2 id="V1">Validar Acesso</h2>
+        <div class="info-box"><b id="H_VERIFY_TIT">CÓDIGO:</b><span id="H_VERIFY_TXT">Digite os 4 dígitos enviados ao seu Gmail.</span></div>
         <input id="iC" type="text" maxlength="4">
-        <button onclick="window.C()" id="V3"></button>
+        <button onclick="window.C()" id="V3">CONFIRMAR</button>
     </div>
 
-<div id="setup" class="screen">
+    <div id="setup" class="screen">
         <h2 id="S1">Configuração</h2>
-        <div class="info-box"><b>DETALHES:</b><br>Informe o título e quantos candidatos o eleitor pode escolher (Ex: selecione até 3).</div>
-        <input id="tE" type="text" placeholder="Título da Eleição...">
-        <input id="maxV" type="number" placeholder="Qtd de votos permitidos (Ex: 1, 2, 5)..." min="1" value="1">
-        <button onclick="window.N()" id="S2">SALVAR E CONTINUAR</button>
+        <div class="info-box"><b>DETALHES:</b><br>Defina o nome da eleição e quantos candidatos cada eleitor pode escolher.</div>
+        <input id="tE" type="text" placeholder="Nome da Eleição (Ex: CIPA 2026)">
+        <input id="maxV" type="number" placeholder="Até quantos candidatos votar? (Ex: 1 ou 3)" min="1" value="1">
+        <button onclick="window.N()" id="S2">CONTINUAR</button>
     </div>
 
     <div id="pay" class="screen">
-        <h2 id="P1"></h2>
-        <div class="info-box"><b id="H_PAY_TIT"></b><span id="H_PAY_TXT"></span></div>
+        <h2 id="P1">Limite Atingido</h2>
         <div class="pay-card">
-            <h3 id="PL1"></h3>
+            <h3 id="PL1">💎 Eleição Avulsa</h3>
             <span class="price-tag">R$ 30,00</span>
-            <button onclick="window.open('https://mpago.la/2maEAFx')" id="B1"></button>
+            <button onclick="window.open('https://mpago.la/2maEAFx')">COMPRAR</button>
         </div>
         <div class="pay-card">
-            <h3 id="PL2"></h3>
+            <h3 id="PL2">🚀 Pacote 20 Urnas</h3>
             <span class="price-tag">R$ 500,00</span>
-            <button onclick="window.open('https://mpago.la/1VakcdN')" id="B2"></button>
+            <button onclick="window.open('https://mpago.la/1VakcdN')" style="background:#2980b9">COMPRAR</button>
         </div>
         <div class="pay-card" style="border: 2px solid var(--accent);">
-            <p id="L_CUP"></p><input id="cup" type="text"><button onclick="window.K()" id="P2"></button>
+            <p>Possui cupom?</p>
+            <input id="cup" type="text" placeholder="mais3gratis">
+            <button onclick="window.K()" style="background:var(--accent); color:black">ATIVAR CUPOM</button>
         </div>
-        <button onclick="location.reload()" id="B_EXIT"></button>
+        <button onclick="location.reload()" style="background:none; border:1px solid white;">SAIR</button>
     </div>
 
     <div id="setupCargo" class="screen">
-        <h2 id="C1"></h2>
-        <div class="info-box"><b id="H_CARGO_TIT"></b><span id="H_CARGO_TXT"></span></div>
-        <input id="nC" type="text">
-        <input id="nCand" type="text">
+        <h2 id="C1">Candidatos</h2>
+        <input id="nC" type="text" placeholder="Cargo (Ex: Diretor)">
+        <input id="nCand" type="text" placeholder="Nome do Candidato">
         <div class="foto-container" onclick="document.getElementById('fileIn').click()">
-            <span id="L_FOTO_ICON">📷</span><br><span id="INSTR_FOTO"></span>
+            <span id="INSTR_FOTO">📷 Clique para anexo foto</span>
             <img id="imgPrev" class="img-preview">
         </div>
         <input type="file" id="fileIn" hidden accept="image/*" onchange="window.PREV(this)">
-        <button onclick="window.A()" id="C2"></button>
-        <button onclick="window.SAVE()" id="C3" style="background:var(--success)"></button>
-        <button onclick="window.START_VOTE_PROCESS()" id="C4" style="margin-top:20px"></button>
+        <button onclick="window.A()" id="C2">ADICIONAR À LISTA</button>
+        <button onclick="window.SAVE()" id="C3" style="background:var(--success)">SALVAR CARGO</button>
+        <button onclick="window.START_VOTE_PROCESS()" id="C4" style="margin-top:20px">INICIAR URNA</button>
     </div>
 
     <div id="urna" class="screen">
         <h2 id="uT"></h2>
-        <div id="gridUrna" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px;"></div>
-        <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success); margin-top:20px"></button>
-        <button onclick="window.END()" id="U2" style="background:var(--danger)"></button>
+        <div class="info-box"><b id="H_URNA_TIT">URNA:</b><span id="H_URNA_TXT"></span></div>
+        <div id="gridUrna" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
+        <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success); margin-top:20px">CONFIRMAR VOTO</button>
+        <button onclick="window.END()" id="U2" style="background:var(--danger)">ENCERRAR</button>
     </div>
 
     <div id="res" class="screen">
-        <h2 id="R_TITLE"></h2>
+        <h2 id="R_TITLE">Resultado</h2>
         <div id="areaImpressao">
-            <h2 id="pdf_h1" style="color:#0a2a66;"></h2>
+            <h2 id="pdf_h1" style="color:#0a2a66; text-align:center;"></h2>
             <div id="pC"></div>
-            <p id="pdf-audit"></p>
         </div>
-        <button onclick="window.PDF(true)" id="B_PDF_FULL"></button>
-        <button onclick="location.reload()" id="B_EXIT_FINAL"></button>
+        <button onclick="window.PDF()" style="background:var(--success)">GERAR PDF</button>
+        <button onclick="location.reload()" style="background:var(--danger)">SAIR</button>
     </div>
 
     <script>
         /* [TÍTULO: JS - CONFIGURAÇÕES E CHAVES] */
         window._cfg = { 
-            s: 'service_oqfbzrm', 
-            t: 'template_t3aio8f', 
-            k: '_PKL4Oj92o48KurSF', 
+            s: 'service_oqfbzrm', t: 'template_t3aio8f', k: '_PKL4Oj92o48KurSF', 
             u: 'https://urnaweb-backend.paulosmb1972.workers.dev' 
         };
         emailjs.init(window._cfg.k);
-        window._code=''; window._idioma='pt'; window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp='';
+        window._code=''; window._idioma='pt'; window._data=[]; window._temp=null; 
+        window._sel=[]; // Aqui guardaremos os índices dos candidatos selecionados
+        window._idx=0; window._title=''; window._fotoTemp=''; window._maxVotos=1;
 
-        /* [TÍTULO: JS - DICIONÁRIO DE TRADUÇÃO] */
-        window._tr = {
-            pt: { 
-                L1: "Portal de Identificação Digital", H_LOGIN_TIT: "ULTRA EXPLICAÇÃO:", H_LOGIN_TXT: "Informe seu Gmail oficial. Novos usuários ganham 3 eleições grátis.", uE: "Gmail...", L2: "Solicitar Código",
-                V1: "Validar Código", H_VERIFY_TIT: "CÓDIGO ENVIADO:", H_VERIFY_TXT: "Insira os 4 dígitos enviados ao seu e-mail.", iC: "0000", V3: "Confirmar Identidade",
-                S1: "Título da Votação", H_SETUP_TIT: "CONFIGURAÇÃO:", H_SETUP_TXT: "Dê um título oficial para esta eleição.", tE: "Ex: Igreja 2026...", S2: "Salvar e Continuar",
-                P1: "Limite Esgotado", H_PAY_TIT: "AVISO:", H_PAY_TXT: "Suas 3 eleições grátis acabaram.", PL1: "💎 Eleição Única", B1: "COMPRAR", PL2: "🚀 Pacote 20 Urnas", B2: "COMPRAR", L_CUP: "Cupom?", P2: "Ativar", B_EXIT: "Voltar",
-                C1: "Registrar Candidatos", H_CARGO_TIT: "CADASTRO:", H_CARGO_TXT: "Cargo, nome e foto.", nC: "Cargo...", nCand: "Candidato...", INSTR_FOTO: "Anexar foto", C2: "Adicionar", C3: "Salvar Cargo", C4: "INICIAR VOTAÇÃO",
-                U1: "CONFIRMAR VOTO", U2: "ENCERRAR VOTAÇÃO", R_TITLE: "Resultado Oficial", B_PDF_FULL: "GERAR PDF COM FOTOS", B_EXIT_FINAL: "Sair"
-            }
+        /* [TÍTULO: JS - TRADUÇÃO E NAVEGAÇÃO] */
+        window.TR = (l) => { 
+            const d = { 
+                pt: { L1: "Identificação Digital", L2: "SOLICITAR CÓDIGO", V3: "CONFIRMAR", S2: "CONTINUAR", H_URNA_TXT: `Selecione até ${window._maxVotos} candidato(s) e confirme.` }
+            };
+            document.getElementById('H_URNA_TXT').innerText = `Selecione até ${window._maxVotos} candidato(s) e confirme.`;
         };
-
-        /* [TÍTULO: JS - MOTOR DE TRADUÇÃO E NAVEGAÇÃO] */
-        window.TR = (l) => { window._idioma = l; for(let k in window._tr[l]){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT') el.placeholder = window._tr[l][k]; else el.innerText = window._tr[l][k]; } } };
-        window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); window.TR(window._idioma); };
+        window.GO = (id) => { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); };
 
         /* [TÍTULO: JS - FUNÇÃO DE ENVIO DE E-MAIL (window.V)] */
         window.V = async function() { 
@@ -148,53 +142,71 @@
             if(!e.endsWith('@gmail.com')) return alert("Use Gmail!");
             let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
             try { 
-                // Chamada ao Worker para verificar e-mail e contar acesso
                 let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
                 let d = await r.json(); 
-                
-                // Se o contador do banco de dados for 3 ou mais, trava e cobra
                 if(d.count >= 3) { window.GO('pay'); return; } 
-                
-                let cod = String(d.codigo).trim();
-                localStorage.setItem('urna_vault', cod);
-                await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod }, window._cfg.k); 
+                window._code = String(d.codigo).trim();
+                localStorage.setItem('urna_vault', window._code);
+                await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: window._code }, window._cfg.k); 
                 alert("Código enviado!"); window.GO('verify'); 
-            } catch(err) { alert("Erro de conexão com o servidor."); } finally { btn.disabled = false; window.TR(window._idioma); }
+            } catch(err) { alert("Erro de conexão."); } finally { btn.disabled = false; btn.innerText = "SOLICITAR CÓDIGO"; }
         };
 
         /* [TÍTULO: JS - FUNÇÃO DE CONFERÊNCIA (window.C)] */
         window.C = () => { 
             let digitado = document.getElementById('iC').value.trim();
             let salvo = localStorage.getItem('urna_vault');
-            if(salvo && digitado === salvo) { localStorage.removeItem('urna_vault'); window.GO('setup'); } 
+            if(salvo && digitado === salvo) { window.GO('setup'); } 
             else { alert("Código Inválido!"); }
         };
 
         /* [TÍTULO: JS - LÓGICA DE CADASTRO E FOTOS] */
         window.N = () => { 
             window._title = document.getElementById('tE').value; 
-            window._maxVotos = parseInt(document.getElementById('maxV').value) || 1; // Armazena o limite de escolha
+            window._maxVotos = parseInt(document.getElementById('maxV').value) || 1;
             window.GO('setupCargo'); 
         };
         window.PREV = (input) => { if (input.files && input.files[0]) { let r = new FileReader(); r.onload = (e) => { window._fotoTemp = e.target.result; document.getElementById('imgPrev').src = e.target.result; document.getElementById('imgPrev').style.display = 'block'; }; r.readAsDataURL(input.files[0]); } };
-        window.A = () => { if(!window._temp) window._temp = { n: document.getElementById('nC').value, c: [] }; window._temp.c.push({ n: document.getElementById('nCand').value, v: 0, f: window._fotoTemp }); document.getElementById('nCand').value = ''; window._fotoTemp = ''; document.getElementById('imgPrev').style.display='none'; alert("OK!"); };
-        window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; alert("Salvo!"); };
+        window.A = () => { if(!window._temp) window._temp = { n: document.getElementById('nC').value, c: [] }; window._temp.c.push({ n: document.getElementById('nCand').value, v: 0, f: window._fotoTemp }); document.getElementById('nCand').value = ''; window._fotoTemp = ''; document.getElementById('imgPrev').style.display='none'; alert("Adicionado!"); };
+        window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; alert("Cargo Salvo!"); };
 
-        /* [TÍTULO: JS - MOTOR DA URNA E VOTAÇÃO] */
-        window.START_VOTE_PROCESS = () => { if(!window._data.length) return alert("Erro!"); window._idx = 0; window.RENDER_URNA(); window.GO('urna'); };
+        /* [TÍTULO: JS - MOTOR DA URNA (MÚLTIPLA ESCOLHA)] */
+        window.START_VOTE_PROCESS = () => { if(!window._data.length) return alert("Erro!"); window._idx = 0; window.RENDER_URNA(); window.GO('urna'); window.TR(); };
         window.RENDER_URNA = () => { 
             let cargo = window._data[window._idx]; document.getElementById('uT').innerText = cargo.n.toUpperCase(); 
             let g = document.getElementById('gridUrna'); g.innerHTML = ''; 
             cargo.c.forEach((can, i) => { 
-                let d = document.createElement('div'); d.style="background:white; color:black; padding:10px; border-radius:10px; text-align:center; border:3px solid transparent; cursor:pointer;"; 
-                d.innerHTML = (can.f ? `<img src="${can.f}" style="width:100%; height:100px; object-fit:cover;">` : '') + `<b>${can.n}</b>`; 
-                d.onclick = () => { window._sel = [i]; Array.from(g.children).forEach(x=>x.style.borderColor="transparent"); d.style.borderColor="var(--success)"; }; 
-                g.appendChild(d); 
+                let d = document.createElement('div'); 
+                d.style="background:white; color:black; padding:10px; border-radius:12px; text-align:center; border:4px solid transparent; cursor:pointer;"; 
+                d.innerHTML = (can.f ? `<img src="${can.f}" style="width:100%; height:110px; object-fit:cover; border-radius:8px;"><br>` : '') + `<b>${can.n}</b>`; 
+                
+                d.onclick = () => {
+                    const pos = window._sel.indexOf(i);
+                    if (pos > -1) {
+                        window._sel.splice(pos, 1); // Desmarca se já estiver selecionado
+                        d.classList.remove('selected-card');
+                    } else {
+                        if (window._sel.length < window._maxVotos) {
+                            window._sel.push(i); // Marca se estiver dentro do limite
+                            d.classList.add('selected-card');
+                        } else {
+                            alert(`Você só pode selecionar até ${window._maxVotos} candidato(s)!`);
+                        }
+                    }
+                };
+                g.appendChild(d);
             }); 
         };
-        window.VOTE = () => { if(!window._sel.length) return; window._data[window._idx].c[window._sel[0]].v++; window._idx++; if(window._idx < window._data.length) { window._sel=[]; window.RENDER_URNA(); } else { alert("Voto OK!"); window._idx=0; window._sel=[]; window.RENDER_URNA(); } };
 
-        /* [TÍTULO: JS - GERAÇÃO DE RESULTADO E PDF] */
+        window.VOTE = () => { 
+            if(window._sel.length === 0) return alert("Selecione ao menos um candidato!");
+            window._sel.forEach(index => { window._data[window._idx].c[index].v++; });
+            window._idx++; 
+            if(window._idx < window._data.length) { window._sel=[]; window.RENDER_URNA(); } 
+            else { alert("Voto Confirmado!"); window._idx=0; window._sel=[]; window.RENDER_URNA(); } 
+        };
+
+        /* [TÍTULO: JS - GERAÇÃO DE RESULTADO E CUPOM] */
         window.END = () => { 
             document.getElementById('pdf_h1').innerText = window._title.toUpperCase(); 
             let out = document.getElementById('pC'); out.innerHTML = ''; 
@@ -206,17 +218,11 @@
             window.GO('res'); 
         };
         window.PDF = () => { const element = document.getElementById('areaImpressao'); html2pdf().from(element).set({ margin: 10, filename: 'resultado.pdf', jsPDF: { format: 'a5' } }).save(); };
-window.K = () => { 
-            let cupom = document.getElementById('cup').value.trim();
-            // Aceita o cupom antigo orion001 e o novo mais3gratis
-            if(cupom === 'orion001' || cupom === 'mais3gratis') { 
-                alert("Cupom Ativado! +3 Eleições Liberadas.");
-                window.GO('setup'); 
-            } else {
-                alert("Cupom inválido ou expirado.");
-            }
+        window.K = () => { 
+            let c = document.getElementById('cup').value.trim();
+            if(c === 'orion001' || c === 'mais3gratis') { alert("Cupom Ativado!"); window.GO('setup'); } 
+            else { alert("Cupom Inválido!"); }
         };
-        window.TR('pt');
     </script>
 </body>
 </html>
