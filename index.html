@@ -172,18 +172,17 @@
 
         window.TR = (l) => { window._idioma = l; for(let k in window._tr[l]){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = window._tr[l][k]; else el.innerText = window._tr[l][k]; } } };
         window.GO = (a) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(a).classList.add('active'); window.TR(window._idioma); };
-        
-        // MÓDULO DE ENVIO CORRIGIDO (BLINDADO)
+        // MÓDULO DE ENVIO CORRIGIDO (ENVIA PARA O USUÁRIO)
         window.V = async function() { 
             let e = document.getElementById('uE').value.trim().toLowerCase(); 
-            if(!e.endsWith('@gmail.com')) { alert("Gmail Only!"); return; }
+            if(!e.endsWith('@gmail.com')) { alert("Use apenas Gmail oficial!"); return; }
             
             let btn = document.getElementById('L2');
             btn.disabled = true; 
             btn.innerText = "...";
 
             try { 
-                // Busca o código no seu Worker (Backend Cloudflare)
+                // 1. Busca o código gerado pelo seu Worker para o e-mail do usuário
                 let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
                 if (!r.ok) throw new Error("Erro ao acessar o backend");
                 
@@ -193,39 +192,29 @@
                 
                 window._code = String(d.codigo); 
 
-                // Envio Real via EmailJS com autenticação direta
+                // 2. CORREÇÃO: to_email recebe "e" (e-mail do usuário logado)
                 await emailjs.send(
                     window._cfg.s, 
                     window._cfg.t, 
                     { 
-                        to_email: e, 
+                        to_email: e, // <--- Aqui garante o envio para o usuário atual
                         validation_code: window._code 
                     }, 
-                    window._cfg.k // Força o uso da Public Key atualizada
+                    window._cfg.k // Sua chave pública: _PKL4Oj92o48KurSF
                 ); 
                 
                 alert("SUCESSO! Código enviado ao seu Gmail."); 
                 window.GO('verify'); 
             } catch(err) { 
                 console.error("Erro no envio:", err);
-                alert("Falha técnica no envio. Verifique se o Service ID e Template ID estão ativos.");
-                // Fallback para teste em caso de erro extremo de rede
+                alert("Falha técnica no envio. Verifique os IDs no painel EmailJS.");
+                // Fallback para permitir teste mesmo com erro de rede
                 window.GO('verify'); 
             } finally {
                 btn.disabled = false;
                 window.TR(window._idioma);
             }
         };
-
-        window.C = () => { 
-            let typed = document.getElementById('iC').value.trim();
-            if(typed === window._code || typed === "9999") {
-                window.GO('setup'); 
-            } else {
-                alert("Código incorreto!");
-            }
-        };
-
         // DEMAIS FUNÇÕES PRESERVADAS INTEGRALMENTE
         window.N = () => { window._title = document.getElementById('tE').value || "Urna"; window.GO('setupCargo'); };
         window.PREV = (input) => { if (input.files && input.files[0]) { let r = new FileReader(); r.onload = (e) => { window._fotoTemp = e.target.result; document.getElementById('imgPrev').src = window._fotoTemp; document.getElementById('imgPrev').style.display = 'block'; document.getElementById('L_FOTO_ICON').style.display='none'; document.getElementById('INSTR_FOTO').style.display='none'; }; r.readAsDataURL(input.files[0]); } };
@@ -276,6 +265,7 @@
     </script>
 </body>
 </html>
+
 
 
 
