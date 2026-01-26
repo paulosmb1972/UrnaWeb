@@ -48,6 +48,14 @@
         <button onclick="window.V()" id="L2"></button>
     </div>
 
+    <div id="setup" class="screen">
+        <h2 id="S1">CONFIGURAÇÃO</h2>
+        <div class="info-box"><b id="H_SETUP_TIT">INFORMAÇÕES DA ELEIÇÃO:</b><span id="H_SETUP_TXT"></span></div>
+        <input id="tE" type="text">
+        <input id="maxV" type="number" min="1" value="1">
+        <button onclick="window.N()" id="S2"></button>
+    </div>
+
     <div id="pay" class="screen">
         <h2 id="P1">Limite de Testes Atingido</h2>
         <div class="info-box"><b id="H_PAY_TIT">PLANOS DE ATIVAÇÃO:</b><span id="H_PAY_TXT"></span></div>
@@ -68,14 +76,6 @@
             <button onclick="window.K()" id="P2" style="background:var(--accent); color:#000;"></button>
         </div>
         <button onclick="window.GO('login')" id="B_VOLTAR" style="background:none; border:1px solid #fff;"></button>
-    </div>
-
-    <div id="setup" class="screen">
-        <h2 id="S1">CONFIGURAÇÃO</h2>
-        <div class="info-box"><b id="H_SETUP_TIT">INFORMAÇÕES DA ELEIÇÃO:</b><span id="H_SETUP_TXT"></span></div>
-        <input id="tE" type="text">
-        <input id="maxV" type="number" min="1" value="1">
-        <button onclick="window.N()" id="S2"></button>
     </div>
 
     <div id="setupCargo" class="screen">
@@ -122,16 +122,6 @@
         emailjs.init(window._cfg.k);
         window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp=''; window._maxVotos=1; window._idioma='pt';
 
-        window.BIP = () => {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const g = ctx.createGain();
-            osc.type = 'square'; osc.frequency.setValueAtTime(440, ctx.currentTime);
-            g.gain.setValueAtTime(0.1, ctx.currentTime);
-            osc.connect(g); g.connect(ctx.destination);
-            osc.start(); osc.stop(ctx.currentTime + 1);
-        };
-
         window._tr = {
             pt: { 
                 H_LOGIN_TIT: "ACESSO AO SISTEMA:", H_LOGIN_TXT: "Bem-vindo! Valide seu e-mail Gmail para começar. Novos usuários possuem 3 eleições grátis.", uE: "Digite seu e-mail aqui...", L2: "ENTRAR NO SISTEMA",
@@ -143,7 +133,7 @@
                 H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Digite o cargo, depois o nome e anexe a foto. Clique em ADICIONAR antes de salvar.", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", 
                 C2: "ADICIONAR", C3: "SALVAR", C4: "INICIAR",
                 H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione o candidato e confirme. O som indica sucesso.", U1: "CONFIRMAR VOTO",
-                R_TITLE: "RESULTADO", TOTAL_VOTOS: "QUANTIDADE GERAL DE VOTOS", B_PDF_SIMPLE: "GERAR RELATÓRIO PDF",
+                R_TITLE: "RESULTADO", TOTAL_VOTOS: "VOTOS", B_PDF_SIMPLE: "GERAR RELATÓRIO PDF",
                 H_FEED_TIT: "FALE COM O PAULO:", H_FEED_TXT: "Deixe seu comentário diretamente para o desenvolvedor do sistema.", txtSugestao: "deixe sua mensagem aqui", F2: "ENVIAR MENSAGEM", B_EXIT_FINAL: "SAIR"
             },
             en: { 
@@ -154,7 +144,7 @@
                 L_CUP: "Have a coupon or master password?", P2: "ACTIVATE NOW", B_VOLTAR: "BACK", tE: "Example: CIPA Election",
                 H_SETUP_TIT: "ELECTION INFORMATION:", H_SETUP_TXT: "Give it a title and set how many candidates the voter can choose.",
                 C2: "ADD", C3: "SAVE", C4: "START", U1: "CONFIRM VOTE",
-                R_TITLE: "RESULT", TOTAL_VOTOS: "TOTAL QUANTITY OF VOTES", B_PDF_SIMPLE: "GENERATE PDF REPORT",
+                R_TITLE: "RESULT", TOTAL_VOTOS: "VOTES", B_PDF_SIMPLE: "GENERATE PDF REPORT",
                 H_FEED_TIT: "TALK TO PAULO:", H_FEED_TXT: "Leave your comments directly for the system developer.", txtSugestao: "leave your message here", F2: "SEND MESSAGE", B_EXIT_FINAL: "EXIT"
             },
             es: { 
@@ -164,7 +154,7 @@
                 L_CUP: "¿Tiene un cupón o contraseña maestra?", P2: "ACTIVAR", B_VOLTAR: "VOLVER", tE: "Ejemplo: Elección de CIPA",
                 H_SETUP_TIT: "INFORMACIÓN DE LA ELECCIÓN:", H_SETUP_TXT: "Ponga un título y defina cuántos candidatos puede elegir el votante.",
                 C2: "AÑADIR", C3: "GUARDAR", C4: "INICIAR", U1: "CONFIRMAR VOTO",
-                R_TITLE: "RESULTADO", TOTAL_VOTOS: "CANTIDAD GENERAL DE VOTOS", B_PDF_SIMPLE: "GENERAR PDF",
+                R_TITLE: "RESULTADO", TOTAL_VOTOS: "VOTOS", B_PDF_SIMPLE: "GENERAR PDF",
                 H_FEED_TIT: "HABLE CON PAULO:", H_FEED_TXT: "Deje su comentario directamente para el desarrollador del sistema.", txtSugestao: "deje su mensaje aquí", F2: "ENVIAR", B_EXIT_FINAL: "SALIR"
             }
         };
@@ -202,7 +192,6 @@
         window.END = () => {
             let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
             let d = window._tr[window._idioma];
-            document.getElementById('pdf_h1').innerText=window._title.toUpperCase();
             document.getElementById('pdf-audit').innerText="Emissão: "+new Date().toLocaleString();
             let out=document.getElementById('pC'); 
             out.innerHTML=`<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.TOTAL_VOTOS}: ${total}</b></div>`;
@@ -214,20 +203,7 @@
             window.GO('res');
         };
 
-        window.PDF = (fotos) => {
-            let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
-            let d = window._tr[window._idioma];
-            let out=document.getElementById('pC'); 
-            out.innerHTML=`<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.TOTAL_VOTOS}: ${total}</b></div>`;
-            window._data.forEach(cargo => {
-                let h=`<table class="pdf-table"><thead><tr>${fotos?'<th style="width:50px">Foto</th>':''}<th>${cargo.n}</th><th style="text-align:right">Votos</th></tr></thead><tbody>`;
-                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;"></td>`:''}<td>${can.n}</td><td style="text-align:right">${can.v}</td></tr>`; });
-                out.innerHTML += h+'</tbody></table>';
-            });
-            html2pdf().from(document.getElementById('areaImpressao')).save();
-        };
-
-        // Funções auxiliares
+        // Funções mantidas conforme lógica original
         window.C = () => { if(document.getElementById('iC').value === localStorage.getItem('urna_vault')) window.GO('setup'); else alert("Incorreto!"); };
         window.K = () => { let c = document.getElementById('cup').value.trim(); if(c === 'orion001' || c === 'mais3gratis') { alert("LIBERADO!"); window.GO('setup'); } else alert("Incorreto."); };
         window.N = () => { window._title=document.getElementById('tE').value; window._maxVotos=parseInt(document.getElementById('maxV').value) || 1; window.GO('setupCargo'); };
@@ -253,6 +229,18 @@
             });
         };
         window.VOTE = () => { if(!window._sel.length) return alert("Selecione!"); window.BIP(); window._sel.forEach(i => window._data[window._idx].c[i].v++); window._idx++; if(window._idx < window._data.length) window.RUN(); else { alert("Voto Gravado!"); window._idx=0; window.RUN(); } };
+        window.PDF = (fotos) => {
+            let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
+            let d = window._tr[window._idioma];
+            let out=document.getElementById('pC'); 
+            out.innerHTML=`<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.TOTAL_VOTOS}: ${total}</b></div>`;
+            window._data.forEach(cargo => {
+                let h=`<table class="pdf-table"><thead><tr>${fotos?'<th style="width:50px">Foto</th>':''}<th>${cargo.n}</th><th style="text-align:right">Votos</th></tr></thead><tbody>`;
+                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;"></td>`:''}<td>${can.n}</td><td style="text-align:right">${can.v}</td></tr>`; });
+                out.innerHTML += h+'</tbody></table>';
+            });
+            html2pdf().from(document.getElementById('areaImpressao')).save();
+        };
         window.FEED = () => { let m = document.getElementById('txtSugestao').value; if(!m) return alert("Escreva algo!"); emailjs.send(window._cfg.s, window._cfg.t, {to_email:'paulosmb1972@gmail.com', validation_code: 'FEEDBACK: ' + m}, window._cfg.k).then(() => { alert("Feedback enviado!"); document.getElementById('txtSugestao').value=''; }); };
 
         window.TR('pt');
