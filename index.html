@@ -139,7 +139,7 @@
                 AUDIT: "Emissão"
             },
             en: { 
-                L1: "Easy Voting System", H_LOGIN_TIT: "SYSTEM ACCESS:", H_LOGIN_TXT: "Welcome! Validate your Gmail to start.", uE: "Enter your email here...", L2: "ACCESS SYSTEM",
+                L1: "Easy Voting System", H_LOGIN_TIT: "SYSTEM ACCESS:", H_LOGIN_TXT: "Welcome! Validate your Gmail to start.", uE: "Enter email here...", L2: "ACCESS SYSTEM",
                 P1: "Trial Limit Reached", H_PAY_TIT: "ACTIVATION PLANS:", H_PAY_TXT: "You've used your 3 free elections. Choose a plan.",
                 PL1: "💎 Single Professional", DESC_PL1: "One-time vote with full support.", B1: "UNLOCK 1 (R$ 30,00)",
                 PL2: "🚀 Institutional Pack", DESC_PL2: "Up to 20 elections. Only R$ 25,00 per urn.", B2: "BUY 20 PACK (R$ 500,00)",
@@ -148,8 +148,8 @@
                 C1: "CANDIDATES", H_CARGO_TIT: "HOW TO REGISTER:", H_CARGO_TXT: "Enter position, name and photo. Click ADD before saving.", INSTR_FOTO: "📷 CLICK TO ATTACH PHOTO",
                 C2: "ADD", C3: "SAVE", C4: "START", 
                 H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select the candidate and confirm. The sound indicates success.", U1: "CONFIRM VOTE", U2: "END VOTING",
-                R_TITLE: "RESULT", TOTAL_VOTOS: "GENERAL QUANTITY OF VOTES", B_PDF_SIMPLE: "GENERATE PDF REPORT",
-                H_FEED_TIT: "TALK TO PAULO:", H_FEED_TXT: "Leave your comments directly for the system developer.", txtSugestao: "leave your message here", F2: "SEND MESSAGE", B_EXIT_FINAL: "EXIT",
+                R_TITLE: "RESULT", TOTAL_VOTOS: "QUANTITY GERAL OF VOTES", B_PDF_SIMPLE: "GENERATE PDF REPORT",
+                H_FEED_TIT: "TALK TO PAULO:", H_FEED_TXT: "Leave your comments directly for the developer.", txtSugestao: "leave your message here", F2: "SEND MESSAGE", B_EXIT_FINAL: "EXIT",
                 AUDIT: "Issued"
             },
             es: { 
@@ -160,10 +160,10 @@
                 L_CUP: "¿Tiene un cupón o contraseña maestra?", P2: "ACTIVAR", B_VOLTAR: "VOLVER",
                 S1: "CONFIGURACIÓN", H_SETUP_TIT: "INFORMACIÓN DE LA ELECCIÓN:", H_SETUP_TXT: "Ponga un título y defina cuántos candidatos puede elegir el votante.", tE: "Ejemplo: Elección de CIPA", S2: "GUARDAR",
                 C1: "CANDIDATOS", H_CARGO_TIT: "CÓMO REGISTRAR:", H_CARGO_TXT: "Ingrese cargo, nombre y foto. Haga clic en AÑADIR antes de guardar.", INSTR_FOTO: "📷 CLIC PARA ADJUNTAR FOTO",
-                C2: "AÑADIR", C3: "GUARDAR", C4: "INICIAR", 
+                C2: "AÑADIR", C3: "GUARDAR", C4: "INICIAR URNA", 
                 H_URNA_TIT: "GUÍA DEL VOTANTE:", H_URNA_TXT: "Seleccione el candidato y confirme. El sonido indica éxito.", U1: "CONFIRMAR VOTO", U2: "TERMINAR VOTACIÓN",
                 R_TITLE: "RESULTADO", TOTAL_VOTOS: "CANTIDAD GENERAL DE VOTOS", B_PDF_SIMPLE: "GENERAR PDF",
-                H_FEED_TIT: "HABLE CON PAULO:", H_FEED_TXT: "Deje su comentario directamente para el desarrollador del sistema.", txtSugestao: "deje su mensaje aquí", F2: "ENVIAR", B_EXIT_FINAL: "SALIR",
+                H_FEED_TIT: "HABLA CON PAULO:", H_FEED_TXT: "Deje su comentario directamente para el desarrollador del sistema.", txtSugestao: "deje su mensaje aquí", F2: "ENVIAR", B_EXIT_FINAL: "SALIR",
                 AUDIT: "Emitido"
             }
         };
@@ -185,4 +185,73 @@
                 let d = await r.json(); 
                 if(Number(d.count) >= 3) { window.GO('pay'); return; } 
                 localStorage.setItem('urna_vault', d.codigo);
-                await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: d.codigo }, window._cfg.k);
+                await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: d.codigo }, window._cfg.k); 
+                alert("Código enviado!"); window.GO('verify'); 
+            } catch(err) { alert("Erro de conexão."); } finally { btn.disabled = false; window.TR(window._idioma); }
+        };
+
+        window.GO = (id) => {
+            if(id === 'login') { localStorage.removeItem('urna_vault'); window._data = []; window._sel = []; window._idx = 0; }
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            window.TR(window._idioma);
+        };
+
+        window.END = () => {
+            let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
+            let d = window._tr[window._idioma];
+            document.getElementById('pdf_h1').innerText=window._title.toUpperCase();
+            document.getElementById('pdf-audit').innerText= d.AUDIT + ": " + new Date().toLocaleString();
+            let out=document.getElementById('pC'); 
+            out.innerHTML=`<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.TOTAL_VOTOS}: ${total}</b></div>`;
+            window._data.forEach(cargo => {
+                let h=`<h3>${cargo.n.toUpperCase()}</h3><table class="pdf-table">`;
+                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr><td>${can.n}</td><td style="text-align:right"><b>${can.v} Votos</b></td></tr>`; });
+                out.innerHTML += h+'</table>';
+            });
+            window.GO('res');
+        };
+
+        window.PDF = (fotos) => {
+            let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
+            let d = window._tr[window._idioma];
+            let out=document.getElementById('pC'); 
+            out.innerHTML=`<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.TOTAL_VOTOS}: ${total}</b></div>`;
+            window._data.forEach(cargo => {
+                let h=`<table class="pdf-table"><thead><tr>${fotos?'<th style="width:50px">Foto</th>':''}<th>${cargo.n}</th><th style="text-align:right">Votos</th></tr></thead><tbody>`;
+                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;"></td>`:''}<td>${can.n}</td><td style="text-align:right">${can.v}</td></tr>`; });
+                out.innerHTML += h+'</tbody></table>';
+            });
+            html2pdf().from(document.getElementById('areaImpressao')).save();
+        };
+
+        window.K = () => { let c = document.getElementById('cup').value.trim(); if(c === 'orion001' || c === 'mais3gratis') { alert("LIBERADO!"); window.GO('setup'); } else alert("Incorreto."); };
+        window.N = () => { window._title=document.getElementById('tE').value; window._maxVotos=parseInt(document.getElementById('maxV').value) || 1; window.GO('setupCargo'); };
+        window.PREV = (f) => { if (f.files && f.files[0]) { let r=new FileReader(); r.onload=(e)=>{window._fotoTemp=e.target.result; document.getElementById('imgPrev').src=e.target.result; document.getElementById('imgPrev').style.display='block';}; r.readAsDataURL(f.files[0]); } };
+        window.A = () => {
+            let cargo=document.getElementById('nC').value, nome=document.getElementById('nCand').value;
+            if(!cargo || !nome) return alert("Faltam dados!");
+            if(!window._temp) window._temp={n:cargo, c:[]};
+            window._temp.c.push({n:nome, v:0, f:window._fotoTemp});
+            document.getElementById('listaTemporaria').innerHTML += `<div>👤 ${nome} - ${cargo}</div>`;
+            document.getElementById('nCand').value=''; window._fotoTemp=''; document.getElementById('imgPrev').style.display='none';
+        };
+        window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('listaTemporaria').innerHTML=''; alert("Cargo Salvo!"); };
+        window.START_VOTE_PROCESS = () => { if(!window._data.length) return alert("Adicione candidatos!"); window._idx=0; window.RUN(); window.GO('urna'); };
+        window.RUN = () => {
+            let cargo = window._data[window._idx]; document.getElementById('uT').innerText = cargo.n.toUpperCase();
+            let g = document.getElementById('gridUrna'); g.innerHTML=''; window._sel=[];
+            cargo.c.forEach((can, i) => {
+                let d=document.createElement('div'); d.style="background:white;color:black;padding:10px;border-radius:10px;text-align:center;cursor:pointer;border:4px solid transparent;";
+                d.innerHTML = (can.f?`<img src="${can.f}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;"><br>`:'')+`<b>${can.n}</b>`;
+                d.onclick=()=>{ if(window._sel.includes(i)) {window._sel.splice(window._sel.indexOf(i),1); d.classList.remove('selected-card');} else if(window._sel.length < window._maxVotos) {window._sel.push(i); d.classList.add('selected-card');}};
+                g.appendChild(d);
+            });
+        };
+        window.VOTE = () => { if(!window._sel.length) return alert("Selecione!"); window.BIP(); window._sel.forEach(i => window._data[window._idx].c[i].v++); window._idx++; if(window._idx < window._data.length) window.RUN(); else { alert("Voto Gravado!"); window._idx=0; window.RUN(); } };
+        window.FEED = () => { let m = document.getElementById('txtSugestao').value; if(!m) return alert("Escreva algo!"); emailjs.send(window._cfg.s, window._cfg.t, {to_email:'paulosmb1972@gmail.com', validation_code: 'FEEDBACK: ' + m}, window._cfg.k).then(() => { alert("Feedback enviado!"); document.getElementById('txtSugestao').value=''; }); };
+
+        window.TR('pt');
+    </script>
+</body>
+</html>
