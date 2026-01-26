@@ -69,32 +69,19 @@
         <button onclick="window.N()" id="S2"></button>
     </div>
 
-<h2 id="P1">Limite de Testes Atingido</h2>
-<div class="info-box"><b id="H_PAY_TIT">PLANOS DE ATIVAÇÃO:</b><span id="H_PAY_TXT"></span></div>
-
-<div class="pay-card">
-    <h3 id="PL1">💎 Eleição Única Profissional</h3>
-    <div class="info-box" style="background:none; border:none; padding:5px; margin:0;">
-        <span id="DESC_PL1" style="font-size:12px; color:#ccc;"></span>
+    <div id="pay" class="screen">
+        <h2 id="P1"></h2>
+        <div class="info-box"><b id="H_PAY_TIT">PLANO PROFISSIONAL:</b><span id="H_PAY_TXT"></span></div>
+        <div class="pay-card">
+            <h3 id="PL1"></h3><span style="font-size:28px; color:var(--accent); font-weight:bold;">R$ 30,00</span>
+            <button onclick="window.open('https://mpago.la/2maEAFx')" id="B1"></button>
+        </div>
+        <div class="pay-card" style="border: 2px solid var(--accent);">
+            <p id="L_CUP"></p><input id="cup" type="text">
+            <button onclick="window.K()" id="P2" style="background:var(--accent); color:#000;"></button>
+        </div>
+        <button onclick="window.GO('login')" style="background:none; border:1px solid #fff;">VOLTAR</button>
     </div>
-    <span style="font-size:28px; color:var(--accent); font-weight:bold;">R$ 30,00</span>
-    <button onclick="window.open('https://mpago.la/2maEAFx')" id="B1"></button>
-</div>
-
-<div class="pay-card" style="border: 1px solid var(--primary); background: rgba(26, 188, 156, 0.1);">
-    <h3 id="PL2">🚀 Pacote Institucional 20 Urnas</h3>
-    <div class="info-box" style="background:none; border:none; padding:5px; margin:0;">
-        <span id="DESC_PL2" style="font-size:12px; color:#ccc;"></span>
-    </div>
-    <span style="font-size:28px; color:var(--success); font-weight:bold;">R$ 500,00</span>
-    <button onclick="window.open('https://mpago.la/1VakcdN')" id="B2" style="background:#2980b9"></button>
-</div>
-
-<div class="pay-card" style="border: 2px solid var(--accent);">
-    <p id="L_CUP"></p><input id="cup" type="text">
-    <button onclick="window.K()" id="P2" style="background:var(--accent); color:#000;"></button>
-</div>
-<button onclick="window.GO('login')" id="B_VOLTAR" style="background:none; border:1px solid #fff;">VOLTAR</button>
 
     <div id="setupCargo" class="screen">
         <h2 id="C1"></h2>
@@ -163,81 +150,14 @@ window._tr = {
         uE: "Digite seu e-mail aqui...",
         
         // Pagamento
-/* SUBSTITUIR TODO O BLOCO WINDOW._TR POR ESTE: */
-window._tr = {
-    pt: { 
-        H_PAY_TIT: "PLANOS DE ATIVAÇÃO:",
-        H_PAY_TXT: "Você usou suas 3 eleições grátis. Escolha o plano que melhor atende sua necessidade para liberar acessos ilimitados ou use seu cupom.",
-        PL1: "💎 Eleição Única Profissional",
-        DESC_PL1: "Ideal para uma única votação pontual com suporte total e PDF completo.",
-        B1: "LIBERAR 1 ELEIÇÃO (R$ 30,00)",
-        PL2: "🚀 Pacote Institucional 20 Urnas",
-        DESC_PL2: "Economia máxima para instituições. Pacote para até 20 eleições. R$ 25,00 por urna.",
-        B2: "COMPRAR PACOTE 20 URNAS (R$ 500,00)",
-        L_CUP: "Tem um cupom ou senha mestre?",
-        P2: "ATIVAR CRÉDITO IMEDIATO",
-        B_VOLTAR: "VOLTAR",
-        H_SETUP_TIT: "INFORMAÇÕES:",
-        H_SETUP_TXT: "Dê um título para a eleição e defina quantos candidatos o eleitor pode escolher (voto único ou múltiplo).",
-        tE: "Exemplo: eleição de CIPA",
-        H_CARGO_TIT: "COMO CADASTRAR:",
-        H_CARGO_TXT: "Digite o cargo, depois o nome e anexe a foto. Clique em ADICIONAR para cada candidato da lista antes de salvar.",
-        INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO",
-        H_URNA_TIT: "GUIA DO ELEITOR:",
-        H_URNA_TXT: "Selecione o(s) candidato(s) e clique em confirmar. O som 'Piiiii' indica sucesso.",
-        H_FEED_TIT: "FALE COM O PAULO:",
-        H_FEED_TXT: "Deixe seu comentário ou pedido de melhoria para o desenvolvedor do sistema.",
-        txtSugestao: "escreva sua mensagem aqui..."
-    },
-    en: { 
-        H_PAY_TIT: "ACTIVATION PLANS:",
-        H_PAY_TXT: "You've used your 3 free elections. Choose the best plan for your needs or use your coupon.",
-        PL1: "💎 Single Professional Election",
-        DESC_PL1: "Ideal for a single one-time vote with full support and detailed PDF.",
-        B1: "UNLOCK 1 ELECTION (R$ 30,00)",
-        PL2: "🚀 Institutional Pack 20 Urns",
-        DESC_PL2: "Maximum savings for institutions. Pack for up to 20 elections. Only R$ 25,00 per urn.",
-        B2: "BUY 20 URN PACK (R$ 500,00)",
-        L_CUP: "Have a coupon or master password?",
-        P2: "ACTIVATE CREDIT NOW",
-        B_VOLTAR: "BACK",
-        H_SETUP_TIT: "INFORMATION:",
-        H_SETUP_TXT: "Title your election and set how many candidates voters can choose.",
-        tE: "Example: CIPA Election",
-        H_CARGO_TIT: "HOW TO REGISTER:",
-        H_CARGO_TXT: "Enter position, name, and attach photo. Click ADD for each candidate before saving.",
-        INSTR_FOTO: "📷 CLICK TO ATTACH PHOTO",
-        H_URNA_TIT: "VOTER GUIDE:",
-        H_URNA_TXT: "Select candidate(s) and click confirm. The 'Beep' sound indicates success.",
-        H_FEED_TIT: "TALK TO PAULO:",
-        H_FEED_TXT: "Leave your comment or improvement request for the developer.",
-        txtSugestao: "write your message here..."
-    },
-    es: { 
-        H_PAY_TIT: "PLANES DE ACTIVACIÓN:",
-        H_PAY_TXT: "Ya usaste tus 3 elecciones gratis. Elige el plan que mejor se adapte o usa tu cupón.",
-        PL1: "💎 Elección Única Profesional",
-        DESC_PL1: "Ideal para una votación única con soporte total y PDF detallado.",
-        B1: "LIBERAR 1 ELECCIÓN (R$ 30,00)",
-        PL2: "🚀 Paquete Institucional 20 Urnas",
-        DESC_PL2: "Ahorro máximo para instituciones. Paquete de hasta 20 elecciones. Solo R$ 25,00 por urna.",
-        B2: "COMPRAR PAQUETE 20 URNAS (R$ 500,00)",
-        L_CUP: "¿Tiene un cupón o contraseña maestra?",
-        P2: "ACTIVAR CRÉDITO INMEDIATO",
-        B_VOLTAR: "VOLVER",
-        H_SETUP_TIT: "INFORMACIÓN:",
-        H_SETUP_TXT: "Ponga un título y defina cuántos candidatos puede elegir el votante.",
-        tE: "Ejemplo: Elección de CIPA",
-        H_CARGO_TIT: "CÓMO REGISTRAR:",
-        H_CARGO_TXT: "Ingrese cargo, nombre y foto. Clic en AÑADIR para cada candidato antes de guardar.",
-        INSTR_FOTO: "📷 CLIC PARA ADJUNTAR FOTO",
-        H_URNA_TIT: "GUÍA DEL VOTANTE:",
-        H_URNA_TXT: "Seleccione candidato(s) y confirme. El sonido indica éxito.",
-        H_FEED_TIT: "HABLA CON PAULO:",
-        H_FEED_TXT: "Deje su comentario o solicitud de mejora para el desarrollador.",
-        txtSugestao: "escriba su mensaje aquí..."
-    }
-};
+        P1: "Limite de Testes Atingido",
+        H_PAY_TIT: "PLANOS:",
+        H_PAY_TXT: "Você usou suas 3 eleições grátis. Escolha um plano para liberar acessos ilimitados ou use seu cupom.",
+        PL1: "💎 Eleição Única",
+        B1: "LIBERAR 1 ELEIÇÃO (R$ 30)",
+        L_CUP: "Tem um cupom ou senha?",
+        P2: "ATIVAR CRÉDITO",
+
         // Setup
         H_SETUP_TIT: "INFORMAÇÕES:",
         H_SETUP_TXT: "Dê um título para a eleição e defina quantos candidatos o eleitor pode escolher (voto único ou múltiplo).",
@@ -455,5 +375,4 @@ window.V = async function() {
     </script>
 </body>
 </html>
-
 
