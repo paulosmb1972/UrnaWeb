@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        :root { --primary: #1abc9c; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; }
+        :root { --primary: #f39c12; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; }
         body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; user-select: none; }
         .screen { display: none; padding: 20px; width: 100%; max-width: 600px; box-sizing: border-box; }
         .active { display: block; animation: fadeIn 0.3s; }
@@ -106,7 +106,7 @@
         <div class="info-box"><b id="H_URNA_TIT">GUIA DO ELEITOR:</b><span id="H_URNA_TXT"></span></div>
         <div id="gridUrna" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
         <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success)"></button>
-        <button onclick="window.END()" id="U2" style="background:var(--danger)">ENCERRAR</button>
+        <button onclick="window.CONFIRM_END()" id="U2" style="background:var(--danger)">ENCERRAR</button>
     </div>
 
     <div id="res" class="screen">
@@ -230,6 +230,21 @@
             } catch(err) { alert(d_tr.AL_ERR_CONN); } finally { btn.disabled = false; window.TR(window._idioma); }
         };
 
+// Função de segurança para encerramento
+window.CONFIRM_END = () => {
+    let d_tr = window._tr[window._idioma];
+    let pass = prompt(window._idioma === 'pt' ? "Digite a senha para encerrar:" : "Enter password to end:");
+    if(pass === "1357") { 
+        window.END(); 
+    } else { 
+        alert(d_tr.AL_ERR_CODE); 
+    }
+};
+
+// Registro do App (PWA)
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(err => console.log(err));
+}
         window.END = () => {
             let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
             let d = window._tr[window._idioma];
@@ -300,3 +315,4 @@
     </script>
 </body>
 </html>
+
