@@ -69,34 +69,32 @@
         <button onclick="window.N()" id="S2"></button>
     </div>
 
-<div id="pay" class="screen">
-        <h2 id="P1">Limite de Testes Atingido</h2>
-        <div class="info-box"><b id="H_PAY_TIT">PLANOS DE ATIVAÇÃO:</b><span id="H_PAY_TXT"></span></div>
-        
-        <div class="pay-card">
-            <h3 id="PL1">💎 Eleição Única Profissional</h3>
-            <div class="info-box" style="background:none; border:none; padding:5px; margin:0;">
-                <span id="DESC_PL1" style="font-size:12px; color:#ccc;"></span>
-            </div>
-            <span style="font-size:28px; color:var(--accent); font-weight:bold;">R$ 30,00</span>
-            <button onclick="window.open('https://mpago.la/2maEAFx')" id="B1"></button>
-        </div>
+<h2 id="P1">Limite de Testes Atingido</h2>
+<div class="info-box"><b id="H_PAY_TIT">PLANOS DE ATIVAÇÃO:</b><span id="H_PAY_TXT"></span></div>
 
-        <div class="pay-card" style="border: 1px solid var(--primary); background: rgba(26, 188, 156, 0.1);">
-            <h3 id="PL2">🚀 Pacote Institucional 20 Urnas</h3>
-            <div class="info-box" style="background:none; border:none; padding:5px; margin:0;">
-                <span id="DESC_PL2" style="font-size:12px; color:#ccc;"></span>
-            </div>
-            <span style="font-size:28px; color:var(--success); font-weight:bold;">R$ 500,00</span>
-            <button onclick="window.open('https://mpago.la/1VakcdN')" id="B2" style="background:#2980b9"></button>
-        </div>
-
-        <div class="pay-card" style="border: 2px solid var(--accent);">
-            <p id="L_CUP"></p><input id="cup" type="text">
-            <button onclick="window.K()" id="P2" style="background:var(--accent); color:#000;"></button>
-        </div>
-        <button onclick="window.GO('login')" id="B_VOLTAR" style="background:none; border:1px solid #fff;">VOLTAR</button>
+<div class="pay-card">
+    <h3 id="PL1">💎 Eleição Única Profissional</h3>
+    <div class="info-box" style="background:none; border:none; padding:5px; margin:0;">
+        <span id="DESC_PL1" style="font-size:12px; color:#ccc;"></span>
     </div>
+    <span style="font-size:28px; color:var(--accent); font-weight:bold;">R$ 30,00</span>
+    <button onclick="window.open('https://mpago.la/2maEAFx')" id="B1"></button>
+</div>
+
+<div class="pay-card" style="border: 1px solid var(--primary); background: rgba(26, 188, 156, 0.1);">
+    <h3 id="PL2">🚀 Pacote Institucional 20 Urnas</h3>
+    <div class="info-box" style="background:none; border:none; padding:5px; margin:0;">
+        <span id="DESC_PL2" style="font-size:12px; color:#ccc;"></span>
+    </div>
+    <span style="font-size:28px; color:var(--success); font-weight:bold;">R$ 500,00</span>
+    <button onclick="window.open('https://mpago.la/1VakcdN')" id="B2" style="background:#2980b9"></button>
+</div>
+
+<div class="pay-card" style="border: 2px solid var(--accent);">
+    <p id="L_CUP"></p><input id="cup" type="text">
+    <button onclick="window.K()" id="P2" style="background:var(--accent); color:#000;"></button>
+</div>
+<button onclick="window.GO('login')" id="B_VOLTAR" style="background:none; border:1px solid #fff;">VOLTAR</button>
 
     <div id="setupCargo" class="screen">
         <h2 id="C1"></h2>
@@ -165,6 +163,7 @@ window._tr = {
         uE: "Digite seu e-mail aqui...",
         
         // Pagamento
+/* SUBSTITUIR TODO O BLOCO WINDOW._TR POR ESTE: */
 window._tr = {
     pt: { 
         H_PAY_TIT: "PLANOS DE ATIVAÇÃO:",
@@ -173,14 +172,14 @@ window._tr = {
         DESC_PL1: "Ideal para uma única votação pontual com suporte total e PDF completo.",
         B1: "LIBERAR 1 ELEIÇÃO (R$ 30,00)",
         PL2: "🚀 Pacote Institucional 20 Urnas",
-        DESC_PL2: "Economia máxima para instituições. Pacote para até 20 eleições. Apenas R$ 25,00 por urna.",
+        DESC_PL2: "Economia máxima para instituições. Pacote para até 20 eleições. R$ 25,00 por urna.",
         B2: "COMPRAR PACOTE 20 URNAS (R$ 500,00)",
         L_CUP: "Tem um cupom ou senha mestre?",
         P2: "ATIVAR CRÉDITO IMEDIATO",
         B_VOLTAR: "VOLTAR",
         H_SETUP_TIT: "INFORMAÇÕES:",
         H_SETUP_TXT: "Dê um título para a eleição e defina quantos candidatos o eleitor pode escolher (voto único ou múltiplo).",
-        tE: "Exemplo: Eleição de CIPA",
+        tE: "Exemplo: eleição de CIPA",
         H_CARGO_TIT: "COMO CADASTRAR:",
         H_CARGO_TXT: "Digite o cargo, depois o nome e anexe a foto. Clique em ADICIONAR para cada candidato da lista antes de salvar.",
         INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO",
@@ -188,7 +187,7 @@ window._tr = {
         H_URNA_TXT: "Selecione o(s) candidato(s) e clique em confirmar. O som 'Piiiii' indica sucesso.",
         H_FEED_TIT: "FALE COM O PAULO:",
         H_FEED_TXT: "Deixe seu comentário ou pedido de melhoria para o desenvolvedor do sistema.",
-        txtSugestao: "Escreva sua mensagem aqui..."
+        txtSugestao: "escreva sua mensagem aqui..."
     },
     en: { 
         H_PAY_TIT: "ACTIVATION PLANS:",
@@ -212,7 +211,7 @@ window._tr = {
         H_URNA_TXT: "Select candidate(s) and click confirm. The 'Beep' sound indicates success.",
         H_FEED_TIT: "TALK TO PAULO:",
         H_FEED_TXT: "Leave your comment or improvement request for the developer.",
-        txtSugestao: "Write your message here..."
+        txtSugestao: "write your message here..."
     },
     es: { 
         H_PAY_TIT: "PLANES DE ACTIVACIÓN:",
@@ -236,7 +235,7 @@ window._tr = {
         H_URNA_TXT: "Seleccione candidato(s) y confirme. El sonido indica éxito.",
         H_FEED_TIT: "HABLA CON PAULO:",
         H_FEED_TXT: "Deje su comentario o solicitud de mejora para el desarrollador.",
-        txtSugestao: "Escriba su mensaje aquí..."
+        txtSugestao: "escriba su mensaje aquí..."
     }
 };
         // Setup
