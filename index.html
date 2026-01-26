@@ -69,16 +69,33 @@
         <button onclick="window.N()" id="S2"></button>
     </div>
 
-</div>
+    <div id="pay" class="screen">
+        <h2 id="P1">Limite de Testes Atingido</h2>
+        <div class="info-box"><b id="H_PAY_TIT">PLANOS DE ATIVAÇÃO:</b><span id="H_PAY_TXT"></span></div>
+        
         <div class="pay-card">
-            <h3 id="PL1"></h3><span style="font-size:28px; color:var(--accent); font-weight:bold;">R$ 30,00</span>
+            <h3 id="PL1">💎 Eleição Única Profissional</h3>
+            <div class="info-box" style="background:none; border:none; padding:5px; margin:0;">
+                <span id="DESC_PL1" style="font-size:12px; color:#ccc;"></span>
+            </div>
+            <span style="font-size:28px; color:var(--accent); font-weight:bold;">R$ 30,00</span>
             <button onclick="window.open('https://mpago.la/2maEAFx')" id="B1"></button>
         </div>
+
+        <div class="pay-card" style="border: 1px solid var(--primary); background: rgba(26, 188, 156, 0.1);">
+            <h3 id="PL2">🚀 Pacote Institucional 20 Urnas</h3>
+            <div class="info-box" style="background:none; border:none; padding:5px; margin:0;">
+                <span id="DESC_PL2" style="font-size:12px; color:#ccc;"></span>
+            </div>
+            <span style="font-size:28px; color:var(--success); font-weight:bold;">R$ 500,00</span>
+            <button onclick="window.open('https://mpago.la/1VakcdN')" id="B2" style="background:#2980b9"></button>
+        </div>
+
         <div class="pay-card" style="border: 2px solid var(--accent);">
             <p id="L_CUP"></p><input id="cup" type="text">
             <button onclick="window.K()" id="P2" style="background:var(--accent); color:#000;"></button>
         </div>
-        <button onclick="window.GO('login')" style="background:none; border:1px solid #fff;">VOLTAR</button>
+        <button onclick="window.GO('login')" id="B_VOLTAR" style="background:none; border:1px solid #fff;">VOLTAR</button>
     </div>
 
     <div id="setupCargo" class="screen">
@@ -116,7 +133,8 @@
         <button onclick="window.PDF(true)" id="B_PDF_FULL" style="background:var(--success); margin-top:10px"></button>
         
         <div style="margin-top:30px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
-            <h3 id="F1"></h3>
+            <h3 id="F1" style="text-align:center;"></h3>
+            <div class="info-box"><b id="H_FEED_TIT">FALE COM O PAULO:</b><span id="H_FEED_TXT"></span></div>
             <textarea id="txtSugestao"></textarea>
             <button onclick="window.FEED()" id="F2" style="background:var(--primary)"></button>
         </div>
@@ -139,48 +157,65 @@
             osc.start(); osc.stop(ctx.currentTime + 1);
         };
 
-/* [TÍTULO: JS - DICIONÁRIO DE TRADUÇÃO ULTRA EXTREMA] */
-window._tr = {
-    pt: { 
-        // Acesso
-        H_LOGIN_TIT: "ACESSO AO SISTEMA:",
-        H_LOGIN_TXT: "Bem-vindo! Este sistema é projetado para votações rápidas e seguras. Valide seu e-mail Gmail para começar. Novos usuários possuem 3 eleições grátis.",
-        uE: "Digite seu e-mail aqui...",
-        
-        // Pagamento
-        P1: "Limite de Testes Atingido",
-       H_PAY_TIT: "PLANOS DE ATIVAÇÃO:", H_PAY_TXT: "Você usou suas 3 eleições grátis. Escolha o plano que melhor atende sua necessidade para liberar acessos ilimitados ou use seu cupom.", PL1: "💎 Eleição Única Profissional", DESC_PL1: "Ideal para uma única votação pontual com suporte total e PDF completo.", B1: "LIBERAR 1 ELEIÇÃO (R$ 30,00)", PL2: "🚀 Pacote Institucional 20 Urnas", DESC_PL2: "Economia máxima para instituições. Pacote para até 20 eleições. R$ 25,00 por urna.", B2: "COMPRAR PACOTE 20 URNAS (R$ 500,00)", L_CUP: "Tem um cupom ou senha mestre?", P2: "ATIVAR CRÉDITO IMEDIATO", B_VOLTAR: "VOLTAR", H_SETUP_TIT: "INFORMAÇÕES:", H_SETUP_TXT: "Dê um título para a eleição e defina quantos candidatos o eleitor pode escolher (voto único ou múltiplo).", tE: "Exemplo: eleição de CIPA", H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Digite o cargo, depois o nome e anexe a foto. Clique em ADICIONAR para cada candidato da lista antes de salvar.", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione o(s) candidato(s) e clique em confirmar. O som 'Piiiii' indica sucesso.", H_FEED_TIT: "FALE COM O PAULO:", H_FEED_TXT: "Deixe seu comentário ou pedido de melhoria para o desenvolvedor do sistema.", txtSugestao: "escreva sua mensagem aqui...", H_LOGIN_TIT: "ACESSO AO SISTEMA:", H_LOGIN_TXT: "Bem-vindo! Valide seu e-mail Gmail para começar. Novos usuários possuem 3 eleições grátis.", uE: "Digite seu e-mail aqui..." },    en: { 
-        H_LOGIN_TIT: "SYSTEM ACCESS:",
-        H_LOGIN_TXT: "Welcome! This system is designed for fast and secure voting. Validate your Gmail to start. New users get 3 free elections.",
-        uE: "Enter your email here...",
-        P1: "Trial Limit Reached",
-        H_PAY_TIT: "ACTIVATION PLANS:", PL1: "💎 Single Professional", DESC_PL1: "Ideal for a single vote with full support.", B1: "UNLOCK 1 ELECTION (R$ 30,00)", PL2: "🚀 Institutional Pack", DESC_PL2: "Pack for up to 20 elections. Only R$ 25,00 per urn.", B2: "BUY 20 URN PACK (R$ 500,00)", B_VOLTAR: "BACK", tE: "Example: CIPA Election", txtSugestao: "write your message here..." },
-    es: { 
-        H_LOGIN_TIT: "ACCESO AL SISTEMA:",
-        H_LOGIN_TXT: "¡Bienvenido! Este sistema está diseñado para votaciones rápidas y seguras. Valide su Gmail para comenzar. Los nuevos usuarios tienen 3 elecciones gratis.",
-        uE: "Ingrese su email aquí...",
-        P1: "Límite de Pruebas Alcanzado",
-        H_PAY_TIT: "ACTIVATION PLANS:", PL1: "💎 Single Professional", DESC_PL1: "Ideal for a single vote with full support.", B1: "UNLOCK 1 ELECTION (R$ 30,00)", PL2: "🚀 Institutional Pack", DESC_PL2: "Pack for up to 20 elections. Only R$ 25,00 per urn.", B2: "BUY 20 URN PACK (R$ 500,00)", B_VOLTAR: "BACK", tE: "Example: CIPA Election", txtSugestao: "write your message here..." },
-/* [TÍTULO: JS - MOTOR DE TRADUÇÃO COMPLETO] */
-window.TR = (l) => { 
-    window._idioma = l; 
-    const d = window._tr[l]; 
-    if(!d) return;
-    
-    // Atualiza todos os IDs que constam no dicionário de tradução
-    for(let k in d){ 
-        let el = document.getElementById(k); 
-        if(el) { 
-            // Se for um campo de entrada ou área de texto, traduz a dica (placeholder)
-            if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-                el.placeholder = d[k]; 
-            } else {
-                // Caso contrário, traduz o texto visível
-                el.innerText = d[k]; 
+        // DICIONÁRIO DE TRADUÇÃO ULTRA EXTREMA
+        window._tr = {
+            pt: { 
+                H_LOGIN_TIT: "ACESSO AO SISTEMA:", H_LOGIN_TXT: "Bem-vindo! Valide seu e-mail Gmail para começar. Novos usuários possuem 3 eleições grátis.",
+                uE: "Digite seu e-mail aqui...", L2: "SOLICITAR CÓDIGO",
+                V1: "Verificar Código", H_VERIFY_TIT: "SEGURANÇA:", H_VERIFY_TXT: "Um código de 4 dígitos foi enviado ao seu Gmail. Verifique o SPAM.", iC: "0000", V3: "CONFIRMAR",
+                H_PAY_TIT: "PLANOS DE ATIVAÇÃO:", H_PAY_TXT: "Você usou suas 3 eleições grátis. Escolha o plano que melhor atende sua necessidade para liberar acessos ilimitados ou use seu cupom.",
+                PL1: "💎 Eleição Única Profissional", DESC_PL1: "Ideal para uma única votação pontual com suporte total e PDF completo.", B1: "LIBERAR 1 ELEIÇÃO (R$ 30,00)",
+                PL2: "🚀 Pacote Institucional 20 Urnas", DESC_PL2: "Economia máxima para instituições. Pacote para até 20 eleições. R$ 25,00 por urna.", B2: "COMPRAR PACOTE 20 URNAS (R$ 500,00)",
+                L_CUP: "Tem um cupom ou senha mestre?", P2: "ATIVAR CRÉDITO IMEDIATO", B_VOLTAR: "VOLTAR",
+                H_SETUP_TIT: "INFORMAÇÕES:", H_SETUP_TXT: "Dê um título para a eleição e defina quantos candidatos o eleitor pode escolher (voto único ou múltiplo).", tE: "Exemplo: eleição de CIPA", S2: "SALVAR DADOS",
+                H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Digite o cargo, depois o nome e anexe a foto. Clique em ADICIONAR para cada candidato da lista antes de salvar.", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO",
+                H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione o(s) candidato(s) e clique em confirmar. O som 'Piiiii' indica sucesso.",
+                H_FEED_TIT: "FALE COM O PAULO:", H_FEED_TXT: "Deixe seu comentário ou pedido de melhoria para o desenvolvedor do sistema.", txtSugestao: "escreva sua mensagem aqui...", F2: "ENVIAR FEEDBACK"
+            },
+            en: { 
+                H_PAY_TIT: "ACTIVATION PLANS:", H_PAY_TXT: "You've used your 3 free elections. Choose a plan.",
+                PL1: "💎 Single Professional", DESC_PL1: "Ideal for a single vote with full support.", B1: "UNLOCK 1 ELECTION (R$ 30,00)",
+                PL2: "🚀 Institutional Pack", DESC_PL2: "Pack for up to 20 elections. Only R$ 25,00 per urn.", B2: "BUY 20 PACK (R$ 500,00)",
+                B_VOLTAR: "BACK", tE: "Example: CIPA Election", txtSugestao: "write your message here...", L2: "REQUEST CODE"
+            },
+            es: { 
+                H_PAY_TIT: "PLANES DE ACTIVACIÓN:", H_PAY_TXT: "Ya usaste tus 3 elecciones gratis. Elige el mejor plan.",
+                PL1: "💎 Elección Única", DESC_PL1: "Ideal para una votación única con soporte total.", B1: "LIBERAR 1 (R$ 30,00)",
+                PL2: "🚀 Paquete Institucional", DESC_PL2: "Paquete de hasta 20 elecciones. Solo R$ 25,00 por urna.", B2: "COMPRAR PAQUETE (R$ 500,00)",
+                B_VOLTAR: "VOLVER", tE: "Ejemplo: Elección de CIPA", txtSugestao: "escriba su mensaje aquí...", L2: "PEDIR CÓDIGO"
             }
-        } 
-    } 
-};
+        };
+
+        // MOTOR DE TRADUÇÃO
+        window.TR = (l) => { 
+            window._idioma = l; 
+            const d = window._tr[l]; 
+            if(!d) return;
+            for(let k in d){ 
+                let el = document.getElementById(k); 
+                if(el) { 
+                    if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = d[k]; 
+                    else el.innerText = d[k]; 
+                } 
+            } 
+        };
+
+        // LOGIN BLINDADO
+        window.V = async function() { 
+            let e = document.getElementById('uE').value.trim().toLowerCase(); 
+            if(!e.endsWith('@gmail.com')) return alert("Use Gmail oficial!");
+            let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
+            try { 
+                let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
+                let d = await r.json(); 
+                if(Number(d.count) >= 3) { alert("Limite atingido!"); window.GO('pay'); return; } 
+                localStorage.setItem('urna_vault', d.codigo);
+                await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: d.codigo }, window._cfg.k); 
+                alert("Código enviado!"); window.GO('verify'); 
+            } catch(err) { alert("Erro de conexão."); } 
+            finally { btn.disabled = false; window.TR(window._idioma); }
+        };
+
         // NAVEGAÇÃO
         window.GO = (id) => {
             if(id === 'login') { localStorage.removeItem('urna_vault'); window._data = []; window._sel = []; window._idx = 0; }
@@ -189,35 +224,13 @@ window.TR = (l) => {
             window.TR(window._idioma);
         };
 
-/* [TÍTULO: JS - LOGIN BLINDADO] */
-window.V = async function() { let e = document.getElementById('uE').value.trim().toLowerCase(); if(!e.endsWith('@gmail.com')) return alert("Use Gmail oficial!"); let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "..."; try { let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); let d = await r.json(); if(Number(d.count) >= 3) { alert("Limite atingido!"); window.GO('pay'); return; } localStorage.setItem('urna_vault', d.codigo); await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: d.codigo }, window._cfg.k); alert("Código enviado!"); window.GO('verify'); } catch(err) { alert("Erro de conexão."); } finally { btn.disabled = false; window.TR(window._idioma); } };        
-        // CORREÇÃO PONTUAL: Se atingir 3, o 'return' mata o processo e muda de tela
-        if(Number(d.count) >= 3) { 
-            alert("Limite atingido!");
-            window.GO('pay'); 
-            return; // ESTE É O LOCAL DA CORREÇÃO DO TRAVAMENTO
-        } 
-        
-        localStorage.setItem('urna_vault', d.codigo);
-        await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: d.codigo }, window._cfg.k); 
-        alert("Código enviado!"); 
-        window.GO('verify'); 
-    } catch(err) { 
-        alert("Erro de conexão."); 
-    } finally { 
-        btn.disabled = false; 
-        window.TR(window._idioma); // Garante que o botão volte ao idioma certo
-    }
-};
         window.C = () => { if(document.getElementById('iC').value === localStorage.getItem('urna_vault')) window.GO('setup'); else alert("Incorreto!"); };
-
         window.K = () => { 
             let c = document.getElementById('cup').value.trim();
             if(c === 'orion001' || c === 'mais3gratis') { alert("LIBERADO!"); window.GO('setup'); }
             else alert("Incorreto.");
         };
 
-        // CADASTRO
         window.N = () => { window._title=document.getElementById('tE').value; window._maxVotos=parseInt(document.getElementById('maxV').value) || 1; window.GO('setupCargo'); };
         window.PREV = (f) => { let r=new FileReader(); r.onload=(e)=>{window._fotoTemp=e.target.result; document.getElementById('imgPrev').src=e.target.result; document.getElementById('imgPrev').style.display='block';}; r.readAsDataURL(f.files[0]); };
         
@@ -227,14 +240,13 @@ window.V = async function() { let e = document.getElementById('uE').value.trim()
             if(!window._temp) window._temp={n:cargo, c:[]};
             window._temp.c.push({n:nome, v:0, f:window._fotoTemp});
             let list = document.getElementById('listaTemporaria'); list.style.display='block';
-            list.innerHTML += `<div class="cand-item-small">👤 <b>${nome}</b> - Adicionado ao cargo: ${cargo}</div>`;
+            list.innerHTML += `<div class="cand-item-small">👤 <b>${nome}</b> - Cargo: ${cargo}</div>`;
             document.getElementById('nCand').value=''; window._fotoTemp=''; document.getElementById('imgPrev').style.display='none';
         };
 
         window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('listaTemporaria').innerHTML=''; document.getElementById('listaTemporaria').style.display='none'; alert("Cargo Salvo!"); };
         window.START_VOTE_PROCESS = () => { if(!window._data.length) return alert("Adicione candidatos!"); window._idx=0; window.RUN(); window.GO('urna'); };
         
-        // URNA
         window.RUN = () => {
             let cargo = window._data[window._idx]; document.getElementById('uT').innerText = cargo.n.toUpperCase();
             let g = document.getElementById('gridUrna'); g.innerHTML=''; window._sel=[];
@@ -255,7 +267,6 @@ window.V = async function() { let e = document.getElementById('uE').value.trim()
             else { alert("Voto Gravado!"); window._idx=0; window.RUN(); }
         };
 
-        // PDF E FEEDBACK
         window.END = () => {
             let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
             document.getElementById('pdf_h1').innerText=window._title.toUpperCase();
@@ -283,12 +294,10 @@ window.V = async function() { let e = document.getElementById('uE').value.trim()
             let m = document.getElementById('txtSugestao').value;
             if(!m) return alert("Escreva algo!");
             emailjs.send(window._cfg.s, window._cfg.t, {to_email:'paulosmb1972@gmail.com', validation_code: 'FEEDBACK: ' + m}, window._cfg.k)
-            .then(() => { alert("Enviado!"); document.getElementById('txtSugestao').value=''; });
+            .then(() => { alert("Feedback enviado!"); document.getElementById('txtSugestao').value=''; });
         };
 
         window.TR('pt');
     </script>
 </body>
 </html>
-
-
