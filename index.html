@@ -141,43 +141,98 @@
             osc.start(); osc.stop(ctx.currentTime + 1);
         };
 
-        // DICIONÁRIO ULTRA EXTREMO
-        window._tr = {
-            pt: { 
-                L1: "Sistema de Votação Fácil", 
-                H_LOGIN_TXT: "Este é um sistema simplificado de votação profissional. Valide seu acesso com um Gmail oficial. Novos usuários ganham 3 eleições grátis para testar todas as funções.", 
-                uE: "Digite seu e-mail @gmail.com...", L2: "SOLICITAR CÓDIGO DE ACESSO",
-                V1: "Verificar Código", H_VERIFY_TXT: "Insira os 4 dígitos enviados ao seu Gmail. Verifique a caixa de SPAM caso demore a chegar.", 
-                iC: "Código de 4 dígitos", V3: "CONFIRMAR E ACESSAR",
-                S1: "Configurar Eleição", H_SETUP_TXT: "Escolha um nome para sua eleição e defina quantos candidatos cada eleitor pode escolher (Votação Única ou Múltipla).", 
-                tE: "Ex: Votação da CIPA 2026", maxV: "Quantidade de votos por eleitor", S2: "SALVAR E CADASTRAR NOMES",
-                P1: "Limite de Testes Atingido", H_PAY_TXT: "Suas 3 eleições grátis acabaram. Adquira novos créditos ou use seu cupom 'orion001' para continuar.", 
-                PL1: "💎 Eleição Avulsa", B1: "LIBERAR 1 ELEIÇÃO (R$ 30)", L_CUP: "Tem um cupom?", P2: "ATIVAR CUPOM",
-                C1: "Cadastrar Candidatos", H_CARGO_TXT: "1. Digite o cargo. 2. Digite o nome do candidato. 3. Anexe a foto. 4. Clique em ADICIONAR. Repita para todos os candidatos do mesmo cargo.", 
-                nC: "Cargo (Ex: Presidente)", nCand: "Nome do Candidato", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", C2: "ADICIONAR À LISTA", C3: "SALVAR CARGO E NOMES", C4: "INICIAR VOTAÇÃO NA URNA",
-                H_URNA_TXT: "Selecione seus candidatos e clique no botão verde para confirmar. O som 'Piiiii' confirma que seu voto foi gravado.", 
-                U1: "CONFIRMAR MEU VOTO", U2: "ENCERRAR E VER RESULTADO", 
-                R_TITLE: "Resultado da Apuração", B_PDF_SIMPLE: "GERAR PDF (NOMES E VOTOS)", B_PDF_FULL: "GERAR PDF (COM FOTOS)", 
-                F1: "Sugestões e Pedidos", F2: "ENVIAR FEEDBACK", B_EXIT_FINAL: "NOVA ELEIÇÃO / SAIR"
-            },
-            en: { L1: "Easy Voting System", L2: "GET ACCESS CODE", V1: "Verify Code", V3: "CONFIRM", S1: "Setup", S2: "SAVE", P1: "Limit Reached", PL1: "💎 Single", B1: "BUY", L_CUP: "Coupon?", P2: "ACTIVATE", C1: "Candidates", C2: "ADD", C3: "SAVE", C4: "START", U1: "VOTE", U2: "END", R_TITLE: "Results", B_PDF_SIMPLE: "PDF TEXT", B_PDF_FULL: "PDF PHOTO", F1: "Feedback", F2: "SEND", B_EXIT_FINAL: "EXIT" },
-            es: { L1: "Sistema de Votación Fácil", L2: "PEDIR CÓDIGO", V1: "Verificar", V3: "CONFIRMAR", S1: "Config", S2: "GUARDAR", P1: "Límite", PL1: "💎 Única", B1: "COMPRAR", L_CUP: "¿Cupón?", P2: "ACTIVAR", C1: "Candidatos", C2: "AÑADIR", C3: "GUARDAR", C4: "INICIAR", U1: "VOTAR", U2: "FIN", R_TITLE: "Resultados", B_PDF_SIMPLE: "PDF TEXTO", B_PDF_FULL: "PDF FOTOS", F1: "Sugerencias", F2: "ENVIAR", B_EXIT_FINAL: "SALIR" }
-        };
-
-        // MOTOR DE TRADUÇÃO
-        window.TR = (l) => { 
-            window._idioma = l; 
-            const d = window._tr[l]; 
-            if(!d) return;
-            for(let k in d){ 
-                let el = document.getElementById(k); 
-                if(el) { 
-                    if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = d[k]; 
-                    else el.innerText = d[k]; 
-                } 
-            } 
-        };
-
+/* [TÍTULO: JS - DICIONÁRIO DE TRADUÇÃO ULTRA EXTREMA] */
+window._tr = {
+    pt: { 
+        L1: "Sistema de Votação Fácil", 
+        H_LOGIN_TIT: "ACESSO AO SISTEMA:", 
+        H_LOGIN_TXT: "Este é um sistema simplificado de votação profissional. Valide seu acesso com um Gmail oficial. Novos usuários ganham 3 eleições grátis para testar todas as funções.", 
+        uE: "Digite seu e-mail @gmail.com...", 
+        L2: "SOLICITAR CÓDIGO DE ACESSO",
+        V1: "Verificar Código", 
+        H_VERIFY_TIT: "SEGURANÇA:", 
+        H_VERIFY_TXT: "Insira os 4 dígitos enviados ao seu Gmail. Verifique a caixa de SPAM caso demore a chegar.", 
+        iC: "Código de 4 dígitos", 
+        V3: "CONFIRMAR E ACESSAR",
+        S1: "Configurar Eleição", 
+        H_SETUP_TIT: "DADOS DA VOTAÇÃO:", 
+        H_SETUP_TXT: "Escolha um nome para sua eleição e defina quantos candidatos cada eleitor pode escolher (Votação Única ou Múltipla).", 
+        tE: "Ex: Votação da CIPA 2026", 
+        maxV: "Quantidade de escolhas por eleitor", 
+        S2: "SALVAR E CADASTRAR NOMES",
+        P1: "Limite de Testes Atingido", 
+        H_PAY_TIT: "PLANOS DE CRÉDITO:", 
+        H_PAY_TXT: "Suas 3 eleições grátis acabaram. Adquira novos créditos ou use seu cupom 'orion001' para continuar.", 
+        PL1: "💎 Eleição Avulsa", 
+        B1: "LIBERAR 1 ELEIÇÃO (R$ 30)", 
+        L_CUP: "Tem um cupom?", 
+        P2: "ATIVAR CUPOM",
+        C1: "Cadastrar Candidatos", 
+        H_CARGO_TIT: "COMO CADASTRAR:", 
+        H_CARGO_TXT: "1. Digite o cargo. 2. Digite o nome do candidato. 3. Anexe a foto. 4. Clique em ADICIONAR. Repita para todos os candidatos do mesmo cargo.", 
+        nC: "Cargo (Ex: Presidente)", 
+        nCand: "Nome do Candidato", 
+        INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", 
+        C2: "ADICIONAR À LISTA", 
+        C3: "SALVAR CARGO E NOMES", 
+        C4: "INICIAR VOTAÇÃO NA URNA",
+        H_URNA_TIT: "INSTRUÇÃO AO ELEITOR:", 
+        H_URNA_TXT: "Selecione seus candidatos e clique no botão verde para confirmar. O som 'Piiiii' confirma que seu voto foi gravado.", 
+        U1: "CONFIRMAR MEU VOTO", 
+        U2: "ENCERRAR E VER RESULTADO", 
+        R_TITLE: "Resultado da Apuração", 
+        B_PDF_SIMPLE: "GERAR PDF (NOMES E VOTOS)", 
+        B_PDF_FULL: "GERAR PDF (COM FOTOS)", 
+        F1: "Sugestões e Pedidos", 
+        H_FEED_TIT: "QUEREMOS OUVIR VOCÊ:", 
+        H_FEED_TXT: "Deixe sua sugestão de melhoria ou pedido de suporte para o desenvolvedor Paulo.", 
+        txtSugestao: "Escreva sua mensagem aqui...",
+        F2: "ENVIAR FEEDBACK", 
+        B_EXIT_FINAL: "NOVA ELEIÇÃO / SAIR"
+    },
+    en: { 
+        L1: "Easy Voting System", H_LOGIN_TIT: "SYSTEM ACCESS:", H_LOGIN_TXT: "Professional voting system. Validate with Gmail. New users get 3 free elections.", 
+        uE: "Your gmail address...", L2: "REQUEST ACCESS CODE", V1: "Verify Identity", H_VERIFY_TIT: "SECURITY:", H_VERIFY_TXT: "Enter the 4-digit code sent to your Gmail. Check SPAM folder.", 
+        iC: "4-digit code", V3: "CONFIRM AND ENTER", S1: "Election Setup", H_SETUP_TIT: "VOTING DATA:", H_SETUP_TXT: "Name your election and set how many candidates each voter can choose.", 
+        tE: "Ex: Board Election 2026", maxV: "Votes per voter", S2: "SAVE AND REGISTER", P1: "Limit Reached", H_PAY_TIT: "PLANS:", H_PAY_TXT: "Your 3 free elections are over. Buy credits or use a coupon.", 
+        PL1: "💎 Single Election", B1: "UNLOCK 1 (R$ 30)", L_CUP: "Have a coupon?", P2: "ACTIVATE", C1: "Register Candidates", H_CARGO_TIT: "HOW TO:", H_CARGO_TXT: "1. Position. 2. Name. 3. Photo. 4. Click ADD. Repeat for all candidates.", 
+        nC: "Position (Ex: President)", nCand: "Candidate Name", INSTR_FOTO: "📷 CLICK FOR PHOTO", C2: "ADD TO LIST", C3: "SAVE AND FINISH", C4: "START VOTING", 
+        H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select candidates and click green button. The 'Beep' confirms your vote.", U1: "CONFIRM MY VOTE", U2: "END AND SEE RESULTS", 
+        R_TITLE: "Election Results", B_PDF_SIMPLE: "GET PDF (TEXT ONLY)", B_PDF_FULL: "GET PDF (WITH PHOTOS)", F1: "Feedback", H_FEED_TIT: "WE WANT TO HEAR YOU:", H_FEED_TXT: "Leave suggestions for developer Paulo.", 
+        txtSugestao: "Write your message...", F2: "SEND FEEDBACK", B_EXIT_FINAL: "EXIT / NEW SESSION"
+    },
+    es: { 
+        L1: "Sistema de Votación Fácil", H_LOGIN_TIT: "ACCESO AL SISTEMA:", H_LOGIN_TXT: "Sistema de votación profesional. Valide con Gmail. Nuevos usuarios reciben 3 elecciones gratis.", 
+        uE: "Su e-mail @gmail.com...", L2: "SOLICITAR CÓDIGO", V1: "Verificar Código", H_VERIFY_TIT: "SEGURIDAD:", H_VERIFY_TXT: "Ingrese los 4 dígitos enviados a su Gmail. Revise la carpeta de SPAM.", 
+        iC: "Código de 4 dígitos", V3: "CONFIRMAR Y ENTRAR", S1: "Configuración", H_SETUP_TIT: "DATOS:", H_SETUP_TXT: "Defina el nombre y cuántos candidatos se pueden elegir.", 
+        tE: "Ej: Votación CIPA 2026", maxV: "Votos por elector", S2: "GUARDAR E INICIAR", P1: "Límite Alcanzado", H_PAY_TIT: "PLANES:", H_PAY_TXT: "Sus 3 elecciones gratis terminaron. Compre créditos o use un cupón.", 
+        PL1: "💎 Elección Única", B1: "LIBERAR 1 (R$ 30)", L_CUP: "¿Tiene un cupón?", P2: "ACTIVAR", C1: "Registro de Candidatos", H_CARGO_TIT: "PASOS:", H_CARGO_TXT: "1. Cargo. 2. Nombre. 3. Foto. 4. Clic en AÑADIR. Repita para todos.", 
+        nC: "Cargo (Ej: Presidente)", nCand: "Nombre del Candidato", INSTR_FOTO: "📷 CLIC PARA FOTO", C2: "AÑADIR A LISTA", C3: "GUARDAR Y FINALIZAR", C4: "INICIAR URNA", 
+        H_URNA_TIT: "GUÍA DEL VOTANTE:", H_URNA_TXT: "Seleccione candidatos y confirme. El sonido confirma que su voto fue grabado.", U1: "CONFIRMAR VOTO", U2: "FINALIZAR Escrutinio", 
+        R_TITLE: "Resultados Finales", B_PDF_SIMPLE: "PDF (SÓLO TEXTO)", B_PDF_FULL: "PDF (CON FOTOS)", F1: "Sugerencias", H_FEED_TIT: "DÉJANOS TU OPINIÓN:", H_FEED_TXT: "Envíe sugerencias al desarrollador Paulo.", 
+        txtSugestao: "Escriba su mensaje aquí...", F2: "ENVIAR FEEDBACK", B_EXIT_FINAL: "SALIR / NUEVA SESIÓN"
+    }
+};
+/* [TÍTULO: JS - MOTOR DE TRADUÇÃO COMPLETO] */
+window.TR = (l) => { 
+    window._idioma = l; 
+    const d = window._tr[l]; 
+    if(!d) return;
+    
+    // Atualiza todos os IDs que constam no dicionário de tradução
+    for(let k in d){ 
+        let el = document.getElementById(k); 
+        if(el) { 
+            // Se for um campo de entrada ou área de texto, traduz a dica (placeholder)
+            if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                el.placeholder = d[k]; 
+            } else {
+                // Caso contrário, traduz o texto visível
+                el.innerText = d[k]; 
+            }
+        } 
+    } 
+};
         // NAVEGAÇÃO
         window.GO = (id) => {
             if(id === 'login') { localStorage.removeItem('urna_vault'); window._data = []; window._sel = []; window._idx = 0; }
@@ -186,22 +241,37 @@
             window.TR(window._idioma);
         };
 
-        // LOGIN BLINDADO (NÃO TRAVA)
-        window.V = async () => {
-            let e = document.getElementById('uE').value.trim().toLowerCase();
-            if(!e.endsWith('@gmail.com')) return alert("Use Gmail!");
-            let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
-            try {
-                let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e));
-                let d = await r.json();
-                if(Number(d.count) >= 3) { alert("Limite de 3 eleições atingido!"); window.GO('pay'); return; }
-                localStorage.setItem('urna_vault', d.codigo);
-                await emailjs.send(window._cfg.s, window._cfg.t, {to_email:e, validation_code:d.codigo}, window._cfg.k);
-                alert("Código enviado!"); window.GO('verify');
-            } catch(err) { alert("Erro de conexão."); }
-            finally { btn.disabled = false; window.TR(window._idioma); }
-        };
+/* [TÍTULO: JS - LOGIN BLINDADO ANTI-TRAVAMENTO] */
+window.V = async function() { 
+    let e = document.getElementById('uE').value.trim().toLowerCase(); 
+    if(!e.endsWith('@gmail.com')) return alert("Use Gmail oficial!");
+    
+    let btn = document.getElementById('L2'); 
+    btn.disabled = true; btn.innerText = "...";
 
+    try { 
+        // Consulta ao seu servidor Cloudflare
+        let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
+        let d = await r.json(); 
+        
+        // CORREÇÃO PONTUAL: Se atingir 3, o 'return' mata o processo e muda de tela
+        if(Number(d.count) >= 3) { 
+            alert("Limite atingido!");
+            window.GO('pay'); 
+            return; // ESTE É O LOCAL DA CORREÇÃO DO TRAVAMENTO
+        } 
+        
+        localStorage.setItem('urna_vault', d.codigo);
+        await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: d.codigo }, window._cfg.k); 
+        alert("Código enviado!"); 
+        window.GO('verify'); 
+    } catch(err) { 
+        alert("Erro de conexão."); 
+    } finally { 
+        btn.disabled = false; 
+        window.TR(window._idioma); // Garante que o botão volte ao idioma certo
+    }
+};
         window.C = () => { if(document.getElementById('iC').value === localStorage.getItem('urna_vault')) window.GO('setup'); else alert("Incorreto!"); };
 
         window.K = () => { 
@@ -283,3 +353,4 @@
     </script>
 </body>
 </html>
+
