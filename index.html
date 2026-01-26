@@ -117,7 +117,8 @@
             <p id="pdf-audit" style="text-align:center; font-size:9px; color:#999;"></p>
         </div>
         <button onclick="window.PDF(false)" id="B_PDF_SIMPLE"></button>
-        <button onclick="window.PDF(true)" id="B_PDF_FULL" style="background:var(--success)"></button>
+        <button onclick="window.PDF(true)" id="B_PDF_PHOTOS" style="background:var(--success)"></button>
+        
         <div style="margin-top:30px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
             <div class="info-box"><b id="H_FEED_TIT">FALE COM O PAULO:</b><span id="H_FEED_TXT"></span></div>
             <textarea id="txtSugestao"></textarea>
@@ -154,8 +155,8 @@
                 C1: "CANDIDATOS", H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Digite o cargo, depois o nome e anexe a foto. Clique em ADICIONAR antes de salvar o cargo.", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", 
                 C2: "ADICIONAR", C3: "SALVAR CARGO", C4: "INICIAR URNA",
                 H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione o(s) candidato(s) e clique em confirmar. O som 'Piiiii' indica sucesso.", U1: "CONFIRMAR MEU VOTO AGORA", U2: "ENCERRAR E APURAR",
-                R_TITLE: "RESULTADO DA ELEIÇÃO", TOTAL_VOTOS: "QUANTIDADE GERAL DE VOTOS", B_PDF_SIMPLE: "PDF SIMPLES", B_PDF_FULL: "PDF COM FOTOS",
-                H_FEED_TIT: "FALE COM O PAULO:", H_FEED_TXT: "Deixe seu comentário diretamente para o desenvolvedor do sistema.", txtSugestao: "escreva sua mensagem aqui...", F2: "ENVIAR MENSAGEM", B_EXIT_FINAL: "SAIR", AUDIT: "Emissão"
+                R_TITLE: "RESULTADO DA ELEIÇÃO", TOTAL_VOTOS: "QUANTIDADE GERAL DE VOTOS", B_PDF_SIMPLE: "RELATÓRIO PDF SIMPLES", B_PDF_PHOTOS: "RELATÓRIO PDF COM FOTOS",
+                H_FEED_TIT: "FALE COM O PAULO:", H_FEED_TXT: "Deixe seu comentário diretamente para o desenvolvedor do sistema.", txtSugestao: "deixe sua mensagem aqui", F2: "ENVIAR MENSAGEM", B_EXIT_FINAL: "SAIR", AUDIT: "Emissão"
             },
             en: { 
                 L1_1: "Easy Voting System", L1_2: "Easy Voting System", L1_3: "Easy Voting System",
@@ -168,9 +169,9 @@
                 L_CUP: "Have a coupon?", P2: "ACTIVATE NOW", B_VOLTAR: "BACK",
                 C1: "CANDIDATES", H_CARGO_TIT: "HOW TO REGISTER:", H_CARGO_TXT: "Enter position, name and photo. Click ADD before saving.", INSTR_FOTO: "📷 CLICK TO ATTACH PHOTO", 
                 C2: "ADD", C3: "SAVE POSITION", C4: "START BALLOT",
-                H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select candidate(s) and click confirm. Beep indicates success.", U1: "CONFIRM VOTE NOW", U2: "END AND COUNT",
-                R_TITLE: "ELECTION RESULTS", TOTAL_VOTOS: "GENERAL QUANTITY OF VOTES", B_PDF_SIMPLE: "GENERATE PDF REPORT", B_PDF_FULL: "PDF WITH PHOTOS",
-                H_FEED_TIT: "TALK TO PAULO:", H_FEED_TXT: "Leave your comment directly for the developer of the system.", txtSugestao: "leave your message here", F2: "SEND MESSAGE", B_EXIT_FINAL: "EXIT", AUDIT: "Issued"
+                H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select candidate(s) and click confirm. Beep indicates success.", U1: "CONFIRMAR VOTE NOW", U2: "END AND COUNT",
+                R_TITLE: "ELECTION RESULTS", TOTAL_VOTOS: "GENERAL QUANTITY OF VOTES", B_PDF_SIMPLE: "SIMPLE PDF REPORT", B_PDF_PHOTOS: "PDF REPORT WITH PHOTOS",
+                H_FEED_TIT: "TALK TO PAULO:", H_FEED_TXT: "Leave your comments directly for the developer.", txtSugestao: "leave your message here", F2: "SEND MESSAGE", B_EXIT_FINAL: "EXIT", AUDIT: "Issued"
             },
             es: { 
                 L1_1: "Sistema de Votación Fácil", L1_2: "Sistema de Votación Fácil", L1_3: "Sistema de Votación Fácil",
@@ -184,8 +185,8 @@
                 C1: "CANDIDATOS", H_CARGO_TIT: "CÓMO REGISTRAR:", H_CARGO_TXT: "Ingrese cargo, nombre y foto. Haga clic en AÑADIR.", INSTR_FOTO: "📷 CLIC PARA ADJUNTAR FOTO", 
                 C2: "AÑADIR", C3: "GUARDAR CARGO", C4: "INICIAR URNA",
                 H_URNA_TIT: "GUÍA DEL VOTANTE:", H_URNA_TXT: "Seleccione candidato(s) y confirme. Éxito indicado por sonido.", U1: "CONFIRMAR MI VOTO", U2: "TERMINAR Y CONTAR",
-                R_TITLE: "RESULTADO DE LA ELECCIÓN", TOTAL_VOTOS: "CANTIDAD GENERAL DE VOTOS", B_PDF_SIMPLE: "GENERAR PDF", B_PDF_FULL: "PDF CON FOTOS",
-                H_FEED_TIT: "HABLA CON PAULO:", H_FEED_TXT: "Deje su comentario directamente para el desarrollador del sistema.", txtSugestao: "deje su mensaje aquí", F2: "ENVIAR", B_EXIT_FINAL: "SALIR", AUDIT: "Emitido"
+                R_TITLE: "RESULTADO DE LA ELECCIÓN", TOTAL_VOTOS: "CANTIDAD GENERAL DE VOTOS", B_PDF_SIMPLE: "PDF SIMPLE", B_PDF_PHOTOS: "PDF CON FOTOS",
+                H_FEED_TIT: "HABLA CON PAULO:", H_FEED_TXT: "Deje su comentario directamente para el desarrollador.", txtSugestao: "deje su mensaje aquí", F2: "ENVIAR", B_EXIT_FINAL: "SALIR", AUDIT: "Emitido"
             }
         };
 
@@ -195,6 +196,13 @@
                 let el = document.getElementById(k); 
                 if(el) { if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = d[k]; else el.innerText = d[k]; }
             } 
+        };
+
+        window.GO = (id) => {
+            if(id === 'login') { localStorage.removeItem('urna_vault'); window._data = []; window._sel = []; window._idx = 0; }
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            window.TR(window._idioma);
         };
 
         window.V = async function() { 
@@ -209,13 +217,6 @@
                 await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: d.codigo }, window._cfg.k); 
                 alert("Código enviado!"); window.GO('verify'); 
             } catch(err) { alert("Erro de conexão."); } finally { btn.disabled = false; window.TR(window._idioma); }
-        };
-
-        window.GO = (id) => {
-            if(id === 'login') { localStorage.removeItem('urna_vault'); window._data = []; window._sel = []; window._idx = 0; }
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            window.TR(window._idioma);
         };
 
         window.END = () => {
@@ -240,7 +241,7 @@
             out.innerHTML=`<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.TOTAL_VOTOS}: ${total}</b></div>`;
             window._data.forEach(cargo => {
                 let h=`<table class="pdf-table"><thead><tr>${fotos?'<th style="width:50px">Foto</th>':''}<th>${cargo.n}</th><th style="text-align:right">Votos</th></tr></thead><tbody>`;
-                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;"></td>`:''}<td>${can.n}</td><td style="text-align:right">${can.v}</td></tr>`; });
+                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></td>`:''}<td>${can.n}</td><td style="text-align:right">${can.v}</td></tr>`; });
                 out.innerHTML += h+'</tbody></table>';
             });
             html2pdf().from(document.getElementById('areaImpressao')).save();
