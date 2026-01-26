@@ -129,6 +129,30 @@
         <button onclick="window.GO('login')" id="B_EXIT_FINAL" style="background:var(--danger)"></button>
     </div>
 
+    let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Impede o Chrome de mostrar o banner automático (nós vamos controlar)
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // Agora você pode mostrar um aviso seu, como um botão ou banner manual
+    console.log("UrnaWeb: Pronto para instalar!");
+});
+
+// Chame esta função em qualquer botão (Ex: no botão de Login)
+function dispararInstalacao() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('Usuário aceitou a instalação');
+            }
+            deferredPrompt = null;
+        });
+    }
+}
+
     <script>
         // SEGURANÇA MANTIDA
         document.addEventListener('contextmenu', e => e.preventDefault());
@@ -307,3 +331,4 @@
     </script>
 </body>
 </html>
+
