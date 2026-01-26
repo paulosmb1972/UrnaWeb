@@ -48,11 +48,26 @@
         <button onclick="window.V()" id="L2"></button>
     </div>
 
-    <div id="verify" class="screen">
-        <h2 id="V1">SEGURANÇA</h2>
-        <div class="info-box"><b id="H_VERIFY_TIT">SEGURANÇA:</b><span id="H_VERIFY_TXT"></span></div>
-        <input id="iC" type="text" maxlength="4">
-        <button onclick="window.C()" id="V3">CONFIRMAR</button>
+    <div id="pay" class="screen">
+        <h2 id="P1">Limite de Testes Atingido</h2>
+        <div class="info-box"><b id="H_PAY_TIT">PLANOS DE ATIVAÇÃO:</b><span id="H_PAY_TXT"></span></div>
+        <div class="pay-card">
+            <h3 id="PL1">💎 Eleição Única Profissional</h3>
+            <div class="info-box" style="background:none; border:none; padding:5px; margin:0;"><span id="DESC_PL1"></span></div>
+            <span style="font-size:28px; color:var(--accent); font-weight:bold;">R$ 30,00</span>
+            <button onclick="window.open('https://mpago.la/2maEAFx')" id="B1"></button>
+        </div>
+        <div class="pay-card" style="border: 1px solid var(--primary); background: rgba(26, 188, 156, 0.1);">
+            <h3 id="PL2">🚀 Pacote Institucional 20 Urnas</h3>
+            <div class="info-box" style="background:none; border:none; padding:5px; margin:0;"><span id="DESC_PL2"></span></div>
+            <span style="font-size:28px; color:var(--success); font-weight:bold;">R$ 500,00</span>
+            <button onclick="window.open('https://mpago.la/1VakcdN')" id="B2"></button>
+        </div>
+        <div class="pay-card" style="border: 2px solid var(--accent);">
+            <p id="L_CUP"></p><input id="cup" type="text">
+            <button onclick="window.K()" id="P2" style="background:var(--accent); color:#000;"></button>
+        </div>
+        <button onclick="window.GO('login')" id="B_VOLTAR" style="background:none; border:1px solid #fff;"></button>
     </div>
 
     <div id="setup" class="screen">
@@ -61,31 +76,6 @@
         <input id="tE" type="text">
         <input id="maxV" type="number" min="1" value="1">
         <button onclick="window.N()" id="S2"></button>
-    </div>
-
-    <div id="pay" class="screen">
-        <h2 id="P1">Limite de Testes Atingido</h2>
-        <div class="info-box"><b id="H_PAY_TIT">PLANOS DE ATIVAÇÃO:</b><span id="H_PAY_TXT"></span></div>
-        
-        <div class="pay-card">
-            <h3 id="PL1">💎 Eleição Única Profissional</h3>
-            <div class="info-box" style="background:none; border:none; padding:5px; margin:0;"><span id="DESC_PL1"></span></div>
-            <span style="font-size:28px; color:var(--accent); font-weight:bold;">R$ 30,00</span>
-            <button onclick="window.open('https://mpago.la/2maEAFx')" id="B1"></button>
-        </div>
-
-        <div class="pay-card" style="border: 1px solid var(--primary); background: rgba(26, 188, 156, 0.1);">
-            <h3 id="PL2">🚀 Pacote Institucional 20 Urnas</h3>
-            <div class="info-box" style="background:none; border:none; padding:5px; margin:0;"><span id="DESC_PL2"></span></div>
-            <span style="font-size:28px; color:var(--success); font-weight:bold;">R$ 500,00</span>
-            <button onclick="window.open('https://mpago.la/1VakcdN')" id="B2"></button>
-        </div>
-
-        <div class="pay-card" style="border: 2px solid var(--accent);">
-            <p id="L_CUP"></p><input id="cup" type="text">
-            <button onclick="window.K()" id="P2" style="background:var(--accent); color:#000;"></button>
-        </div>
-        <button onclick="window.GO('login')" id="B_VOLTAR" style="background:none; border:1px solid #fff;"></button>
     </div>
 
     <div id="setupCargo" class="screen">
@@ -109,24 +99,22 @@
         <div class="info-box"><b id="H_URNA_TIT">GUIA DO ELEITOR:</b><span id="H_URNA_TXT"></span></div>
         <div id="gridUrna" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
         <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success)"></button>
-        <button onclick="window.END()" id="U2" style="background:var(--danger)">ENCERRAR</button>
     </div>
 
     <div id="res" class="screen">
-        <h2 id="R_TITLE">RESULTADO</h2>
+        <h2 id="R_TITLE"></h2>
         <div id="areaImpressao">
             <h2 id="pdf_h1" style="text-align:center; color:#0a2a66;"></h2>
             <div id="pC"></div>
             <p id="pdf-audit" style="text-align:center; font-size:9px; color:#999;"></p>
         </div>
-        <button onclick="window.PDF(false)">PDF SIMPLES</button>
-        <button onclick="window.PDF(true)" style="background:var(--success)">PDF COM FOTOS</button>
+        <button onclick="window.PDF(false)" id="B_PDF_SIMPLE"></button>
         <div style="margin-top:30px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
             <div class="info-box"><b id="H_FEED_TIT">FALE COM O PAULO:</b><span id="H_FEED_TXT"></span></div>
             <textarea id="txtSugestao"></textarea>
             <button onclick="window.FEED()" id="F2"></button>
         </div>
-        <button onclick="window.GO('login')" id="B_EXIT_FINAL" style="background:var(--danger)">SAIR</button>
+        <button onclick="window.GO('login')" id="B_EXIT_FINAL" style="background:var(--danger)"></button>
     </div>
 
     <script>
@@ -146,41 +134,36 @@
 
         window._tr = {
             pt: { 
-                H_LOGIN_TIT: "ACESSO AO SISTEMA:", H_LOGIN_TXT: "Bem-vindo! Valide seu e-mail Gmail para começar. Novos usuários possuem 3 eleições grátis.", uE: "Digite seu e-mail aqui...", L2: "SOLICITAR CÓDIGO DE ACESSO",
-                P1: "Limite de Testes Atingido", H_PAY_TIT: "PLANOS DE ATIVAÇÃO:", H_PAY_TXT: "Você usou suas 3 eleições grátis. Escolha o plano ideal ou use seu cupom.",
+                H_LOGIN_TIT: "ACESSO AO SISTEMA:", H_LOGIN_TXT: "Bem-vindo! Valide seu e-mail Gmail para começar. Novos usuários possuem 3 eleições grátis.", uE: "Digite seu e-mail aqui...", L2: "ENTRAR NO SISTEMA",
+                H_PAY_TIT: "PLANOS DE ATIVAÇÃO:", H_PAY_TXT: "Você usou suas 3 eleições grátis. Escolha o plano ideal ou use seu cupom.",
                 PL1: "💎 Eleição Única Profissional", DESC_PL1: "Ideal para uma única votação pontual com suporte total e PDF completo.", B1: "LIBERAR 1 ELEIÇÃO (R$ 30,00)",
-                PL2: "🚀 Pacote Institucional 20 Urnas", DESC_PL2: "Economia máxima para instituições. Pacote para até 20 eleições. R$ 25,00 por urna.", B2: "COMPRAR PACOTE 20 URNAS (R$ 500,00)",
+                PL2: "🚀 Pacote Institucional 20 Urnas", DESC_PL2: "Economia máxima. Pacote para até 20 eleições. R$ 25,00 por urna.", B2: "COMPRAR PACOTE 20 URNAS (R$ 500,00)",
                 L_CUP: "Tem um cupom ou senha mestre?", P2: "ATIVAR CRÉDITO IMEDIATO", B_VOLTAR: "VOLTAR",
-                H_SETUP_TIT: "INFORMAÇÕES DA ELEIÇÃO:", H_SETUP_TXT: "Dê um título e defina quantos candidatos o eleitor pode escolher.", tE: "Exemplo: eleição de CIPA", S2: "SALVAR DADOS",
-                H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Digite o cargo, depois o nome e anexe a foto. Clique em ADICIONAR antes de salvar o cargo.", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", 
-                C2: "ADICIONAR", C3: "SALVAR", C4: "INICIAR URNA",
-                H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione o(s) candidato(s) e clique em confirmar. O som 'Piiiii' indica sucesso.", U1: "CONFIRMAR MEU VOTO AGORA",
-                R_TITLE: "RESULTADO DA ELEIÇÃO", TOTAL_VOTOS: "TOTAL GERAL DE VOTOS",
-                H_FEED_TIT: "FALE COM O PAULO:", H_FEED_TXT: "Deixe seu comentário diretamente para o desenvolvedor do sistema.", txtSugestao: "escreva sua mensagem aqui...", F2: "ENVIAR FEEDBACK"
+                H_SETUP_TIT: "INFORMAÇÕES DA ELEIÇÃO:", H_SETUP_TXT: "Dê um título e defina quantos candidatos o eleitor pode escolher.", tE: "Exemplo: eleição de CIPA", S2: "SALVAR",
+                H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Digite o cargo, depois o nome e anexe a foto. Clique em ADICIONAR antes de salvar.", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", 
+                C2: "ADICIONAR", C3: "SALVAR", C4: "INICIAR",
+                H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione o candidato e confirme. O som indica sucesso.", U1: "CONFIRMAR VOTO",
+                R_TITLE: "RESULTADO", TOTAL_VOTOS: "VOTOS", B_PDF_SIMPLE: "GERAR RELATÓRIO PDF",
+                H_FEED_TIT: "FALE COM O PAULO:", H_FEED_TXT: "Deixe seu comentário diretamente para o desenvolvedor do sistema.", txtSugestao: "escreva sua mensagem aqui...", F2: "ENVIAR MENSAGEM", B_EXIT_FINAL: "SAIR"
             },
             en: { 
-                H_LOGIN_TIT: "SYSTEM ACCESS:", H_LOGIN_TXT: "Welcome! Validate your Gmail to start. New users get 3 free elections.", uE: "Enter email here...", L2: "REQUEST ACCESS CODE",
-                P1: "Trial Limit Reached", H_PAY_TIT: "ACTIVATION PLANS:", H_PAY_TXT: "You've used your 3 free elections. Choose a plan.",
-                PL1: "💎 Single Professional", DESC_PL1: "Ideal for a single vote with full support.", B1: "UNLOCK 1 ELECTION (R$ 30,00)",
-                PL2: "🚀 Institutional Pack", DESC_PL2: "Pack for up to 20 elections. Only R$ 25,00 per urn.", B2: "BUY 20 PACK (R$ 500,00)",
-                L_CUP: "Have a coupon or master password?", P2: "ACTIVATE NOW", B_VOLTAR: "BACK", tE: "Example: CIPA Election", S2: "SAVE DATA",
-                H_CARGO_TIT: "HOW TO REGISTER:", H_CARGO_TXT: "Enter position, name and photo. Click ADD.",
-                INSTR_FOTO: "📷 CLICK TO ATTACH PHOTO", C2: "ADD", C3: "SAVE", C4: "START BALLOT",
-                H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select candidate(s) and click confirm.", U1: "CONFIRM VOTE",
-                R_TITLE: "ELECTION RESULTS", TOTAL_VOTOS: "GRAND TOTAL OF VOTES",
-                F2: "SEND FEEDBACK"
+                H_LOGIN_TIT: "SYSTEM ACCESS:", H_LOGIN_TXT: "Welcome! Validate your Gmail to start. New users get 3 free elections.", uE: "Enter email here...", L2: "ACCESS SYSTEM",
+                H_PAY_TIT: "ACTIVATION PLANS:", H_PAY_TXT: "You've used your 3 free elections. Choose a plan.",
+                PL1: "💎 Single Professional", DESC_PL1: "One-time vote with full support.", B1: "UNLOCK 1 (R$ 30,00)",
+                PL2: "🚀 Institutional Pack", DESC_PL2: "Up to 20 elections. Only R$ 25,00 per urn.", B2: "BUY 20 PACK (R$ 500,00)",
+                L_CUP: "Have a coupon or master password?", P2: "ACTIVATE NOW", B_VOLTAR: "BACK", tE: "Example: CIPA Election",
+                C2: "ADD", C3: "SAVE", C4: "START", U1: "CONFIRM VOTE",
+                R_TITLE: "RESULT", TOTAL_VOTOS: "VOTES", B_PDF_SIMPLE: "GENERATE PDF REPORT",
+                H_FEED_TIT: "TALK TO PAULO:", H_FEED_TXT: "Leave your comment directly for the system developer.", txtSugestao: "write your message here...", F2: "SEND MESSAGE", B_EXIT_FINAL: "EXIT"
             },
             es: { 
                 H_PAY_TIT: "PLANES DE ACTIVACIÓN:", H_PAY_TXT: "Ya usaste tus 3 elecciones gratis. Elige el mejor plan.",
-                PL1: "💎 Elección Única Profesional", DESC_PL1: "Ideal para una votación única con soporte total.", B1: "LIBERAR 1 ELECCIÓN (R$ 30,00)",
-                PL2: "🚀 Paquete Institucional", DESC_PL2: "Paquete de hasta 20 elecciones. Solo R$ 25,00 por urna.", B2: "COMPRAR PAQUETE (R$ 500,00)",
-                L_CUP: "¿Tiene un cupón o contraseña maestra?", P2: "ACTIVAR", B_VOLTAR: "VOLVER", tE: "Ejemplo: Elección de CIPA", S2: "GUARDAR DATOS",
-                H_SETUP_TIT: "INFORMACIÓN:", H_SETUP_TXT: "Ponga un título y defina cuántos candidatos puede elegir.",
-                H_CARGO_TIT: "CÓMO REGISTRAR:", H_CARGO_TXT: "Ingrese cargo, nombre y foto. Clic en AÑADIR.",
-                INSTR_FOTO: "📷 CLIC PARA ADJUNTAR FOTO", C2: "AÑADIR", C3: "GUARDAR", C4: "INICIAR URNA",
-                H_URNA_TIT: "GUÍA DEL VOTANTE:", H_URNA_TXT: "Seleccione candidato(s) y confirme.", U1: "CONFIRMAR VOTO",
-                R_TITLE: "RESULTADO DE LA ELECCIÓN", TOTAL_VOTOS: "TOTAL GENERAL DE VOTOS",
-                F2: "ENVIAR"
+                PL1: "💎 Elección Única", DESC_PL1: "Votación única con soporte total.", B1: "LIBERAR 1 (R$ 30,00)",
+                PL2: "🚀 Paquete Institucional", DESC_PL2: "Hasta 20 elecciones. Solo R$ 25,00 por urna.", B2: "COMPRAR PAQUETE (R$ 500,00)",
+                L_CUP: "¿Tiene un cupón o contraseña maestra?", P2: "ACTIVAR", B_VOLTAR: "VOLVER", tE: "Ejemplo: Elección de CIPA",
+                C2: "AÑADIR", C3: "GUARDAR", C4: "INICIAR", U1: "CONFIRMAR VOTO",
+                R_TITLE: "RESULTADO", TOTAL_VOTOS: "VOTOS", B_PDF_SIMPLE: "GENERAR PDF",
+                H_FEED_TIT: "HABLA CON PAULO:", H_FEED_TXT: "Deje su comentario directamente para el desarrollador del sistema.", txtSugestao: "escriba su mensaje aquí...", F2: "ENVIAR", B_EXIT_FINAL: "SALIR"
             }
         };
 
@@ -191,13 +174,6 @@
                 let el = document.getElementById(k); 
                 if(el) { if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = d[k]; else el.innerText = d[k]; }
             } 
-        };
-
-        window.GO = (id) => {
-            if(id === 'login') { localStorage.removeItem('urna_vault'); window._data = []; window._sel = []; window._idx = 0; }
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            window.TR(window._idioma);
         };
 
         window.V = async function() { 
@@ -214,13 +190,20 @@
             } catch(err) { alert("Erro de conexão."); } finally { btn.disabled = false; window.TR(window._idioma); }
         };
 
+        window.GO = (id) => {
+            if(id === 'login') { localStorage.removeItem('urna_vault'); window._data = []; window._sel = []; window._idx = 0; }
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            window.TR(window._idioma);
+        };
+
         window.END = () => {
             let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
             let d = window._tr[window._idioma];
             document.getElementById('pdf_h1').innerText=window._title.toUpperCase();
             document.getElementById('pdf-audit').innerText="Emissão: "+new Date().toLocaleString();
             let out=document.getElementById('pC'); 
-            out.innerHTML=`<div style="background:#f2f2f2; padding:10px; border:1px solid #000; text-align:center; margin-bottom:15px;"><b>${d.TOTAL_VOTOS}: ${total}</b></div>`;
+            out.innerHTML=`<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.TOTAL_VOTOS}: ${total}</b></div>`;
             window._data.forEach(cargo => {
                 let h=`<h3>${cargo.n.toUpperCase()}</h3><table class="pdf-table">`;
                 cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr><td>${can.n}</td><td style="text-align:right"><b>${can.v} Votos</b></td></tr>`; });
@@ -232,7 +215,8 @@
         window.PDF = (fotos) => {
             let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
             let d = window._tr[window._idioma];
-            let out=document.getElementById('pC'); out.innerHTML=`<div style="background:#f2f2f2; padding:10px; border:1px solid #000; text-align:center; margin-bottom:15px;"><b>${d.TOTAL_VOTOS}: ${total}</b></div>`;
+            let out=document.getElementById('pC'); 
+            out.innerHTML=`<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.TOTAL_VOTOS}: ${total}</b></div>`;
             window._data.forEach(cargo => {
                 let h=`<table class="pdf-table"><thead><tr>${fotos?'<th style="width:50px">Foto</th>':''}<th>${cargo.n}</th><th style="text-align:right">Votos</th></tr></thead><tbody>`;
                 cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;"></td>`:''}<td>${can.n}</td><td style="text-align:right">${can.v}</td></tr>`; });
@@ -241,7 +225,6 @@
             html2pdf().from(document.getElementById('areaImpressao')).save();
         };
 
-        // Funções auxiliares mantidas
         window.C = () => { if(document.getElementById('iC').value === localStorage.getItem('urna_vault')) window.GO('setup'); else alert("Incorreto!"); };
         window.K = () => { let c = document.getElementById('cup').value.trim(); if(c === 'orion001' || c === 'mais3gratis') { alert("LIBERADO!"); window.GO('setup'); } else alert("Incorreto."); };
         window.N = () => { window._title=document.getElementById('tE').value; window._maxVotos=parseInt(document.getElementById('maxV').value) || 1; window.GO('setupCargo'); };
