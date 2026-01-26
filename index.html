@@ -41,9 +41,9 @@
 <body>
 
     <div class="lang-box">
-        <button onclick="window.TR('pt')">PT</button>
-        <button onclick="window.TR('en')">EN</button>
-        <button onclick="window.TR('es')">ES</button>
+        <button onclick="window.TR('pt')">Português</button>
+        <button onclick="window.TR('en')">English</button>
+        <button onclick="window.TR('es')">Español</button>
     </div>
 
     <div id="login" class="screen active">
@@ -214,44 +214,46 @@ window._tr = {
         window.TR = (l) => { window._idioma=l; const d=window._tr[l]; for(let k in d){ let el=document.getElementById(k); if(el) { if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder=d[k]; else el.innerText=d[k]; } } };
 
         // [4] LÓGICA DE LOGIN (CORREÇÃO DE TRAVAMENTO)
-/* [TÍTULO: JS - LÓGICA DE LOGIN COM BLOQUEIO RIGOROSO] */
+/* [TÍTULO: JS - FUNÇÃO DE LOGIN SEM TRAVAMENTO] */
 window.V = async function() { 
     let e = document.getElementById('uE').value.trim().toLowerCase(); 
-    if(!e.endsWith('@gmail.com')) return alert("Por favor, utilize um e-mail @gmail.com válido.");
+    if(!e.endsWith('@gmail.com')) return alert("Use apenas Gmail oficial!");
     
     let btn = document.getElementById('L2'); 
-    btn.disabled = true; btn.innerText = "CONSULTANDO BANCO...";
+    btn.disabled = true; 
+    btn.innerText = "VERIFICANDO...";
 
     try { 
-        // 1. Consulta o Worker ANTES de qualquer ação
+        // 1. Consulta o Worker primeiro
         let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
         let d = await r.json(); 
         
-        // 2. BLOQUEIO: Se count >= 3, interrompe o fluxo e vai para pagamento
+        // 2. BLOQUEIO IMEDIATO: Se o contador for 3 ou mais, pula para a tela de pagamento
         if(Number(d.count) >= 3) { 
             alert("Limite de 3 eleições atingido para este e-mail.");
             window.GO('pay'); 
-            return; // Garante que o EmailJS não seja chamado
+            return; // O 'return' evita que o código continue e trave o navegador
         } 
         
-        // 3. Se tiver créditos, salva o código e envia e-mail
-        localStorage.setItem('urna_vault', d.codigo);
+        // 3. Se estiver dentro do limite, envia o código
+        let cod = String(d.codigo).trim();
+        localStorage.setItem('urna_vault', cod);
+        
         await emailjs.send(window._cfg.s, window._cfg.t, { 
             to_email: e, 
-            validation_code: d.codigo 
+            validation_code: cod 
         }, window._cfg.k); 
         
-        alert("Código enviado! Você ainda possui " + (3 - d.count) + " créditos grátis."); 
+        alert("Código enviado com sucesso!"); 
         window.GO('verify'); 
 
     } catch(err) { 
-        alert("Erro de conexão com o servidor. Tente novamente."); 
+        alert("Erro de conexão. Verifique sua internet."); 
     } finally { 
         btn.disabled = false; 
-        window.TR(window._idioma); 
+        btn.innerText = "SOLICITAR CÓDIGO DE ACESSO";
     }
-};
-        window.C = () => { if(document.getElementById('iC').value === localStorage.getItem('urna_vault')) window.GO('setup'); else alert("Incorreto!"); };
+};        window.C = () => { if(document.getElementById('iC').value === localStorage.getItem('urna_vault')) window.GO('setup'); else alert("Incorreto!"); };
 
         window.K = () => { 
             let c = document.getElementById('cup').value.trim();
@@ -344,4 +346,3 @@ window.A = () => {
     </script>
 </body>
 </html>
-
