@@ -30,7 +30,6 @@
         .pdf-table td { padding: 12px; border-bottom: 1px solid #eee; color: #333 !important; }
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
         .lang-box button { width: auto; padding: 6px 12px; background: #000; font-size: 10px; border: 1px solid var(--primary); box-shadow: none; }
-        .selected-card { border: 4px solid var(--success) !important; background: rgba(46, 204, 113, 0.2) !important; }
     </style>
 </head>
 <body>
@@ -52,7 +51,7 @@
         <h2 id="V1">SEGURANÇA</h2>
         <div class="info-box"><b id="H_VERIFY_TIT">SEGURANÇA:</b><span id="H_VERIFY_TXT"></span></div>
         <input id="iC" type="text" maxlength="4">
-        <button onclick="window.C()" id="V3">CONFIRMAR</button>
+        <button onclick="window.C()" id="V3"></button>
     </div>
 
     <div id="setup" class="screen">
@@ -98,10 +97,10 @@
             <img id="imgPrev" class="img-preview">
         </div>
         <input type="file" id="fileIn" hidden accept="image/*" onchange="window.PREV(this)">
-        <button onclick="window.A()" id="C2">ADICIONAR</button>
+        <button onclick="window.A()" id="C2"></button>
         <div id="listaTemporaria" class="cand-preview-list"></div>
-        <button onclick="window.SAVE()" id="C3" style="background:var(--success)">SALVAR CARGO</button>
-        <button onclick="window.START_VOTE_PROCESS()" id="C4">INICIAR URNA</button>
+        <button onclick="window.SAVE()" id="C3" style="background:var(--success)"></button>
+        <button onclick="window.START_VOTE_PROCESS()" id="C4"></button>
     </div>
 
     <div id="urna" class="screen">
@@ -109,7 +108,7 @@
         <div class="info-box"><b id="H_URNA_TIT">GUIA DO ELEITOR:</b><span id="H_URNA_TXT"></span></div>
         <div id="gridUrna" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
         <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success)"></button>
-        <button onclick="window.END()" id="U2" style="background:var(--danger)">ENCERRAR</button>
+        <button onclick="window.END()" id="U2" style="background:var(--danger)"></button>
     </div>
 
     <div id="res" class="screen">
@@ -126,7 +125,7 @@
             <textarea id="txtSugestao"></textarea>
             <button onclick="window.FEED()" id="F2"></button>
         </div>
-        <button onclick="window.GO('login')" id="B_EXIT_FINAL" style="background:var(--danger)">SAIR</button>
+        <button onclick="window.GO('login')" id="B_EXIT_FINAL" style="background:var(--danger)"></button>
     </div>
 
     <script>
@@ -151,31 +150,33 @@
                 PL1: "💎 Eleição Única Profissional", DESC_PL1: "Ideal para uma única votação pontual com suporte total e PDF completo.", B1: "LIBERAR 1 ELEIÇÃO (R$ 30,00)",
                 PL2: "🚀 Pacote Institucional 20 Urnas", DESC_PL2: "Economia máxima para instituições. Pacote fechado para até 20 eleições. R$ 25,00 por urna.", B2: "COMPRAR PACOTE 20 URNAS (R$ 500,00)",
                 L_CUP: "Tem um cupom ou senha mestre?", P2: "ATIVAR CRÉDITO IMEDIATO", B_VOLTAR: "VOLTAR",
-                H_SETUP_TIT: "INFORMAÇÕES DA ELEIÇÃO:", H_SETUP_TXT: "Dê um título para a eleição e defina quantos candidatos o eleitor pode escolher (voto único ou múltiplo).", tE: "Exemplo: Eleição de CIPA", S2: "SALVAR DADOS DA ELEIÇÃO",
-                H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Digite o cargo, depois o nome e anexe a foto. Clique em ADICIONAR para cada candidato da lista antes de salvar o cargo.", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO",
-                H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione o(s) candidato(s) e clique em confirmar. O som 'Piiiii' indica que seu voto foi gravado com sucesso.", U1: "CONFIRMAR MEU VOTO AGORA",
-                H_FEED_TIT: "FALE COM O PAULO:", H_FEED_TXT: "Deixe seu comentário ou pedido de melhoria diretamente para o desenvolvedor do sistema.", txtSugestao: "Escreva sua mensagem aqui...", F2: "ENVIAR FEEDBACK AO PAULO"
+                H_SETUP_TIT: "INFORMAÇÕES DA ELEIÇÃO:", H_SETUP_TXT: "Dê um título para a eleição e defina quantos candidatos o eleitor pode escolher (voto único ou múltiplo).", tE: "Exemplo: eleição de CIPA", S2: "SALVAR DADOS",
+                H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Digite o cargo, depois o nome e anexe a foto. Clique em ADICIONAR para cada candidato da lista antes de salvar o cargo.", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", C2: "ADICIONAR", C3: "SALVAR", C4: "INICIAR URNA",
+                H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione o(s) candidato(s) e clique em confirmar. O som 'Piiiii' indica que seu voto foi gravado com sucesso.", U1: "CONFIRMAR MEU VOTO AGORA", U2: "ENCERRAR E APURAR",
+                H_FEED_TIT: "FALE COM O PAULO:", H_FEED_TXT: "Deixe seu comentário ou pedido de melhoria diretamente para o desenvolvedor do sistema.", txtSugestao: "escreva sua mensagem aqui...", F2: "ENVIAR FEEDBACK", B_EXIT_FINAL: "SAIR DO SISTEMA"
             },
             en: { 
                 H_LOGIN_TIT: "SYSTEM ACCESS:", H_LOGIN_TXT: "Welcome! Validate your Gmail to start. New users get 3 free elections.", uE: "Enter email here...", L2: "REQUEST ACCESS CODE",
-                P1: "Trial Limit Reached", H_PAY_TIT: "ACTIVATION PLANS:", H_PAY_TXT: "You've used your 3 free elections. Choose a plan.",
+                H_PAY_TIT: "ACTIVATION PLANS:", H_PAY_TXT: "You've used your 3 free elections. Choose a plan.",
                 PL1: "💎 Single Professional", DESC_PL1: "Ideal for a single vote with full support.", B1: "UNLOCK 1 ELECTION (R$ 30,00)",
                 PL2: "🚀 Institutional Pack", DESC_PL2: "Pack for up to 20 elections. Only R$ 25,00 per urn.", B2: "BUY 20 PACK (R$ 500,00)",
-                B_VOLTAR: "BACK", tE: "Example: CIPA Election", S2: "SAVE ELECTION DATA",
+                L_CUP: "Have a coupon or master password?", P2: "ACTIVATE NOW", B_VOLTAR: "BACK", tE: "Example: CIPA Election", S2: "SAVE DATA",
                 H_SETUP_TIT: "INFORMATION:", H_SETUP_TXT: "Title your election and set candidates per vote.",
                 H_CARGO_TIT: "HOW TO REGISTER:", H_CARGO_TXT: "Enter position, name and photo. Click ADD.",
-                INSTR_FOTO: "📷 CLICK TO ATTACH PHOTO", H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select candidate(s) and click confirm. 'Beep' sound indicates success.", U1: "CONFIRM MY VOTE",
-                H_FEED_TIT: "TALK TO PAULO:", H_FEED_TXT: "Leave your comment or improvement request for the developer.", txtSugestao: "write your message here...", F2: "SEND FEEDBACK"
+                INSTR_FOTO: "📷 CLICK TO ATTACH PHOTO", C2: "ADD", C3: "SAVE", C4: "START BALLOT",
+                H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select candidate(s) and click confirm. 'Beep' sound indicates success.", U1: "CONFIRM VOTE", U2: "END AND COUNT",
+                H_FEED_TIT: "TALK TO PAULO:", H_FEED_TXT: "Leave your comment or improvement request for the developer.", txtSugestao: "write your message here...", F2: "SEND FEEDBACK", B_EXIT_FINAL: "EXIT SYSTEM"
             },
             es: { 
                 H_PAY_TIT: "PLANES DE ACTIVACIÓN:", H_PAY_TXT: "Ya usaste tus 3 elecciones gratis. Elige el mejor plan.",
                 PL1: "💎 Elección Única Profesional", DESC_PL1: "Ideal para una votación única con soporte total.", B1: "LIBERAR 1 ELECCIÓN (R$ 30,00)",
                 PL2: "🚀 Paquete Institucional", DESC_PL2: "Paquete de hasta 20 elecciones. Solo R$ 25,00 por urna.", B2: "COMPRAR PAQUETE (R$ 500,00)",
-                B_VOLTAR: "VOLVER", tE: "Ejemplo: Elección de CIPA", S2: "GUARDAR DATOS",
+                L_CUP: "¿Tiene un cupón o contraseña maestra?", P2: "ACTIVAR", B_VOLTAR: "VOLVER", tE: "Ejemplo: Elección de CIPA", S2: "GUARDAR DATOS",
                 H_SETUP_TIT: "INFORMACIÓN:", H_SETUP_TXT: "Ponga un título y defina cuántos candidatos puede elegir.",
                 H_CARGO_TIT: "CÓMO REGISTRAR:", H_CARGO_TXT: "Ingrese cargo, nombre y foto. Clic en AÑADIR.",
-                INSTR_FOTO: "📷 CLIC PARA ADJUNTAR FOTO", H_URNA_TIT: "GUÍA DEL VOTANTE:", H_URNA_TXT: "Seleccione candidato(s) y confirme. El sonido indica éxito.", U1: "CONFIRMAR VOTO",
-                H_FEED_TIT: "HABLA CON PAULO:", H_FEED_TXT: "Deje su comentario o solicitud de mejora para el desarrollador.", txtSugestao: "escriba su mensaje aquí...", F2: "ENVIAR"
+                INSTR_FOTO: "📷 CLIC PARA ADJUNTAR FOTO", C2: "AÑADIR", C3: "GUARDAR", C4: "INICIAR URNA",
+                H_URNA_TIT: "GUÍA DEL VOTANTE:", H_URNA_TXT: "Seleccione candidato(s) y confirme. El sonido indica éxito.", U1: "CONFIRMAR VOTO", U2: "TERMINAR Y CONTAR",
+                H_FEED_TIT: "HABLA CON PAULO:", H_FEED_TXT: "Deje su comentario o solicitud de mejora para el desarrollador.", txtSugestao: "escriba su mensaje aquí...", F2: "ENVIAR", B_EXIT_FINAL: "SALIR"
             }
         };
 
@@ -216,7 +217,7 @@
             else alert("Incorreto.");
         };
         window.N = () => { window._title=document.getElementById('tE').value; window._maxVotos=parseInt(document.getElementById('maxV').value) || 1; window.GO('setupCargo'); };
-        window.PREV = (f) => { let r=new FileReader(); r.onload=(e)=>{window._fotoTemp=e.target.result; document.getElementById('imgPrev').src=e.target.result; document.getElementById('imgPrev').style.display='block';}; r.readAsDataURL(f.files[0]); };
+        window.PREV = (f) => { if (f.files && f.files[0]) { let r=new FileReader(); r.onload=(e)=>{window._fotoTemp=e.target.result; document.getElementById('imgPrev').src=e.target.result; document.getElementById('imgPrev').style.display='block';}; r.readAsDataURL(f.files[0]); } };
         window.A = () => {
             let cargo=document.getElementById('nC').value, nome=document.getElementById('nCand').value;
             if(!cargo || !nome) return alert("Faltam dados!");
