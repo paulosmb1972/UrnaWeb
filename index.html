@@ -20,221 +20,280 @@
         input { background: #fff; color: #333; font-weight: bold; }
         
         .pay-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; text-align: center; }
-        .foto-container { border: 2px dashed var(--primary); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; }
-        .img-preview { width: 100px; height: 100px; object-fit: cover; border-radius: 10px; display: none; margin: 10px auto; }
-        .cand-preview-list { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-top: 10px; max-height: 150px; overflow-y: auto; }
+        .foto-container { border: 2px dashed var(--primary); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.05); }
+        .img-preview { width: 100px; height: 100px; object-fit: cover; border-radius: 10px; display: none; margin: 10px auto; border: 2px solid var(--accent); }
+        .cand-preview-list { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-top: 10px; max-height: 150px; overflow-y: auto; border: 1px solid #34495e; }
         
-        #areaImpressao { width: 480px; margin: 0 auto; background: white !important; color: #333 !important; padding: 30px; }
+        #areaImpressao { width: 480px; margin: 0 auto; background: white !important; color: #333 !important; padding: 30px; border-radius: 5px; }
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .pdf-table th { background: #0a2a66; color: white; padding: 10px; text-align: left; }
-        .pdf-table td { padding: 10px; border-bottom: 1px solid #eee; color: #333; }
+        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; }
+        .pdf-table td { padding: 12px; border-bottom: 1px solid #eee; color: #333 !important; }
         
         .selected-card { border: 4px solid var(--success) !important; background: rgba(46, 204, 113, 0.2) !important; }
+        .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
+        .lang-box button { width: auto; padding: 6px 12px; background: #000; font-size: 10px; border: 1px solid var(--primary); }
     </style>
 </head>
 <body>
 
+    <div class="lang-box">
+        <button onclick="window.TR('pt')">PT</button>
+        <button onclick="window.TR('en')">EN</button>
+        <button onclick="window.TR('es')">ES</button>
+    </div>
+
     <div id="login" class="screen active">
-        <h2>Portal de Acesso</h2>
-        <div class="info-box"><b>CONTROLE GMAIL:</b> Você possui 3 eleições grátis por conta Gmail.</div>
+        <h2 id="L1">Acesso ao Sistema</h2>
+        <div class="info-box"><b id="H_LOGIN_TIT">CONTROLE DE USO:</b><span id="H_LOGIN_TXT">Cada Gmail oficial possui direito a 3 eleições gratuitas. Após isso, o sistema requer ativação.</span></div>
         <input id="uE" type="email" placeholder="Seu Gmail oficial...">
         <button onclick="window.V()" id="L2">SOLICITAR CÓDIGO</button>
     </div>
 
     <div id="verify" class="screen">
-        <h2>Verificar Código</h2>
-        <div class="info-box">Digite os 4 dígitos enviados ao seu e-mail.</div>
+        <h2 id="V1">Validar Código</h2>
+        <div class="info-box">Digite o código de 4 dígitos enviado ao seu e-mail.</div>
         <input id="iC" type="text" maxlength="4" placeholder="0000">
-        <button onclick="window.C()">CONFIRMAR</button>
+        <button onclick="window.C()" id="V3">CONFIRMAR IDENTIDADE</button>
     </div>
 
     <div id="setup" class="screen">
-        <h2>Configuração</h2>
-        <input id="tE" type="text" placeholder="Título da Eleição">
-        <input id="maxV" type="number" min="1" value="1" placeholder="Votos por eleitor">
-        <button onclick="window.N()">CONTINUAR</button>
+        <h2 id="S1">Configuração</h2>
+        <input id="tE" type="text" placeholder="Título da Eleição (Ex: CIPA 2026)">
+        <input id="maxV" type="number" min="1" value="1" placeholder="Votos permitidos por eleitor">
+        <button onclick="window.N()" id="S2">SALVAR E CONTINUAR</button>
     </div>
 
     <div id="pay" class="screen">
-        <h2>Limite Atingido</h2>
+        <h2 id="P1">Limite Atingido</h2>
+        <div class="info-box"><b>AVISO:</b> Este e-mail já utilizou as 3 eleições de teste. Escolha um plano ou use o código de liberação.</div>
         <div class="pay-card">
-            <h3>💎 Eleição Avulsa</h3>
-            <button onclick="window.open('https://mpago.la/2maEAFx')">LIBERAR 1 (R$ 30)</button>
+            <h3>💎 Eleição Profissional</h3>
+            <button onclick="window.open('https://mpago.la/2maEAFx')">LIBERAR 1 ELEIÇÃO (R$ 30)</button>
         </div>
         <div class="pay-card" style="border: 2px solid var(--accent);">
-            <p>Cupom ou Senha Mestra:</p>
+            <p>Cupom ou Senha Mestra (orion001):</p>
             <input id="cup" type="text" placeholder="Digite aqui...">
-            <button onclick="window.K()" style="background:var(--accent); color:#000;">ATIVAR</button>
+            <button onclick="window.K()" id="P2" style="background:var(--accent); color:#000;">ATIVAR ACESSO</button>
         </div>
-        <button onclick="location.reload()">VOLTAR</button>
+        <button onclick="location.reload()" style="background:none; border:1px solid #fff;">VOLTAR AO INÍCIO</button>
     </div>
 
     <div id="setupCargo" class="screen">
-        <h2>Candidatos</h2>
-        <input id="nC" type="text" placeholder="Cargo">
+        <h2 id="C1">Candidatos</h2>
+        <input id="nC" type="text" placeholder="Cargo (Ex: Presidente)">
         <input id="nCand" type="text" placeholder="Nome do Candidato">
         <div class="foto-container" onclick="document.getElementById('fileIn').click()">
-            <span>📷 CLIQUE PARA FOTO</span>
+            <span id="INSTR_FOTO">📷 CLIQUE PARA ANEXAR FOTO</span>
             <img id="imgPrev" class="img-preview">
         </div>
         <input type="file" id="fileIn" hidden accept="image/*" onchange="window.PREV(this)">
-        <button onclick="window.A()">ADICIONAR CANDIDATO</button>
+        <button onclick="window.A()" id="C2">ADICIONAR À LISTA</button>
         <div id="listaTemporaria" class="cand-preview-list" style="display:none;"></div>
-        <button onclick="window.SAVE()" style="background:var(--success)">SALVAR CARGO</button>
-        <button onclick="window.START()" style="margin-top:20px">INICIAR URNA</button>
+        <button onclick="window.SAVE()" id="C3" style="background:var(--success); margin-top:20px;">SALVAR CARGO E LISTA</button>
+        <button onclick="window.START_VOTE_PROCESS()" id="C4" style="margin-top:20px;">INICIAR VOTAÇÃO</button>
     </div>
 
     <div id="urna" class="screen">
         <h2 id="uT"></h2>
         <div id="gridUrna" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
-        <button onclick="window.VOTE()" style="height:80px; background:var(--success); margin-top:20px">CONFIRMAR VOTO</button>
-        <button onclick="window.END()" style="background:var(--danger)">ENCERRAR</button>
+        <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success); margin-top:20px">CONFIRMAR VOTO</button>
+        <button onclick="window.END()" id="U2" style="background:var(--danger)">ENCERRAR ELEIÇÃO</button>
     </div>
 
     <div id="res" class="screen">
-        <h2>Resultados</h2>
+        <h2 id="R_TITLE">Resultado</h2>
         <div id="areaImpressao">
-            <h2 id="pdf_h1" style="text-align:center; color:#0a2a66;"></h2>
+            <h2 id="pdf_h1" style="text-align:center; color:#0a2a66; margin:0;"></h2>
             <div id="pC"></div>
-            <p id="pdf-audit" style="text-align:center; font-size:10px;"></p>
+            <p id="pdf-audit" style="text-align:center; font-size:9px; color:#999; margin-top:10px;"></p>
         </div>
-        <button onclick="window.PDF(false)">PDF (SÓ TEXTO)</button>
-        <button onclick="window.PDF(true)" style="background:var(--success)">PDF (COM FOTOS)</button>
-        <textarea id="txtSugestao" placeholder="Deixe sua sugestão ou pedido aqui..."></textarea>
-        <button onclick="window.FEED()">ENVIAR FEEDBACK</button>
-        <button onclick="location.reload()" style="background:var(--danger)">SAIR</button>
+        <button onclick="window.PDF(false)" style="margin-top:20px">GERAR PDF (SÓ TEXTO)</button>
+        <button onclick="window.PDF(true)" style="background:var(--success); margin-top:10px">GERAR PDF (COM FOTOS)</button>
+        
+        <div style="margin-top:30px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
+            <h3>Sugestões e Pedidos</h3>
+            <textarea id="txtSugestao" placeholder="Escreva aqui sua sugestão para o desenvolvedor Paulo..."></textarea>
+            <button onclick="window.FEED()" style="background:var(--primary)">ENVIAR FEEDBACK</button>
+        </div>
+        <button onclick="location.reload()" style="background:var(--danger); margin-top:30px">NOVA SESSÃO</button>
     </div>
 
     <script>
-        // CONFIGURAÇÕES
+        // [1] CONFIGURAÇÕES INICIAIS
         window._cfg = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
         emailjs.init(window._cfg.k);
-        
-        window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp=''; window._maxVotos=1;
+        window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp=''; window._maxVotos=1; window._idioma='pt';
 
-        // NAVEGAÇÃO
+        // [2] MOTOR DE NAVEGAÇÃO
         window.GO = (id) => {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
+            const el = document.getElementById(id);
+            if(el) el.classList.add('active');
         };
 
-        // ÁUDIO
+        // [3] ÁUDIO DA URNA (BIPE)
         window.BIP = () => {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const g = ctx.createGain();
-                osc.type = 'square'; osc.frequency.setValueAtTime(440, ctx.currentTime);
-                g.gain.setValueAtTime(0.1, ctx.currentTime);
-                osc.connect(g); g.connect(ctx.destination);
-                osc.start(); osc.stop(ctx.currentTime + 1);
-            } catch(e) {}
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.type = 'square'; osc.frequency.setValueAtTime(440, ctx.currentTime);
+            g.gain.setValueAtTime(0.1, ctx.currentTime);
+            osc.connect(g); g.connect(ctx.destination);
+            osc.start(); osc.stop(ctx.currentTime + 1);
         };
 
-        // LÓGICA LOGIN (BLOQUEIO 3 ELEIÇÕES)
+        // [4] LÓGICA DE LOGIN COM BLOQUEIO DE 3 ACESSOS
         window.V = async () => {
-            let e = document.getElementById('uE').value.trim().toLowerCase();
-            if(!e.includes('@gmail.com')) return alert("Use Gmail!");
-            let btn = document.getElementById('L2'); btn.innerText = "VERIFICANDO...";
+            let email = document.getElementById('uE').value.trim().toLowerCase();
+            if(!email.endsWith('@gmail.com')) return alert("Use Gmail!");
+            
+            let btn = document.getElementById('L2');
+            btn.disabled = true; btn.innerText = "CONSULTANDO CRÉDITOS...";
+
             try {
-                let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e));
+                // Pergunta ao Worker sobre o limite
+                let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(email));
                 let d = await r.json();
-                if(Number(d.count) >= 3) { window.GO('pay'); return; }
+
+                // BLOQUEIO: Se count >= 3, interrompe tudo e vai para pagamento
+                if(Number(d.count) >= 3) {
+                    alert("Limite de 3 eleições atingido. Redirecionando...");
+                    window.GO('pay');
+                    return;
+                }
+
+                // Se passou no bloqueio, envia o e-mail
                 localStorage.setItem('urna_vault', d.codigo);
-                await emailjs.send(window._cfg.s, window._cfg.t, {to_email:e, validation_code:d.codigo}, window._cfg.k);
-                alert("Código enviado!"); window.GO('verify');
-            } catch(err) { alert("Erro de conexão."); }
-            finally { btn.innerText = "SOLICITAR CÓDIGO"; }
+                await emailjs.send(window._cfg.s, window._cfg.t, {to_email: email, validation_code: d.codigo}, window._cfg.k);
+                alert("Código enviado! Créditos usados: " + d.count + "/3");
+                window.GO('verify');
+
+            } catch(e) {
+                alert("Erro ao conectar com o servidor.");
+            } finally {
+                btn.disabled = false; btn.innerText = "SOLICITAR CÓDIGO";
+            }
         };
 
         window.C = () => {
             if(document.getElementById('iC').value === localStorage.getItem('urna_vault')) window.GO('setup');
-            else alert("Incorreto!");
+            else alert("Código Inválido!");
         };
 
-        // CUPOM (ORION001)
+        // [5] CUPOM E SENHA ORION001
         window.K = () => {
-            let c = document.getElementById('cup').value.trim();
-            if(c === 'orion001' || c === 'mais3gratis') { alert("LIBERADO!"); window.GO('setup'); }
-            else alert("Inválido!");
+            let cupom = document.getElementById('cup').value.trim();
+            if(cupom === 'orion001' || cupom === 'mais3gratis') {
+                alert("ACESSO ADMINISTRATIVO LIBERADO!");
+                window.GO('setup');
+            } else { alert("Código incorreto."); }
         };
 
-        // CADASTRO
-        window.N = () => { window._title = document.getElementById('tE').value; window._maxVotos = parseInt(document.getElementById('maxV').value) || 1; window.GO('setupCargo'); };
-        
+        // [6] CADASTRO DE CANDIDATOS
+        window.N = () => { 
+            window._title = document.getElementById('tE').value; 
+            window._maxVotos = parseInt(document.getElementById('maxV').value) || 1; 
+            window.GO('setupCargo'); 
+        };
+
         window.PREV = (f) => {
-            let reader = new FileReader();
-            reader.onload = (e) => { 
-                window._fotoTemp = e.target.result; 
-                document.getElementById('imgPrev').src = e.target.result; 
-                document.getElementById('imgPrev').style.display='block'; 
-            };
-            reader.readAsDataURL(f.files[0]);
+            if (f.files && f.files[0]) {
+                let r = new FileReader();
+                r.onload = (e) => { 
+                    window._fotoTemp = e.target.result; 
+                    document.getElementById('imgPrev').src = e.target.result; 
+                    document.getElementById('imgPrev').style.display='block'; 
+                };
+                r.readAsDataURL(f.files[0]);
+            }
         };
 
         window.A = () => {
-            let c = document.getElementById('nC').value, n = document.getElementById('nCand').value;
-            if(!c || !n) return alert("Faltam dados!");
-            if(!window._temp) window._temp = { n: c, c: [] };
-            window._temp.c.push({ n: n, v: 0, f: window._fotoTemp });
-            document.getElementById('listaTemporaria').style.display='block';
-            document.getElementById('listaTemporaria').innerHTML += `<div>👤 ${n}</div>`;
-            document.getElementById('nCand').value=''; window._fotoTemp=''; document.getElementById('imgPrev').style.display='none';
+            let cargo = document.getElementById('nC').value;
+            let nome = document.getElementById('nCand').value;
+            if(!cargo || !nome) return alert("Preencha cargo e nome!");
+            if(!window._temp) window._temp = { n: cargo, c: [] };
+            window._temp.c.push({ n: nome, v: 0, f: window._fotoTemp });
+            
+            // Atualiza lista visual
+            let list = document.getElementById('listaTemporaria');
+            list.style.display = 'block';
+            list.innerHTML += `<div style="padding:5px; border-bottom:1px solid #34495e;">👤 ${nome}</div>`;
+            
+            document.getElementById('nCand').value = ''; 
+            window._fotoTemp = ''; 
+            document.getElementById('imgPrev').style.display = 'none';
         };
 
-        window.SAVE = () => { 
-            if(window._temp) window._data.push(window._temp); 
-            window._temp = null; document.getElementById('nC').value=''; 
-            document.getElementById('listaTemporaria').innerHTML=''; 
-            alert("Salvo!"); 
+        window.SAVE = () => {
+            if(window._temp) { window._data.push(window._temp); window._temp = null; }
+            document.getElementById('nC').value = '';
+            document.getElementById('listaTemporaria').innerHTML = '';
+            document.getElementById('listaTemporaria').style.display = 'none';
+            alert("Cargo salvo!");
         };
 
-        // URNA
-        window.START = () => { if(!window._data.length) return alert("Cadastre!"); window._idx=0; window.RUN(); window.GO('urna'); };
-        
-        window.RUN = () => {
-            let cargo = window._data[window._idx]; document.getElementById('uT').innerText = cargo.n;
-            let g = document.getElementById('gridUrna'); g.innerHTML=''; window._sel=[];
+        // [7] URNA E VOTAÇÃO
+        window.START_VOTE_PROCESS = () => {
+            if(!window._data.length) return alert("Cadastre ao menos um cargo!");
+            window._idx = 0; window.RENDER_URNA(); window.GO('urna');
+        };
+
+        window.RENDER_URNA = () => {
+            let cargo = window._data[window._idx];
+            document.getElementById('uT').innerText = cargo.n.toUpperCase();
+            let g = document.getElementById('gridUrna'); g.innerHTML = '';
+            window._sel = [];
             cargo.c.forEach((can, i) => {
                 let d = document.createElement('div');
-                d.style="background:white; color:black; padding:10px; border-radius:10px; text-align:center; border:3px solid transparent; cursor:pointer;";
-                d.innerHTML = (can.f?`<img src="${can.f}" style="width:100%; height:80px; object-fit:cover;"><br>`:'')+`<b>${can.n}</b>`;
-                d.onclick=()=>{
-                    if(window._sel.includes(i)) { window._sel.splice(window._sel.indexOf(i),1); d.classList.remove('selected-card'); }
-                    else if(window._sel.length < window._maxVotos) { window._sel.push(i); d.classList.add('selected-card'); }
+                d.style = "background:white; color:black; padding:10px; border-radius:10px; text-align:center; cursor:pointer; border:4px solid transparent;";
+                d.innerHTML = (can.f ? `<img src="${can.f}" style="width:100%; height:80px; object-fit:cover; border-radius:5px;"><br>` : '') + `<b>${can.n}</b>`;
+                d.onclick = () => {
+                    if(window._sel.includes(i)) {
+                        window._sel.splice(window._sel.indexOf(i), 1);
+                        d.classList.remove('selected-card');
+                    } else if(window._sel.length < window._maxVotos) {
+                        window._sel.push(i);
+                        d.classList.add('selected-card');
+                    }
                 };
                 g.appendChild(d);
             });
         };
 
         window.VOTE = () => {
-            if(!window._sel.length) return alert("Selecione!");
+            if(!window._sel.length) return alert("Selecione um candidato!");
             window.BIP();
             window._sel.forEach(i => window._data[window._idx].c[i].v++);
             window._idx++;
-            if(window._idx < window._data.length) window.RUN();
-            else { alert("Voto Gravado!"); window._idx=0; window.RUN(); }
+            if(window._idx < window._data.length) {
+                window._sel = []; window.RENDER_URNA();
+            } else {
+                alert("Voto Gravado!"); window._idx = 0; window._sel = []; window.RENDER_URNA();
+            }
         };
 
-        // PDF E FEEDBACK
+        // [8] RESULTADOS, PDF E FEEDBACK
         window.END = () => {
-            document.getElementById('pdf_h1').innerText = window._title;
-            document.getElementById('pdf-audit').innerText = "Emitido: " + new Date().toLocaleString();
-            let out = document.getElementById('pC'); out.innerHTML='';
+            let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
+            document.getElementById('pdf_h1').innerText = window._title.toUpperCase();
+            document.getElementById('pdf-audit').innerText = "Auditado em: " + new Date().toLocaleString();
+            let out = document.getElementById('pC');
+            out.innerHTML = `<div style="text-align:center; background:#eee; padding:10px; border:1px solid #000; margin-bottom:10px;"><b>TOTAL GERAL DE VOTOS: ${total}</b></div>`;
             window._data.forEach(cargo => {
-                let h = `<h3>${cargo.n}</h3><table class="pdf-table">`;
-                cargo.c.sort((a,b)=>b.v-a.v).forEach(can => { h+=`<tr><td>${can.n}</td><td>${can.v} votos</td></tr>`; });
+                let h = `<h3>${cargo.n.toUpperCase()}</h3><table class="pdf-table">`;
+                cargo.c.sort((a,b)=>b.v-a.v).forEach(can => { h += `<tr><td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`; });
                 out.innerHTML += h + '</table>';
             });
             window.GO('res');
         };
 
         window.PDF = (fotos) => {
-            let out = document.getElementById('pC'); out.innerHTML='';
+            let out = document.getElementById('pC'); out.innerHTML = '';
             window._data.forEach(cargo => {
-                let h = `<table class="pdf-table"><thead><tr>${fotos?'<th>Foto</th>':''}<th>${cargo.n}</th><th>Votos</th></tr></thead><tbody>`;
+                let h = `<table class="pdf-table"><thead><tr>${fotos?'<th>Foto</th>':''}<th>${cargo.n}</th><th style="text-align:right">Votos</th></tr></thead><tbody>`;
                 cargo.c.sort((a,b)=>b.v-a.v).forEach(can => {
-                    h += `<tr>${fotos?`<td><img src="${can.f}" style="width:40px;"></td>`:''}<td>${can.n}</td><td>${can.v}</td></tr>`;
+                    h += `<tr>${fotos ? `<td><img src="${can.f || ''}" style="width:40px; height:40px; object-fit:cover;"></td>` : ''}<td>${can.n}</td><td style="text-align:right">${can.v}</td></tr>`;
                 });
                 out.innerHTML += h + '</tbody></table>';
             });
@@ -242,11 +301,12 @@
         };
 
         window.FEED = () => {
-            let m = document.getElementById('txtSugestao').value;
-            emailjs.send(window._cfg.s, window._cfg.t, {to_email:'paulosmb1972@gmail.com', validation_code: 'FEEDBACK: ' + m}, window._cfg.k)
-            .then(() => alert("Enviado!"));
+            let msg = document.getElementById('txtSugestao').value;
+            emailjs.send(window._cfg.s, window._cfg.t, {to_email: 'paulosmb1972@gmail.com', validation_code: 'FEEDBACK: ' + msg}, window._cfg.k)
+            .then(() => alert("Feedback enviado!"));
         };
 
+        window.TR = (l) => { window._idioma = l; /* Adicionar dicionário aqui se necessário */ };
     </script>
 </body>
 </html>
