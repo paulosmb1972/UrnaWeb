@@ -72,7 +72,7 @@
 
     <div id="setup" class="screen">
         <h2 id="S1">CONFIGURAÇÃO</h2>
-        <div class="info-box"><b id="H_SETUP_TIT">INFORMAÇÕES:</b><span id="H_SETUP_TXT"></span></div>
+        <div class="info-box"><b id="H_SETUP_TIT">INFORMAÇÕES DA ELEIÇÃO:</b><span id="H_SETUP_TXT"></span></div>
         <input id="tE" type="text">
         <input id="maxV" type="number" min="1" value="1">
         <button onclick="window.N()" id="S2"></button>
@@ -135,7 +135,7 @@
         window._tr = {
             pt: { 
                 H_LOGIN_TIT: "ACESSO AO SISTEMA:", H_LOGIN_TXT: "Bem-vindo! Valide seu e-mail Gmail para começar. Novos usuários possuem 3 eleições grátis.", uE: "Digite seu e-mail aqui...", L2: "ENTRAR NO SISTEMA",
-                H_PAY_TIT: "PLANOS DE ATIVAÇÃO:", H_PAY_TXT: "Você usou suas 3 eleições grátis. Escolha o plano ideal ou use seu cupom.",
+                P1: "Limite de Testes Atingido", H_PAY_TIT: "PLANOS DE ATIVAÇÃO:", H_PAY_TXT: "Você usou suas 3 eleições grátis. Escolha o plano ideal ou use seu cupom.",
                 PL1: "💎 Eleição Única Profissional", DESC_PL1: "Ideal para uma única votação pontual com suporte total e PDF completo.", B1: "LIBERAR 1 ELEIÇÃO (R$ 30,00)",
                 PL2: "🚀 Pacote Institucional 20 Urnas", DESC_PL2: "Economia máxima. Pacote para até 20 eleições. R$ 25,00 por urna.", B2: "COMPRAR PACOTE 20 URNAS (R$ 500,00)",
                 L_CUP: "Tem um cupom ou senha mestre?", P2: "ATIVAR CRÉDITO IMEDIATO", B_VOLTAR: "VOLTAR",
@@ -143,8 +143,8 @@
                 H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Digite o cargo, depois o nome e anexe a foto. Clique em ADICIONAR antes de salvar.", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", 
                 C2: "ADICIONAR", C3: "SALVAR", C4: "INICIAR",
                 H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione o candidato e confirme. O som indica sucesso.", U1: "CONFIRMAR VOTO",
-                R_TITLE: "RESULTADO", TOTAL_VOTOS: "VOTOS", B_PDF_SIMPLE: "GERAR RELATÓRIO PDF",
-                H_FEED_TIT: "FALE COM O PAULO:", H_FEED_TXT: "Deixe seu comentário diretamente para o desenvolvedor do sistema.", txtSugestao: "escreva sua mensagem aqui...", F2: "ENVIAR MENSAGEM", B_EXIT_FINAL: "SAIR"
+                R_TITLE: "RESULTADO", TOTAL_VOTOS: "QUANTIDADE GERAL DE VOTOS", B_PDF_SIMPLE: "GERAR RELATÓRIO PDF",
+                H_FEED_TIT: "FALE COM O PAULO:", H_FEED_TXT: "Deixe seu comentário diretamente para o desenvolvedor do sistema.", txtSugestao: "deixe sua mensagem aqui", F2: "ENVIAR MENSAGEM", B_EXIT_FINAL: "SAIR"
             },
             en: { 
                 H_LOGIN_TIT: "SYSTEM ACCESS:", H_LOGIN_TXT: "Welcome! Validate your Gmail to start. New users get 3 free elections.", uE: "Enter email here...", L2: "ACCESS SYSTEM",
@@ -152,18 +152,20 @@
                 PL1: "💎 Single Professional", DESC_PL1: "One-time vote with full support.", B1: "UNLOCK 1 (R$ 30,00)",
                 PL2: "🚀 Institutional Pack", DESC_PL2: "Up to 20 elections. Only R$ 25,00 per urn.", B2: "BUY 20 PACK (R$ 500,00)",
                 L_CUP: "Have a coupon or master password?", P2: "ACTIVATE NOW", B_VOLTAR: "BACK", tE: "Example: CIPA Election",
+                H_SETUP_TIT: "ELECTION INFORMATION:", H_SETUP_TXT: "Give it a title and set how many candidates the voter can choose.",
                 C2: "ADD", C3: "SAVE", C4: "START", U1: "CONFIRM VOTE",
-                R_TITLE: "RESULT", TOTAL_VOTOS: "VOTES", B_PDF_SIMPLE: "GENERATE PDF REPORT",
-                H_FEED_TIT: "TALK TO PAULO:", H_FEED_TXT: "Leave your comment directly for the system developer.", txtSugestao: "write your message here...", F2: "SEND MESSAGE", B_EXIT_FINAL: "EXIT"
+                R_TITLE: "RESULT", TOTAL_VOTOS: "TOTAL QUANTITY OF VOTES", B_PDF_SIMPLE: "GENERATE PDF REPORT",
+                H_FEED_TIT: "TALK TO PAULO:", H_FEED_TXT: "Leave your comments directly for the system developer.", txtSugestao: "leave your message here", F2: "SEND MESSAGE", B_EXIT_FINAL: "EXIT"
             },
             es: { 
                 H_PAY_TIT: "PLANES DE ACTIVACIÓN:", H_PAY_TXT: "Ya usaste tus 3 elecciones gratis. Elige el mejor plan.",
                 PL1: "💎 Elección Única", DESC_PL1: "Votación única con soporte total.", B1: "LIBERAR 1 (R$ 30,00)",
                 PL2: "🚀 Paquete Institucional", DESC_PL2: "Hasta 20 elecciones. Solo R$ 25,00 por urna.", B2: "COMPRAR PAQUETE (R$ 500,00)",
                 L_CUP: "¿Tiene un cupón o contraseña maestra?", P2: "ACTIVAR", B_VOLTAR: "VOLVER", tE: "Ejemplo: Elección de CIPA",
+                H_SETUP_TIT: "INFORMACIÓN DE LA ELECCIÓN:", H_SETUP_TXT: "Ponga un título y defina cuántos candidatos puede elegir el votante.",
                 C2: "AÑADIR", C3: "GUARDAR", C4: "INICIAR", U1: "CONFIRMAR VOTO",
-                R_TITLE: "RESULTADO", TOTAL_VOTOS: "VOTOS", B_PDF_SIMPLE: "GENERAR PDF",
-                H_FEED_TIT: "HABLA CON PAULO:", H_FEED_TXT: "Deje su comentario directamente para el desarrollador del sistema.", txtSugestao: "escriba su mensaje aquí...", F2: "ENVIAR", B_EXIT_FINAL: "SALIR"
+                R_TITLE: "RESULTADO", TOTAL_VOTOS: "CANTIDAD GENERAL DE VOTOS", B_PDF_SIMPLE: "GENERAR PDF",
+                H_FEED_TIT: "HABLE CON PAULO:", H_FEED_TXT: "Deje su comentario directamente para el desarrollador del sistema.", txtSugestao: "deje su mensaje aquí", F2: "ENVIAR", B_EXIT_FINAL: "SALIR"
             }
         };
 
@@ -225,6 +227,7 @@
             html2pdf().from(document.getElementById('areaImpressao')).save();
         };
 
+        // Funções auxiliares
         window.C = () => { if(document.getElementById('iC').value === localStorage.getItem('urna_vault')) window.GO('setup'); else alert("Incorreto!"); };
         window.K = () => { let c = document.getElementById('cup').value.trim(); if(c === 'orion001' || c === 'mais3gratis') { alert("LIBERADO!"); window.GO('setup'); } else alert("Incorreto."); };
         window.N = () => { window._title=document.getElementById('tE').value; window._maxVotos=parseInt(document.getElementById('maxV').value) || 1; window.GO('setupCargo'); };
