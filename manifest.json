@@ -1,0 +1,18 @@
+{
+  "name": "UrnaWeb Digital",
+  "short_name": "UrnaWeb",
+  "description": "Sistema de Votação Fácil e Profissional",
+  "start_url": "index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a2a66",
+  "theme_color": "#f39c12",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/927/927667.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
