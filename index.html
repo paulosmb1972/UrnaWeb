@@ -186,7 +186,7 @@
             es: { 
                 L1_1: "Sistema de Votación Fácil", L1_2: "Sistema de Votación Fácil", L1_3: "Sistema de Votación Fácil",
                 H_LOGIN_TIT: "ACCESO AL SISTEMA:", H_LOGIN_TXT: "¡Bienvenido! Valide su Gmail para comenzar.", uE: "Ingrese su email aquí...", L2: "SOLICITAR CÓDIGO",
-                H_VERIFY_TIT: "VERIFICACIÓN:", H_VERIFY_TXT: "Ingrese el código enviado a su email para validar el acceso.", V3: "CONFIRMAR CÓDIGO", iC: "0000",
+                H_VERIFY_TIT: "VERIFICACIÓN:", H_VERIFY_TXT: "Ingrese el código enviado a su email para validar el acesso.", V3: "CONFIRMAR CÓDIGO", iC: "0000",
                 S1: "CONFIGURACIÓN", H_SETUP_TIT: "INFORMACIÓN:", H_SETUP_TXT: "Ponga un título y defina cuántos candidatos puede elegir.", tE: "Ej: Elección de Junta", S2: "GUARDAR DATOS",
                 P1: "Límite Alcanzado", H_PAY_TIT: "PLANES DE ACTIVACIÓN:", H_PAY_TXT: "Has usado tus 3 elecciones gratis. Elige un plan.",
                 PL1: "💎 Elección Profesional", DESC_PL1: "Ideal para una votación única con soporte y reporte PDF.", B1: "LIBERAR 1 (R$ 30,00)",
@@ -298,7 +298,7 @@
         window.VOTE = () => { let d_tr = window._tr[window._idioma]; if(!window._sel.length) return alert(d_tr.AL_ERR_VOTE); window.BIP(); window._sel.forEach(i => window._data[window._idx].c[i].v++); window._idx++; if(window._idx < window._data.length) window.RUN(); else { alert(d_tr.AL_SUC_VOTE); window._idx=0; window.RUN(); } };
         window.FEED = () => { let m = document.getElementById('txtSugestao').value; if(!m) return alert("Escreva algo!"); emailjs.send(window._cfg.s, window._cfg.t, {to_email:'paulosmb1972@gmail.com', validation_code: 'FEEDBACK: ' + m}, window._cfg.k).then(() => { alert("Feedback enviado!"); document.getElementById('txtSugestao').value=''; }); };
 
-        // MODIFICAÇÃO PONTUAL: REGISTRO DO APP (PWA)
+        // REGISTRO DO APP (PWA)
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js');
         }
