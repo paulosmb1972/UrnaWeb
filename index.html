@@ -129,6 +129,30 @@
         <button onclick="window.GO('login')" id="B_EXIT_FINAL" style="background:var(--danger)"></button>
     </div>
 
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Impede o Chrome de mostrar o aviso padrão muito rápido
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // Opcional: Criar um aviso visual seu aqui (Ex: um banner no topo)
+    console.log("UrnaWeb: O app está pronto para ser instalado!");
+});
+
+// Função que você pode chamar em um botão de "Instalar App" nas configurações
+window.INSTALL_APP = () => {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choice) => {
+            if (choice.outcome === 'accepted') console.log('Usuário instalou o app');
+            deferredPrompt = null;
+        });
+    } else {
+        alert(window._idioma === 'pt' ? "Abra o menu do navegador e clique em 'Instalar Aplicativo' ou 'Adicionar à tela de início'." : "Open browser menu and click 'Install App' or 'Add to home screen'.");
+    }
+};
+
     <script>
         // SEGURANÇA MANTIDA
         document.addEventListener('contextmenu', e => e.preventDefault());
@@ -307,4 +331,6 @@
     </script>
 </body>
 </html>
+
+
 
