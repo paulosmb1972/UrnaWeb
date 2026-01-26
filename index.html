@@ -30,6 +30,7 @@
         .pdf-table td { padding: 12px; border-bottom: 1px solid #eee; color: #333 !important; }
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
         .lang-box button { width: auto; padding: 6px 12px; background: #000; font-size: 10px; border: 1px solid var(--primary); box-shadow: none; }
+        .selected-card { border: 4px solid var(--success) !important; background: rgba(46, 204, 113, 0.2) !important; }
     </style>
 </head>
 <body>
@@ -44,7 +45,7 @@
         <h2 id="L1">Sistema de Votação Fácil</h2>
         <div class="info-box"><b id="H_LOGIN_TIT">ACESSO AO SISTEMA:</b><span id="H_LOGIN_TXT"></span></div>
         <input id="uE" type="email">
-        <button onclick="window.V()" id="L2">SOLICITAR CÓDIGO</button>
+        <button onclick="window.V()" id="L2"></button>
     </div>
 
     <div id="verify" class="screen">
@@ -59,7 +60,7 @@
         <div class="info-box"><b id="H_SETUP_TIT">INFORMAÇÕES:</b><span id="H_SETUP_TXT"></span></div>
         <input id="tE" type="text">
         <input id="maxV" type="number" min="1" value="1">
-        <button onclick="window.N()" id="S2">SALVAR DADOS</button>
+        <button onclick="window.N()" id="S2"></button>
     </div>
 
     <div id="pay" class="screen">
@@ -108,7 +109,7 @@
         <div class="info-box"><b id="H_URNA_TIT">GUIA DO ELEITOR:</b><span id="H_URNA_TXT"></span></div>
         <div id="gridUrna" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
         <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success)"></button>
-        <button onclick="window.END()" id="U2" style="background:var(--danger)"></button>
+        <button onclick="window.END()" id="U2" style="background:var(--danger)">ENCERRAR</button>
     </div>
 
     <div id="res" class="screen">
@@ -125,7 +126,7 @@
             <textarea id="txtSugestao"></textarea>
             <button onclick="window.FEED()" id="F2"></button>
         </div>
-        <button onclick="window.GO('login')" id="B_EXIT_FINAL" style="background:var(--danger)"></button>
+        <button onclick="window.GO('login')" id="B_EXIT_FINAL" style="background:var(--danger)">SAIR</button>
     </div>
 
     <script>
@@ -145,27 +146,29 @@
 
         window._tr = {
             pt: { 
-                H_LOGIN_TIT: "ACESSO AO SISTEMA:", H_LOGIN_TXT: "Bem-vindo! Valide seu e-mail Gmail para começar. Novos usuários possuem 3 eleições grátis.", uE: "Digite seu e-mail aqui...", L2: "SOLICITAR CÓDIGO",
-                P1: "Limite de Testes Atingido", H_PAY_TIT: "PLANOS DE ATIVAÇÃO:", H_PAY_TXT: "Você usou suas 3 eleições grátis. Escolha o plano que melhor atende sua necessidade para liberar acessos ilimitados ou use seu cupom.",
+                H_LOGIN_TIT: "ACESSO AO SISTEMA:", H_LOGIN_TXT: "Bem-vindo! Valide seu e-mail Gmail para começar. Novos usuários possuem 3 eleições grátis.", uE: "Digite seu e-mail aqui...", L2: "SOLICITAR CÓDIGO DE ACESSO",
+                P1: "Limite de Testes Atingido", H_PAY_TIT: "PLANOS DE ATIVAÇÃO:", H_PAY_TXT: "Você usou suas 3 eleições grátis. Escolha o plano ideal ou use seu cupom.",
                 PL1: "💎 Eleição Única Profissional", DESC_PL1: "Ideal para uma única votação pontual com suporte total e PDF completo.", B1: "LIBERAR 1 ELEIÇÃO (R$ 30,00)",
-                PL2: "🚀 Pacote Institucional 20 Urnas", DESC_PL2: "Economia máxima para instituições. Pacote fechado para até 20 eleições. R$ 25,00 por urna.", B2: "COMPRAR PACOTE 20 URNAS (R$ 500,00)",
+                PL2: "🚀 Pacote Institucional 20 Urnas", DESC_PL2: "Economia máxima para instituições. Pacote para até 20 eleições. R$ 25,00 por urna.", B2: "COMPRAR PACOTE 20 URNAS (R$ 500,00)",
                 L_CUP: "Tem um cupom ou senha mestre?", P2: "ATIVAR CRÉDITO IMEDIATO", B_VOLTAR: "VOLTAR",
-                H_SETUP_TIT: "INFORMAÇÕES:", H_SETUP_TXT: "Dê um título para a eleição e defina quantos candidatos o eleitor pode escolher (voto único ou múltiplo).", tE: "Exemplo: eleição de CIPA", S2: "SALVAR DADOS",
-                H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Digite o cargo, depois o nome e anexe a foto. Clique em ADICIONAR antes de salvar o cargo.", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", C2: "ADICIONAR", C3: "SALVAR", C4: "INICIAR URNA",
-                H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione o(s) candidato(s) e clique em confirmar. O som 'Piiiii' indica que seu voto foi gravado com sucesso.", U1: "CONFIRMAR MEU VOTO", U2: "ENCERRAR E APURAR",
-                H_FEED_TIT: "FALE COM O PAULO:", H_FEED_TXT: "Deixe seu comentário ou pedido de melhoria diretamente para o desenvolvedor do sistema.", txtSugestao: "escreva sua mensagem aqui...", F2: "ENVIAR FEEDBACK", B_EXIT_FINAL: "SAIR"
+                H_SETUP_TIT: "INFORMAÇÕES DA ELEIÇÃO:", H_SETUP_TXT: "Dê um título e defina quantos candidatos o eleitor pode escolher.", tE: "Exemplo: eleição de CIPA", S2: "SALVAR DADOS",
+                H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Digite o cargo, depois o nome e anexe a foto. Clique em ADICIONAR antes de salvar o cargo.", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", 
+                C2: "ADICIONAR", C3: "SALVAR", C4: "INICIAR URNA",
+                H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione o(s) candidato(s) e clique em confirmar. O som 'Piiiii' indica sucesso.", U1: "CONFIRMAR MEU VOTO AGORA",
+                R_TITLE: "RESULTADO DA ELEIÇÃO", TOTAL_VOTOS: "TOTAL GERAL DE VOTOS",
+                H_FEED_TIT: "FALE COM O PAULO:", H_FEED_TXT: "Deixe seu comentário diretamente para o desenvolvedor do sistema.", txtSugestao: "escreva sua mensagem aqui...", F2: "ENVIAR FEEDBACK"
             },
             en: { 
-                H_LOGIN_TIT: "SYSTEM ACCESS:", H_LOGIN_TXT: "Welcome! Validate your Gmail to start. New users get 3 free elections.", uE: "Enter email here...", L2: "GET CODE",
+                H_LOGIN_TIT: "SYSTEM ACCESS:", H_LOGIN_TXT: "Welcome! Validate your Gmail to start. New users get 3 free elections.", uE: "Enter email here...", L2: "REQUEST ACCESS CODE",
                 P1: "Trial Limit Reached", H_PAY_TIT: "ACTIVATION PLANS:", H_PAY_TXT: "You've used your 3 free elections. Choose a plan.",
                 PL1: "💎 Single Professional", DESC_PL1: "Ideal for a single vote with full support.", B1: "UNLOCK 1 ELECTION (R$ 30,00)",
                 PL2: "🚀 Institutional Pack", DESC_PL2: "Pack for up to 20 elections. Only R$ 25,00 per urn.", B2: "BUY 20 PACK (R$ 500,00)",
                 L_CUP: "Have a coupon or master password?", P2: "ACTIVATE NOW", B_VOLTAR: "BACK", tE: "Example: CIPA Election", S2: "SAVE DATA",
-                H_SETUP_TIT: "INFORMATION:", H_SETUP_TXT: "Title your election and set candidates per vote.",
                 H_CARGO_TIT: "HOW TO REGISTER:", H_CARGO_TXT: "Enter position, name and photo. Click ADD.",
                 INSTR_FOTO: "📷 CLICK TO ATTACH PHOTO", C2: "ADD", C3: "SAVE", C4: "START BALLOT",
-                H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select candidate(s) and click confirm.", U1: "CONFIRM VOTE", U2: "END AND COUNT",
-                H_FEED_TIT: "TALK TO PAULO:", H_FEED_TXT: "Leave your comment for the developer.", txtSugestao: "write your message here...", F2: "SEND", B_EXIT_FINAL: "EXIT"
+                H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select candidate(s) and click confirm.", U1: "CONFIRM VOTE",
+                R_TITLE: "ELECTION RESULTS", TOTAL_VOTOS: "GRAND TOTAL OF VOTES",
+                F2: "SEND FEEDBACK"
             },
             es: { 
                 H_PAY_TIT: "PLANES DE ACTIVACIÓN:", H_PAY_TXT: "Ya usaste tus 3 elecciones gratis. Elige el mejor plan.",
@@ -175,8 +178,9 @@
                 H_SETUP_TIT: "INFORMACIÓN:", H_SETUP_TXT: "Ponga un título y defina cuántos candidatos puede elegir.",
                 H_CARGO_TIT: "CÓMO REGISTRAR:", H_CARGO_TXT: "Ingrese cargo, nombre y foto. Clic en AÑADIR.",
                 INSTR_FOTO: "📷 CLIC PARA ADJUNTAR FOTO", C2: "AÑADIR", C3: "GUARDAR", C4: "INICIAR URNA",
-                H_URNA_TIT: "GUÍA DEL VOTANTE:", H_URNA_TXT: "Seleccione candidato(s) e confirme.", U1: "CONFIRMAR VOTO", U2: "TERMINAR Y CONTAR",
-                H_FEED_TIT: "HABLA CON PAULO:", H_FEED_TXT: "Deje su comentario para el desarrollador.", txtSugestao: "escriba su mensaje aquí...", F2: "ENVIAR", B_EXIT_FINAL: "SALIR"
+                H_URNA_TIT: "GUÍA DEL VOTANTE:", H_URNA_TXT: "Seleccione candidato(s) y confirme.", U1: "CONFIRMAR VOTO",
+                R_TITLE: "RESULTADO DE LA ELECCIÓN", TOTAL_VOTOS: "TOTAL GENERAL DE VOTOS",
+                F2: "ENVIAR"
             }
         };
 
@@ -187,6 +191,13 @@
                 let el = document.getElementById(k); 
                 if(el) { if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = d[k]; else el.innerText = d[k]; }
             } 
+        };
+
+        window.GO = (id) => {
+            if(id === 'login') { localStorage.removeItem('urna_vault'); window._data = []; window._sel = []; window._idx = 0; }
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            window.TR(window._idioma);
         };
 
         window.V = async function() { 
@@ -203,19 +214,36 @@
             } catch(err) { alert("Erro de conexão."); } finally { btn.disabled = false; window.TR(window._idioma); }
         };
 
-        window.GO = (id) => {
-            if(id === 'login') { localStorage.removeItem('urna_vault'); window._data = []; window._sel = []; window._idx = 0; }
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            window.TR(window._idioma);
+        window.END = () => {
+            let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
+            let d = window._tr[window._idioma];
+            document.getElementById('pdf_h1').innerText=window._title.toUpperCase();
+            document.getElementById('pdf-audit').innerText="Emissão: "+new Date().toLocaleString();
+            let out=document.getElementById('pC'); 
+            out.innerHTML=`<div style="background:#f2f2f2; padding:10px; border:1px solid #000; text-align:center; margin-bottom:15px;"><b>${d.TOTAL_VOTOS}: ${total}</b></div>`;
+            window._data.forEach(cargo => {
+                let h=`<h3>${cargo.n.toUpperCase()}</h3><table class="pdf-table">`;
+                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr><td>${can.n}</td><td style="text-align:right"><b>${can.v} Votos</b></td></tr>`; });
+                out.innerHTML += h+'</table>';
+            });
+            window.GO('res');
         };
 
-        window.C = () => { if(document.getElementById('iC').value === localStorage.getItem('urna_vault')) window.GO('setup'); else alert("Incorreto!"); };
-        window.K = () => { 
-            let c = document.getElementById('cup').value.trim();
-            if(c === 'orion001' || c === 'mais3gratis') { alert("LIBERADO!"); window.GO('setup'); }
-            else alert("Incorreto.");
+        window.PDF = (fotos) => {
+            let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
+            let d = window._tr[window._idioma];
+            let out=document.getElementById('pC'); out.innerHTML=`<div style="background:#f2f2f2; padding:10px; border:1px solid #000; text-align:center; margin-bottom:15px;"><b>${d.TOTAL_VOTOS}: ${total}</b></div>`;
+            window._data.forEach(cargo => {
+                let h=`<table class="pdf-table"><thead><tr>${fotos?'<th style="width:50px">Foto</th>':''}<th>${cargo.n}</th><th style="text-align:right">Votos</th></tr></thead><tbody>`;
+                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;"></td>`:''}<td>${can.n}</td><td style="text-align:right">${can.v}</td></tr>`; });
+                out.innerHTML += h+'</tbody></table>';
+            });
+            html2pdf().from(document.getElementById('areaImpressao')).save();
         };
+
+        // Funções auxiliares mantidas
+        window.C = () => { if(document.getElementById('iC').value === localStorage.getItem('urna_vault')) window.GO('setup'); else alert("Incorreto!"); };
+        window.K = () => { let c = document.getElementById('cup').value.trim(); if(c === 'orion001' || c === 'mais3gratis') { alert("LIBERADO!"); window.GO('setup'); } else alert("Incorreto."); };
         window.N = () => { window._title=document.getElementById('tE').value; window._maxVotos=parseInt(document.getElementById('maxV').value) || 1; window.GO('setupCargo'); };
         window.PREV = (f) => { if (f.files && f.files[0]) { let r=new FileReader(); r.onload=(e)=>{window._fotoTemp=e.target.result; document.getElementById('imgPrev').src=e.target.result; document.getElementById('imgPrev').style.display='block';}; r.readAsDataURL(f.files[0]); } };
         window.A = () => {
@@ -238,41 +266,9 @@
                 g.appendChild(d);
             });
         };
-        window.VOTE = () => {
-            if(!window._sel.length) return alert("Selecione!");
-            window.BIP();
-            window._sel.forEach(i => window._data[window._idx].c[i].v++);
-            window._idx++;
-            if(window._idx < window._data.length) window.RUN();
-            else { alert("Voto Gravado!"); window._idx=0; window.RUN(); }
-        };
-        window.END = () => {
-            let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
-            document.getElementById('pdf_h1').innerText=window._title.toUpperCase();
-            document.getElementById('pdf-audit').innerText="Emissão: "+new Date().toLocaleString();
-            let out=document.getElementById('pC'); out.innerHTML=`<div style="text-align:center; margin-bottom:15px;"><b>TOTAL GERAL DE VOTOS: ${total}</b></div>`;
-            window._data.forEach(cargo => {
-                let h=`<h3>${cargo.n.toUpperCase()}</h3><table class="pdf-table">`;
-                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr><td>${can.n}</td><td style="text-align:right"><b>${can.v} Votos</b></td></tr>`; });
-                out.innerHTML += h+'</table>';
-            });
-            window.GO('res');
-        };
-        window.PDF = (fotos) => {
-            let out=document.getElementById('pC'); out.innerHTML='';
-            window._data.forEach(cargo => {
-                let h=`<table class="pdf-table"><thead><tr>${fotos?'<th style="width:50px">Foto</th>':''}<th>${cargo.n}</th><th style="text-align:right">Votos</th></tr></thead><tbody>`;
-                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;"></td>`:''}<td>${can.n}</td><td style="text-align:right">${can.v}</td></tr>`; });
-                out.innerHTML += h+'</tbody></table>';
-            });
-            html2pdf().from(document.getElementById('areaImpressao')).save();
-        };
-        window.FEED = () => {
-            let m = document.getElementById('txtSugestao').value;
-            if(!m) return alert("Escreva algo!");
-            emailjs.send(window._cfg.s, window._cfg.t, {to_email:'paulosmb1972@gmail.com', validation_code: 'FEEDBACK: ' + m}, window._cfg.k)
-            .then(() => { alert("Feedback enviado!"); document.getElementById('txtSugestao').value=''; });
-        };
+        window.VOTE = () => { if(!window._sel.length) return alert("Selecione!"); window.BIP(); window._sel.forEach(i => window._data[window._idx].c[i].v++); window._idx++; if(window._idx < window._data.length) window.RUN(); else { alert("Voto Gravado!"); window._idx=0; window.RUN(); } };
+        window.FEED = () => { let m = document.getElementById('txtSugestao').value; if(!m) return alert("Escreva algo!"); emailjs.send(window._cfg.s, window._cfg.t, {to_email:'paulosmb1972@gmail.com', validation_code: 'FEEDBACK: ' + m}, window._cfg.k).then(() => { alert("Feedback enviado!"); document.getElementById('txtSugestao').value=''; }); };
+
         window.TR('pt');
     </script>
 </body>
