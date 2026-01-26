@@ -141,17 +141,68 @@
         };
 
         // [2] TRADUÇÃO EXTREMA
-        window._tr = {
-            pt: {
-                L1: "Portal de Acesso à Urna", H_LOGIN_TIT: "CONTROLE DE ACESSO:", H_LOGIN_TXT: "Este sistema utiliza autenticação via Gmail. Cada conta possui 3 eleições gratuitas. Após esse limite, o acesso será bloqueado até a ativação de um plano.", uE: "Seu Gmail @gmail.com", L2: "SOLICITAR CÓDIGO DE ACESSO",
-                V1: "Verificar Identidade", H_VERIFY_TIT: "SEGURANÇA:", H_VERIFY_TXT: "Um código de 4 dígitos foi enviado ao seu e-mail. Caso não encontre, verifique a pasta de SPAM.", iC: "Digite o código aqui", V3: "CONFIRMAR E ENTRAR",
-                S1: "Configuração da Eleição", H_SETUP_TIT: "INFORMAÇÕES:", H_SETUP_TXT: "Defina o nome da eleição e a quantidade de candidatos que cada eleitor poderá escolher por cargo.", tE: "Título (Ex: Eleição CIPA 2026)", maxV: "Votos por eleitor", S2: "SALVAR E IR PARA CANDIDATOS",
-                P1: "Limite de Créditos Atingido", H_PAY_TIT: "PAGAMENTO:", H_PAY_TXT: "Suas 3 eleições grátis acabaram. Escolha uma opção profissional abaixo para liberar o sistema.", PL1: "💎 Eleição Única Profissional", B1: "LIBERAR 1 ELEIÇÃO (R$ 30)", L_CUP: "Tem um cupom ou senha mestra?", P2: "ATIVAR ACESSO",
-                C1: "Painel de Candidatos", H_CARGO_TIT: "CADASTRO:", H_CARGO_TXT: "Digite o cargo e o nome do candidato. Anexe a foto e clique em ADICIONAR para cada um.", nC: "Cargo (Ex: Presidente)", nCand: "Nome do Candidato", INSTR_FOTO: "📷 CLIQUE PARA FOTO", C2: "ADICIONAR CANDIDATO", C3: "SALVAR CARGO E LISTA", C4: "INICIAR PROCESSO DE VOTAÇÃO",
-                H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione o(s) candidato(s) desejado(s). O som 'Piiiii' indica que seu voto foi gravado com sucesso.", U1: "CONFIRMAR MEU VOTO", U2: "ENCERRAR E APURAR VOTOS", R_TITLE: "Apuração Final", B_PDF_SIMPLE: "PDF (APENAS RESULTADOS)", B_PDF_FULL: "PDF COMPLETO (COM FOTOS)", F1: "Sugestões e Pedidos", txtSugestao: "Escreva sua sugestão aqui...", F2: "ENVIAR FEEDBACK AO PAULO", B_EXIT_FINAL: "SAIR / NOVA SESSÃO"
-            }
-        };
+/* [TÍTULO: JS - DICIONÁRIO DE TRADUÇÃO EXTREMA] */
+window._tr = {
+    pt: { 
+        // Tela de Login
+        L1: "Portal de Identificação Digital", 
+        H_LOGIN_TIT: "CONTROLE DE ACESSO:", 
+        H_LOGIN_TXT: "Este sistema utiliza autenticação via Gmail. Cada conta possui 3 eleições gratuitas para testes. Após esse limite, o sistema requer ativação de um plano profissional ou uso de cupom.", 
+        uE: "Digite seu e-mail @gmail.com oficial...", 
+        L2: "SOLICITAR CÓDIGO DE ACESSO",
 
+        // Tela de Verificação
+        V1: "Verificar Código de Segurança", 
+        H_VERIFY_TIT: "IDENTIDADE CONFIRMADA:", 
+        H_VERIFY_TXT: "Um código de 4 dígitos foi enviado ao seu Gmail. Insira-o abaixo para validar sua sessão. Caso não visualize, verifique a caixa de SPAM.", 
+        iC: "0000 (Digite os 4 dígitos)", 
+        V3: "CONFIRMAR E ACESSAR SISTEMA",
+
+        // Tela de Setup
+        S1: "Configuração da Eleição", 
+        H_SETUP_TIT: "DADOS DA VOTAÇÃO:", 
+        H_SETUP_TXT: "Defina o título que aparecerá no relatório PDF e a quantidade máxima de candidatos que cada eleitor poderá selecionar por voto.", 
+        tE: "Título da Eleição (Ex: CIPA 2026)", 
+        maxV: "Quantidade de escolhas por eleitor", 
+        S2: "SALVAR E CADASTRAR CANDIDATOS",
+
+        // Tela de Pagamento
+        P1: "Limite de Créditos Atingido", 
+        H_PAY_TIT: "PLANO PROFISSIONAL:", 
+        H_PAY_TXT: "Você utilizou suas 3 eleições de cortesia. Para continuar, escolha um plano de créditos ou utilize uma senha mestra de liberação.", 
+        PL1: "💎 Eleição Única Profissional", 
+        B1: "LIBERAR 1 ELEIÇÃO (R$ 30)", 
+        L_CUP: "Possui cupom ou senha mestra?", 
+        P2: "ATIVAR ACESSO IMEDIATO",
+
+        // Tela de Cadastro
+        C1: "Painel de Registro de Candidatos", 
+        H_CARGO_TIT: "CADASTRO PASSO A PASSO:", 
+        H_CARGO_TXT: "1º Defina o cargo. 2º Digite o nome do candidato e anexe a foto. 3º Clique em 'ADICIONAR'. Você pode cadastrar vários candidatos para o mesmo cargo antes de salvar.", 
+        nC: "Nome do Cargo (Ex: Diretor)", 
+        nCand: "Nome Completo do Candidato", 
+        INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO OFICIAL", 
+        C2: "ADICIONAR CANDIDATO À LISTA", 
+        C3: "FINALIZAR CARGO E SALVAR LISTA", 
+        C4: "CONCLUIR E ABRIR URNA PARA VOTOS",
+
+        // Tela da Urna
+        H_URNA_TIT: "GUIA DO ELEITOR:", 
+        H_URNA_TXT: "Selecione o(s) candidato(s) desejado(s). O sistema respeitará o limite de votos definido. O som 'Piiiii' indica que o voto foi processado com sucesso.", 
+        U1: "CONFIRMAR MEU VOTO AGORA", 
+        U2: "ENCERRAR VOTAÇÃO E APURAR",
+
+        // Tela de Resultados
+        R_TITLE: "Relatório de Apuração Oficial", 
+        B_PDF_SIMPLE: "GERAR PDF (APENAS RESULTADOS)", 
+        B_PDF_FULL: "GERAR PDF COMPLETO (COM FOTOS)", 
+        F1: "Sugestões e Pedidos de Melhoria", 
+        H_FEED_TIT: "FALE COM O DESENVOLVEDOR:", 
+        H_FEED_TXT: "Deixe abaixo seu comentário, solicitação de novas funções ou feedback para o desenvolvedor Paulo.", 
+        F2: "ENVIAR FEEDBACK AO PAULO", 
+        B_EXIT_FINAL: "INICIAR NOVA SESSÃO / SAIR"
+    }
+};
         // [3] NAVEGAÇÃO E MOTOR
         window.GO = (id) => {
             if(id === 'login') { localStorage.removeItem('urna_vault'); window._data = []; window._sel = []; window._idx = 0; }
@@ -163,24 +214,43 @@
         window.TR = (l) => { window._idioma=l; const d=window._tr[l]; for(let k in d){ let el=document.getElementById(k); if(el) { if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder=d[k]; else el.innerText=d[k]; } } };
 
         // [4] LÓGICA DE LOGIN (CORREÇÃO DE TRAVAMENTO)
-        window.V = async () => {
-            let e = document.getElementById('uE').value.trim().toLowerCase();
-            if(!e.endsWith('@gmail.com')) return alert("Use Gmail!");
-            let btn = document.getElementById('L2'); btn.innerText = "VERIFICANDO..."; btn.disabled = true;
+/* [TÍTULO: JS - LÓGICA DE LOGIN COM BLOQUEIO RIGOROSO] */
+window.V = async function() { 
+    let e = document.getElementById('uE').value.trim().toLowerCase(); 
+    if(!e.endsWith('@gmail.com')) return alert("Por favor, utilize um e-mail @gmail.com válido.");
+    
+    let btn = document.getElementById('L2'); 
+    btn.disabled = true; btn.innerText = "CONSULTANDO BANCO...";
 
-            try {
-                let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e));
-                let d = await r.json();
+    try { 
+        // 1. Consulta o Worker ANTES de qualquer ação
+        let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
+        let d = await r.json(); 
+        
+        // 2. BLOQUEIO: Se count >= 3, interrompe o fluxo e vai para pagamento
+        if(Number(d.count) >= 3) { 
+            alert("Limite de 3 eleições atingido para este e-mail.");
+            window.GO('pay'); 
+            return; // Garante que o EmailJS não seja chamado
+        } 
+        
+        // 3. Se tiver créditos, salva o código e envia e-mail
+        localStorage.setItem('urna_vault', d.codigo);
+        await emailjs.send(window._cfg.s, window._cfg.t, { 
+            to_email: e, 
+            validation_code: d.codigo 
+        }, window._cfg.k); 
+        
+        alert("Código enviado! Você ainda possui " + (3 - d.count) + " créditos grátis."); 
+        window.GO('verify'); 
 
-                if(Number(d.count) >= 3) { window.GO('pay'); return; }
-
-                localStorage.setItem('urna_vault', d.codigo);
-                await emailjs.send(window._cfg.s, window._cfg.t, {to_email:e, validation_code:d.codigo}, window._cfg.k);
-                alert("Código enviado!"); window.GO('verify');
-            } catch(err) { alert("Erro de conexão."); }
-            finally { btn.innerText = "SOLICITAR CÓDIGO"; btn.disabled = false; }
-        };
-
+    } catch(err) { 
+        alert("Erro de conexão com o servidor. Tente novamente."); 
+    } finally { 
+        btn.disabled = false; 
+        window.TR(window._idioma); 
+    }
+};
         window.C = () => { if(document.getElementById('iC').value === localStorage.getItem('urna_vault')) window.GO('setup'); else alert("Incorreto!"); };
 
         window.K = () => { 
@@ -193,16 +263,29 @@
         window.N = () => { window._title=document.getElementById('tE').value; window._maxVotos=parseInt(document.getElementById('maxV').value) || 1; window.GO('setupCargo'); };
         window.PREV = (f) => { let r=new FileReader(); r.onload=(e)=>{window._fotoTemp=e.target.result; document.getElementById('imgPrev').src=e.target.result; document.getElementById('imgPrev').style.display='block';}; r.readAsDataURL(f.files[0]); };
         
-        window.A = () => {
-            let c=document.getElementById('nC').value, n=document.getElementById('nCand').value;
-            if(!c || !n) return alert("Faltam dados!");
-            if(!window._temp) window._temp={n:c, c:[]};
-            window._temp.c.push({n:n, v:0, f:window._fotoTemp});
-            let list = document.getElementById('listaTemporaria'); list.style.display='block';
-            list.innerHTML += `<div class="cand-item-small">👤 ${n}</div>`;
-            document.getElementById('nCand').value=''; window._fotoTemp=''; document.getElementById('imgPrev').style.display='none';
-        };
-
+/* [TÍTULO: JS - ADICIONAR CANDIDATO COM FEEDBACK VISUAL] */
+window.A = () => {
+    let cargo = document.getElementById('nC').value;
+    let nome = document.getElementById('nCand').value;
+    
+    if(!cargo || !nome) return alert("Erro: Defina o cargo e o nome do candidato.");
+    
+    if(!window._temp) window._temp = { n: cargo, c: [] };
+    
+    // Adiciona à memória
+    window._temp.c.push({ n: nome, v: 0, f: window._fotoTemp });
+    
+    // Atualiza o Retângulo de Visualização (Lista Temporária)
+    let list = document.getElementById('listaTemporaria');
+    list.style.display = 'block';
+    list.innerHTML += `<div class="cand-item-small">👤 <b>${nome}</b> - Adicionado ao cargo: ${cargo}</div>`;
+    
+    // Limpa campos para o próximo candidato
+    document.getElementById('nCand').value = ''; 
+    window._fotoTemp = ''; 
+    document.getElementById('imgPrev').style.display = 'none';
+    alert("Candidato inserido na lista com sucesso!");
+};
         window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('listaTemporaria').innerHTML=''; document.getElementById('listaTemporaria').style.display='none'; alert("Cargo Salvo!"); };
         window.START_VOTE_PROCESS = () => { if(!window._data.length) return alert("Adicione candidatos!"); window._idx=0; window.RUN(); window.GO('urna'); };
         
@@ -261,3 +344,4 @@
     </script>
 </body>
 </html>
+
