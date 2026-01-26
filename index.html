@@ -30,7 +30,6 @@
         .pdf-table td { padding: 12px; border-bottom: 1px solid #eee; color: #333 !important; }
         .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
         .lang-box button { width: auto; padding: 6px 12px; background: #000; font-size: 10px; border: 1px solid var(--primary); box-shadow: none; }
-        .selected-card { border: 4px solid var(--success) !important; background: rgba(46, 204, 113, 0.2) !important; }
     </style>
 </head>
 <body>
@@ -46,6 +45,14 @@
         <div class="info-box"><b id="H_LOGIN_TIT"></b><span id="H_LOGIN_TXT"></span></div>
         <input id="uE" type="email">
         <button onclick="window.V()" id="L2"></button>
+    </div>
+
+    <div id="verify" class="screen">
+        <h2 id="V_TIT_SCREEN">CÓDIGO DE ACESSO</h2>
+        <div class="info-box"><b id="H_VERIFY_TIT">VERIFICAÇÃO:</b><span id="H_VERIFY_TXT">Digite o código de 4 dígitos enviado ao seu Gmail.</span></div>
+        <input id="iC" type="text" maxlength="4" placeholder="0000">
+        <button onclick="window.C()" id="V3">CONFIRMAR CÓDIGO</button>
+        <button onclick="window.GO('login')" style="background:none; border:1px solid #fff; font-size:12px;">VOLTAR</button>
     </div>
 
     <div id="pay" class="screen">
@@ -131,7 +138,7 @@
                 PL2: "🚀 Pacote Institucional 20 Urnas", DESC_PL2: "Economia máxima. Pacote para até 20 eleições. R$ 25,00 por urna.", B2: "COMPRAR PACOTE 20 URNAS (R$ 500,00)",
                 L_CUP: "Tem um cupom ou senha mestre?", P2: "ATIVAR CRÉDITO IMEDIATO", B_VOLTAR: "VOLTAR",
                 S1: "CONFIGURAÇÃO", H_SETUP_TIT: "INFORMAÇÕES DA ELEIÇÃO:", H_SETUP_TXT: "Dê um título e defina quantos candidatos o eleitor pode escolher.", tE: "Exemplo: Eleição de CIPA", S2: "SALVAR",
-                C1: "CANDIDATOS", H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Digite o cargo, depois o nome e anexe a foto. Clique em ADICIONAR antes de salvar.", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", 
+                C1: "CANDIDATOS", H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Digite o cargo, depois o nome e anexe a foto. Clique em ADICIONAR antes de salvar o cargo.", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", 
                 C2: "ADICIONAR", C3: "SALVAR", C4: "INICIAR",
                 H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione o candidato e confirme. O som indica sucesso.", U1: "CONFIRMAR VOTO", U2: "ENCERRAR VOTAÇÃO",
                 R_TITLE: "RESULTADO", TOTAL_VOTOS: "QUANTIDADE GERAL DE VOTOS", B_PDF_SIMPLE: "GERAR RELATÓRIO PDF",
@@ -139,7 +146,7 @@
                 AUDIT: "Emissão"
             },
             en: { 
-                L1: "Easy Voting System", H_LOGIN_TIT: "SYSTEM ACCESS:", H_LOGIN_TXT: "Welcome! Validate your Gmail to start.", uE: "Enter email here...", L2: "ACCESS SYSTEM",
+                L1: "Easy Voting System", H_LOGIN_TIT: "SYSTEM ACCESS:", H_LOGIN_TXT: "Welcome! Validate your Gmail to start.", uE: "Enter your email here...", L2: "ACCESS SYSTEM",
                 P1: "Trial Limit Reached", H_PAY_TIT: "ACTIVATION PLANS:", H_PAY_TXT: "You've used your 3 free elections. Choose a plan.",
                 PL1: "💎 Single Professional", DESC_PL1: "One-time vote with full support.", B1: "UNLOCK 1 (R$ 30,00)",
                 PL2: "🚀 Institutional Pack", DESC_PL2: "Up to 20 elections. Only R$ 25,00 per urn.", B2: "BUY 20 PACK (R$ 500,00)",
@@ -148,7 +155,7 @@
                 C1: "CANDIDATES", H_CARGO_TIT: "HOW TO REGISTER:", H_CARGO_TXT: "Enter position, name and photo. Click ADD before saving.", INSTR_FOTO: "📷 CLICK TO ATTACH PHOTO",
                 C2: "ADD", C3: "SAVE", C4: "START", 
                 H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select the candidate and confirm. The sound indicates success.", U1: "CONFIRM VOTE", U2: "END VOTING",
-                R_TITLE: "RESULT", TOTAL_VOTOS: "QUANTITY GERAL OF VOTES", B_PDF_SIMPLE: "GENERATE PDF REPORT",
+                R_TITLE: "RESULT", TOTAL_VOTOS: "GENERAL QUANTITY OF VOTES", B_PDF_SIMPLE: "GENERATE PDF REPORT",
                 H_FEED_TIT: "TALK TO PAULO:", H_FEED_TXT: "Leave your comments directly for the developer.", txtSugestao: "leave your message here", F2: "SEND MESSAGE", B_EXIT_FINAL: "EXIT",
                 AUDIT: "Issued"
             },
@@ -179,53 +186,48 @@
         window.V = async function() { 
             let e = document.getElementById('uE').value.trim().toLowerCase(); 
             if(!e.endsWith('@gmail.com')) return alert("Use Gmail oficial!");
-            let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
+            let btn = document.getElementById('L2'); 
+            btn.disabled = true; 
+            btn.innerText = "ENVIANDO..."; 
+            
             try { 
                 let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
                 let d = await r.json(); 
-                if(Number(d.count) >= 3) { window.GO('pay'); return; } 
+                
+                if(Number(d.count) >= 3) { 
+                    window.GO('pay'); 
+                    return; 
+                } 
+                
                 localStorage.setItem('urna_vault', d.codigo);
                 await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: d.codigo }, window._cfg.k); 
-                alert("Código enviado!"); window.GO('verify'); 
-            } catch(err) { alert("Erro de conexão."); } finally { btn.disabled = false; window.TR(window._idioma); }
+                
+                alert("Código enviado ao seu e-mail!"); 
+                window.GO('verify'); // Muda para a tela de verificação
+            } catch(err) { 
+                alert("Erro de conexão ou e-mail inválido."); 
+                console.error(err);
+            } finally { 
+                btn.disabled = false; 
+                window.TR(window._idioma); 
+            }
         };
 
         window.GO = (id) => {
-            if(id === 'login') { localStorage.removeItem('urna_vault'); window._data = []; window._sel = []; window._idx = 0; }
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             window.TR(window._idioma);
         };
 
-        window.END = () => {
-            let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
-            let d = window._tr[window._idioma];
-            document.getElementById('pdf_h1').innerText=window._title.toUpperCase();
-            document.getElementById('pdf-audit').innerText= d.AUDIT + ": " + new Date().toLocaleString();
-            let out=document.getElementById('pC'); 
-            out.innerHTML=`<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.TOTAL_VOTOS}: ${total}</b></div>`;
-            window._data.forEach(cargo => {
-                let h=`<h3>${cargo.n.toUpperCase()}</h3><table class="pdf-table">`;
-                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr><td>${can.n}</td><td style="text-align:right"><b>${can.v} Votos</b></td></tr>`; });
-                out.innerHTML += h+'</table>';
-            });
-            window.GO('res');
+        window.C = () => { 
+            let code = document.getElementById('iC').value.trim();
+            if(code === localStorage.getItem('urna_vault')) {
+                window.GO('setup'); 
+            } else {
+                alert("Código incorreto!");
+            }
         };
 
-        window.PDF = (fotos) => {
-            let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
-            let d = window._tr[window._idioma];
-            let out=document.getElementById('pC'); 
-            out.innerHTML=`<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.TOTAL_VOTOS}: ${total}</b></div>`;
-            window._data.forEach(cargo => {
-                let h=`<table class="pdf-table"><thead><tr>${fotos?'<th style="width:50px">Foto</th>':''}<th>${cargo.n}</th><th style="text-align:right">Votos</th></tr></thead><tbody>`;
-                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;"></td>`:''}<td>${can.n}</td><td style="text-align:right">${can.v}</td></tr>`; });
-                out.innerHTML += h+'</tbody></table>';
-            });
-            html2pdf().from(document.getElementById('areaImpressao')).save();
-        };
-
-        window.K = () => { let c = document.getElementById('cup').value.trim(); if(c === 'orion001' || c === 'mais3gratis') { alert("LIBERADO!"); window.GO('setup'); } else alert("Incorreto."); };
         window.N = () => { window._title=document.getElementById('tE').value; window._maxVotos=parseInt(document.getElementById('maxV').value) || 1; window.GO('setupCargo'); };
         window.PREV = (f) => { if (f.files && f.files[0]) { let r=new FileReader(); r.onload=(e)=>{window._fotoTemp=e.target.result; document.getElementById('imgPrev').src=e.target.result; document.getElementById('imgPrev').style.display='block';}; r.readAsDataURL(f.files[0]); } };
         window.A = () => {
@@ -248,7 +250,34 @@
                 g.appendChild(d);
             });
         };
-        window.VOTE = () => { if(!window._sel.length) return alert("Selecione!"); window.BIP(); window._sel.forEach(i => window._data[window._idx].c[i].v++); window._idx++; if(window._idx < window._data.length) window.RUN(); else { alert("Voto Gravado!"); window._idx=0; window.RUN(); } };
+        window.VOTE = () => { if(!window._sel.length) return alert("Selecione!"); window._sel.forEach(i => window._data[window._idx].c[i].v++); window._idx++; if(window._idx < window._data.length) window.RUN(); else { alert("Voto Gravado!"); window._idx=0; window.RUN(); } };
+        window.END = () => {
+            let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
+            let d = window._tr[window._idioma];
+            document.getElementById('pdf_h1').innerText=window._title.toUpperCase();
+            document.getElementById('pdf-audit').innerText= d.AUDIT + ": " + new Date().toLocaleString();
+            let out=document.getElementById('pC'); 
+            out.innerHTML=`<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.TOTAL_VOTOS}: ${total}</b></div>`;
+            window._data.forEach(cargo => {
+                let h=`<h3>${cargo.n.toUpperCase()}</h3><table class="pdf-table">`;
+                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr><td>${can.n}</td><td style="text-align:right"><b>${can.v} Votos</b></td></tr>`; });
+                out.innerHTML += h+'</table>';
+            });
+            window.GO('res');
+        };
+        window.PDF = (fotos) => {
+            let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
+            let d = window._tr[window._idioma];
+            let out=document.getElementById('pC'); 
+            out.innerHTML=`<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.TOTAL_VOTOS}: ${total}</b></div>`;
+            window._data.forEach(cargo => {
+                let h=`<table class="pdf-table"><thead><tr>${fotos?'<th style="width:50px">Foto</th>':''}<th>${cargo.n}</th><th style="text-align:right">Votos</th></tr></thead><tbody>`;
+                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;"></td>`:''}<td>${can.n}</td><td style="text-align:right">${can.v}</td></tr>`; });
+                out.innerHTML += h+'</tbody></table>';
+            });
+            html2pdf().from(document.getElementById('areaImpressao')).save();
+        };
+        window.K = () => { let c = document.getElementById('cup').value.trim(); if(c === 'orion001' || c === 'mais3gratis') { alert("LIBERADO!"); window.GO('setup'); } else alert("Incorreto."); };
         window.FEED = () => { let m = document.getElementById('txtSugestao').value; if(!m) return alert("Escreva algo!"); emailjs.send(window._cfg.s, window._cfg.t, {to_email:'paulosmb1972@gmail.com', validation_code: 'FEEDBACK: ' + m}, window._cfg.k).then(() => { alert("Feedback enviado!"); document.getElementById('txtSugestao').value=''; }); };
 
         window.TR('pt');
