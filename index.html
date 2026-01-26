@@ -52,7 +52,7 @@
         <h2 id="V1">SEGURANÇA</h2>
         <div class="info-box"><b id="H_VERIFY_TIT">SEGURANÇA:</b><span id="H_VERIFY_TXT"></span></div>
         <input id="iC" type="text" maxlength="4">
-        <button onclick="window.C()" id="V3"></button>
+        <button onclick="window.C()" id="V3">CONFIRMAR</button>
     </div>
 
     <div id="setup" class="screen">
@@ -109,7 +109,7 @@
         <div class="info-box"><b id="H_URNA_TIT">GUIA DO ELEITOR:</b><span id="H_URNA_TXT"></span></div>
         <div id="gridUrna" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
         <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success)"></button>
-        <button onclick="window.END()" id="U2" style="background:var(--danger)"></button>
+        <button onclick="window.END()" id="U2" style="background:var(--danger)">ENCERRAR</button>
     </div>
 
     <div id="res" class="screen">
@@ -119,14 +119,14 @@
             <div id="pC"></div>
             <p id="pdf-audit" style="text-align:center; font-size:9px; color:#999;"></p>
         </div>
-        <button onclick="window.PDF(false)" id="B_PDF_S"></button>
-        <button onclick="window.PDF(true)" id="B_PDF_F" style="background:var(--success)"></button>
+        <button onclick="window.PDF(false)">PDF SIMPLES</button>
+        <button onclick="window.PDF(true)" style="background:var(--success)">PDF COM FOTOS</button>
         <div style="margin-top:30px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
             <div class="info-box"><b id="H_FEED_TIT">FALE COM O PAULO:</b><span id="H_FEED_TXT"></span></div>
             <textarea id="txtSugestao"></textarea>
             <button onclick="window.FEED()" id="F2"></button>
         </div>
-        <button onclick="window.GO('login')" id="B_EXIT" style="background:var(--danger)"></button>
+        <button onclick="window.GO('login')" id="B_EXIT_FINAL" style="background:var(--danger)">SAIR</button>
     </div>
 
     <script>
@@ -151,12 +151,12 @@
                 S1: "CONFIGURAÇÃO", H_SETUP_TIT: "INFORMAÇÕES DA ELEIÇÃO:", H_SETUP_TXT: "Dê um título e defina quantos candidatos o eleitor pode escolher.", tE: "Exemplo: Eleição de CIPA", S2: "SALVAR DADOS",
                 P1: "Limite de Testes Atingido", H_PAY_TIT: "PLANOS DE ATIVAÇÃO:", H_PAY_TXT: "Você usou suas 3 eleições grátis. Escolha o plano ideal ou use seu cupom.",
                 PL1: "💎 Eleição Única Profissional", DESC_PL1: "Ideal para uma única votação pontual com suporte total e PDF completo.", B1: "LIBERAR 1 ELEIÇÃO (R$ 30,00)",
-                PL2: "🚀 Pacote Institucional 20 Urnas", DESC_PL2: "Economia máxima. Pacote para até 20 eleições. R$ 25,00 por urna.", B2: "COMPRAR PACOTE 20 URNAS (R$ 500,00)",
+                PL2: "🚀 Pacote Institucional 20 Urnas", DESC_PL2: "Economia máxima para instituições. Pacote para até 20 eleições. R$ 25,00 por urna.", B2: "COMPRAR PACOTE 20 URNAS (R$ 500,00)",
                 L_CUP: "Tem um cupom ou senha mestre?", P2: "ATIVAR CRÉDITO IMEDIATO", B_VOLTAR: "VOLTAR",
-                C1: "CANDIDATOS", H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Digite o cargo, depois o nome e anexe a foto. Clique em ADICIONAR antes de salvar.", nC: "Digite o cargo...", nCand: "Nome do candidato...", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", 
+                C1: "CANDIDATOS", H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Digite o cargo, depois o nome e anexe a foto. Clique em ADICIONAR antes de salvar o cargo.", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", 
                 C2: "ADICIONAR", C3: "SALVAR CARGO", C4: "INICIAR URNA",
                 H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione o(s) candidato(s) e clique em confirmar. O som 'Piiiii' indica sucesso.", U1: "CONFIRMAR MEU VOTO AGORA", U2: "ENCERRAR E APURAR",
-                R_TITLE: "RESULTADO DA VOTAÇÃO", TOTAL_VOTOS: "QUANTIDADE GERAL DE VOTOS", B_PDF_S: "PDF SIMPLES", B_PDF_F: "PDF COM FOTOS",
+                R_TITLE: "RESULTADO DA ELEIÇÃO", TOTAL_VOTOS: "QUANTIDADE GERAL DE VOTOS", B_PDF_S: "PDF SIMPLES", B_PDF_F: "PDF COM FOTOS",
                 H_FEED_TIT: "FALE COM O PAULO:", H_FEED_TXT: "Deixe seu comentário diretamente para o desenvolvedor do sistema.", txtSugestao: "escreva sua mensagem aqui...", F2: "ENVIAR FEEDBACK", B_EXIT: "SAIR DO SISTEMA", AUDIT: "Emissão"
             },
             en: { 
@@ -167,7 +167,7 @@
                 PL1: "💎 Professional Single", DESC_PL1: "Ideal for a single vote with full support and PDF report.", B1: "UNLOCK 1 (R$ 30,00)",
                 PL2: "🚀 Institutional (20 Urns)", DESC_PL2: "Bundle for up to 20 elections. R$ 25,00 per urn.", B2: "BUY 20 PACK (R$ 500,00)",
                 L_CUP: "Have a coupon or master password?", P2: "ACTIVATE NOW", B_VOLTAR: "BACK",
-                C1: "CANDIDATES", H_CARGO_TIT: "HOW TO REGISTER:", H_CARGO_TXT: "Enter position, name and photo. Click ADD before saving.", nC: "Enter position...", nCand: "Candidate name...", INSTR_FOTO: "📷 CLICK TO ATTACH PHOTO", 
+                C1: "CANDIDATES", H_CARGO_TIT: "HOW TO REGISTER:", H_CARGO_TXT: "Enter position, name and photo. Click ADD before saving.", INSTR_FOTO: "📷 CLICK TO ATTACH PHOTO", 
                 C2: "ADD", C3: "SAVE POSITION", C4: "START BALLOT",
                 H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select candidate(s) and click confirm. Beep indicates success.", U1: "CONFIRM MY VOTE NOW", U2: "END AND COUNT",
                 R_TITLE: "ELECTION RESULTS", TOTAL_VOTOS: "TOTAL QUANTITY OF VOTES", B_PDF_S: "SIMPLE PDF", B_PDF_F: "PDF WITH PHOTOS",
@@ -181,7 +181,7 @@
                 PL1: "💎 Elección Profesional", DESC_PL1: "Ideal para una votación única con soporte y reporte PDF.", B1: "LIBERAR 1 (R$ 30,00)",
                 PL2: "🚀 Paquete 20 Urnas", DESC_PL2: "Paquete para hasta 20 elecciones. R$ 25,00 por urna.", B2: "COMPRAR PAQUETE (R$ 500,00)",
                 L_CUP: "¿Tiene un cupón?", P2: "ACTIVAR", B_VOLTAR: "VOLVER",
-                C1: "CANDIDATOS", H_CARGO_TIT: "CÓMO REGISTRAR:", H_CARGO_TXT: "Ingrese cargo, nombre y foto. Clic en AÑADIR.", nC: "Ingrese cargo...", nCand: "Nombre del candidato...", INSTR_FOTO: "📷 CLIC PARA ADJUNTAR FOTO", 
+                C1: "CANDIDATOS", H_CARGO_TIT: "CÓMO REGISTRAR:", H_CARGO_TXT: "Ingrese cargo, nombre y foto. Clic en AÑADIR.", INSTR_FOTO: "📷 CLIC PARA ADJUNTAR FOTO", 
                 C2: "AÑADIR", C3: "GUARDAR CARGO", C4: "INICIAR URNA",
                 H_URNA_TIT: "GUÍA DEL VOTANTE:", H_URNA_TXT: "Seleccione candidato(s) y confirme.", U1: "CONFIRMAR MI VOTO", U2: "TERMINAR Y CONTAR",
                 R_TITLE: "RESULTADO DE LA ELECCIÓN", TOTAL_VOTOS: "CANTIDAD GENERAL DE VOTOS", B_PDF_S: "PDF SIMPLE", B_PDF_F: "PDF CON FOTOS",
@@ -279,4 +279,3 @@
         window.TR('pt');
     </script>
 </body>
-</html>
