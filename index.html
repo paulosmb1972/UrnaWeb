@@ -156,7 +156,7 @@
                 PL1: "💎 Eleição Única Profissional", DESC_PL1: "Ideal para uma única votação pontual com suporte total e PDF completo.", B1: "LIBERAR 1 ELEIÇÃO (R$ 30,00)",
                 PL2: "🚀 Pacote Institucional 20 Urnas", DESC_PL2: "Economia máxima para instituições. Pacote para até 20 eleições. R$ 25,00 por urna.", B2: "COMPRAR PACOTE 20 URNAS (R$ 500,00)",
                 L_CUP: "Tem um cupom ou senha mestre?", cup: "Digite o cupom...", P2: "ATIVAR CRÉDITO IMEDIATO", B_VOLTAR: "VOLTAR",
-                C1: "CANDIDATOS", H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Digite o cargo, depois o nome e anexe a foto. Clique em ADICIONAR antes de salvar o cargo.", nC: "Digite o cargo...", nCand: "Nome do candidato...", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", 
+                C1: "CANDIDATOS", H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Digite o cargo, depois o nome e anexe a foto. Clique em ADICIONAR antes de salvar o cargo.", nC: "Ex: President", nCand: "Ex: John Doe", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", 
                 C2: "ADICIONAR", C3: "SALVAR CARGO", C4: "INICIAR URNA",
                 H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione o(s) candidato(s) e confirme. O som 'Piiiii' indica sucesso. Digite a senha 1357 para encerrar:", U1: "CONFIRMAR MEU VOTO AGORA", U2: "ENCERRAR E APURAR",
                 R_TITLE: "RESULTADO DA ELEIÇÃO", TOTAL_VOTOS: "QUANTIDADE GERAL DE VOTOS", B_PDF_SIMPLE: "RELATÓRIO PDF SIMPLES", B_PDF_PHOTOS: "RELATÓRIO PDF COM FOTOS",
@@ -222,8 +222,8 @@
                 let d = await r.json(); 
                 if(Number(d.count) >= 3) { window.GO('pay'); return; } 
                 
-                // CORREÇÃO PONTUAL: Salvar explicitamente como urna_vault e tratar como string limpa
-                let cod = (d.codigo !== undefined ? d.codigo : d).toString().trim();
+                // CORREÇÃO: Captura robusta do código
+                let cod = d.codigo ? d.codigo.toString().trim() : d.toString().trim();
                 localStorage.setItem('urna_vault', cod);
                 
                 await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod }, window._cfg.k); 
@@ -234,10 +234,10 @@
         window.C = () => { 
             let d_tr = window._tr[window._idioma]; 
             let digitado = document.getElementById('iC').value.trim();
-            let salvo = localStorage.getItem('urna_vault');
+            let salvo = localStorage.getItem('urna_vault') ? localStorage.getItem('urna_vault').trim() : "";
             
-            // CORREÇÃO PONTUAL: Comparação rigorosa de strings limpas
-            if(digitado !== "" && salvo !== null && digitado === salvo.trim()) { 
+            // Compara estritamente como String
+            if(digitado !== "" && digitado === salvo) { 
                 window.GO('setup'); 
             } else { 
                 alert(d_tr.AL_ERR_CODE); 
