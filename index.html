@@ -212,28 +212,27 @@
                 if(Number(d.count) >= 3) { window.GO('pay'); return; } 
                 
                 // Salva o código de forma limpa
-                let codigoServidor = d.codigo ? d.codigo.toString().trim() : d.toString().trim();
-                localStorage.setItem('urna_vault', codigoServidor);
-                
+                // Localize esta linha dentro de window.V e substitua:
+let codigoLimpo = d.codigo ? d.codigo.toString().trim() : d.toString().trim();
+localStorage.setItem('urna_vault', codigoLimpo);                
                 await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: codigoServidor }, window._cfg.k); 
                 alert(d_tr.AL_SUC_CODE); window.GO('verify'); 
             } catch(err) { alert(d_tr.AL_ERR_CONN); } finally { btn.disabled = false; window.TR(window._idioma); }
         };
 
         window.C = () => { 
-            let d_tr = window._tr[window._idioma]; 
-            let digitado = document.getElementById('iC').value.trim();
-            let salvo = localStorage.getItem('urna_vault') ? localStorage.getItem('urna_vault').trim() : "";
-            
-            // Log para você conferir se o código está chegando (apenas para teste)
-            console.log("Digitado:", digitado, "Salvo:", salvo);
+           window.C = () => { 
+    let d_tr = window._tr[window._idioma]; 
+    let digitado = document.getElementById('iC').value.trim();
+    let salvo = localStorage.getItem('urna_vault') ? localStorage.getItem('urna_vault').trim() : "";
 
-            if(digitado !== "" && digitado === salvo) { 
-                window.GO('setup'); 
-            } else { 
-                alert(d_tr.AL_ERR_CODE); 
-            }
-        };
+    // Comparação rigorosa como texto
+    if(digitado !== "" && digitado === salvo) { 
+        window.GO('setup'); 
+    } else { 
+        alert(d_tr.AL_ERR_CODE); 
+    }
+};
 
         window.END = () => {
             let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
@@ -311,3 +310,6 @@
     </script>
 </body>
 </html>
+
+
+
