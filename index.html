@@ -130,7 +130,9 @@
 
     <script>
         document.addEventListener('contextmenu', e => e.preventDefault());
-        document.onkeydown = function(e) { if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74)) || (e.ctrlKey && e.keyCode == 85)) return false; };
+        document.onkeydown = function(e) {
+            if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74)) || (e.ctrlKey && e.keyCode == 85)) return false;
+        };
 
         window._cfg = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
         emailjs.init(window._cfg.k);
@@ -182,10 +184,10 @@
             es: { 
                 L1_1: "Sistema de Votación Fácil", L1_2: "Sistema de Votación Fácil", L1_3: "Sistema de Votación Fácil",
                 H_LOGIN_TIT: "ACCESO AL SISTEMA:", H_LOGIN_TXT: "¡Bienvenido! Valide su Gmail para começar.", uE: "Ingrese su email aquí...", L2: "SOLICITAR CÓDIGO",
-                H_VERIFY_TIT: "VERIFICACIÓN:", H_VERIFY_TXT: "Ingrese el código enviado a su email para validar o acesso.", V3: "CONFIRMAR CÓDIGO", iC: "0000",
-                S1: "CONFIGURACIÓN", H_SETUP_TIT: "INFORMACIÓN:", H_SETUP_TXT: "Ponga un título y defina cuántos candidatos puede elegir.", tE: "Ej: Elección de Junta", S2: "GUARDAR DATOS",
+                H_VERIFY_TIT: "VERIFICACIÓN:", H_VERIFY_TXT: "Ingrese el código enviado a su email para validar o acesso. Digite la contraseña 1357 para encerrar:", V3: "CONFIRMAR CÓDIGO", iC: "0000",
+                S1: "CONFIGURACIÓN", H_SETUP_TIT: "INFORMACIÓN:", H_SETUP_TXT: "Ponga un título e defina cuántos candidatos pode elegir.", tE: "Ej: Elección de Junta", S2: "GUARDAR DATOS",
                 P1: "Límite Alcanzado", H_PAY_TIT: "PLANES DE ACTIVACIÓN:", H_PAY_TXT: "Has usado tus 3 elecciones gratis. Elige un plan.",
-                PL1: "💎 Elección Profesional", DESC_PL1: "Ideal para una votación única con soporte e reporte PDF.", B1: "LIBERAR 1 (R$ 30,00)",
+                PL1: "💎 Elección Profesional", DESC_PL1: "Ideal para una votación única con suporte e reporte PDF.", B1: "LIBERAR 1 (R$ 30,00)",
                 PL2: "🚀 Paquete 20 Urnas", DESC_PL2: "Paquete para hasta 20 elecciones. Solo R$ 25,00 por urna.", B2: "COMPRAR PAQUETE (R$ 500,00)",
                 L_CUP: "¿Tiene un cupón?", cup: "Ingrese cupón...", P2: "ACTIVAR", B_VOLTAR: "VOLVER",
                 C1: "CANDIDATOS", H_CARGO_TIT: "CÓMO REGISTRAR:", H_CARGO_TXT: "Ingrese cargo, nombre y foto. Haga clic en AÑADIR.", nC: "Ej: Presidente", nCand: "Ej: Juan Perez", INSTR_FOTO: "📷 CLIC PARA ADJUNTAR FOTO", 
@@ -212,37 +214,38 @@
             window.TR(window._idioma);
         };
 
-window.V = async function() { 
-    let e = document.getElementById('uE').value.trim().toLowerCase(); 
-    let d_tr = window._tr[window._idioma];
-    if(!e.endsWith('@gmail.com')) return alert(d_tr.AL_ERR_MAIL);
-    let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
-    try { 
-        let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
-        let d = await r.json(); 
-        if(Number(d.count) >= 3) { window.GO('pay'); return; } 
-        
-        // CORREÇÃO AQUI: Garantir que salva como texto na chave 'urna_vault'
-        let cod = d.codigo ? d.codigo.toString().trim() : d.toString().trim();
-        localStorage.setItem('urna_vault', cod);
-        
-        await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod }, window._cfg.k); 
-        alert(d_tr.AL_SUC_CODE); window.GO('verify'); 
-    } catch(err) { alert(d_tr.AL_ERR_CONN); } finally { btn.disabled = false; window.TR(window._idioma); }
-};
+        window.V = async function() { 
+            let e = document.getElementById('uE').value.trim().toLowerCase(); 
+            let d_tr = window._tr[window._idioma];
+            if(!e.endsWith('@gmail.com')) return alert(d_tr.AL_ERR_MAIL);
+            let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
+            try { 
+                let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
+                let d = await r.json(); 
+                if(Number(d.count) >= 3) { window.GO('pay'); return; } 
+                
+                // CORREÇÃO PONTUAL: Extração e limpeza do código
+                let codRaw = d.codigo !== undefined ? d.codigo : d;
+                let codFinal = String(codRaw).trim();
+                localStorage.setItem('urna_vault', codFinal);
+                
+                await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: codFinal }, window._cfg.k); 
+                alert(d_tr.AL_SUC_CODE); window.GO('verify'); 
+            } catch(err) { alert(d_tr.AL_ERR_CONN); } finally { btn.disabled = false; window.TR(window._idioma); }
+        };
 
-window.C = () => { 
-    let d_tr = window._tr[window._idioma]; 
-    let digitado = document.getElementById('iC').value.trim();
-    // CORREÇÃO AQUI: Ler da chave 'urna_vault' e limpar espaços
-    let salvo = localStorage.getItem('urna_vault') ? localStorage.getItem('urna_vault').trim() : "";
-    
-    if(digitado !== "" && digitado === salvo) { 
-        window.GO('setup'); 
-    } else { 
-        alert(d_tr.AL_ERR_CODE); 
-    }
-};
+        window.C = () => { 
+            let d_tr = window._tr[window._idioma]; 
+            // CORREÇÃO PONTUAL: Comparação rigorosa
+            let digitado = document.getElementById('iC').value.trim();
+            let salvo = localStorage.getItem('urna_vault') ? localStorage.getItem('urna_vault').trim() : "";
+            
+            if(digitado !== "" && digitado === salvo) { 
+                window.GO('setup'); 
+            } else { 
+                alert(d_tr.AL_ERR_CODE); 
+            }
+        };
 
         window.END = () => {
             let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
@@ -309,8 +312,9 @@ window.C = () => {
         window.VOTE = () => { let d_tr = window._tr[window._idioma]; if(!window._sel.length) return alert(d_tr.AL_ERR_VOTE); window.BIP(); window._sel.forEach(i => window._data[window._idx].c[i].v++); window._idx++; if(window._idx < window._data.length) window.RUN(); else { alert(d_tr.AL_SUC_VOTE); window._idx=0; window.RUN(); } };
         window.FEED = () => { let m = document.getElementById('txtSugestao').value; if(!m) return alert("Escreva algo!"); emailjs.send(window._cfg.s, window._cfg.t, {to_email:'paulosmb1972@gmail.com', validation_code: 'FEEDBACK: ' + m}, window._cfg.k).then(() => { alert("Feedback enviado!"); document.getElementById('txtSugestao').value=''; }); };
 
+        // REGISTRO DO APP (PWA)
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').then(reg => reg.update());
+            navigator.serviceWorker.register('sw.js');
         }
 
         window.TR('pt');
