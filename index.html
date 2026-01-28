@@ -212,37 +212,37 @@
             window.TR(window._idioma);
         };
 
-        window.V = async function() { 
-            let e = document.getElementById('uE').value.trim().toLowerCase(); 
-            let d_tr = window._tr[window._idioma];
-            if(!e.endsWith('@gmail.com')) return alert(d_tr.AL_ERR_MAIL);
-            let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
-            try { 
-                let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
-                let d = await r.json(); 
-                if(Number(d.count) >= 3) { window.GO('pay'); return; } 
-                
-                // CORREÇÃO: Captura robusta do código
-                let cod = d.codigo ? d.codigo.toString().trim() : d.toString().trim();
-                localStorage.setItem('urna_vault', cod);
-                
-                await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod }, window._cfg.k); 
-                alert(d_tr.AL_SUC_CODE); window.GO('verify'); 
-            } catch(err) { alert(d_tr.AL_ERR_CONN); } finally { btn.disabled = false; window.TR(window._idioma); }
-        };
+window.V = async function() { 
+    let e = document.getElementById('uE').value.trim().toLowerCase(); 
+    let d_tr = window._tr[window._idioma];
+    if(!e.endsWith('@gmail.com')) return alert(d_tr.AL_ERR_MAIL);
+    let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
+    try { 
+        let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
+        let d = await r.json(); 
+        if(Number(d.count) >= 3) { window.GO('pay'); return; } 
+        
+        // CORREÇÃO AQUI: Garantir que salva como texto na chave 'urna_vault'
+        let cod = d.codigo ? d.codigo.toString().trim() : d.toString().trim();
+        localStorage.setItem('urna_vault', cod);
+        
+        await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod }, window._cfg.k); 
+        alert(d_tr.AL_SUC_CODE); window.GO('verify'); 
+    } catch(err) { alert(d_tr.AL_ERR_CONN); } finally { btn.disabled = false; window.TR(window._idioma); }
+};
 
-        window.C = () => { 
-            let d_tr = window._tr[window._idioma]; 
-            let digitado = document.getElementById('iC').value.trim();
-            let salvo = localStorage.getItem('urna_vault') ? localStorage.getItem('urna_vault').trim() : "";
-            
-            // Compara estritamente como String
-            if(digitado !== "" && digitado === salvo) { 
-                window.GO('setup'); 
-            } else { 
-                alert(d_tr.AL_ERR_CODE); 
-            }
-        };
+window.C = () => { 
+    let d_tr = window._tr[window._idioma]; 
+    let digitado = document.getElementById('iC').value.trim();
+    // CORREÇÃO AQUI: Ler da chave 'urna_vault' e limpar espaços
+    let salvo = localStorage.getItem('urna_vault') ? localStorage.getItem('urna_vault').trim() : "";
+    
+    if(digitado !== "" && digitado === salvo) { 
+        window.GO('setup'); 
+    } else { 
+        alert(d_tr.AL_ERR_CODE); 
+    }
+};
 
         window.END = () => {
             let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
