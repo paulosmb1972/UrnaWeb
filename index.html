@@ -272,19 +272,34 @@
             }
         };
 
-        window.PDF = (fotos) => {
-            let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
-            let d = window._tr[window._idioma];
-            let out=document.getElementById('pC'); 
-            out.innerHTML=`<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.TOTAL_VOTOS}: ${total}</b></div>`;
-            window._data.forEach(cargo => {
-                let h=`<table class="pdf-table"><thead><tr>${fotos?'<th style="width:50px">Foto</th>':''}<th>${cargo.n}</th><th style="text-align:right">${window._idioma === 'en' ? 'Votes' : 'Votos'}</th></tr></thead><tbody>`;
-                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></td>`:''}<td>${can.n}</td><td style="text-align:right">${can.v}</td></tr>`; });
-                out.innerHTML += h+'</tbody></table>';
-            });
-            html2pdf().from(document.getElementById('areaImpressao')).save();
-        };
+window.PDF = (fotos) => {
+    let total = 0; window._data.forEach(cargo => cargo.c.forEach(c => total += c.v));
+    let d = window._tr[window._idioma];
+    let out = document.getElementById('pC'); 
+    
+    // Gera o conteúdo da tabela
+    out.innerHTML = `<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.TOTAL_VOTOS}: ${total}</b></div>`;
+    window._data.forEach(cargo => {
+        let h = `<table class="pdf-table" style="width:100%; margin-bottom:20px;"><thead><tr>${fotos?'<th style="width:60px">Foto</th>':''}<th>${cargo.n}</th><th style="text-align:right">${window._idioma === 'en' ? 'Votes' : 'Votos'}</th></tr></thead><tbody>`;
+        cargo.c.sort((a,b) => b.v - a.v).forEach(can => { 
+            h += `<tr>${fotos?`<td><img src="${can.f}" style="width:50px;height:50px;object-fit:cover;border-radius:4px;"></td>`:''}<td>${can.n}</td><td style="text-align:right">${can.v}</td></tr>`; 
+        });
+        out.innerHTML += h + '</tbody></table>';
+    });
 
+    // CONFIGURAÇÃO PARA NÃO CORTAR:
+    const elemento = document.getElementById('areaImpressao');
+    const opt = {
+        margin: [10, 10, 10, 10], // Margens: topo, esquerda, baixo, direita
+        filename: 'Resultado_Eleicao.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } // Evita cortar tabelas/fotos no meio da página
+    };
+
+    html2pdf().set(opt).from(elemento).save();
+};
         window.K = () => { let d_tr = window._tr[window._idioma]; let c = document.getElementById('cup').value.trim().toLowerCase(); if(btoa(c) === "b3Jpb24wMDE=" || btoa(c) === "bWFpczNncmF0aXM=") { alert(d_tr.AL_OK_CUP); window.GO('setup'); } else alert(d_tr.AL_ERR_CODE); };
         window.N = () => { window._title=document.getElementById('tE').value; window._maxVotos=parseInt(document.getElementById('maxV').value) || 1; window.GO('setupCargo'); };
         window.PREV = (f) => { if (f.files && f.files[0]) { let r=new FileReader(); r.onload=(e)=>{window._fotoTemp=e.target.result; document.getElementById('imgPrev').src=e.target.result; document.getElementById('imgPrev').style.display='block';}; r.readAsDataURL(f.files[0]); } };
@@ -321,3 +336,4 @@
     </script>
 </body>
 </html>
+
