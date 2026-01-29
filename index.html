@@ -43,6 +43,9 @@
     </div>
 
     <div id="login" class="screen active">
+<button onclick="window.LIMPAR()" style="background:none; border:1px solid rgba(255,255,255,0.3); font-size:11px; padding:10px; margin-top:20px; box-shadow:none; color:#ccc;">
+    🔄 ATUALIZAR / LIMPAR CACHE
+</button>
         <h2 id="L1_1">Sistema de Votação Fácil</h2>
         <div class="info-box"><b id="H_LOGIN_TIT">ACESSO AO SISTEMA:</b><span id="H_LOGIN_TXT"></span></div>
         <input id="uE" type="email">
@@ -213,7 +216,25 @@
             document.getElementById(id).classList.add('active');
             window.TR(window._idioma);
         };
-
+window.LIMPAR = () => {
+    if(confirm("Isso irá resetar o App para a versão mais recente e limpar dados antigos. Continuar?")) {
+        // 1. Limpa a memória local (onde ficam códigos errados)
+        localStorage.clear();
+        
+        // 2. Remove o registro do App (PWA) para forçar o download do novo
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                for (let registration of registrations) {
+                    registration.unregister();
+                }
+            });
+        }
+        
+        // 3. Força o navegador a recarregar tudo do zero, ignorando o lixo guardado
+        alert("App resetado com sucesso! Clique em OK para reiniciar.");
+        window.location.reload(true);
+    }
+};
         window.V = async function() { 
             let e = document.getElementById('uE').value.trim().toLowerCase(); 
             let d_tr = window._tr[window._idioma];
@@ -337,3 +358,4 @@ window.PDF = (fotos) => {
 </body>
 </html>
 
+id="login"
