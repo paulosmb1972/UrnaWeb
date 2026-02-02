@@ -105,13 +105,15 @@
         <button onclick="window.START_VOTE_PROCESS()" id="C4"></button>
     </div>
 
-    <div id="urna" class="screen">
-        <h2 id="uT"></h2>
-        <div class="info-box"><b id="H_URNA_TIT">GUIA DO ELEITOR:</b><span id="H_URNA_TXT"></span></div>
-        <div id="gridUrna" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
-        <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success)"></button>
-        <button onclick="window.CONFIRM_END()" id="U2" style="background:var(--danger)">ENCERRAR</button>
-    </div>
+<div id="urna" class="screen">
+    <h2 id="uT"></h2>
+    <div class="info-box"><b id="H_URNA_TIT">GUIA DO ELEITOR:</b><span id="H_URNA_TXT"></span></div>
+    <div id="gridUrna" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 20px;"></div>
+    
+    <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success); margin-bottom: 80px;">CONFIRMAR MEU VOTO AGORA</button>
+    
+    <button onclick="window.CONFIRM_END()" id="U2" style="background:var(--danger); opacity: 0.6; font-size: 12px; padding: 10px;">ENCERRAR E APURAR</button>
+</div>
 
     <div id="res" class="screen">
         <h2 id="R_TITLE">RESULTADO</h2>
@@ -275,11 +277,19 @@ window.LIMPAR = () => {
             document.getElementById('pdf-audit').innerText= d.AUDIT + ": " + new Date().toLocaleString();
             let out=document.getElementById('pC'); 
             out.innerHTML=`<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.TOTAL_VOTOS}: ${total}</b></div>`;
-            window._data.forEach(cargo => {
-                let h=`<h3>${cargo.n.toUpperCase()}</h3><table class="pdf-table">`;
-                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr><td>${can.n}</td><td style="text-align:right"><b>${can.v} ${window._idioma === 'en' ? 'Votes' : 'Votos'}</b></td></tr>`; });
-                out.innerHTML += h+'</table>';
-            });
+window._data.forEach(cargo => {
+    let h=`<h3>${cargo.n.toUpperCase()}</h3><table class="pdf-table">`;
+    cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ 
+        h+=`<tr><td>${can.n}</td><td style="text-align:right"><b>${can.v} ${window._idioma === 'en' ? 'Votes' : 'Votos'}</b></td></tr>`; 
+    });
+
+    // ADICIONE EXATAMENTE AQUI:
+    if(cargo.branco > 0) {
+        h += `<tr><td><i>Votos em Branco</i></td><td style="text-align:right"><b>${cargo.branco}</b></td></tr>`;
+    }
+
+    out.innerHTML += h+'</table>';
+});
             window.GO('res');
         };
 
@@ -300,11 +310,19 @@ window.PDF = (fotos) => {
     
     // Gera o conteúdo da tabela
     out.innerHTML = `<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.TOTAL_VOTOS}: ${total}</b></div>`;
-    window._data.forEach(cargo => {
-        let h = `<table class="pdf-table" style="width:100%; margin-bottom:20px;"><thead><tr>${fotos?'<th style="width:60px">Foto</th>':''}<th>${cargo.n}</th><th style="text-align:right">${window._idioma === 'en' ? 'Votes' : 'Votos'}</th></tr></thead><tbody>`;
-        cargo.c.sort((a,b) => b.v - a.v).forEach(can => { 
-            h += `<tr>${fotos?`<td><img src="${can.f}" style="width:50px;height:50px;object-fit:cover;border-radius:4px;"></td>`:''}<td>${can.n}</td><td style="text-align:right">${can.v}</td></tr>`; 
-        });
+window._data.forEach(cargo => {
+    let h=`<table class="pdf-table"><thead><tr>${fotos?'<th style="width:50px">Foto</th>':''}<th>${cargo.n}</th><th style="text-align:right">${window._idioma === 'en' ? 'Votes' : 'Votos'}</th></tr></thead><tbody>`;
+    cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ 
+        h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></td>`:''}<td>${can.n}</td><td style="text-align:right">${can.v}</td></tr>`; 
+    });
+
+    // ADICIONE EXATAMENTE AQUI:
+    if(cargo.branco > 0) {
+        h += `<tr>${fotos?'<td></td>':''}<td><i>Votos em Branco</i></td><td style="text-align:right">${cargo.branco}</td></tr>`;
+    }
+
+    out.innerHTML += h+'</tbody></table>';
+});
         out.innerHTML += h + '</tbody></table>';
     });
 
@@ -335,16 +353,33 @@ window.PDF = (fotos) => {
         };
         window.SAVE = () => { let d_tr = window._tr[window._idioma]; if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('listaTemporaria').innerHTML=''; alert(d_tr.AL_OK_SAVE); };
         window.START_VOTE_PROCESS = () => { let d_tr = window._tr[window._idioma]; if(!window._data.length) return alert(d_tr.AL_ERR_CAND); window._idx=0; window.RUN(); window.GO('urna'); };
-        window.RUN = () => {
-            let cargo = window._data[window._idx]; document.getElementById('uT').innerText = cargo.n.toUpperCase();
-            let g = document.getElementById('gridUrna'); g.innerHTML=''; window._sel=[];
-            cargo.c.forEach((can, i) => {
-                let d=document.createElement('div'); d.style="background:white;color:black;padding:10px;border-radius:10px;text-align:center;cursor:pointer;border:4px solid transparent;";
-                d.innerHTML = (can.f?`<img src="${can.f}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;"><br>`:'')+`<b>${can.n}</b>`;
-                d.onclick=()=>{ if(window._sel.includes(i)) {window._sel.splice(window._sel.indexOf(i),1); d.classList.remove('selected-card');} else if(window._sel.length < window._maxVotos) {window._sel.push(i); d.classList.add('selected-card');}};
-                g.appendChild(d);
-            });
-        };
+window.RUN = () => {
+    let cargo = window._data[window._idx]; document.getElementById('uT').innerText = cargo.n.toUpperCase();
+    let g = document.getElementById('gridUrna'); g.innerHTML=''; window._sel=[];
+    
+    // BOTÃO VOTO EM BRANCO (Adicionado aqui)
+    let btnBranco = document.createElement('div');
+    btnBranco.style = "background:#fff; color:#333; padding:10px; border-radius:10px; text-align:center; cursor:pointer; border:4px solid #ccc; font-weight:bold; display:flex; align-items:center; justify-content:center; height:100px;";
+    btnBranco.innerText = window._idioma === 'pt' ? "VOTAR EM BRANCO" : "VOTE BLANK";
+    btnBranco.onclick = () => { 
+        if(confirm(window._idioma === 'pt' ? "Confirmar voto em BRANCO?" : "Confirm BLANK vote?")) {
+            if(!cargo.branco) cargo.branco = 0; // Cria contador de branco se não existir
+            cargo.branco++;
+            window.BIP();
+            window._idx++;
+            if(window._idx < window._data.length) window.RUN(); else { alert(window._tr[window._idioma].AL_SUC_VOTE); window._idx=0; window.RUN(); }
+        }
+    };
+    g.appendChild(btnBranco);
+
+    // RESTANTE DOS CANDIDATOS (Mantém como está)
+    cargo.c.forEach((can, i) => {
+        let d=document.createElement('div'); d.style="background:white;color:black;padding:10px;border-radius:10px;text-align:center;cursor:pointer;border:4px solid transparent;";
+        d.innerHTML = (can.f?`<img src="${can.f}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;"><br>`:'')+`<b>${can.n}</b>`;
+        d.onclick=()=>{ if(window._sel.includes(i)) {window._sel.splice(window._sel.indexOf(i),1); d.classList.remove('selected-card');} else if(window._sel.length < window._maxVotos) {window._sel.push(i); d.classList.add('selected-card');}};
+        g.appendChild(d);
+    });
+};
         window.VOTE = () => { let d_tr = window._tr[window._idioma]; if(!window._sel.length) return alert(d_tr.AL_ERR_VOTE); window.BIP(); window._sel.forEach(i => window._data[window._idx].c[i].v++); window._idx++; if(window._idx < window._data.length) window.RUN(); else { alert(d_tr.AL_SUC_VOTE); window._idx=0; window.RUN(); } };
         window.FEED = () => { let m = document.getElementById('txtSugestao').value; if(!m) return alert("Escreva algo!"); emailjs.send(window._cfg.s, window._cfg.t, {to_email:'paulosmb1972@gmail.com', validation_code: 'FEEDBACK: ' + m}, window._cfg.k).then(() => { alert("Feedback enviado!"); document.getElementById('txtSugestao').value=''; }); };
 
@@ -357,5 +392,3 @@ window.PDF = (fotos) => {
     </script>
 </body>
 </html>
-
-id="login"
