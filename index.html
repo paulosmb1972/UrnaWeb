@@ -80,85 +80,170 @@
         <button onclick="window.START_VOTE_PROCESS()" id="C4"></button>
     </div>
 
-<div id="urna" class="screen">
-    <h2 id="uT"></h2>
-    <div class="info-box"><b id="H_URNA_TIT">GUIA DO ELEITOR:</b><span id="H_URNA_TXT"></span></div>
-    
-    <div id="gridUrna" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 20px;"></div>
-    
-    <div style="display: flex; gap: 10px; margin-bottom: 100px;">
-        <button onclick="window.BRANCO()" id="B_BRANCO" style="height:80px; background:#bdc3c7; color:#333; flex: 1;">VOTAR EM BRANCO</button>
-        <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success); flex: 2;">CONFIRMAR MEU VOTO AGORA</button>
+    <div id="urna" class="screen">
+        <h2 id="uT"></h2>
+        <div class="info-box"><b id="H_URNA_TIT">GUIA DO ELEITOR:</b><span id="H_URNA_TXT"></span></div>
+        <div id="gridUrna" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 20px;"></div>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 120px;">
+            <button onclick="window.BRANCO()" style="height:80px; background:#bdc3c7; color:#333; flex: 1; box-shadow: 0 4px 0 #95a5a6;">VOTO EM BRANCO</button>
+            <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success); flex: 2;">CONFIRMAR VOTO</button>
+        </div>
+        
+        <button onclick="window.CONFIRM_END()" id="U2" style="background:var(--danger); opacity: 0.6; font-size: 12px; padding: 10px;">ENCERRAR E APURAR</button>
     </div>
-    
-    <button onclick="window.CONFIRM_END()" id="U2" style="background:var(--danger); opacity: 0.6; font-size: 12px; padding: 10px;">ENCERRAR E APURAR</button>
-</div>
 
-<script>
-    // ... (mantenha todo o seu código de configuração, login e traduções)
+    <div id="res" class="screen">
+        <h2 id="R_TITLE">RESULTADO</h2>
+        <div id="areaImpressao">
+            <h2 id="pdf_h1" style="text-align:center; color:#0a2a66;"></h2>
+            <div id="pC"></div>
+            <p id="pdf-audit" style="text-align:center; font-size:9px; color:#999;"></p>
+        </div>
+        <button onclick="window.PDF(false)" id="B_PDF_SIMPLE"></button>
+        <button onclick="window.PDF(true)" id="B_PDF_PHOTOS" style="background:var(--success)"></button>
+        <button onclick="window.GO('login')" id="B_EXIT_FINAL" style="background:var(--danger)"></button>
+    </div>
 
-    // 1. ADICIONE ESTA FUNÇÃO PARA O VOTO EM BRANCO
-    window.BRANCO = () => {
-        let cargo = window._data[window._idx];
-        if(confirm(window._idioma === 'pt' ? "Confirmar voto em BRANCO?" : "Confirm BLANK vote?")) {
-            if(!cargo.branco) cargo.branco = 0;
-            cargo.branco++;
-            window.BIP();
-            window.NEXT_CARGO();
-        }
-    };
+    <script>
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        window._cfg = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
+        emailjs.init(window._cfg.k);
+        window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp=''; window._maxVotos=1; window._idioma='pt';
 
-    // 2. MODIFIQUE A FUNÇÃO VOTE PARA CHAMAR O NEXT_CARGO
-    window.VOTE = () => { 
-        if(!window._sel.length) return alert("Selecione um candidato ou vote em BRANCO!"); 
-        window.BIP(); 
-        window._sel.forEach(i => window._data[window._idx].c[i].v++); 
-        window.NEXT_CARGO();
-    };
+        window.BIP = () => {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.type = 'square'; osc.frequency.setValueAtTime(440, ctx.currentTime);
+            g.gain.setValueAtTime(0.1, ctx.currentTime);
+            osc.connect(g); g.connect(ctx.destination);
+            osc.start(); osc.stop(ctx.currentTime + 1);
+        };
 
-    // 3. FUNÇÃO AUXILIAR PARA PASSAR DE CARGO
-    window.NEXT_CARGO = () => {
-        window._idx++; 
-        if(window._idx < window._data.length) {
-            window.RUN(); 
-        } else { 
-            alert("Voto Gravado!"); 
-            window._idx = 0; 
-            window.RUN(); 
-        }
-    };
+        window._tr = {
+            pt: { 
+                L1_1: "Sistema de Votação Fácil", H_LOGIN_TXT: "Bem-vindo! Valide seu e-mail Gmail para começar.", L2: "SOLICITAR CÓDIGO",
+                V3: "CONFIRMAR CÓDIGO", S2: "SALVAR DADOS", C1: "CANDIDATOS", C2: "ADICIONAR", C3: "SALVAR CARGO", C4: "INICIAR URNA",
+                H_URNA_TXT: "Selecione e confirme. Digite a senha 1357 para encerrar:", U1: "CONFIRMAR MEU VOTO", R_TITLE: "RESULTADO DA ELEIÇÃO", B_EXIT_FINAL: "SAIR"
+            }
+        };
 
-    // 4. CERTIFIQUE-SE QUE A FUNÇÃO END E PDF MOSTRAM OS BRANCOS (Igual às anteriores)
-    window.END = () => {
-        let total = 0; 
-        window._data.forEach(cargo => {
-            cargo.c.forEach(c => total += c.v);
-            if(cargo.branco) total += cargo.branco;
-        });
-        let out = document.getElementById('pC'); 
-        out.innerHTML = `<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>TOTAL: ${total}</b></div>`;
-        window._data.forEach(cargo => {
-            let h = `<h3>${cargo.n.toUpperCase()}</h3><table class="pdf-table">`;
-            cargo.c.sort((a,b)=>b.v-a.v).forEach(can => { h += `<tr><td>${can.n}</td><td style="text-align:right"><b>${can.v} Votos</b></td></tr>`; });
-            if(cargo.branco > 0) h += `<tr><td><i>Votos em Branco</i></td><td style="text-align:right"><b>${cargo.branco}</b></td></tr>`;
-            out.innerHTML += h + '</table>';
-        });
-        window.GO('res');
-    };
+        window.TR = (l) => { 
+            window._idioma = l; const d = window._tr[l]; if(!d) return;
+            for(let k in d){ let el = document.getElementById(k); if(el) el.innerText = d[k]; } 
+        };
 
-    // Ajuste no PDF para constar o Branco
-    window.PDF = (fotos) => {
-        let total = 0; window._data.forEach(cargo => { total += cargo.c.reduce((a,b)=>a+b.v,0); if(cargo.branco) total += cargo.branco; });
-        let out = document.getElementById('pC');
-        out.innerHTML = `<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>TOTAL: ${total}</b></div>`;
-        window._data.forEach(cargo => {
-            let h = `<table class="pdf-table"><thead><tr>${fotos?'<th>Foto</th>':''}<th>${cargo.n}</th><th style="text-align:right">Votos</th></tr></thead><tbody>`;
-            cargo.c.sort((a,b)=>b.v-a.v).forEach(can => { h += `<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;"></td>`:''}<td>${can.n}</td><td style="text-align:right">${can.v}</td></tr>`; });
-            if(cargo.branco > 0) h += `<tr>${fotos?'<td></td>':''}<td><i>Votos em Branco</i></td><td style="text-align:right">${cargo.branco}</td></tr>`;
-            out.innerHTML += h + '</tbody></table>';
-        });
-        html2pdf().from(document.getElementById('areaImpressao')).save();
-    };
-</script>
+        window.GO = (id) => {
+            if(id === 'login') { localStorage.removeItem('urna_vault'); window._data = []; window._sel = []; window._idx = 0; }
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            window.TR(window._idioma);
+        };
+
+        window.LIMPAR = () => { if(confirm("Reiniciar App?")) { localStorage.clear(); window.location.reload(true); } };
+
+        window.V = async function() { 
+            let e = document.getElementById('uE').value.trim().toLowerCase(); 
+            if(!e.endsWith('@gmail.com')) return alert("Use Gmail!");
+            try { 
+                let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
+                let d = await r.json(); 
+                let cod = (d.codigo !== undefined ? d.codigo : d).toString().trim();
+                localStorage.setItem('urna_vault', cod);
+                await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod }, window._cfg.k); 
+                alert("Código enviado!"); window.GO('verify'); 
+            } catch(err) { alert("Erro de conexão."); }
+        };
+
+        window.C = () => { 
+            let digitado = document.getElementById('iC').value.trim();
+            let salvo = localStorage.getItem('urna_vault') ? localStorage.getItem('urna_vault').trim() : "";
+            if(digitado === salvo) window.GO('setup'); else alert("Incorreto!"); 
+        };
+
+        window.BRANCO = () => {
+            let cargo = window._data[window._idx];
+            if(confirm("Confirmar voto em BRANCO?")) {
+                if(!cargo.branco) cargo.branco = 0;
+                cargo.branco++;
+                window.BIP();
+                window.NEXT();
+            }
+        };
+
+        window.VOTE = () => { 
+            if(!window._sel.length) return alert("Selecione um candidato ou vote em BRANCO!"); 
+            window.BIP(); 
+            window._sel.forEach(i => window._data[window._idx].c[i].v++); 
+            window.NEXT();
+        };
+
+        window.NEXT = () => {
+            window._idx++; 
+            if(window._idx < window._data.length) { window.RUN(); } 
+            else { alert("Voto Gravado!"); window._idx = 0; window.RUN(); }
+        };
+
+        window.END = () => {
+            let total = 0; 
+            window._data.forEach(cargo => {
+                cargo.c.forEach(c => total += c.v);
+                if(cargo.branco) total += cargo.branco;
+            });
+            document.getElementById('pdf_h1').innerText=window._title.toUpperCase();
+            let out=document.getElementById('pC'); 
+            out.innerHTML=`<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>TOTAL GERAL DE VOTOS: ${total}</b></div>`;
+            window._data.forEach(cargo => {
+                let h=`<h3>${cargo.n.toUpperCase()}</h3><table class="pdf-table">`;
+                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr><td>${can.n}</td><td style="text-align:right"><b>${can.v} Votos</b></td></tr>`; });
+                if(cargo.branco > 0) h += `<tr><td><i>Votos em Branco</i></td><td style="text-align:right"><b>${cargo.branco}</b></td></tr>`;
+                out.innerHTML += h+'</table>';
+            });
+            window.GO('res');
+        };
+
+        window.CONFIRM_END = () => { if(prompt("Senha 1357:") === "1357") window.END(); else alert("Erro!"); };
+
+        window.PDF = (fotos) => {
+            let total = 0; window._data.forEach(cargo => { total += cargo.c.reduce((a,b)=>a+b.v,0); if(cargo.branco) total += cargo.branco; });
+            let out = document.getElementById('pC');
+            out.innerHTML = `<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>TOTAL GERAL: ${total}</b></div>`;
+            window._data.forEach(cargo => {
+                let h=`<table class="pdf-table"><thead><tr>${fotos?'<th style="width:50px">Foto</th>':''}<th>${cargo.n}</th><th style="text-align:right">Votos</th></tr></thead><tbody>`;
+                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></td>`:''}<td>${can.n}</td><td style="text-align:right">${can.v}</td></tr>`; });
+                if(cargo.branco > 0) h += `<tr>${fotos?'<td></td>':''}<td><i>Votos em Branco</i></td><td style="text-align:right">${cargo.branco}</td></tr>`;
+                out.innerHTML += h+'</tbody></table>';
+            });
+            const opt = { margin: 10, filename: 'Resultado.pdf', html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4' } };
+            html2pdf().set(opt).from(document.getElementById('areaImpressao')).save();
+        };
+
+        window.N = () => { window._title=document.getElementById('tE').value; window._maxVotos=parseInt(document.getElementById('maxV').value) || 1; window.GO('setupCargo'); };
+        window.PREV = (f) => { if (f.files && f.files[0]) { let r=new FileReader(); r.onload=(e)=>{window._fotoTemp=e.target.result; document.getElementById('imgPrev').src=e.target.result; document.getElementById('imgPrev').style.display='block';}; r.readAsDataURL(f.files[0]); } };
+        window.A = () => {
+            let cargo=document.getElementById('nC').value, nome=document.getElementById('nCand').value;
+            if(!cargo || !nome) return alert("Faltam dados!");
+            if(!window._temp) window._temp={n:cargo, c:[], branco:0};
+            window._temp.c.push({n:nome, v:0, f:window._fotoTemp});
+            document.getElementById('listaTemporaria').innerHTML += `<div>👤 ${nome} - ${cargo}</div>`;
+            document.getElementById('nCand').value=''; window._fotoTemp=''; document.getElementById('imgPrev').style.display='none';
+        };
+        window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('listaTemporaria').innerHTML=''; alert("Salvo!"); };
+        window.START_VOTE_PROCESS = () => { if(!window._data.length) return alert("Adicione candidatos!"); window._idx=0; window.RUN(); window.GO('urna'); };
+
+        window.RUN = () => {
+            let cargo = window._data[window._idx]; document.getElementById('uT').innerText = cargo.n.toUpperCase();
+            let g = document.getElementById('gridUrna'); g.innerHTML=''; window._sel=[];
+            cargo.c.forEach((can, i) => {
+                let d=document.createElement('div'); d.style="background:white;color:black;padding:10px;border-radius:10px;text-align:center;cursor:pointer;border:4px solid transparent;";
+                d.innerHTML = (can.f?`<img src="${can.f}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;"><br>`:'')+`<b>${can.n}</b>`;
+                d.onclick=()=>{ if(window._sel.includes(i)) {window._sel.splice(window._sel.indexOf(i),1); d.classList.remove('selected-card');} else if(window._sel.length < window._maxVotos) {window._sel.push(i); d.classList.add('selected-card');}};
+                g.appendChild(d);
+            });
+        };
+
+        window.TR('pt');
+    </script>
 </body>
 </html>
