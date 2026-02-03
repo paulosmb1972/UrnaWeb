@@ -82,7 +82,7 @@
         </div>
         <div class="pay-card" style="border: 2px solid var(--accent);">
             <p id="L_CUP"></p><input id="cup" type="text">
-            <button onclick="window.K()" id="P2" style="background:var(--accent); color:#000;">ATIVAR CRÉDITO</button>
+            <button onclick="window.K()" id="P2" style="background:var(--accent); color:#000;"></button>
         </div>
         <button onclick="window.GO('login')" id="B_VOLTAR" style="background:none; border:1px solid #fff;">VOLTAR</button>
     </div>
@@ -107,10 +107,8 @@
         <h2 id="uT"></h2>
         <div class="info-box"><b id="H_URNA_TIT">GUIA DO ELEITOR:</b><span id="H_URNA_TXT"></span></div>
         <div id="gridUrna" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 20px;"></div>
-        
         <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success); margin-bottom: 20px;"></button>
         <button onclick="window.BRANCO()" id="BT_BRANCO" style="height:60px; background:#ffffff; color:#333; margin-bottom: 100px; border: 2px solid #ccc;"></button>
-        
         <button onclick="window.CONFIRM_END()" id="U2" style="background:var(--danger); opacity: 0.6; font-size: 12px; padding: 10px;"></button>
     </div>
 
@@ -153,24 +151,30 @@
         window._tr = {
             pt: { 
                 L1_1: "Sistema de Votação Fácil", L1_2: "Sistema de Votação Fácil", L1_3: "Sistema de Votação Fácil",
-                H_LOGIN_TIT: "ACESSO AO SISTEMA:", H_LOGIN_TXT: "Bem-vindo! Valide seu e-mail Gmail para começar.", uE: "Digite seu e-mail aqui...", L2: "SOLICITAR CÓDIGO DE ACESSO",
-                H_VERIFY_TIT: "VERIFICAÇÃO:", H_VERIFY_TXT: "Digite o código enviado ao seu e-mail.", V3: "CONFIRMAR CÓDIGO",
-                H_SETUP_TIT: "INFORMAÇÕES DA ELEIÇÃO:", H_SETUP_TXT: "Dê um título e defina o número de escolhas.", tE: "Exemplo: Eleição de CIPA", S2: "SALVAR DADOS",
-                C1: "CANDIDATOS", H_CARGO_TIT: "CADASTRAR:", H_CARGO_TXT: "Preencha cargo, nome e foto.", C2: "ADICIONAR", C3: "SALVAR CARGO", C4: "INICIAR URNA", INSTR_FOTO: "📷 FOTO",
+                H_LOGIN_TIT: "ACESSO AO SISTEMA:", H_LOGIN_TXT: "Bem-vindo! Valide seu e-mail Gmail para começar. Novos usuários possuem 3 eleições grátis.", uE: "Digite seu e-mail aqui...", L2: "SOLICITAR CÓDIGO DE ACESSO",
+                H_VERIFY_TIT: "VERIFICAÇÃO:", H_VERIFY_TXT: "Digite o código enviado ao seu e-mail para validar o acesso.", V3: "CONFIRMAR CÓDIGO",
+                H_SETUP_TIT: "INFORMAÇÕES DA ELEIÇÃO:", H_SETUP_TXT: "Dê um título e defina quantos candidatos o eleitor pode escolher.", tE: "Exemplo: Eleição de CIPA", S2: "SALVAR DADOS",
+                H_PAY_TIT: "PLANOS DE ATIVAÇÃO:", H_PAY_TXT: "Você usou seus 3 testes grátis. Escolha o plano ou use cupom.", P2: "ATIVAR CRÉDITO", L_CUP: "Cupom ou Senha Mestre:",
+                C1: "CANDIDATOS", H_CARGO_TIT: "CADASTRAR:", H_CARGO_TXT: "Preencha cargo, nome e foto. Clique em ADICIONAR.", C2: "ADICIONAR", C3: "SALVAR CARGO", C4: "INICIAR URNA", INSTR_FOTO: "📷 FOTO",
                 H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione e confirme. Digite 1357 para encerrar:", U1: "CONFIRMAR MEU VOTO AGORA", BT_BRANCO: "VOTO EM BRANCO", U2: "ENCERRAR E APURAR",
                 R_TITLE: "RESULTADO DA ELEIÇÃO", TOTAL_VOTOS: "QUANTIDADE GERAL DE VOTOS", B_PDF_SIMPLE: "RELATÓRIO PDF SIMPLES", B_PDF_PHOTOS: "RELATÓRIO PDF COM FOTOS", H_FEED_TIT: "FALE COM O PAULO:", H_FEED_TXT: "Sugestões ou Pedidos.", F2: "ENVIAR SUGESTÃO", B_EXIT_FINAL: "SAIR DO SISTEMA", AUDIT: "Emissão",
-                AL_SUC_VOTE: "Voto Gravado!", AL_ERR_VOTE: "Selecione um candidato!", AL_OK_SAVE: "Cargo Salvo!"
+                AL_SUC_VOTE: "Voto Gravado!", AL_ERR_VOTE: "Selecione um candidato!", AL_OK_SAVE: "Cargo Salvo!", AL_OK_CUP: "LIBERADO!"
             },
             en: { 
                 L1_1: "Easy Voting System", L1_2: "Easy Voting System", L1_3: "Easy Voting System",
-                H_LOGIN_TIT: "ACCESS:", H_LOGIN_TXT: "Welcome! Validate your Gmail to start.", L2: "REQUEST CODE",
+                H_LOGIN_TIT: "ACCESS:", H_LOGIN_TXT: "Welcome! Validate your Gmail. New users get 3 free trials.", L2: "REQUEST CODE",
                 H_VERIFY_TIT: "SECURITY:", H_VERIFY_TXT: "Enter the code sent to your email.", V3: "CONFIRM CODE",
+                H_SETUP_TIT: "INFO:", H_SETUP_TXT: "Set title and number of choices.", S2: "SAVE DATA",
+                H_PAY_TIT: "PLANS:", H_PAY_TXT: "Free trials used. Choose plan or coupon.", P2: "ACTIVATE CREDIT", L_CUP: "Coupon or Master Password:",
                 H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select and confirm. Code 1357 to end:", U1: "CONFIRM VOTE NOW", BT_BRANCO: "BLANK VOTE", U2: "END AND COUNT",
                 R_TITLE: "ELECTION RESULTS", TOTAL_VOTOS: "TOTAL VOTES", B_PDF_SIMPLE: "SIMPLE PDF REPORT", B_PDF_PHOTOS: "PDF REPORT WITH PHOTOS", H_FEED_TIT: "TALK TO PAULO:", H_FEED_TXT: "Suggestions or Requests.", F2: "SEND FEEDBACK", B_EXIT_FINAL: "EXIT", AUDIT: "Issued"
             },
             es: { 
                 L1_1: "Sistema de Votación", L1_2: "Sistema de Votación", L1_3: "Sistema de Votación",
-                H_LOGIN_TIT: "ACCESO:", H_LOGIN_TXT: "¡Bienvenido! Valide su Gmail para empezar.", L2: "SOLICITAR CÓDIGO",
+                H_LOGIN_TIT: "ACCESO:", H_LOGIN_TXT: "¡Bienvenido! Valide su Gmail. 3 pruebas gratis.", L2: "SOLICITAR CÓDIGO",
+                H_VERIFY_TIT: "SEGURIDAD:", H_VERIFY_TXT: "Ingrese el código enviado.", V3: "CONFIRMAR CÓDIGO",
+                H_SETUP_TIT: "INFO:", H_SETUP_TXT: "Título y número de opciones.", S2: "GUARDAR",
+                H_PAY_TIT: "PLANES:", H_PAY_TXT: "Pruebas usadas. Elija plan o cupón.", P2: "ACTIVAR CRÉDITO", L_CUP: "Cupón o Clave Maestra:",
                 H_URNA_TIT: "GUÍA:", H_URNA_TXT: "Seleccione y confirme. Clave 1357 para cerrar:", U1: "CONFIRMAR VOTO", BT_BRANCO: "VOTO EN BLANCO", U2: "TERMINAR Y CONTAR",
                 R_TITLE: "RESULTADOS", TOTAL_VOTOS: "TOTAL VOTOS", B_PDF_SIMPLE: "PDF SIMPLE", B_PDF_PHOTOS: "PDF CON FOTOS", H_FEED_TIT: "HABLA CON PAULO:", H_FEED_TXT: "Sugerencias o Pedidos.", F2: "ENVIAR PEDIDO", B_EXIT_FINAL: "SALIR", AUDIT: "Emitido"
             }
@@ -178,7 +182,7 @@
 
         window.TR = (l) => { 
             window._idioma = l; const d = window._tr[l]; if(!d) return;
-            for(let k in d){ let el = document.getElementById(k); if(el) el.innerText = d[k]; } 
+            for(let k in d){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = d[k]; else el.innerText = d[k]; } } 
         };
 
         window.GO = (id) => {
@@ -197,10 +201,7 @@
             try { 
                 let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
                 let d = await r.json(); 
-                
-                // CORREÇÃO DA CONTAGEM: d.count reflete o histórico do usuário no backend
                 if(Number(d.count) >= 3) { window.GO('pay'); return; } 
-                
                 let cod = (d.codigo !== undefined ? d.codigo : d).toString().trim();
                 localStorage.setItem('urna_vault', cod);
                 await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod }, window._cfg.k); 
@@ -272,6 +273,17 @@
             html2pdf().set(opt).from(document.getElementById('areaImpressao')).save();
         };
 
+        window.K = () => { 
+            let d_tr = window._tr[window._idioma];
+            let c = document.getElementById('cup').value.trim().toLowerCase(); 
+            if(btoa(c) === "b3Jpb24wMDE=" || btoa(c) === "bWFpczNncmF0aXM=") { 
+                alert(d_tr.AL_OK_CUP); 
+                window.GO('setup'); 
+            } else { 
+                alert("Erro!"); 
+            }
+        };
+
         window.N = () => { window._title=document.getElementById('tE').value; window._maxVotos=parseInt(document.getElementById('maxV').value) || 1; window.GO('setupCargo'); };
         window.PREV = (f) => { if (f.files && f.files[0]) { let r=new FileReader(); r.onload=(e)=>{window._fotoTemp=e.target.result; document.getElementById('imgPrev').src=e.target.result; document.getElementById('imgPrev').style.display='block';}; r.readAsDataURL(f.files[0]); } };
         window.A = () => {
@@ -308,4 +320,3 @@
     </script>
 </body>
 </html>
-
