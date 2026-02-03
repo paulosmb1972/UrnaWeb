@@ -59,7 +59,7 @@
 
     <div id="setup" class="screen">
         <h2 id="L1_3">Sistema de Votação Fácil</h2>
-        <div class="info-box"><b id="H_SETUP_TIT">INFORMAÇÕES DA ELEIÇÃO:</b><span id="H_SETUP_TXT"></span></div>
+        <div class="info-box"><b id="H_SETUP_TIT">INFORMAÇÕES:</b><span id="H_SETUP_TXT"></span></div>
         <input id="tE" type="text">
         <input id="maxV" type="number" min="1" value="1">
         <button onclick="window.N()" id="S2"></button>
@@ -67,18 +67,18 @@
 
     <div id="pay" class="screen">
         <h2 id="P1">Limite de Testes Atingido</h2>
-        <div class="info-box"><b id="H_PAY_TIT">PLANOS DE ATIVAÇÃO PROFISSIONAL:</b><span id="H_PAY_TXT"></span></div>
+        <div class="info-box"><b id="H_PAY_TIT">PLANOS DE ATIVAÇÃO:</b><span id="H_PAY_TXT"></span></div>
         <div class="pay-card">
             <h3 id="PL1">💎 Eleição Única Profissional</h3>
             <div class="info-box" style="background:none; border:none; padding:5px; margin:0;"><span id="DESC_PL1"></span></div>
             <span style="font-size:28px; color:var(--accent); font-weight:bold;">R$ 30,00</span>
-            <button onclick="window.open('https://mpago.la/2maEAFx')" id="B1"></button>
+            <button onclick="window.open('https://mpago.la/2maEAFx')" id="B1">LIBERAR 1 ELEIÇÃO</button>
         </div>
         <div class="pay-card" style="border: 1px solid var(--primary); background: rgba(255,255,255,0.05);">
             <h3 id="PL2">🚀 Pacote Institucional 20 Urnas</h3>
             <div class="info-box" style="background:none; border:none; padding:5px; margin:0;"><span id="DESC_PL2"></span></div>
             <span style="font-size:28px; color:var(--success); font-weight:bold;">R$ 500,00</span>
-            <button onclick="window.open('https://mpago.la/1VakcdN')" id="B2"></button>
+            <button onclick="window.open('https://mpago.la/1VakcdN')" id="B2">COMPRAR PACOTE 20 URNAS</button>
         </div>
         <div class="pay-card" style="border: 2px solid var(--accent);">
             <p id="L_CUP"></p><input id="cup" type="text">
@@ -150,40 +150,34 @@
 
         window._tr = {
             pt: { 
-                L1_1: "Sistema de Votação Fácil", L1_2: "Segurança e Auditoria", L1_3: "Configuração da Urna",
-                H_LOGIN_TIT: "ACESSO AO SISTEMA:", H_LOGIN_TXT: "Bem-vindo! Valide seu e-mail Gmail oficial para começar. Novos usuários possuem 3 eleições gratuitas para testes completos.", uE: "Digite seu e-mail aqui (ex: nome@gmail.com)...", L2: "GERAR E ENVIAR CÓDIGO DE ACESSO",
-                H_VERIFY_TIT: "VERIFICAÇÃO DE IDENTIDADE:", H_VERIFY_TXT: "Um código de 4 dígitos foi enviado para o seu e-mail. Verifique sua caixa de entrada ou spam e digite-o abaixo.", V3: "CONFIRMAR E VALIDAR CÓDIGO",
-                H_SETUP_TIT: "DETALHES DO EVENTO:", H_SETUP_TXT: "Dê um título para a eleição (ex: CIPA 2026) e defina o número máximo de candidatos que o eleitor pode escolher em cada cédula.", tE: "Título da Eleição ou Cargo Principal...", S2: "SALVAR CONFIGURAÇÕES E AVANÇAR",
-                P1: "Limite de Testes Atingido", H_PAY_TIT: "PLANOS DE ATIVAÇÃO PROFISSIONAL:", H_PAY_TXT: "Você utilizou seu limite de 3 eleições gratuitas. Para realizar eleições ilimitadas com suporte a fotos, relatórios PDF e auditoria em tempo real, ative um dos planos profissionais abaixo. Seus dados cadastrados serão mantidos após o pagamento.",
-                PL1: "💎 Eleição Única Profissional", DESC_PL1: "Uso total por 24h. Ideal para eventos pontuais. Inclui fotos, suporte e relatório PDF oficial com data e hora.", B1: "LIBERAR 1 ELEIÇÃO (R$ 30,00)",
-                PL2: "🚀 Pacote Institucional 20 Urnas", DESC_PL2: "Cada eleição por apenas R$ 25,00. Melhor custo-benefício para escolas e empresas. Os créditos nunca expiram.", B2: "COMPRAR PACOTE 20 URNAS (R$ 500,00)",
-                P2: "ATIVAR CRÉDITO OU CUPOM", L_CUP: "Possui um Cupom ou Senha Mestre de Ativação?", cup: "Digite o código promocional ou senha...", B_VOLTAR: "VOLTAR AO INÍCIO",
-                C1: "GERENCIAR CANDIDATOS", H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Primeiro digite o Cargo, depois o Nome do Candidato e anexe a foto. Clique no botão ADICIONAR para cada nome antes de salvar o cargo final.", nC: "Ex: Diretor, Presidente...", nCand: "Nome Completo do Candidato...", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO DO CANDIDATO", 
+                L1_1: "Sistema de Votação Fácil", L1_2: "Sistema de Votação Fácil", L1_3: "Sistema de Votação Fácil",
+                H_LOGIN_TIT: "ACESSO AO SISTEMA:", H_LOGIN_TXT: "Bem-vindo! Valide seu e-mail Gmail para começar. Novos usuários possuem 3 eleições grátis.", uE: "Digite seu e-mail aqui...", L2: "SOLICITAR CÓDIGO DE ACESSO",
+                H_VERIFY_TIT: "VERIFICAÇÃO:", H_VERIFY_TXT: "Digite o código enviado ao seu e-mail para validar o acesso.", V3: "CONFIRMAR CÓDIGO",
+                H_SETUP_TIT: "DETALHES DO EVENTO:", H_SETUP_TXT: "Dê um título para a eleição e defina quantos candidatos o eleitor pode escolher em cada cédula.", tE: "Título da eleição ou cargo principal", S2: "SALVAR DADOS",
+                H_PAY_TIT: "PLANOS DE ATIVAÇÃO PROFISSIONAL:", H_PAY_TXT: "Você utilizou seu limite de 3 eleições gratuitas. Para continuar, ative um dos planos abaixo.", P2: "ATIVAR CRÉDITO", L_CUP: "Tem um Cupom ou Senha Mestre?", cup: "Digite o cupom...",
+                C1: "GERENCIAR CANDIDATOS", H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Primeiro digite o Cargo, depois o Nome do Candidato e anexe a foto. Clique em ADICIONAR para cada nome antes de salvar o cargo.", nC: "Ex: Diretor, Presidente...", nCand: "Nome completo do candidato...", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO DO CANDIDATO", 
                 C2: "ADICIONAR CANDIDATO À LISTA", C3: "SALVAR CARGO E CANDIDATOS", C4: "INICIAR PROCESSO DE VOTAÇÃO",
-                H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Clique na foto ou nome do candidato para selecionar. Clique em CONFIRMAR para gravar. O som 'Piiiii' indica sucesso. Para encerrar o dia de votação, digite a senha 1357.", U1: "CONFIRMAR MEU VOTO AGORA", BT_BRANCO: "VOTAR EM BRANCO (NULO)", U2: "ENCERRAR VOTAÇÃO E APURAR",
-                R_TITLE: "RELATÓRIO DE RESULTADOS", TOTAL_VOTOS: "QUANTIDADE GERAL DE VOTOS COMPUTADOS", B_PDF_SIMPLE: "GERAR PDF SIMPLES (TEXTO)", B_PDF_PHOTOS: "GERAR PDF COMPLETO (COM FOTOS)",
-                H_FEED_TIT: "SUPORTE E FEEDBACK:", H_FEED_TXT: "Envie sugestões, reclamações ou pedidos de melhoria diretamente para o desenvolvedor Paulo.", txtSugestao: "Escreva sua mensagem aqui...", F2: "ENVIAR MENSAGEM AGORA", B_EXIT_FINAL: "ENCERRAR SESSÃO E SAIR", AUDIT: "Emissão Oficial",
-                AL_SUC_VOTE: "Voto Gravado com Sucesso!", AL_ERR_VOTE: "Por favor, selecione um candidato ou vote em Branco!", AL_OK_SAVE: "Cargo e Lista Salvos com Sucesso!", AL_OK_CUP: "CRÉDITO ATIVADO COM SUCESSO! LIBERADO."
+                H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione e confirme. Digite 1357 para encerrar:", U1: "CONFIRMAR MEU VOTO AGORA", BT_BRANCO: "VOTO EM BRANCO", U2: "ENCERRAR E APURAR",
+                R_TITLE: "RESULTADO DA ELEIÇÃO", TOTAL_VOTOS: "QUANTIDADE GERAL DE VOTOS", B_PDF_SIMPLE: "RELATÓRIO PDF SIMPLES", B_PDF_PHOTOS: "RELATÓRIO PDF COM FOTOS", H_FEED_TIT: "FALE COM O PAULO:", H_FEED_TXT: "Sugestões ou pedidos.", F2: "ENVIAR SUGESTÃO", B_EXIT_FINAL: "SAIR DO SISTEMA", AUDIT: "Emissão",
+                AL_SUC_VOTE: "Voto Gravado!", AL_ERR_VOTE: "Selecione um candidato!", AL_OK_SAVE: "Cargo e candidatos salvos!", AL_OK_CUP: "LIBERADO!"
             },
             en: { 
-                L1_1: "Easy Voting System", L1_2: "Identity Verification", L1_3: "Ballot Configuration",
-                H_LOGIN_TIT: "SYSTEM ACCESS:", H_LOGIN_TXT: "Welcome! Validate your official Gmail to start. New users get 3 free elections for full testing.", uE: "Enter your email (ex: name@gmail.com)...", L2: "SEND ACCESS CODE TO EMAIL",
-                P1: "Trial Limit Reached", H_PAY_TIT: "PROFESSIONAL ACTIVATION PLANS:", H_PAY_TXT: "You have used your 3 free election trials. To continue with unlimited elections, photo support, and official PDF audit reports, please activate a plan below. Your data will be preserved.",
-                PL1: "💎 Single Professional Election", DESC_PL1: "Full 24h use. Ideal for one-time events. Includes photos, support, and official PDF with timestamp.", B1: "UNLOCK 1 ELECTION (R$ 30.00)",
-                PL2: "🚀 Institutional Pack 20 Urns", DESC_PL2: "Only R$ 25.00 per election. Best value for schools and companies. Credits never expire.", B2: "BUY 20 PACK (R$ 500.00)",
-                P2: "ACTIVATE CREDIT OR COUPON", L_CUP: "Do you have a Coupon or Master Password?", cup: "Enter promo code or password...", B_VOLTAR: "BACK TO LOGIN",
-                H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select candidate and click CONFIRM. Beep sound indicates success. Enter password 1357 to end the session:", U1: "CONFIRM MY VOTE NOW", BT_BRANCO: "VOTE BLANK", U2: "END AND COUNT VOTES",
-                R_TITLE: "ELECTION RESULTS REPORT", TOTAL_VOTOS: "TOTAL VOTES RECORDED", B_PDF_SIMPLE: "SIMPLE PDF REPORT", B_PDF_PHOTOS: "FULL PDF WITH PHOTOS", H_FEED_TIT: "SUPPORT:", H_FEED_TXT: "Send suggestions or requests directly to developer Paulo.", F2: "SEND MESSAGE NOW", B_EXIT_FINAL: "EXIT SYSTEM", AUDIT: "Official Issuance"
+                L1_1: "Easy Voting System", L1_2: "Security Verification", L1_3: "Event Details",
+                H_LOGIN_TIT: "ACCESS:", H_LOGIN_TXT: "Welcome! Validate your Gmail to start.", L2: "REQUEST CODE",
+                H_SETUP_TIT: "EVENT DETAILS:", H_SETUP_TXT: "Title your election and set how many candidates can be chosen.", tE: "Election title or main position", S2: "SAVE DATA",
+                C1: "MANAGE CANDIDATES", H_CARGO_TIT: "HOW TO REGISTER:", H_CARGO_TXT: "Enter position, then candidate name and photo. Click ADD for each name.", nC: "Ex: Manager, President...", nCand: "Candidate's full name...", INSTR_FOTO: "📷 CLICK TO ATTACH CANDIDATE PHOTO", 
+                C2: "ADD CANDIDATE TO LIST", C3: "SAVE POSITION AND CANDIDATES", C4: "START VOTING PROCESS",
+                H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select and confirm. Code 1357 to end:", U1: "CONFIRM VOTE NOW", BT_BRANCO: "BLANK VOTE", U2: "END AND COUNT",
+                F2: "SEND FEEDBACK", AUDIT: "Issued"
             },
             es: { 
-                L1_1: "Sistema de Votación", L1_2: "Verificación de Seguridad", L1_3: "Configuración de Urna",
-                H_LOGIN_TIT: "ACCESO AL SISTEMA:", H_LOGIN_TXT: "¡Bienvenido! Valide su Gmail oficial. 3 pruebas gratis para nuevos usuarios.", L2: "SOLICITAR CÓDIGO DE ACCESO",
-                P1: "Límite de Pruebas Alcanzado", H_PAY_TIT: "PLANES DE ACTIVACIÓN PROFESIONAL:", H_PAY_TXT: "Ha utilizado su límite de 3 elecciones gratuitas. Para continuar con elecciones ilimitadas, soporte de fotos y reportes PDF oficiales, active un plan profesional.",
-                PL1: "💎 Elección Profesional Única", DESC_PL1: "Uso por 24h. Ideal para eventos puntuales. Incluye fotos y reporte PDF oficial con auditoría.", B1: "LIBERAR 1 ELECCIÓN (R$ 30.00)",
-                PL2: "🚀 Paquete 20 Urnas", DESC_PL2: "Solo R$ 25,00 por elección. Ideal para escuelas y empresas. Los créditos no caducan.", B2: "COMPRAR PAQUETE (R$ 500.00)",
-                P2: "ACTIVAR CRÉDITO", L_CUP: "¿Tiene un Cupón o Clave Maestra?", cup: "Ingrese código o clave...", B_VOLTAR: "VOLVER",
-                H_URNA_TIT: "GUÍA DEL VOTANTE:", H_URNA_TXT: "Seleccione candidato y confirme. El sonido indica éxito. Clave 1357 para cerrar sesión:", U1: "CONFIRMAR MI VOTO", BT_BRANCO: "VOTO EN BLANCO", U2: "TERMINAR Y CONTAR",
-                R_TITLE: "REPORTE DE RESULTADOS", TOTAL_VOTOS: "TOTAL DE VOTOS COMPUTADOS", B_PDF_SIMPLE: "PDF SIMPLE", B_PDF_PHOTOS: "PDF CON FOTOS", H_FEED_TIT: "SOPORTE:", H_FEED_TXT: "Envíe sus comentarios directamente al desarrollador Paulo.", F2: "ENVIAR MENSAJE", B_EXIT_FINAL: "SALIR DEL SISTEMA", AUDIT: "Emisión Oficial"
+                L1_1: "Sistema de Votación", L1_2: "Verificación", L1_3: "Detalles del Evento",
+                H_LOGIN_TIT: "ACCESO:", H_LOGIN_TXT: "¡Bienvenido! Valide su Gmail para empezar.", L2: "SOLICITAR CÓDIGO",
+                H_SETUP_TIT: "DETALLES DEL EVENTO:", H_SETUP_TXT: "Ponga un título y defina cuántas opções puede elegir.", tE: "Título de la elección o cargo principal", S2: "GUARDAR",
+                C1: "GESTIONAR CANDIDATOS", H_CARGO_TIT: "CÓMO REGISTRAR:", H_CARGO_TXT: "Ingrese cargo, nombre y foto. Haga clic en AÑADIR para cada nombre.", nC: "Ej: Director, Presidente...", nCand: "Nombre completo del candidato...", INSTR_FOTO: "📷 CLIC PARA ADJUNTAR FOTO DO CANDIDATO", 
+                C2: "AÑADIR CANDIDATO A LA LISTA", C3: "GUARDAR CARGO Y CANDIDATOS", C4: "INICIAR PROCESSO DE VOTACIÓN",
+                H_URNA_TIT: "GUÍA:", H_URNA_TXT: "Seleccione y confirme. Clave 1357 para cerrar:", U1: "CONFIRMAR VOTO", BT_BRANCO: "VOTO EN BLANCO", U2: "TERMINAR Y CONTAR",
+                F2: "ENVIAR PEDIDO", AUDIT: "Emitido"
             }
         };
 
@@ -199,7 +193,7 @@
             window.TR(window._idioma);
         };
 
-        window.LIMPAR = () => { if(confirm("Reiniciar App? Isso limpará todos os dados locais.")) { localStorage.clear(); window.location.reload(true); } };
+        window.LIMPAR = () => { if(confirm("Reiniciar App?")) { localStorage.clear(); window.location.reload(true); } };
 
         window.V = async function() { 
             let e = document.getElementById('uE').value.trim().toLowerCase(); 
@@ -219,7 +213,7 @@
         window.C = () => { 
             let digitado = document.getElementById('iC').value.trim();
             let salvo = localStorage.getItem('urna_vault') ? localStorage.getItem('urna_vault').trim() : "";
-            if(digitado === salvo) window.GO('setup'); else alert("Código Incorreto!"); 
+            if(digitado === salvo) window.GO('setup'); else alert("Incorreto!"); 
         };
 
         window.BRANCO = () => {
@@ -264,7 +258,7 @@
             window.GO('res');
         };
 
-        window.CONFIRM_END = () => { if(prompt("Senha para encerramento (1357):") === "1357") window.END(); else alert("Incorreta!"); };
+        window.CONFIRM_END = () => { if(prompt("Senha 1357:") === "1357") window.END(); else alert("Incorreta!"); };
 
         window.PDF = (fotos) => {
             let total = 0; window._data.forEach(cargo => { total += cargo.c.reduce((a,b)=>a+b.v,0); if(cargo.branco) total += cargo.branco; });
@@ -276,7 +270,7 @@
                 if(cargo.branco > 0) h += `<tr>${fotos?'<td></td>':''}<td><i>Brancos</i></td><td style="text-align:right">${cargo.branco}</td></tr>`;
                 out.innerHTML += h+'</tbody></table>';
             });
-            const opt = { margin: [10, 10, 10, 10], filename: 'Resultado_Eleicao.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4' }, pagebreak: { mode: ['avoid-all'] } };
+            const opt = { margin: [10, 10, 10, 10], filename: 'Resultado.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4' }, pagebreak: { mode: ['avoid-all'] } };
             html2pdf().set(opt).from(document.getElementById('areaImpressao')).save();
         };
 
@@ -296,7 +290,7 @@
             document.getElementById('listaTemporaria').innerHTML += `<div>👤 ${nome} - ${cargo}</div>`;
             document.getElementById('nCand').value=''; window._fotoTemp=''; document.getElementById('imgPrev').style.display='none';
         };
-        window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('listaTemporaria').innerHTML=''; alert("Salvo!"); };
+        window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('listaTemporaria').innerHTML=''; alert("Cargo e candidatos salvos!"); };
         window.START_VOTE_PROCESS = () => { if(!window._data.length) return alert("Erro!"); window._idx=0; window.RUN(); window.GO('urna'); };
 
         window.RUN = () => {
