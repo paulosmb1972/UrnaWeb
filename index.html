@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UrnaWeb Digital - Sistema Profissional</title>
+    <title>UrnaWeb Digital - Sistema Profissional de Votação</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -45,14 +45,14 @@
 <body>
 
     <div class="lang-box">
-        <button onclick="window.TR('pt')">PT</button>
-        <button onclick="window.TR('en')">EN</button>
-        <button onclick="window.TR('es')">ES</button>
+        <button onclick="window.TR('pt')">Português</button>
+        <button onclick="window.TR('en')">English</button>
+        <button onclick="window.TR('es')">Español</button>
     </div>
 
     <div id="login" class="screen active">
-        <button onclick="window.LIMPAR()" style="background:none; border:1px solid rgba(255,255,255,0.2); font-size:10px; padding:8px; margin-top:10px; box-shadow:none; color:#aaa; width: auto; margin-bottom: 20px;">🔄 LIMPAR DADOS DO APP</button>
-        <h2 id="L1_1">UrnaWeb Digital</h2>
+        <button onclick="window.LIMPAR()" style="background:none; border:1px solid rgba(255,255,255,0.2); font-size:10px; padding:8px; margin-top:10px; box-shadow:none; color:#aaa; width: auto; margin-bottom: 20px;">🔄 ATUALIZAR SISTEMA / LIMPAR CACHE</button>
+        <h2 id="L1_1">Sistema de Votação Fácil</h2>
         <div class="info-box"><b id="H_LOGIN_TIT">ACESSO AO SISTEMA:</b><span id="H_LOGIN_TXT"></span></div>
         <input id="uE" type="email" spellcheck="false">
         <button onclick="window.V()" id="L2"></button>
@@ -60,7 +60,7 @@
 
     <div id="verify" class="screen">
         <h2 id="L1_2">Segurança</h2>
-        <div class="info-box"><b id="H_VERIFY_TIT">VERIFICAÇÃO:</b><span id="H_VERIFY_TXT"></span></div>
+        <div class="info-box"><b id="H_VERIFY_TIT">VERIFICAÇÃO DE IDENTIDADE:</b><span id="H_VERIFY_TXT"></span></div>
         <input id="iC" type="text" maxlength="4" style="text-align: center; font-size: 32px; letter-spacing: 15px;">
         <button onclick="window.C()" id="V3"></button>
     </div>
@@ -75,7 +75,7 @@
 
     <div id="pay" class="screen">
         <h2 id="P1">Ativação</h2>
-        <div class="info-box"><b id="H_PAY_TIT">PLANOS PROFISSIONAIS:</b><span id="H_PAY_TXT"></span></div>
+        <div class="info-box"><b id="H_PAY_TIT">PLANOS DE ATIVAÇÃO PROFISSIONAL:</b><span id="H_PAY_TXT"></span></div>
         <div class="pay-card">
             <h3 id="PL1" style="color:var(--accent)">💎 Plano Único</h3>
             <p id="DESC_PL1" style="font-size: 13px; color: #ccc;"></p>
@@ -98,7 +98,7 @@
 
     <div id="setupCargo" class="screen">
         <h2 id="C1">Gerenciar</h2>
-        <div class="info-box"><b id="H_CARGO_TIT">CADASTRO:</b><span id="H_CARGO_TXT"></span></div>
+        <div class="info-box"><b id="H_CARGO_TIT">CADASTRO DE CANDIDATOS:</b><span id="H_CARGO_TXT"></span></div>
         <input id="nC" type="text">
         <input id="nCand" type="text">
         <div class="foto-container" onclick="document.getElementById('fileIn').click()">
@@ -114,7 +114,7 @@
 
     <div id="urna" class="screen">
         <h2 id="uT"></h2>
-        <div class="info-box"><b id="H_URNA_TIT">URNA ELETRÔNICA:</b><span id="H_URNA_TXT"></span></div>
+        <div class="info-box"><b id="H_URNA_TIT">GUIA DO ELEITOR:</b><span id="H_URNA_TXT"></span></div>
         <div id="gridUrna" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom: 30px;"></div>
         <button onclick="window.VOTE()" id="U1" style="height:90px; background:var(--success); box-shadow: 0 8px 20px rgba(46, 204, 113, 0.4);"></button>
         <button onclick="window.BRANCO()" id="BT_BRANCO" style="height:70px;"></button>
@@ -141,7 +141,7 @@
         <button onclick="window.PDF(false)" id="B_PDF_SIMPLE" style="margin-top:25px;"></button>
         <button onclick="window.PDF(true)" id="B_PDF_PHOTOS" style="background:var(--success)"></button>
         <div class="info-box" style="margin-top:40px;">
-            <b id="H_FEED_TIT">SUPORTE:</b><span id="H_FEED_TXT"></span>
+            <b id="H_FEED_TIT">SUPORTE TÉCNICO:</b><span id="H_FEED_TXT"></span>
             <textarea id="txtSugestao" style="margin-top:15px;"></textarea>
             <button onclick="window.FEED()" id="F2"></button>
         </div>
@@ -153,37 +153,49 @@
         window._cfg = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
         emailjs.init(window._cfg.k);
         window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp=''; window._maxVotos=1; window._idioma='pt';
-        window._totalEleitores = 0; // Contador Global
+        window._totalEleitores = 0;
 
         window._tr = {
             pt: { 
-                L1_1: "UrnaWeb Digital", L1_2: "Segurança de Acesso", L1_3: "Ajustes Iniciais",
-                H_LOGIN_TIT: "ACESSO AO SISTEMA:", H_LOGIN_TXT: "Bem-vindo! Valide seu e-mail Gmail oficial para começar. Novos usuários possuem 3 eleições gratuitas para testes.", uE: "Seu e-mail Gmail...", L2: "SOLICITAR CÓDIGO DE ACESSO",
-                H_VERIFY_TIT: "VERIFICAÇÃO:", H_VERIFY_TXT: "Digite o código de 4 dígitos enviado ao seu e-mail.", V3: "VALIDAR E ENTRAR",
-                H_SETUP_TIT: "DETALHES DO EVENTO:", H_SETUP_TXT: "Dê um título para a eleição e defina quantos candidatos o eleitor pode escolher.", tE: "Título da eleição ou cargo principal", S2: "SALVAR E AVANÇAR",
-                P1: "Ativação", H_PAY_TIT: "PLANOS PROFISSIONAIS:", H_PAY_TXT: "Limite de 3 testes atingido. Ative um plano para uso ilimitado.",
-                PL1: "💎 Eleição Única", DESC_PL1: "24h de uso ilimitado com fotos e PDF.", B1: "LIBERAR (R$ 30,00)",
-                PL2: "🚀 Pacote 20 Urnas", DESC_PL2: "R$ 25,00 por eleição. Créditos vitalícios.", B2: "COMPRAR (R$ 500,00)",
-                P2: "ATIVAR", L_CUP: "Cupom/Senha:", cup: "Código...", B_VOLTAR: "VOLTAR",
-                C1: "Gerenciar", H_CARGO_TIT: "CADASTRO:", H_CARGO_TXT: "Digite o Cargo, Nome e anexe a foto. Clique em ADICIONAR para cada nome.", nC: "Ex: Diretor...", nCand: "Nome do Candidato...", INSTR_FOTO: "📷 FOTO DO CANDIDATO", 
-                C2: "ADICIONAR À LISTA", C3: "SALVAR CARGO", C4: "INICIAR VOTAÇÃO",
-                H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione e confirme. O som 'Piiiii' indica sucesso. Senha 1357 para encerrar.", U1: "CONFIRMAR VOTO AGORA", BT_BRANCO: "VOTO EM BRANCO", U2: "ENCERRAR E APURAR",
-                R_TITLE: "Apuração", TOTAL_VOTOS: "QUANTIDADE GERAL DE VOTOS", L_TOTAL_E: "ELEITORES QUE VOTARAM:", B_PDF_SIMPLE: "RELATÓRIO PDF (TEXTO)", B_PDF_PHOTOS: "RELATÓRIO PDF (COM FOTOS)", H_FEED_TIT: "SUPORTE:", H_FEED_TXT: "Sugestões para Paulo.", F2: "ENVIAR MENSAGEM", B_EXIT_FINAL: "SAIR", AUDIT: "Emissão Oficial",
-                AL_SUC_VOTE: "Voto Gravado!", AL_ERR_VOTE: "Selecione um candidato!", AL_OK_SAVE: "Salvo!", AL_OK_CUP: "LIBERADO!"
+                L1_1: "Sistema de Votação Fácil", L1_2: "Verificação de Segurança", L1_3: "Configuração do Evento",
+                H_LOGIN_TIT: "ACESSO AO SISTEMA:", H_LOGIN_TXT: "Bem-vindo! Para iniciar, valide seu e-mail Gmail oficial. Novos usuários ganham 3 eleições gratuitas para realizar testes completos do sistema antes de qualquer ativação paga.", uE: "Digite seu Gmail (ex: nome@gmail.com)...", L2: "GERAR E ENVIAR CÓDIGO DE ACESSO",
+                H_VERIFY_TIT: "CÓDIGO DE SEGURANÇA:", H_VERIFY_TXT: "Verifique seu e-mail (inclusive Spam). Um código de 4 dígitos foi enviado para validar sua identidade e liberar o painel de controle.", V3: "CONFIRMAR CÓDIGO E ACESSAR",
+                H_SETUP_TIT: "DETALHES DO EVENTO:", H_SETUP_TXT: "Dê um título oficial para sua eleição (Ex: CIPA 2026) e defina quantos candidatos cada eleitor poderá escolher em uma única cédula de votação.", tE: "Título da eleição ou cargo principal...", S2: "SALVAR CONFIGURAÇÕES E AVANÇAR",
+                P1: "Ativação Profissional", H_PAY_TIT: "LIMITE DE TESTES ATINGIDO:", H_PAY_TXT: "Você utilizou seus 3 testes gratuitos. Para continuar realizando eleições ilimitadas, com suporte a fotos de candidatos e relatórios PDF oficiais, ative um dos planos abaixo. Seus dados cadastrados serão preservados.",
+                PL1: "💎 Plano Único Profissional", DESC_PL1: "Uso total por 24h. Ideal para eventos pontuais. Libera fotos e gera relatório PDF oficial com auditoria.", B1: "LIBERAR ELEIÇÃO (R$ 30,00)",
+                PL2: "🚀 Plano Institucional (20 Urnas)", DESC_PL2: "Cada eleição sai por apenas R$ 25,00. Melhor custo-benefício para escolas e empresas. Os créditos não expiram.", B2: "COMPRAR PACOTE (R$ 500,00)",
+                P2: "ATIVAR CRÉDITO", L_CUP: "Cupom ou Senha Mestre:", cup: "Digite o código aqui...", B_VOLTAR: "VOLTAR AO INÍCIO",
+                C1: "Gerenciar Candidatos", H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Primeiro digite o Cargo (Ex: Diretor), depois o Nome do Candidato e anexe a foto. Clique em ADICIONAR para cada nome antes de salvar o cargo final.", nC: "Ex: Diretor, Presidente...", nCand: "Nome Completo do Candidato...", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO DO CANDIDATO", 
+                C2: "ADICIONAR À LISTA DE CANDIDATOS", C3: "SALVAR CARGO E CANDIDATOS", C4: "INICIAR PROCESSO DE VOTAÇÃO AGORA",
+                H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione o candidato desejado e clique no botão confirmar. O sinal sonoro 'Piiiii' confirma o registro. Para encerrar o dia de votação, digite a senha 1357.", U1: "CONFIRMAR MEU VOTO AGORA", BT_BRANCO: "VOTO EM BRANCO (NULO)", U2: "ENCERRAR VOTAÇÃO E APURAR",
+                R_TITLE: "Relatório de Apuração", TOTAL_VOTOS: "QUANTIDADE GERAL DE VOTOS COMPUTADOS", L_TOTAL_E: "TOTAL DE PESSOAS QUE VOTARAM:", B_PDF_SIMPLE: "GERAR PDF SIMPLES (TEXTO)", B_PDF_PHOTOS: "GERAR PDF COMPLETO (COM FOTOS)", H_FEED_TIT: "SUPORTE TÉCNICO:", H_FEED_TXT: "Envie sugestões ou pedidos de melhoria diretamente para o desenvolvedor Paulo.", F2: "ENVIAR MENSAGEM AO SUPORTE", B_EXIT_FINAL: "ENCERRAR SESSÃO E SAIR", AUDIT: "Relatório Emitido em",
+                AL_SUC_VOTE: "Voto Gravado com Sucesso!", AL_ERR_VOTE: "Erro: Selecione um candidato ou vote Branco!", AL_OK_SAVE: "Configurações Salvas com Sucesso!", AL_OK_CUP: "CRÉDITO ATIVADO COM SUCESSO! LIBERADO."
             },
             en: { 
-                L1_1: "UrnaWeb Digital", L1_2: "Access Security", L1_3: "Initial Settings",
-                H_LOGIN_TIT: "SYSTEM ACCESS:", H_LOGIN_TXT: "Welcome! New users get 3 free trials.", uE: "Your Gmail...", L2: "REQUEST CODE",
-                H_SETUP_TIT: "EVENT DETAILS:", H_SETUP_TXT: "Set title and number of choices.", tE: "Election title", S2: "SAVE AND ADVANCE",
-                H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select and confirm. Password 1357 to end.", U1: "CONFIRM VOTE NOW", BT_BRANCO: "BLANK VOTE", U2: "END AND COUNT",
-                L_TOTAL_E: "TOTAL VOTERS:", R_TITLE: "Official Results", B_PDF_SIMPLE: "PDF (TEXT)", B_PDF_PHOTOS: "PDF (PHOTOS)", B_EXIT_FINAL: "EXIT"
+                L1_1: "Easy Voting System", L1_2: "Security Verification", L1_3: "Event Configuration",
+                H_LOGIN_TIT: "SYSTEM ACCESS:", H_LOGIN_TXT: "Welcome! Validate your official Gmail. New users get 3 free elections for full testing.", uE: "Your Gmail (ex: name@gmail.com)...", L2: "GENERATE AND SEND ACCESS CODE",
+                H_VERIFY_TIT: "SECURITY CODE:", H_VERIFY_TXT: "Check your email (including Spam). A 4-digit code was sent to validate your identity.", V3: "CONFIRM CODE AND ACCESS",
+                H_SETUP_TIT: "EVENT DETAILS:", H_SETUP_TXT: "Title your election and set how many candidates can be chosen.", tE: "Election title or position...", S2: "SAVE SETTINGS AND ADVANCE",
+                P1: "Professional Activation", H_PAY_TIT: "TRIAL LIMIT REACHED:", H_PAY_TXT: "You have used your 3 free trials. Choose a plan below for unlimited elections, photos, and PDF reports.",
+                PL1: "💎 Single Election Plan", DESC_PL1: "24h full access. Ideal for one-time events. Official PDF with audit included.", B1: "UNLOCK ELECTION (R$ 30.00)",
+                PL2: "🚀 Institutional (20 Urns)", DESC_PL2: "Only R$ 25.00 per election. Credits never expire.", B2: "BUY 20 PACK (R$ 500.00)",
+                P2: "ACTIVATE CREDIT", L_CUP: "Coupon or Master Password:", cup: "Enter code...", B_VOLTAR: "BACK TO LOGIN",
+                C1: "Manage Candidates", H_CARGO_TIT: "HOW TO REGISTER:", H_CARGO_TXT: "Enter Position, Name, and attach photo. Click ADD for each name.", nC: "Ex: Manager, President...", nCand: "Candidate's full name...", INSTR_FOTO: "📷 ATTACH PHOTO", 
+                C2: "ADD TO CANDIDATE LIST", C3: "SAVE POSITION AND CANDIDATES", C4: "START VOTING PROCESS NOW",
+                H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select and confirm. Beep indicates success. Enter 1357 to end:", U1: "CONFIRM VOTE NOW", BT_BRANCO: "BLANK VOTE", U2: "END AND COUNT VOTES",
+                R_TITLE: "Official Results", TOTAL_VOTOS: "TOTAL VOTES RECORDED", L_TOTAL_E: "TOTAL PEOPLE WHO VOTED:", B_PDF_SIMPLE: "SIMPLE PDF (TEXT)", B_PDF_PHOTOS: "FULL PDF (PHOTOS)", H_FEED_TIT: "TECHNICAL SUPPORT:", H_FEED_TXT: "Suggestions for the developer Paulo.", F2: "SEND MESSAGE", B_EXIT_FINAL: "EXIT", AUDIT: "Official Report Issued at"
             },
             es: { 
-                L1_1: "UrnaWeb Digital", L1_2: "Seguridad", L1_3: "Ajustes",
-                H_LOGIN_TIT: "ACCESO:", H_LOGIN_TXT: "3 pruebas gratis para nuevos usuarios.", uE: "Su Gmail...", L2: "SOLICITAR CÓDIGO",
-                H_SETUP_TIT: "DETALLES:", H_SETUP_TXT: "Título y número de opciones.", tE: "Título", S2: "GUARDAR",
+                L1_1: "Sistema de Votación Fácil", L1_2: "Seguridad", L1_3: "Configuración",
+                H_LOGIN_TIT: "ACCESO:", H_LOGIN_TXT: "¡Bienvenido! Valide su Gmail. 3 pruebas gratis para nuevos usuarios.", uE: "Su Gmail...", L2: "SOLICITAR CÓDIGO",
+                H_VERIFY_TIT: "CÓDIGO:", H_VERIFY_TXT: "Verifique su email. Se envió un código de 4 dígitos.", V3: "CONFIRMAR E ENTRAR",
+                H_SETUP_TIT: "DETALLES:", H_SETUP_TXT: "Título de la elección y número de opciones.", tE: "Título o cargo", S2: "GUARDAR Y AVANZAR",
+                P1: "Activación", H_PAY_TIT: "LÍMITE ALCANZADO:", H_PAY_TXT: "Pruebas gratuitas usadas. Elija un plan para continuar.",
+                PL1: "💎 Elección Única", DESC_PL1: "Uso por 24h. PDF oficial incluido.", B1: "LIBERAR (R$ 30.00)",
+                PL2: "🚀 Paquete 20 Urnas", DESC_PL2: "Solo R$ 25,00 por urna. Los créditos no caducan.", B2: "COMPRAR PAQUETE (R$ 500.00)",
+                P2: "ACTIVAR", L_CUP: "¿Cupón o Clave Maestra?", cup: "Ingrese código...", B_VOLTAR: "VOLVER",
                 H_URNA_TIT: "GUÍA:", H_URNA_TXT: "Seleccione y confirme. Clave 1357 para cerrar.", U1: "CONFIRMAR VOTO", BT_BRANCO: "VOTO EN BLANCO", U2: "TERMINAR Y CONTAR",
-                L_TOTAL_E: "TOTAL VOTANTES:", R_TITLE: "Resultados", B_PDF_SIMPLE: "PDF SIMPLE", B_PDF_PHOTOS: "PDF CON FOTOS", B_EXIT_FINAL: "SALIR"
+                L_TOTAL_E: "TOTAL VOTANTES:", R_TITLE: "Resultados", B_PDF_SIMPLE: "PDF SIMPLE", B_PDF_PHOTOS: "PDF CON FOTOS", B_EXIT_FINAL: "SALIR", AUDIT: "Emitido en"
             }
         };
 
@@ -208,7 +220,7 @@
             window.TR(window._idioma);
         };
 
-        window.LIMPAR = () => { if(confirm("Reiniciar App?")) { localStorage.clear(); window.location.reload(true); } };
+        window.LIMPAR = () => { if(confirm("Reiniciar App? Isso limpará todos os dados locais.")) { localStorage.clear(); window.location.reload(true); } };
 
         window.V = async function() { 
             let e = document.getElementById('uE').value.trim().toLowerCase(); 
@@ -222,7 +234,7 @@
                 localStorage.setItem('urna_vault', cod);
                 await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod }, window._cfg.k); 
                 alert("Código enviado!"); window.GO('verify'); 
-            } catch(err) { alert("Erro."); } finally { btn.disabled = false; window.TR(window._idioma); }
+            } catch(err) { alert("Erro de conexão."); } finally { btn.disabled = false; window.TR(window._idioma); }
         };
 
         window.C = () => { 
@@ -235,7 +247,7 @@
                 let cargo = window._data[window._idx];
                 if(!cargo.branco) cargo.branco = 0;
                 cargo.branco++; window.BIP();
-                window.NEXT(true); // true indica que é branco
+                window.NEXT();
             }
         };
 
@@ -243,20 +255,14 @@
             if(!window._sel.length) return alert(window._tr[window._idioma].AL_ERR_VOTE); 
             window.BIP(); 
             window._sel.forEach(i => window._data[window._idx].c[i].v++); 
-            window.NEXT(false);
+            window.NEXT();
         };
 
-        window.NEXT = (isBranco) => {
-            // Se for o primeiro cargo da cédula, conta como +1 eleitor físico
+        window.NEXT = () => {
             if(window._idx === 0) window._totalEleitores++;
-            
             window._idx++; 
-            if(window._idx < window._data.length) { 
-                window.RUN(); 
-            } else { 
-                alert(window._tr[window._idioma].AL_SUC_VOTE); 
-                window._idx = 0; window.RUN(); 
-            }
+            if(window._idx < window._data.length) { window.RUN(); } 
+            else { alert(window._tr[window._idioma].AL_SUC_VOTE); window._idx = 0; window.RUN(); }
         };
 
         window.END = () => {
@@ -274,10 +280,10 @@
             window.GO('res');
         };
 
-        window.CONFIRM_END = () => { if(prompt("Senha (1357):") === "1357") window.END(); };
+        window.CONFIRM_END = () => { if(prompt("Senha Mestres (1357):") === "1357") window.END(); else alert("Incorreta!"); };
 
         window.PDF = (fotos) => {
-            const opt = { margin: [10, 10, 10, 10], filename: 'Resultado.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4' } };
+            const opt = { margin: [10, 10, 10, 10], filename: 'Resultado_Oficial.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4' } };
             html2pdf().set(opt).from(document.getElementById('areaImpressao')).save();
         };
 
@@ -292,7 +298,7 @@
             document.getElementById('listaTemporaria').innerHTML += `<div>👤 ${n} - ${c}</div>`;
             document.getElementById('nCand').value=''; window._fotoTemp=''; document.getElementById('imgPrev').style.display='none';
         };
-        window.SAVE = () => { window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('listaTemporaria').innerHTML=''; alert("Salvo!"); };
+        window.SAVE = () => { window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('listaTemporaria').innerHTML=''; alert("Dados Salvos!"); };
         window.START_VOTE_PROCESS = () => { window._idx=0; window.RUN(); window.GO('urna'); };
 
         window.RUN = () => {
@@ -306,7 +312,14 @@
             });
         };
 
-        window.FEED = () => { alert("Feedback enviado!"); };
+        window.FEED = () => { 
+            let m = document.getElementById('txtSugestao').value; 
+            if(!m) return alert("Escreva algo!"); 
+            emailjs.send(window._cfg.s, window._cfg.t, {to_email:'paulosmb1972@gmail.com', validation_code: 'FEEDBACK: ' + m}, window._cfg.k)
+            .then(() => { alert("Mensagem enviada com sucesso!"); document.getElementById('txtSugestao').value=''; }); 
+        };
+
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
         window.TR('pt');
     </script>
 </body>
