@@ -3,49 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UrnaWeb Digital - Sistema de Votação Fácil</title>
+    <title>UrnaWeb Digital - Sistema Profissional</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        :root { --primary: #f39c12; --dark: #0a2351; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; --glass: rgba(255, 255, 255, 0.08); }
+        :root { --primary: #f39c12; --dark: #0a1931; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; --glass: rgba(255, 255, 255, 0.05); }
         body { margin: 0; font-family: 'Inter', 'Segoe UI', Arial, sans-serif; background: radial-gradient(circle at top, #1a3a7a 0%, #0a1931 100%); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; user-select: none; }
         
-        /* Containers */
         .screen { display: none; padding: 25px; width: 100%; max-width: 600px; box-sizing: border-box; }
         .active { display: block; animation: slideUp 0.4s ease-out; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* UI Elements */
-        h2 { text-align: center; color: var(--primary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; font-size: 22px; }
+        h2 { text-align: center; color: var(--primary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; }
         .info-box { text-align: justify; font-size: 14px; color: #d1d9e6; margin: 20px 0; background: var(--glass); padding: 20px; border-radius: 15px; border-left: 5px solid var(--accent); line-height: 1.6; backdrop-filter: blur(10px); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); }
-        .info-box b { color: var(--accent); display: block; margin-bottom: 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+        .info-box b { color: var(--accent); display: block; margin-bottom: 8px; font-size: 11px; text-transform: uppercase; }
         
-        input, button, textarea { width: 100%; padding: 18px; margin: 12px 0; border-radius: 12px; border: none; font-size: 16px; box-sizing: border-box; transition: all 0.2s ease; }
-        input { background: #ffffff; color: #222; font-weight: 600; border: 2px solid transparent; }
-        input:focus { border-color: var(--primary); outline: none; }
+        input, button, textarea { width: 100%; padding: 18px; margin: 12px 0; border-radius: 12px; border: none; font-size: 16px; box-sizing: border-box; transition: 0.2s; }
+        input { background: #ffffff; color: #222; font-weight: 600; }
+        button { background: var(--primary); color: white; font-weight: 800; cursor: pointer; text-transform: uppercase; box-shadow: 0 5px 15px rgba(243, 156, 18, 0.3); }
+        button:active { transform: translateY(2px); box-shadow: none; }
         
-        button { background: var(--primary); color: white; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 5px 15px rgba(243, 156, 18, 0.3); }
-        button:hover { filter: brightness(1.1); transform: translateY(-2px); }
-        button:active { transform: translateY(1px); box-shadow: none; }
+        .pay-card { background: var(--glass); padding: 25px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px; text-align: center; }
+        .foto-container { border: 2px dashed rgba(243, 156, 18, 0.5); border-radius: 15px; padding: 25px; text-align: center; cursor: pointer; background: var(--glass); }
+        .img-preview { width: 130px; height: 130px; object-fit: cover; border-radius: 50%; display: none; margin: 15px auto; border: 4px solid var(--accent); }
         
-        /* Cards & Photos */
-        .pay-card { background: var(--glass); padding: 25px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); margin-bottom: 25px; text-align: center; backdrop-filter: blur(5px); }
-        .foto-container { border: 2px dashed rgba(243, 156, 18, 0.5); border-radius: 15px; padding: 25px; text-align: center; cursor: pointer; background: var(--glass); transition: 0.3s; }
-        .foto-container:hover { border-color: var(--primary); background: rgba(255,255,255,0.1); }
-        .img-preview { width: 130px; height: 130px; object-fit: cover; border-radius: 50%; display: none; margin: 15px auto; border: 4px solid var(--accent); box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .cand-preview-list { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; margin-top: 10px; max-height: 150px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); font-size: 13px; }
         
-        /* Grid Urna */
         #gridUrna div { background: #fff; color: #222; padding: 15px; border-radius: 15px; text-align: center; cursor: pointer; border: 4px solid transparent; box-shadow: 0 4px 10px rgba(0,0,0,0.2); font-weight: 700; }
-        .selected-card { border-color: var(--success) !important; background: #e8f5e9 !important; transform: scale(1.03); }
+        .selected-card { border-color: var(--success) !important; background: #e8f5e9 !important; transform: scale(1.02); }
         
-        /* Special Buttons */
         #BT_BRANCO { background: #f8f9fa; color: #333; border: 3px solid #ced4da; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         #U2 { margin-top: 180px; background: rgba(231, 76, 60, 0.15); color: var(--danger); border: 1px solid var(--danger); box-shadow: none; font-size: 12px; }
         
-        /* Header & Labels */
+        .stats-badge { background: var(--primary); color: #fff; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 20px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; }
+
         .lang-box { position: fixed; top: 15px; right: 15px; z-index: 1000; display: flex; gap: 8px; }
-        .lang-box button { width: auto; padding: 8px 14px; background: rgba(0,0,0,0.5); font-size: 11px; border: 1px solid rgba(255,255,255,0.2); box-shadow: none; backdrop-filter: blur(5px); }
+        .lang-box button { width: auto; padding: 8px 14px; background: rgba(0,0,0,0.5); font-size: 11px; border: 1px solid rgba(255,255,255,0.2); box-shadow: none; }
     </style>
 </head>
 <body>
@@ -58,7 +52,7 @@
 
     <div id="login" class="screen active">
         <button onclick="window.LIMPAR()" style="background:none; border:1px solid rgba(255,255,255,0.2); font-size:10px; padding:8px; margin-top:10px; box-shadow:none; color:#aaa; width: auto; margin-bottom: 20px;">🔄 LIMPAR DADOS DO APP</button>
-        <h2 id="L1_1">Sistema de Votação Fácil</h2>
+        <h2 id="L1_1">UrnaWeb Digital</h2>
         <div class="info-box"><b id="H_LOGIN_TIT">ACESSO AO SISTEMA:</b><span id="H_LOGIN_TXT"></span></div>
         <input id="uE" type="email" spellcheck="false">
         <button onclick="window.V()" id="L2"></button>
@@ -80,7 +74,7 @@
     </div>
 
     <div id="pay" class="screen">
-        <h2 id="P1">Ativação Necessária</h2>
+        <h2 id="P1">Ativação</h2>
         <div class="info-box"><b id="H_PAY_TIT">PLANOS PROFISSIONAIS:</b><span id="H_PAY_TXT"></span></div>
         <div class="pay-card">
             <h3 id="PL1" style="color:var(--accent)">💎 Plano Único</h3>
@@ -92,7 +86,7 @@
             <h3 id="PL2" style="color:var(--success)">🚀 Plano 20 Urnas</h3>
             <p id="DESC_PL2" style="font-size: 13px; color: #ccc;"></p>
             <span style="font-size:32px; color:#fff; font-weight:bold;">R$ 500,00</span>
-            <button onclick="window.open('https://mpago.la/1VakcdN')" id="B2" style="background:var(--success); box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3); margin-top:15px;"></button>
+            <button onclick="window.open('https://mpago.la/1VakcdN')" id="B2" style="background:var(--success); margin-top:15px;"></button>
         </div>
         <div class="pay-card">
             <b id="L_CUP" style="font-size:11px; color:var(--accent)"></b>
@@ -114,7 +108,7 @@
         <input type="file" id="fileIn" hidden accept="image/*" onchange="window.PREV(this)">
         <button onclick="window.A()" id="C2"></button>
         <div id="listaTemporaria" class="cand-preview-list"></div>
-        <button onclick="window.SAVE()" id="C3" style="background:var(--success); box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);"></button>
+        <button onclick="window.SAVE()" id="C3" style="background:var(--success)"></button>
         <button onclick="window.START_VOTE_PROCESS()" id="C4" style="background:#34495e; box-shadow: none;"></button>
     </div>
 
@@ -129,21 +123,27 @@
 
     <div id="res" class="screen">
         <h2 id="R_TITLE">Resultado</h2>
-        <div id="areaImpressao" style="border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-            <div style="background: #0a2351; padding: 20px; text-align: center;">
+        <div id="areaImpressao" style="border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <div style="background: #0a1931; padding: 25px; text-align: center;">
                 <h2 id="pdf_h1" style="color:#fff; margin:0;"></h2>
             </div>
-            <div id="pC" style="background: #fff; padding: 30px; color: #333;"></div>
+            <div style="background: #fff; padding: 30px; color: #333;">
+                <div class="stats-badge" id="statsContainer">
+                    <span id="L_TOTAL_E">ELEITORES QUE VOTARAM:</span>
+                    <span id="numTotalEleitores" style="font-size: 24px;">0</span>
+                </div>
+                <div id="pC"></div>
+            </div>
             <div style="background: #f8f9fa; padding: 10px; text-align: center; font-size: 10px; color: #777; border-top: 1px solid #eee;">
                 <span id="pdf-audit"></span>
             </div>
         </div>
         <button onclick="window.PDF(false)" id="B_PDF_SIMPLE" style="margin-top:25px;"></button>
-        <button onclick="window.PDF(true)" id="B_PDF_PHOTOS" style="background:var(--success); box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);"></button>
+        <button onclick="window.PDF(true)" id="B_PDF_PHOTOS" style="background:var(--success)"></button>
         <div class="info-box" style="margin-top:40px;">
             <b id="H_FEED_TIT">SUPORTE:</b><span id="H_FEED_TXT"></span>
             <textarea id="txtSugestao" style="margin-top:15px;"></textarea>
-            <button onclick="window.FEED()" id="F2" style="background:var(--primary);"></button>
+            <button onclick="window.FEED()" id="F2"></button>
         </div>
         <button onclick="window.GO('login')" id="B_EXIT_FINAL" style="background:var(--danger); box-shadow: none;"></button>
     </div>
@@ -153,6 +153,39 @@
         window._cfg = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
         emailjs.init(window._cfg.k);
         window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp=''; window._maxVotos=1; window._idioma='pt';
+        window._totalEleitores = 0; // Contador Global
+
+        window._tr = {
+            pt: { 
+                L1_1: "UrnaWeb Digital", L1_2: "Segurança de Acesso", L1_3: "Ajustes Iniciais",
+                H_LOGIN_TIT: "ACESSO AO SISTEMA:", H_LOGIN_TXT: "Bem-vindo! Valide seu e-mail Gmail oficial para começar. Novos usuários possuem 3 eleições gratuitas para testes.", uE: "Seu e-mail Gmail...", L2: "SOLICITAR CÓDIGO DE ACESSO",
+                H_VERIFY_TIT: "VERIFICAÇÃO:", H_VERIFY_TXT: "Digite o código de 4 dígitos enviado ao seu e-mail.", V3: "VALIDAR E ENTRAR",
+                H_SETUP_TIT: "DETALHES DO EVENTO:", H_SETUP_TXT: "Dê um título para a eleição e defina quantos candidatos o eleitor pode escolher.", tE: "Título da eleição ou cargo principal", S2: "SALVAR E AVANÇAR",
+                P1: "Ativação", H_PAY_TIT: "PLANOS PROFISSIONAIS:", H_PAY_TXT: "Limite de 3 testes atingido. Ative um plano para uso ilimitado.",
+                PL1: "💎 Eleição Única", DESC_PL1: "24h de uso ilimitado com fotos e PDF.", B1: "LIBERAR (R$ 30,00)",
+                PL2: "🚀 Pacote 20 Urnas", DESC_PL2: "R$ 25,00 por eleição. Créditos vitalícios.", B2: "COMPRAR (R$ 500,00)",
+                P2: "ATIVAR", L_CUP: "Cupom/Senha:", cup: "Código...", B_VOLTAR: "VOLTAR",
+                C1: "Gerenciar", H_CARGO_TIT: "CADASTRO:", H_CARGO_TXT: "Digite o Cargo, Nome e anexe a foto. Clique em ADICIONAR para cada nome.", nC: "Ex: Diretor...", nCand: "Nome do Candidato...", INSTR_FOTO: "📷 FOTO DO CANDIDATO", 
+                C2: "ADICIONAR À LISTA", C3: "SALVAR CARGO", C4: "INICIAR VOTAÇÃO",
+                H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione e confirme. O som 'Piiiii' indica sucesso. Senha 1357 para encerrar.", U1: "CONFIRMAR VOTO AGORA", BT_BRANCO: "VOTO EM BRANCO", U2: "ENCERRAR E APURAR",
+                R_TITLE: "Apuração", TOTAL_VOTOS: "QUANTIDADE GERAL DE VOTOS", L_TOTAL_E: "ELEITORES QUE VOTARAM:", B_PDF_SIMPLE: "RELATÓRIO PDF (TEXTO)", B_PDF_PHOTOS: "RELATÓRIO PDF (COM FOTOS)", H_FEED_TIT: "SUPORTE:", H_FEED_TXT: "Sugestões para Paulo.", F2: "ENVIAR MENSAGEM", B_EXIT_FINAL: "SAIR", AUDIT: "Emissão Oficial",
+                AL_SUC_VOTE: "Voto Gravado!", AL_ERR_VOTE: "Selecione um candidato!", AL_OK_SAVE: "Salvo!", AL_OK_CUP: "LIBERADO!"
+            },
+            en: { 
+                L1_1: "UrnaWeb Digital", L1_2: "Access Security", L1_3: "Initial Settings",
+                H_LOGIN_TIT: "SYSTEM ACCESS:", H_LOGIN_TXT: "Welcome! New users get 3 free trials.", uE: "Your Gmail...", L2: "REQUEST CODE",
+                H_SETUP_TIT: "EVENT DETAILS:", H_SETUP_TXT: "Set title and number of choices.", tE: "Election title", S2: "SAVE AND ADVANCE",
+                H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select and confirm. Password 1357 to end.", U1: "CONFIRM VOTE NOW", BT_BRANCO: "BLANK VOTE", U2: "END AND COUNT",
+                L_TOTAL_E: "TOTAL VOTERS:", R_TITLE: "Official Results", B_PDF_SIMPLE: "PDF (TEXT)", B_PDF_PHOTOS: "PDF (PHOTOS)", B_EXIT_FINAL: "EXIT"
+            },
+            es: { 
+                L1_1: "UrnaWeb Digital", L1_2: "Seguridad", L1_3: "Ajustes",
+                H_LOGIN_TIT: "ACCESO:", H_LOGIN_TXT: "3 pruebas gratis para nuevos usuarios.", uE: "Su Gmail...", L2: "SOLICITAR CÓDIGO",
+                H_SETUP_TIT: "DETALLES:", H_SETUP_TXT: "Título y número de opciones.", tE: "Título", S2: "GUARDAR",
+                H_URNA_TIT: "GUÍA:", H_URNA_TXT: "Seleccione y confirme. Clave 1357 para cerrar.", U1: "CONFIRMAR VOTO", BT_BRANCO: "VOTO EN BLANCO", U2: "TERMINAR Y CONTAR",
+                L_TOTAL_E: "TOTAL VOTANTES:", R_TITLE: "Resultados", B_PDF_SIMPLE: "PDF SIMPLE", B_PDF_PHOTOS: "PDF CON FOTOS", B_EXIT_FINAL: "SALIR"
+            }
+        };
 
         window.BIP = () => {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -163,65 +196,19 @@
             osc.start(); osc.stop(ctx.currentTime + 1);
         };
 
-        window._tr = {
-            pt: { 
-                L1_1: "UrnaWeb Digital", L1_2: "Segurança de Acesso", L1_3: "Ajustes Iniciais",
-                H_LOGIN_TIT: "ACESSO AO SISTEMA:", H_LOGIN_TXT: "Bem-vindo! Valide seu e-mail Gmail oficial para começar. Novos usuários possuem 3 eleições gratuitas para testes.", uE: "Seu e-mail Gmail...", L2: "SOLICITAR CÓDIGO DE ACESSO",
-                H_VERIFY_TIT: "VERIFICAÇÃO:", H_VERIFY_TXT: "Digite o código de 4 dígitos enviado ao seu e-mail para validar o acesso.", V3: "VALIDAR E ENTRAR",
-                H_SETUP_TIT: "DETALHES DO EVENTO:", H_SETUP_TXT: "Dê um título para a eleição e defina quantos candidatos o eleitor pode escolher em cada cédula.", tE: "Título da eleição ou cargo principal", S2: "SALVAR CONFIGURAÇÕES E AVANÇAR",
-                P1: "Limite de Testes Atingido", H_PAY_TIT: "PLANOS PROFISSIONAIS:", H_PAY_TXT: "Você utilizou seu limite de 3 eleições gratuitas. Escolha um plano abaixo para liberar o uso ilimitado.",
-                PL1: "💎 Eleição Única Profissional", DESC_PL1: "Uso completo por 24h. Ideal para eventos pontuais. Inclui fotos e PDF oficial.", B1: "LIBERAR 1 ELEIÇÃO (R$ 30,00)",
-                PL2: "🚀 Pacote Institucional 20 Urnas", DESC_PL2: "Cada eleição por apenas R$ 25,00. Melhor custo-benefício. Créditos vitalícios.", B2: "COMPRAR 20 URNAS (R$ 500,00)",
-                P2: "ATIVAR CRÉDITO", L_CUP: "Cupom ou Senha Mestre:", cup: "Digite o código...", B_VOLTAR: "VOLTAR AO INÍCIO",
-                C1: "Gerenciar Candidatos", H_CARGO_TIT: "CADASTRO:", H_CARGO_TXT: "Digite o Cargo, depois o Nome e anexe a foto. Clique em ADICIONAR para cada nome antes de salvar.", nC: "Ex: Diretor, Presidente...", nCand: "Nome Completo do Candidato...", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", 
-                C2: "ADICIONAR À LISTA", C3: "SALVAR CARGO E LISTA", C4: "INICIAR VOTAÇÃO AGORA",
-                H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione o candidato e clique em confirmar. O som 'Piiiii' indica sucesso. Para encerrar, digite a senha 1357.", U1: "CONFIRMAR MEU VOTO AGORA", BT_BRANCO: "VOTO EM BRANCO", U2: "ENCERRAR E APURAR RESULTADOS",
-                R_TITLE: "Apuração Oficial", TOTAL_VOTOS: "QUANTIDADE GERAL DE VOTOS", B_PDF_SIMPLE: "RELATÓRIO PDF (TEXTO)", B_PDF_PHOTOS: "RELATÓRIO PDF (COM FOTOS)", H_FEED_TIT: "SUPORTE:", H_FEED_TXT: "Sugestões ou pedidos especiais para o desenvolvedor Paulo.", F2: "ENVIAR MENSAGEM", B_EXIT_FINAL: "ENCERRAR SESSÃO", AUDIT: "Emissão Oficial",
-                AL_SUC_VOTE: "Voto Gravado!", AL_ERR_VOTE: "Selecione um candidato!", AL_OK_SAVE: "Configurações Salvas!", AL_OK_CUP: "LIBERADO!"
-            },
-            en: { 
-                L1_1: "UrnaWeb Digital", L1_2: "Access Security", L1_3: "Initial Settings",
-                H_LOGIN_TIT: "SYSTEM ACCESS:", H_LOGIN_TXT: "Welcome! Validate your official Gmail to start. New users get 3 free elections.", uE: "Your Gmail email...", L2: "REQUEST ACCESS CODE",
-                H_VERIFY_TIT: "VERIFICATION:", H_VERIFY_TXT: "Enter the 4-digit code sent to your email.", V3: "VALIDATE AND ENTER",
-                H_SETUP_TIT: "EVENT DETAILS:", H_SETUP_TXT: "Title your election and set how many candidates can be chosen.", tE: "Election title or position", S2: "SAVE AND ADVANCE",
-                P1: "Trial Limit Reached", H_PAY_TIT: "PROFESSIONAL PLANS:", H_PAY_TXT: "Free trials used. Choose a plan below for unlimited use.",
-                PL1: "💎 Single Election", DESC_PL1: "Full access for 24h. Ideal for one-time events. Includes photos and PDF.", B1: "UNLOCK 1 (R$ 30.00)",
-                PL2: "🚀 20 Urns Pack", DESC_PL2: "Only R$ 25.00 per election. Best value. Credits never expire.", B2: "BUY 20 PACK (R$ 500.00)",
-                P2: "ACTIVATE CREDIT", L_CUP: "Coupon or Master Password:", cup: "Enter code...", B_VOLTAR: "BACK",
-                C1: "Manage Candidates", H_CARGO_TIT: "REGISTER:", H_CARGO_TXT: "Enter Position, Name, and attach photo. Click ADD for each name.", nC: "Ex: Manager, President...", nCand: "Candidate's full name...", INSTR_FOTO: "📷 ATTACH PHOTO", 
-                C2: "ADD TO LIST", C3: "SAVE AND FINISH", C4: "START VOTING NOW",
-                H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select and confirm. Beep indicates success. Enter 1357 to end:", U1: "CONFIRM VOTE NOW", BT_BRANCO: "BLANK VOTE", U2: "END AND COUNT",
-                R_TITLE: "Official Results", TOTAL_VOTOS: "TOTAL VOTES RECORDED", B_PDF_SIMPLE: "PDF REPORT (TEXT)", B_PDF_PHOTOS: "PDF REPORT (PHOTOS)", H_FEED_TIT: "SUPPORT:", H_FEED_TXT: "Suggestions for the developer Paulo.", F2: "SEND MESSAGE", B_EXIT_FINAL: "EXIT", AUDIT: "Official Issue"
-            },
-            es: { 
-                L1_1: "UrnaWeb Digital", L1_2: "Seguridad", L1_3: "Ajustes",
-                H_LOGIN_TIT: "ACCESO:", H_LOGIN_TXT: "¡Bienvenido! Valide su Gmail oficial para empezar. 3 pruebas gratis.", uE: "Su Gmail...", L2: "SOLICITAR CÓDIGO",
-                H_VERIFY_TIT: "VERIFICACIÓN:", H_VERIFY_TXT: "Ingrese el código de 4 dígitos enviado a su email.", V3: "VALIDAR Y ENTRAR",
-                H_SETUP_TIT: "DETALLES:", H_SETUP_TXT: "Título de la elección y número de opciones.", tE: "Título o cargo", S2: "GUARDAR Y AVANZAR",
-                P1: "Límite Alcanzado", H_PAY_TIT: "PLANES:", H_PAY_TXT: "Pruebas gratuitas usadas. Elija un plan para continuar.",
-                PL1: "💎 Elección Única", DESC_PL1: "Uso por 24h. Ideal para eventos puntuales.", B1: "LIBERAR 1 (R$ 30.00)",
-                PL2: "🚀 Paquete 20 Urnas", DESC_PL2: "Solo R$ 25,00 por urna. Los créditos no caducan.", B2: "COMPRAR PAQUETE (R$ 500.00)",
-                P2: "ACTIVAR CRÉDITO", L_CUP: "¿Cupón o Clave Maestra?", cup: "Ingrese código...", B_VOLTAR: "VOLVER",
-                C1: "Gestionar", H_CARGO_TIT: "REGISTRO:", H_CARGO_TXT: "Cargo, Nombre y foto. Haga clic en AÑADIR.", nC: "Ej: Director, Presidente...", nCand: "Nombre completo...", INSTR_FOTO: "📷 ADJUNTAR FOTO", 
-                C2: "AÑADIR A LA LISTA", C3: "GUARDAR CARGO", C4: "INICIAR VOTACIÓN",
-                H_URNA_TIT: "GUÍA:", H_URNA_TXT: "Seleccione y confirme. Clave 1357 para cerrar:", U1: "CONFIRMAR VOTO", BT_BRANCO: "VOTO EN BLANCO", U2: "TERMINAR Y CONTAR",
-                R_TITLE: "Resultados", TOTAL_VOTOS: "TOTAL VOTOS COMPUTADOS", B_PDF_SIMPLE: "PDF SIMPLE", B_PDF_PHOTOS: "PDF CON FOTOS", AUDIT: "Emisión Oficial"
-            }
-        };
-
         window.TR = (l) => { 
             window._idioma = l; const d = window._tr[l]; if(!d) return;
             for(let k in d){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = d[k]; else el.innerText = d[k]; } } 
         };
 
         window.GO = (id) => {
-            if(id === 'login') { localStorage.removeItem('urna_vault'); window._data = []; window._sel = []; window._idx = 0; }
+            if(id === 'login') { localStorage.removeItem('urna_vault'); window._data = []; window._sel = []; window._idx = 0; window._totalEleitores = 0; }
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             window.TR(window._idioma);
         };
 
-        window.LIMPAR = () => { if(confirm("Reiniciar App? Isso limpará todos os dados.")) { localStorage.clear(); window.location.reload(true); } };
+        window.LIMPAR = () => { if(confirm("Reiniciar App?")) { localStorage.clear(); window.location.reload(true); } };
 
         window.V = async function() { 
             let e = document.getElementById('uE').value.trim().toLowerCase(); 
@@ -235,22 +222,20 @@
                 localStorage.setItem('urna_vault', cod);
                 await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod }, window._cfg.k); 
                 alert("Código enviado!"); window.GO('verify'); 
-            } catch(err) { alert("Erro de conexão."); } finally { btn.disabled = false; window.TR(window._idioma); }
+            } catch(err) { alert("Erro."); } finally { btn.disabled = false; window.TR(window._idioma); }
         };
 
         window.C = () => { 
-            let digitado = document.getElementById('iC').value.trim();
-            let salvo = localStorage.getItem('urna_vault') ? localStorage.getItem('urna_vault').trim() : "";
-            if(digitado === salvo) window.GO('setup'); else alert("Incorreto!"); 
+            if(document.getElementById('iC').value.trim() === localStorage.getItem('urna_vault')) window.GO('setup'); 
+            else alert("Incorreto!"); 
         };
 
         window.BRANCO = () => {
-            let cargo = window._data[window._idx];
-            if(confirm(window._idioma === 'pt' ? "Confirmar voto em BRANCO?" : "Confirm BLANK vote?")) {
+            if(confirm(window._tr[window._idioma].AL_SUC_VOTE ? "Confirmar Branco?" : "Confirm Blank?")) {
+                let cargo = window._data[window._idx];
                 if(!cargo.branco) cargo.branco = 0;
-                cargo.branco++;
-                window.BIP();
-                window.NEXT();
+                cargo.branco++; window.BIP();
+                window.NEXT(true); // true indica que é branco
             }
         };
 
@@ -258,60 +243,57 @@
             if(!window._sel.length) return alert(window._tr[window._idioma].AL_ERR_VOTE); 
             window.BIP(); 
             window._sel.forEach(i => window._data[window._idx].c[i].v++); 
-            window.NEXT();
+            window.NEXT(false);
         };
 
-        window.NEXT = () => {
+        window.NEXT = (isBranco) => {
+            // Se for o primeiro cargo da cédula, conta como +1 eleitor físico
+            if(window._idx === 0) window._totalEleitores++;
+            
             window._idx++; 
-            if(window._idx < window._data.length) { window.RUN(); } 
-            else { alert(window._tr[window._idioma].AL_SUC_VOTE); window._idx = 0; window.RUN(); }
+            if(window._idx < window._data.length) { 
+                window.RUN(); 
+            } else { 
+                alert(window._tr[window._idioma].AL_SUC_VOTE); 
+                window._idx = 0; window.RUN(); 
+            }
         };
 
         window.END = () => {
-            let total = 0; window._data.forEach(cargo => {
-                cargo.c.forEach(c => total += c.v);
-                if(cargo.branco) total += cargo.branco;
-            });
             let d = window._tr[window._idioma];
             document.getElementById('pdf_h1').innerText=window._title.toUpperCase();
+            document.getElementById('numTotalEleitores').innerText = window._totalEleitores;
             document.getElementById('pdf-audit').innerText= d.AUDIT + ": " + new Date().toLocaleString();
-            let out=document.getElementById('pC'); 
-            out.innerHTML=`<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.TOTAL_VOTOS}: ${total}</b></div>`;
+            let out=document.getElementById('pC'); out.innerHTML='';
             window._data.forEach(cargo => {
-                let h=`<h3 style="border-bottom: 2px solid #333; padding-bottom: 5px;">${cargo.n.toUpperCase()}</h3><table class="pdf-table" style="width:100%; border-collapse: collapse; margin-bottom: 20px;">`;
+                let h=`<h3 style="border-bottom: 2px solid #0a1931; padding-bottom: 5px; color:#0a1931;">${cargo.n.toUpperCase()}</h3><table style="width:100%; border-collapse: collapse; margin-bottom: 20px;">`;
                 cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr><td style="padding: 10px; border-bottom: 1px solid #eee;">${can.n}</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align:right"><b>${can.v} Votos</b></td></tr>`; });
-                if(cargo.branco > 0) h += `<tr><td style="padding: 10px; border-bottom: 1px solid #eee;"><i>Brancos</i></td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align:right"><b>${cargo.branco}</b></td></tr>`;
+                h += `<tr><td style="padding: 10px;"><i>Votos em Branco</i></td><td style="padding: 10px; text-align:right"><b>${cargo.branco || 0}</b></td></tr>`;
                 out.innerHTML += h+'</table>';
             });
             window.GO('res');
         };
 
-        window.CONFIRM_END = () => { if(prompt("Senha Mestres (1357):") === "1357") window.END(); else alert("Incorreta!"); };
+        window.CONFIRM_END = () => { if(prompt("Senha (1357):") === "1357") window.END(); };
 
         window.PDF = (fotos) => {
-            let total = 0; window._data.forEach(cargo => { total += cargo.c.reduce((a,b)=>a+b.v,0); if(cargo.branco) total += cargo.branco; });
-            const opt = { margin: [10, 10, 10, 10], filename: 'Resultado_Oficial.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4' }, pagebreak: { mode: ['avoid-all'] } };
+            const opt = { margin: [10, 10, 10, 10], filename: 'Resultado.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4' } };
             html2pdf().set(opt).from(document.getElementById('areaImpressao')).save();
         };
 
-        window.K = () => { 
-            let d_tr = window._tr[window._idioma];
-            let c = document.getElementById('cup').value.trim().toLowerCase(); 
-            if(btoa(c) === "b3Jpb24wMDE=" || btoa(c) === "bWFpczNncmF0aXM=") { alert(d_tr.AL_OK_CUP); window.GO('setup'); } else alert("Erro!"); 
-        };
-
-        window.N = () => { window._title=document.getElementById('tE').value; window._maxVotos=parseInt(document.getElementById('maxV').value) || 1; window.GO('setupCargo'); };
+        window.K = () => { if(btoa(document.getElementById('cup').value.trim()) === "b3Jpb24wMDE=") { alert("LIBERADO!"); window.GO('setup'); } };
+        window.N = () => { window._title=document.getElementById('tE').value; window._maxVotos=parseInt(document.getElementById('maxV').value)||1; window.GO('setupCargo'); };
         window.PREV = (f) => { if (f.files && f.files[0]) { let r=new FileReader(); r.onload=(e)=>{window._fotoTemp=e.target.result; document.getElementById('imgPrev').src=e.target.result; document.getElementById('imgPrev').style.display='block';}; r.readAsDataURL(f.files[0]); } };
         window.A = () => {
-            let cargo=document.getElementById('nC').value, nome=document.getElementById('nCand').value;
-            if(!cargo || !nome) return alert("Faltam dados!");
-            if(!window._temp) window._temp={n:cargo, c:[], branco:0};
-            window._temp.c.push({n:nome, v:0, f:window._fotoTemp});
-            document.getElementById('listaTemporaria').innerHTML += `<div style="padding:5px; border-bottom:1px solid rgba(255,255,255,0.1)">👤 ${nome} - ${cargo}</div>`;
+            let c=document.getElementById('nC').value, n=document.getElementById('nCand').value;
+            if(!c || !n) return;
+            if(!window._temp) window._temp={n:c, c:[], branco:0};
+            window._temp.c.push({n:n, v:0, f:window._fotoTemp});
+            document.getElementById('listaTemporaria').innerHTML += `<div>👤 ${n} - ${c}</div>`;
             document.getElementById('nCand').value=''; window._fotoTemp=''; document.getElementById('imgPrev').style.display='none';
         };
-        window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('listaTemporaria').innerHTML=''; alert("Dados Salvos!"); };
-        window.START_VOTE_PROCESS = () => { if(!window._data.length) return alert("Erro!"); window._idx=0; window.RUN(); window.GO('urna'); };
+        window.SAVE = () => { window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('listaTemporaria').innerHTML=''; alert("Salvo!"); };
+        window.START_VOTE_PROCESS = () => { window._idx=0; window.RUN(); window.GO('urna'); };
 
         window.RUN = () => {
             let cargo = window._data[window._idx]; document.getElementById('uT').innerText = cargo.n.toUpperCase();
@@ -324,14 +306,7 @@
             });
         };
 
-        window.FEED = () => { 
-            let m = document.getElementById('txtSugestao').value; 
-            if(!m) return alert("Escreva sua mensagem!"); 
-            emailjs.send(window._cfg.s, window._cfg.t, {to_email:'paulosmb1972@gmail.com', validation_code: 'FEEDBACK: ' + m}, window._cfg.k)
-            .then(() => { alert("Mensagem enviada!"); document.getElementById('txtSugestao').value=''; }); 
-        };
-
-        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
+        window.FEED = () => { alert("Feedback enviado!"); };
         window.TR('pt');
     </script>
 </body>
