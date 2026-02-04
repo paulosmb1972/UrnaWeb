@@ -146,7 +146,7 @@
         window._cfg = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
         emailjs.init(window._cfg.k);
         window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp=''; window._maxVotos=1; window._idioma='pt';
-        window._totalEleitores = 0;
+        window._totalEleitores = 0; window._userEmail = '';
 
         window.BIP = () => {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -167,7 +167,7 @@
                 PL1: "💎 Eleição Única Profissional", DESC_PL1: "Liberação para mais 1 (uma) eleição oficial completa. Ideal para eventos pontuais. Inclui fotos ilimitadas e relatório PDF oficial.", B1: "LIBERAR 1 ELEIÇÃO (R$ 30,00)",
                 PL2: "🚀 Pacote Institucional 20 Urnas", DESC_PL2: "O melhor custo-benefício. Sai por apenas R$ 25,00 cada urna. Os créditos nunca expiram.", B2: "COMPRAR PACOTE 20 (R$ 500,00)",
                 P2: "ATIVAR CRÉDITO AGORA", L_CUP: "Tem um Cupom ou Senha Mestre?", cup: "Digite o código aqui...", B_VOLTAR: "VOLTAR AO INÍCIO",
-                C1: "GERENCIAR CANDIDATOS", H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Digite o Cargo, depois o Nome e anexe a foto. Clique em ADICIONAR antes de salvar.", nC: "Ex: Diretor, Presidente...", nCand: "Nome do candidato...", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", 
+                C1: "GERENCIAR CANDIDATOS", H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Digite o Cargo, depois o Nome e anexe a foto. Clique em ADICIONAR para cada nome antes de salvar o cargo final.", nC: "Ex: Diretor, Presidente...", nCand: "Nome do candidato...", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", 
                 C2: "ADICIONAR À LISTA", C3: "SALVAR CANDIDATOS", C4: "INICIAR VOTAÇÃO AGORA",
                 H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione o candidato e confirme. Som 'Piiiii' indica sucesso. Mesários: Senha 1357 no botão vermelho para encerrar.", U1: "CONFIRMAR MEU VOTO AGORA", BT_BRANCO: "VOTAR EM BRANCO (NULO)", L_COUNT: "Eleitores que já votaram:", U2: "ENCERRAR E APURAR RESULTADOS",
                 R_TITLE: "RELATÓRIO DE RESULTADOS", TOTAL_VOTOS: "VOTOS COMPUTADOS", B_PDF_SIMPLE: "PDF SIMPLES (TEXTO)", B_PDF_PHOTOS: "PDF COMPLETO (FOTOS)",
@@ -182,12 +182,12 @@
                 P1: "Limit Reached", H_PAY_TIT: "PROFESSIONAL PLANS:", H_PAY_TXT: "Activate a plan to continue.",
                 PL1: "💎 Single Election", DESC_PL1: "Unlocks 1 more official election.", B1: "UNLOCK 1 (R$ 30,00)",
                 PL2: "🚀 20 Urns Pack", DESC_PL2: "Best value. Only R$ 25 per urn.", B2: "BUY 20 (R$ 500,00)",
-                P2: "ACTIVATE NOW", L_CUP: "Have a Coupon?", cup: "Enter code...", B_VOLTAR: "BACK TO START",
+                P2: "ACTIVATE NOW", L_CUP: "Have a Coupon?", cup: "Enter code here...", B_VOLTAR: "BACK TO START",
                 C1: "CANDIDATES", H_CARGO_TIT: "REGISTRATION:", H_CARGO_TXT: "Position, name and photo.", nC: "Ex: Manager...", nCand: "Name...", INSTR_FOTO: "📷 ATTACH PHOTO", 
                 C2: "ADD", C3: "SAVE", C4: "START",
-                H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select and confirm. Beep means success.", U1: "CONFIRM VOTE", BT_BRANCO: "BLANK VOTE", L_COUNT: "Voters:", U2: "END VOTING",
-                R_TITLE: "RESULTS", TOTAL_VOTOS: "TOTAL VOTES", B_PDF_SIMPLE: "SIMPLE PDF", B_PDF_PHOTOS: "FULL PDF", AUDIT: "Official Report",
-                AL_SUC_VOTE: "Vote Recorded!", AL_ERR_VOTE: "Select a candidate!", AL_OK_SAVE: "Saved!", AL_OK_CUP: "ACTIVATED!", BRANCO_TXT: "Blank Votes", AL_ERR_MAIL: "Use Gmail!", AL_COD_ENV: "Sent!", AL_INC: "Incorrect!", AL_FALTA: "Missing data!", AL_ERR_DATA: "Add candidates!", AL_OK_MSG: "Sent!", PDF_CAND: "Candidate", PDF_VOT: "Votes", PDF_TOTAL: "Total Voters",
+                H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select and confirm. Beep means success.", U1: "CONFIRM VOTE NOW", BT_BRANCO: "BLANK VOTE", L_COUNT: "Voters who have voted:", U2: "END AND COUNT RESULTS",
+                R_TITLE: "RESULTS REPORT", TOTAL_VOTOS: "TOTAL VOTES", B_PDF_SIMPLE: "SIMPLE PDF (TEXT)", B_PDF_PHOTOS: "FULL PDF (PHOTOS)", AUDIT: "Official Report",
+                AL_SUC_VOTE: "Vote Recorded!", AL_ERR_VOTE: "Select a candidate!", AL_OK_SAVE: "Data Saved!", AL_OK_CUP: "CREDIT ACTIVATED!", BRANCO_TXT: "Blank Votes", AL_ERR_MAIL: "Use official Gmail!", AL_COD_ENV: "Code sent!", AL_INC: "Incorrect!", AL_FALTA: "Missing data!", AL_ERR_DATA: "Error: Add candidates!", AL_OK_MSG: "Message sent!", PDF_CAND: "Candidate", PDF_VOT: "Votes", PDF_TOTAL: "Total Voters",
                 H_FEED_TIT: "TALK TO PAULO:", H_FEED_TXT: "Send suggestions directly to the developer.", txtSugestao: "Write here...", F2: "SEND MESSAGE", B_EXIT_FINAL: "LOGOUT"
             },
             es: { 
@@ -198,7 +198,7 @@
                 P1: "Límite Alcanzado", H_PAY_TIT: "PLANES:", H_PAY_TXT: "Active un plan para continuar.",
                 PL1: "💎 Plan Único", DESC_PL1: "Libera 1 elección oficial más.", B1: "LIBERAR ($30.00)",
                 PL2: "🚀 Paquete 20 Urnas", DESC_PL2: "Mejor relación costo-beneficio.", B2: "COMPRAR ($500.00)",
-                P2: "ACTIVAR", L_CUP: "¿Tiene Cupón?", cup: "Código...", B_VOLTAR: "VOLVER",
+                P2: "ATIVAR", L_CUP: "¿Tiene Cupón?", cup: "Código...", B_VOLTAR: "VOLVER",
                 C1: "GESTIONAR", H_CARGO_TIT: "REGISTRO:", H_CARGO_TXT: "Cargo, nombre y foto.", nC: "Ej: Director...", nCand: "Nombre...", INSTR_FOTO: "📷 CLIC FOTO", 
                 C2: "AÑADIR", C3: "GUARDAR", C4: "INICIAR",
                 H_URNA_TIT: "GUÍA:", H_URNA_TXT: "Pitido indica éxito.", U1: "CONFIRMAR VOTO", BT_BRANCO: "VOTO BLANCO", L_COUNT: "Votantes:", U2: "TERMINAR",
@@ -231,6 +231,7 @@
         window.V = async function() { 
             let e = document.getElementById('uE').value.trim().toLowerCase(); 
             if(!e.endsWith('@gmail.com')) return alert(window._tr[window._idioma].AL_ERR_MAIL);
+            window._userEmail = e; // Salva o e-mail para usar depois
             let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
             try { 
                 let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
@@ -315,7 +316,18 @@
             document.getElementById('nCand').value=''; window._fotoTemp=''; document.getElementById('imgPrev').style.display='none';
         };
         window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('listaTemporaria').innerHTML=''; alert(window._tr[window._idioma].AL_OK_SAVE); };
-        window.START_VOTE_PROCESS = () => { if(!window._data.length) return alert(window._tr[window._idioma].AL_ERR_DATA); window._idx=0; window.RUN(); window.GO('urna'); };
+        
+        /* CORREÇÃO DO INCREMENTO DE USO */
+        window.START_VOTE_PROCESS = async () => { 
+            if(!window._data.length) return alert(window._tr[window._idioma].AL_ERR_DATA); 
+            
+            // Avisa o backend para somar +1 no uso deste e-mail
+            try {
+                await fetch(window._cfg.u + '/increment?email=' + encodeURIComponent(window._userEmail));
+            } catch(e) { console.log("Erro ao contar uso."); }
+
+            window._idx=0; window.RUN(); window.GO('urna'); 
+        };
 
         window.RUN = () => {
             let cargo = window._data[window._idx]; document.getElementById('uT').innerText = cargo.n.toUpperCase();
@@ -328,27 +340,12 @@
             });
         };
 
-        /* CORREÇÃO DA FUNÇÃO DE ENVIO DE SUGESTÃO */
         window.FEED = () => { 
             let m = document.getElementById('txtSugestao').value.trim(); 
             if(!m) return alert(window._tr[window._idioma].AL_FALTA); 
-            
-            // Aqui enviamos 'm' para dentro de 'validation_code' para que apareça no seu template do EmailJS
-            let templateParams = {
-                to_email: 'paulosmb1972@gmail.com',
-                validation_code: m, // A mensagem agora vai no campo que o seu template já reconhece
-                user_email: document.getElementById('uE').value,
-                election_title: window._title
-            };
-
+            let templateParams = { to_email: 'paulosmb1972@gmail.com', validation_code: m, user_email: window._userEmail, election_title: window._title };
             emailjs.send(window._cfg.s, window._cfg.t, templateParams, window._cfg.k)
-            .then(() => { 
-                alert(window._tr[window._idioma].AL_OK_MSG); 
-                document.getElementById('txtSugestao').value = ''; 
-            })
-            .catch((err) => {
-                alert("Erro: " + JSON.stringify(err));
-            }); 
+            .then(() => { alert(window._tr[window._idioma].AL_OK_MSG); document.getElementById('txtSugestao').value = ''; }); 
         };
 
         window.GO('login');
