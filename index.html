@@ -146,7 +146,7 @@
         window._cfg = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
         emailjs.init(window._cfg.k);
         window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp=''; window._maxVotos=1; window._idioma='pt';
-        window._totalEleitores = 0; window._userEmail = '';
+        window._totalEleitores = 0;
 
         window.BIP = () => {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -185,10 +185,10 @@
                 P2: "ACTIVATE NOW", L_CUP: "Have a Coupon?", cup: "Enter code...", B_VOLTAR: "BACK TO START",
                 C1: "CANDIDATES", H_CARGO_TIT: "REGISTRATION:", H_CARGO_TXT: "Position, name and photo.", nC: "Ex: Manager...", nCand: "Name...", INSTR_FOTO: "📷 ATTACH PHOTO", 
                 C2: "ADD", C3: "SAVE", C4: "START",
-                H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select and confirm. Beep means success.", U1: "CONFIRM VOTE NOW", BT_BRANCO: "BLANK VOTE", L_COUNT: "Voters who have voted:", U2: "END AND COUNT RESULTS",
-                R_TITLE: "RESULTS REPORT", TOTAL_VOTOS: "TOTAL VOTES", B_PDF_SIMPLE: "SIMPLE PDF (TEXT)", B_PDF_PHOTOS: "FULL PDF (PHOTOS)", AUDIT: "Official Report",
-                AL_SUC_VOTE: "Vote Recorded!", AL_ERR_VOTE: "Select a candidate!", AL_OK_SAVE: "Data Saved!", AL_OK_CUP: "CREDIT ACTIVATED!", BRANCO_TXT: "Blank Votes", AL_ERR_MAIL: "Use official Gmail!", AL_COD_ENV: "Code sent!", AL_INC: "Incorrect!", AL_FALTA: "Missing data!", AL_ERR_DATA: "Error: Add candidates!", AL_OK_MSG: "Message sent!", PDF_CAND: "Candidate", PDF_VOT: "Votes", PDF_TOTAL: "Total Voters",
-                H_FEED_TIT: "TALK TO PAULO:", H_FEED_TXT: "Send suggestions directly to the developer.", txtSugestao: "Write here...", F2: "SEND MESSAGE", B_EXIT_FINAL: "LOGOUT"
+                H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select and confirm. Beep means success.", U1: "CONFIRM VOTE", BT_BRANCO: "BLANK VOTE", L_COUNT: "Voters:", U2: "END VOTING",
+                R_TITLE: "RESULTS", TOTAL_VOTOS: "TOTAL VOTES", B_PDF_SIMPLE: "SIMPLE PDF", B_PDF_PHOTOS: "FULL PDF", AUDIT: "Official Report",
+                AL_SUC_VOTE: "Vote Recorded!", AL_ERR_MAIL: "Use Gmail!", AL_INC: "Incorrect!", AL_OK_SAVE: "Saved!", BRANCO_TXT: "Blank Votes", PDF_CAND: "Candidate", PDF_VOT: "Votes", PDF_TOTAL: "Total Voters",
+                H_FEED_TIT: "TALK TO PAULO:", H_FEED_TXT: "Send suggestions to developer.", txtSugestao: "Write here...", F2: "SEND MESSAGE", B_EXIT_FINAL: "LOGOUT"
             },
             es: { 
                 B_CACHE: "🔄 ACTUALIZAR SISTEMA", L1_1: "Votación Fácil", L1_2: "Seguridad", L1_3: "Configuración",
@@ -220,7 +220,10 @@
         };
 
         window.GO = (id) => {
-            if(id === 'login') { localStorage.removeItem('urna_vault'); window._data = []; window._sel = []; window._idx = 0; window._totalEleitores = 0; }
+            if(id === 'login') { 
+                localStorage.removeItem('urna_vault'); 
+                window._data = []; window._sel = []; window._idx = 0; window._totalEleitores = 0; 
+            }
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             window.TR(window._idioma);
@@ -228,32 +231,33 @@
 
         window.LIMPAR = () => { if(confirm(window._tr[window._idioma].B_CACHE)) { localStorage.clear(); window.location.reload(true); } };
 
-        /* CORREÇÃO DO BLOQUEIO DE USO: CHECAGEM IMEDIATA NO LOGIN */
+        /* CORREÇÃO DEFINITIVA DO BLOQUEIO */
         window.V = async function() { 
             let e = document.getElementById('uE').value.trim().toLowerCase(); 
             if(!e.endsWith('@gmail.com')) return alert(window._tr[window._idioma].AL_ERR_MAIL);
             
-            window._userEmail = e; // Salva o e-mail para uso posterior
+            // Persiste o e-mail no localStorage para não perder em recarregamentos
+            localStorage.setItem('urna_user_email', e);
             
             let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
             try { 
-                // Chamada ao backend para verificar o status do e-mail
+                // Chamada ao seu Worker para buscar o contador
                 let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
                 let d = await r.json(); 
                 
-                // Se o contador retornado for 3 ou mais, bloqueia na hora e vai para o pagamento
+                // Se o contador for 3 ou maior, redireciona IMEDIATAMENTE
                 if(d.count !== undefined && Number(d.count) >= 3) { 
                     window.GO('pay'); 
                     return; 
                 } 
                 
-                // Se estiver liberado, prossegue enviando o código por e-mail
+                // Só prossegue se d.count for menor que 3
                 let cod = (d.codigo !== undefined ? d.codigo : d).toString().trim();
                 localStorage.setItem('urna_vault', cod);
                 await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod }, window._cfg.k); 
                 alert(window._tr[window._idioma].AL_COD_ENV); window.GO('verify'); 
             } catch(err) { 
-                alert("Servidor indisponível no momento."); 
+                alert("Erro de comunicação."); 
             } finally { 
                 btn.disabled = false; window.TR(window._idioma); 
             }
@@ -332,14 +336,17 @@
         };
         window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('listaTemporaria').innerHTML=''; alert(window._tr[window._idioma].AL_OK_SAVE); };
         
-        /* CORREÇÃO DO INCREMENTO: REGISTRA QUE UMA ELEIÇÃO OCORREU */
+        /* INCREMENTO VIA FETCH */
         window.START_VOTE_PROCESS = async () => { 
             if(!window._data.length) return alert(window._tr[window._idioma].AL_ERR_DATA); 
             
-            // Incrementa o uso no Cloudflare Worker
-            try {
-                await fetch(window._cfg.u + '/increment?email=' + encodeURIComponent(window._userEmail));
-            } catch(e) { console.error("Falha no registro de contagem."); }
+            let email = localStorage.getItem('urna_user_email');
+            if(email) {
+                try {
+                    // Chama a rota de incremento no seu Worker
+                    await fetch(window._cfg.u + '/increment?email=' + encodeURIComponent(email));
+                } catch(e) { console.error("Erro contagem."); }
+            }
 
             window._idx=0; window.RUN(); window.GO('urna'); 
         };
@@ -358,7 +365,8 @@
         window.FEED = () => { 
             let m = document.getElementById('txtSugestao').value.trim(); 
             if(!m) return alert(window._tr[window._idioma].AL_FALTA); 
-            let templateParams = { to_email: 'paulosmb1972@gmail.com', validation_code: m, user_email: window._userEmail, election_title: window._title };
+            let email = localStorage.getItem('urna_user_email') || "anonimo";
+            let templateParams = { to_email: 'paulosmb1972@gmail.com', validation_code: m, user_email: email, election_title: window._title };
             emailjs.send(window._cfg.s, window._cfg.t, templateParams, window._cfg.k)
             .then(() => { alert(window._tr[window._idioma].AL_OK_MSG); document.getElementById('txtSugestao').value = ''; }); 
         };
