@@ -146,7 +146,7 @@
         window._cfg = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
         emailjs.init(window._cfg.k);
         window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp=''; window._maxVotos=1; window._idioma='pt';
-        window._totalEleitores = 0;
+        window._totalEleitores = 0; window._userEmail = '';
 
         window.BIP = () => {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -185,9 +185,9 @@
                 P2: "ACTIVATE NOW", L_CUP: "Have a Coupon?", cup: "Enter code...", B_VOLTAR: "BACK TO START",
                 C1: "CANDIDATES", H_CARGO_TIT: "REGISTRATION:", H_CARGO_TXT: "Position, name and photo.", nC: "Ex: Manager...", nCand: "Name...", INSTR_FOTO: "📷 ATTACH PHOTO", 
                 C2: "ADD", C3: "SAVE", C4: "START",
-                H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select and confirm. Beep means success.", U1: "CONFIRM VOTE", BT_BRANCO: "BLANK VOTE", L_COUNT: "Voters:", U2: "END VOTING",
-                R_TITLE: "RESULTS", TOTAL_VOTOS: "TOTAL VOTES", B_PDF_SIMPLE: "SIMPLE PDF", B_PDF_PHOTOS: "FULL PDF", AUDIT: "Official Report",
-                AL_SUC_VOTE: "Vote Recorded!", AL_ERR_VOTE: "Select a candidate!", AL_OK_SAVE: "Saved!", AL_OK_CUP: "ACTIVATED!", BRANCO_TXT: "Blank Votes", AL_ERR_MAIL: "Use Gmail!", AL_COD_ENV: "Sent!", AL_INC: "Incorrect!", AL_FALTA: "Missing data!", AL_ERR_DATA: "Add candidates!", AL_OK_MSG: "Sent!", PDF_CAND: "Candidate", PDF_VOT: "Votes", PDF_TOTAL: "Total Voters",
+                H_URNA_TIT: "VOTER GUIDE:", H_URNA_TXT: "Select and confirm. Beep means success.", U1: "CONFIRM VOTE NOW", BT_BRANCO: "BLANK VOTE", L_COUNT: "Voters who have voted:", U2: "END AND COUNT RESULTS",
+                R_TITLE: "RESULTS REPORT", TOTAL_VOTOS: "TOTAL VOTES", B_PDF_SIMPLE: "SIMPLE PDF (TEXT)", B_PDF_PHOTOS: "FULL PDF (PHOTOS)", AUDIT: "Official Report",
+                AL_SUC_VOTE: "Vote Recorded!", AL_ERR_VOTE: "Select a candidate!", AL_OK_SAVE: "Data Saved!", AL_OK_CUP: "CREDIT ACTIVATED!", BRANCO_TXT: "Blank Votes", AL_ERR_MAIL: "Use official Gmail!", AL_COD_ENV: "Code sent!", AL_INC: "Incorrect!", AL_FALTA: "Missing data!", AL_ERR_DATA: "Error: Add candidates!", AL_OK_MSG: "Message sent!", PDF_CAND: "Candidate", PDF_VOT: "Votes", PDF_TOTAL: "Total Voters",
                 H_FEED_TIT: "TALK TO PAULO:", H_FEED_TXT: "Send suggestions directly to the developer.", txtSugestao: "Write here...", F2: "SEND MESSAGE", B_EXIT_FINAL: "LOGOUT"
             },
             es: { 
@@ -201,7 +201,7 @@
                 P2: "ATIVAR", L_CUP: "¿Tiene Cupón?", cup: "Código...", B_VOLTAR: "VOLVER",
                 C1: "GESTIONAR", H_CARGO_TIT: "REGISTRO:", H_CARGO_TXT: "Cargo, nombre y foto.", nC: "Ej: Director...", nCand: "Nombre...", INSTR_FOTO: "📷 CLIC FOTO", 
                 C2: "AÑADIR", C3: "GUARDAR", C4: "INICIAR",
-                H_URNA_TIT: "GUÍA:", H_URNA_TXT: "Pitido indica éxito.", U1: "CONFIRMAR VOTO", BT_BRANCO: "VOTO BLANCO", L_COUNT: "Votantes:", U2: "TERMINAR",
+                H_URNA_TIT: "GUÍA:", H_URNA_TXT: "Pitido indica éxito.", U1: "CONFIRMAR VOTO", BT_BRANCO: "VOTO BLCO", L_COUNT: "Votantes:", U2: "TERMINAR",
                 R_TITLE: "RESULTADOS", TOTAL_VOTOS: "TOTAL VOTOS", B_PDF_SIMPLE: "PDF SIMPLE", B_PDF_PHOTOS: "PDF COMPLETO", AUDIT: "Emisión Oficial",
                 AL_SUC_VOTE: "¡Voto Registrado!", AL_ERR_MAIL: "¡Use Gmail!", AL_INC: "¡Incorrecto!", AL_OK_SAVE: "¡Guardado!", BRANCO_TXT: "Votos Blanco", PDF_CAND: "Candidato", PDF_VOT: "Votos", PDF_TOTAL: "Total Votantes",
                 H_FEED_TIT: "HABLA CON PAULO:", H_FEED_TXT: "Envía sugerencias al desarrollador.", txtSugestao: "Escribe aquí...", F2: "ENVIAR MENSAJE", B_EXIT_FINAL: "CERRAR SESIÓN"
@@ -228,31 +228,32 @@
 
         window.LIMPAR = () => { if(confirm(window._tr[window._idioma].B_CACHE)) { localStorage.clear(); window.location.reload(true); } };
 
-        /* CORREÇÃO DA LÓGICA DE LOGIN: VERIFICAÇÃO DO CONTADOR */
+        /* CORREÇÃO DO BLOQUEIO DE USO: CHECAGEM IMEDIATA NO LOGIN */
         window.V = async function() { 
             let e = document.getElementById('uE').value.trim().toLowerCase(); 
             if(!e.endsWith('@gmail.com')) return alert(window._tr[window._idioma].AL_ERR_MAIL);
             
-            // Salva o e-mail globalmente para usar no incremento depois
-            window._userEmail = e;
+            window._userEmail = e; // Salva o e-mail para uso posterior
             
             let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
             try { 
+                // Chamada ao backend para verificar o status do e-mail
                 let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
                 let d = await r.json(); 
                 
-                // Se o backend retornar um número de usos igual ou maior que 3, manda para pagamento
+                // Se o contador retornado for 3 ou mais, bloqueia na hora e vai para o pagamento
                 if(d.count !== undefined && Number(d.count) >= 3) { 
                     window.GO('pay'); 
                     return; 
                 } 
                 
+                // Se estiver liberado, prossegue enviando o código por e-mail
                 let cod = (d.codigo !== undefined ? d.codigo : d).toString().trim();
                 localStorage.setItem('urna_vault', cod);
                 await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod }, window._cfg.k); 
                 alert(window._tr[window._idioma].AL_COD_ENV); window.GO('verify'); 
             } catch(err) { 
-                alert("Erro de conexão com o servidor."); 
+                alert("Servidor indisponível no momento."); 
             } finally { 
                 btn.disabled = false; window.TR(window._idioma); 
             }
@@ -331,14 +332,14 @@
         };
         window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('listaTemporaria').innerHTML=''; alert(window._tr[window._idioma].AL_OK_SAVE); };
         
-        /* CORREÇÃO DO INCREMENTO: SÓ CONTA QUANDO A VOTAÇÃO COMEÇA DE FATO */
+        /* CORREÇÃO DO INCREMENTO: REGISTRA QUE UMA ELEIÇÃO OCORREU */
         window.START_VOTE_PROCESS = async () => { 
             if(!window._data.length) return alert(window._tr[window._idioma].AL_ERR_DATA); 
             
-            // Envia o incremento para o seu Worker
+            // Incrementa o uso no Cloudflare Worker
             try {
                 await fetch(window._cfg.u + '/increment?email=' + encodeURIComponent(window._userEmail));
-            } catch(e) { console.error("Não foi possível registrar o uso."); }
+            } catch(e) { console.error("Falha no registro de contagem."); }
 
             window._idx=0; window.RUN(); window.GO('urna'); 
         };
