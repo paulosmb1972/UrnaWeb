@@ -237,7 +237,7 @@
         window.LIMPAR = () => { if(confirm(window._tr[window._idioma].B_CACHE)) { localStorage.clear(); window.location.reload(true); } };
 
         /* BLOQUEIO DE USO: CHECAGEM ANTES DO ENVIO DO CÓDIGO */
-   window.V = async function() { 
+  window.V = async function() { 
     let e = document.getElementById('uE').value.trim().toLowerCase(); 
     if(!e.endsWith('@gmail.com')) return alert("Use Gmail oficial!");
     
@@ -246,31 +246,42 @@
     btn.disabled = true; btn.innerText = "...";
 
     try { 
-        // Busca os dados do Worker
-        let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
-        let d = await r.json(); 
+        // 1. Faz a chamada ao seu Worker
+        let response = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e));
+        let d = await response.json(); 
 
-        // Bloqueio de 3 eleições (Na 4ª ele vai para a página de pagamento)
+        // 2. Bloqueio por limite de 3 eleições
         if(d.count !== undefined && Number(d.count) >= 3) { 
             window.GO('pay'); 
             return; 
         } 
 
-        // Extrai o código como TEXTO (Para evitar [object Object])
-        let codFinal = d.codigo.toString(); 
-        localStorage.setItem('urna_vault', codFinal);
+        // 3. EXTRAÇÃO BLINDADA: Garante que pegamos apenas o texto do código
+        // Se o código vir no campo 'codigo', usamos ele. Se não, tentamos converter o objeto.
+        let codigoParaEnviar = "";
+        if (d && d.codigo) {
+            codigoParaEnviar = d.codigo.toString();
+        } else {
+            // Caso o worker retorne o código direto (backup de segurança)
+            codigoParaEnviar = d.toString();
+        }
 
-        // Envia o e-mail via EmailJS
+        // Salva para conferência posterior
+        localStorage.setItem('urna_vault', codigoParaEnviar);
+
+        // 4. Envio via EmailJS - Aqui é onde o [object Object] costuma aparecer
+        // Passamos 'codigoParaEnviar' que agora é garantidamente uma STRING
         await emailjs.send(window._cfg.s, window._cfg.t, { 
             to_email: e, 
-            validation_code: codFinal 
+            validation_code: codigoParaEnviar 
         }, window._cfg.k);
 
         alert("Código enviado!"); 
         window.GO('verify'); 
 
     } catch(err) { 
-        alert("Erro de conexão: Verifique se a URL do Worker está correta no código."); 
+        console.error("Erro no Login:", err);
+        alert("Erro de conexão. Verifique o link do Worker."); 
     } finally { 
         btn.disabled = false; 
     }
@@ -386,6 +397,7 @@
     </script>
 </body>
 </html>
+
 
 
 
