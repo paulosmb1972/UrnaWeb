@@ -228,39 +228,48 @@
 
         window.LIMPAR = () => { if(confirm(window._tr[window._idioma].B_CACHE)) { localStorage.clear(); window.location.reload(true); } };
 
-        /* BLOQUEIO DE USO: CHECAGEM ANTES DO ENVIO DO CÓDIGO */
-        window.V = async function() { 
-            let e = document.getElementById('uE').value.trim().toLowerCase(); 
-            if(!e.endsWith('@gmail.com')) return alert(window._tr[window._idioma].AL_ERR_MAIL);
-            
-            // Persiste o e-mail para incremento posterior
-            localStorage.setItem('urna_user_email', e);
-            
-            let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
-            try { 
-                // 1. Consulta o contador no Worker ANTES de mandar e-mail
-                let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
-                let d = await r.json(); 
-                
-                // 2. Se o contador retornado for 3 ou mais, bloqueia agora e vai para pagamento
-                if(d.count !== undefined && Number(d.count) >= 3) { 
-                    window.GO('pay'); 
-                    return; // Interrompe tudo aqui. Não envia EmailJS.
-                } 
-                
-                // 3. Se estiver liberado (count < 3), envia o código de acesso
-                let cod = (d.codigo !== undefined ? d.codigo : d).toString().trim();
-                localStorage.setItem('urna_vault', cod);
-                await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod }, window._cfg.k); 
-                alert(window._tr[window._idioma].AL_COD_ENV); 
-                window.GO('verify'); 
-            } catch(err) { 
-                alert("Servidor em manutenção."); 
-            } finally { 
-                btn.disabled = false; window.TR(window._idioma); 
-            }
-        };
+       /* BLOQUEIO DE USO: CHECAGEM ANTES DO ENVIO DO CÓDIGO */
+window.V = async function() { 
+    let e = document.getElementById('uE').value.trim().toLowerCase(); 
+    if(!e.endsWith('@gmail.com')) return alert(window._tr[window._idioma].AL_ERR_MAIL);
+    
+    localStorage.setItem('urna_user_email', e);
+    let btn = document.getElementById('L2'); 
+    btn.disabled = true; 
+    btn.innerText = "...";
 
+    try { 
+        // 1. Consulta o Worker
+        let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
+        let d = await r.json(); 
+        
+        // 2. Verifica se o pagamento é necessário (4º acesso em diante)
+        if(d.pay_required === true) { 
+            window.GO('pay'); // Direciona para a tela de pagamento interna
+            return; 
+        } 
+        
+        // 3. Se liberado, extrai o código e envia o e-mail
+        let cod = d.codigo.toString();
+        localStorage.setItem('urna_vault', cod);
+
+        // Envio via EmailJS
+        await emailjs.send(window._cfg.s, window._cfg.t, { 
+            to_email: e, 
+            validation_code: cod 
+        }, window._cfg.k); 
+
+        alert(window._tr[window._idioma].AL_COD_ENV); 
+        window.GO('verify'); 
+
+    } catch(err) { 
+        console.error(err);
+        alert("Servidor em manutenção."); 
+    } finally { 
+        btn.disabled = false; 
+        window.TR(window._idioma); 
+    }
+};
         window.C = () => { 
             let d = document.getElementById('iC').value.trim();
             if(d === (localStorage.getItem('urna_vault') || "").trim()) window.GO('setup'); else alert(window._tr[window._idioma].AL_INC); 
@@ -371,4 +380,5 @@
     </script>
 </body>
 </html>
+
 
