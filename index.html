@@ -237,50 +237,42 @@
         window.LIMPAR = () => { if(confirm(window._tr[window._idioma].B_CACHE)) { localStorage.clear(); window.location.reload(true); } };
 
         /* BLOQUEIO DE USO: CHECAGEM ANTES DO ENVIO DO CÓDIGO */
-    window.V = async function() { 
+   window.V = async function() { 
     let e = document.getElementById('uE').value.trim().toLowerCase(); 
-    if(!e.endsWith('@gmail.com')) return alert(window._tr[window._idioma].AL_ERR_MAIL);
+    if(!e.endsWith('@gmail.com')) return alert("Use Gmail oficial!");
     
     localStorage.setItem('urna_user_email', e);
     let btn = document.getElementById('L2'); 
-    btn.disabled = true; 
-    btn.innerText = "...";
+    btn.disabled = true; btn.innerText = "...";
 
     try { 
-        // 1. Consulta o servidor (Adicionado cache: 'no-store' para evitar dados antigos)
-        let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e), { cache: 'no-store' }); 
-        
-        if (!r.ok) throw new Error("Erro na resposta do servidor");
-        
+        // Busca os dados do Worker
+        let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
         let d = await r.json(); 
 
-        // 2. Bloqueio imediato se o contador atingiu 3
+        // Bloqueio de 3 eleições (Na 4ª ele vai para a página de pagamento)
         if(d.count !== undefined && Number(d.count) >= 3) { 
             window.GO('pay'); 
             return; 
         } 
 
-        // 3. Extração segura do código
-        let codFinal = d.codigo ? d.codigo.toString() : ""; 
-        if(!codFinal) throw new Error("Código não gerado");
-
+        // Extrai o código como TEXTO (Para evitar [object Object])
+        let codFinal = d.codigo.toString(); 
         localStorage.setItem('urna_vault', codFinal);
 
-        // 4. Envio do E-mail via EmailJS
+        // Envia o e-mail via EmailJS
         await emailjs.send(window._cfg.s, window._cfg.t, { 
             to_email: e, 
             validation_code: codFinal 
         }, window._cfg.k);
 
-        alert(window._tr[window._idioma].AL_COD_ENV); 
+        alert("Código enviado!"); 
         window.GO('verify'); 
 
     } catch(err) { 
-        console.error("Erro detalhado:", err);
-        alert("Erro de conexão. Verifique se o Worker está ativo e o KV configurado."); 
+        alert("Erro de conexão: Verifique se a URL do Worker está correta no código."); 
     } finally { 
         btn.disabled = false; 
-        window.TR(window._idioma); 
     }
 };
         
@@ -394,6 +386,7 @@
     </script>
 </body>
 </html>
+
 
 
 
