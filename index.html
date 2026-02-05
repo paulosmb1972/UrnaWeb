@@ -5,11 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UrnaWeb Digital - Sistema de Votação Fácil</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="UrnaWeb">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2633/2633814.png">
-    <meta name="theme-color" content="#0a2a66">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
@@ -117,10 +112,12 @@
         <div id="gridUrna" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 20px;"></div>
         <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success); margin-bottom: 20px;"></button>
         <button onclick="window.BRANCO()" id="BT_BRANCO" style="height:60px; background:#ffffff; color:#333; margin-bottom: 20px; border: 2px solid #ccc;"></button>
+        
         <div class="voter-counter-box">
             <span id="L_COUNT"></span>
             <b id="voterCountDisplay">0</b>
         </div>
+
         <button onclick="window.CONFIRM_END()" id="U2" style="background:var(--danger); opacity: 0.6; font-size: 12px; padding: 10px; margin-top: 80px;"></button>
     </div>
 
@@ -133,6 +130,7 @@
         </div>
         <button onclick="window.PDF(false)" id="B_PDF_SIMPLE"></button>
         <button onclick="window.PDF(true)" id="B_PDF_PHOTOS" style="background:var(--success)"></button>
+        
         <div style="margin-top:30px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
             <div class="info-box"><b id="H_FEED_TIT"></b><span id="H_FEED_TXT"></span></div>
             <textarea id="txtSugestao"></textarea>
@@ -162,18 +160,19 @@
         window._tr = {
             pt: { 
                 B_CACHE: "🔄 ATUALIZAR / LIMPAR CACHE", L1_1: "Sistema de Votação Fácil", L1_2: "Segurança de Identidade", L1_3: "Configuração da Urna",
-                H_LOGIN_TIT: "ACESSO AO SISTEMA:", H_LOGIN_TXT: "Bem-vindo! Valide seu e-mail Gmail oficial para começar. Novos usuários possuem 3 eleições gratuitas.", uE: "Digite seu e-mail Gmail aqui...", L2: "SOLICITAR CÓDIGO DE ACESSO POR E-MAIL",
-                H_VERIFY_TIT: "VERIFICAÇÃO DE SEGURANÇA:", H_VERIFY_TXT: "Um código de validação foi enviado. Digite os 4 dígitos recebidos.", iC: "Código...", V3: "CONFIRMAR CÓDIGO E ENTRAR",
-                H_SETUP_TIT: "DETALHES DO EVENTO:", H_SETUP_TXT: "Título da eleição e limite de votos.", tE: "Título da eleição...", S2: "SALVAR E AVANÇAR",
-                P1: "Limite de Testes Atingido", H_PAY_TIT: "PLANOS:", H_PAY_TXT: "Você atingiu o limite de 3 eleições gratuitas.",
-                PL1: "💎 Eleição Única", DESC_PL1: "Liberação para mais 1 eleição oficial.", B1: "LIBERAR 1 (R$ 30,00)",
-                PL2: "🚀 Pacote 20 Urnas", DESC_PL2: "Melhor custo-benefício institucional.", B2: "COMPRAR PACOTE 20 (R$ 500,00)",
-                P2: "ATIVAR AGORA", L_CUP: "Cupom ou Senha Mestre?", cup: "Digite aqui...", B_VOLTAR: "VOLTAR AO INÍCIO",
-                C1: "GERENCIAR CANDIDATOS", H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Cargo, Nome e Foto.", nC: "Cargo...", nCand: "Nome...", INSTR_FOTO: "📷 ANEXAR FOTO", 
+                H_LOGIN_TIT: "ACESSO AO SISTEMA:", H_LOGIN_TXT: "Bem-vindo! Valide seu e-mail Gmail oficial para começar. Novos usuários possuem 3 eleições gratuitas para testes completos antes da ativação profissional.", uE: "Digite seu e-mail Gmail aqui...", L2: "SOLICITAR CÓDIGO DE ACESSO POR E-MAIL",
+                H_VERIFY_TIT: "VERIFICAÇÃO DE SEGURANÇA:", H_VERIFY_TXT: "Um código de validação foi enviado. Digite os 4 dígitos recebidos no seu e-mail para desbloquear o sistema.", iC: "Código...", V3: "CONFIRMAR CÓDIGO E ENTRAR",
+                H_SETUP_TIT: "DETALHES DO EVENTO:", H_SETUP_TXT: "Dê um título para a eleição (ex: CIPA 2026) e defina quantos candidatos o eleitor pode escolher em cada cédula.", tE: "Título da eleição ou cargo principal...", S2: "SALVAR CONFIGURAÇÕES E AVANÇAR",
+                P1: "Limite de Testes Atingido", H_PAY_TIT: "PLANOS DE ATIVAÇÃO PROFISSIONAL:", H_PAY_TXT: "Você utilizou seu limite de 3 eleições gratuitas. Para realizar eleições ilimitadas, ative um plano abaixo.",
+                PL1: "💎 Eleição Única Profissional", DESC_PL1: "Liberação para mais 1 (uma) eleição oficial completa. Ideal para eventos pontuais. Inclui fotos ilimitadas e relatório PDF oficial.", B1: "LIBERAR 1 ELEIÇÃO (R$ 30,00)",
+                PL2: "🚀 Pacote Institucional 20 Urnas", DESC_PL2: "O melhor custo-benefício. Sai por apenas R$ 25,00 cada urna. Os créditos nunca expiram.", B2: "COMPRAR PACOTE 20 (R$ 500,00)",
+                P2: "ATIVAR CRÉDITO AGORA", L_CUP: "Tem um Cupom ou Senha Mestre?", cup: "Digite o código aqui...", B_VOLTAR: "VOLTAR AO INÍCIO",
+                C1: "GERENCIAR CANDIDATOS", H_CARGO_TIT: "COMO CADASTRAR:", H_CARGO_TXT: "Digite o Cargo, depois o Nome e anexe a foto. Clique em ADICIONAR antes de salvar.", nC: "Ex: Diretor, Presidente...", nCand: "Nome do candidato...", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", 
                 C2: "ADICIONAR À LISTA", C3: "SALVAR CANDIDATOS", C4: "INICIAR VOTAÇÃO AGORA",
-                H_URNA_TIT: "GUIA:", H_URNA_TXT: "Selecione e confirme. Senha 1357 para encerrar.", U1: "CONFIRMAR MEU VOTO AGORA", BT_BRANCO: "VOTAR EM BRANCO (NULO)", L_COUNT: "Eleitores que já votaram:", U2: "ENCERRAR E APURAR RESULTADOS",
-                R_TITLE: "RELATÓRIO", TOTAL_VOTOS: "VOTOS COMPUTADOS", B_PDF_SIMPLE: "PDF SIMPLES", B_PDF_PHOTOS: "PDF COMPLETO", AUDIT: "Emissão Oficial",
-                AL_SUC_VOTE: "Gravado!", AL_ERR_VOTE: "Selecione um candidato!", AL_OK_SAVE: "Salvo!", AL_OK_CUP: "ATIVADO!", BRANCO_TXT: "Brancos", AL_ERR_MAIL: "Use Gmail oficial!", AL_COD_ENV: "Enviado!", AL_INC: "Incorreto!", AL_FALTA: "Faltam dados!", AL_ERR_DATA: "Adicione candidatos!", AL_OK_MSG: "Mensagem enviada!", PDF_CAND: "Candidato", PDF_VOT: "Votos", PDF_TOTAL: "Total de Eleitores"
+                H_URNA_TIT: "GUIA DO ELEITOR:", H_URNA_TXT: "Selecione o candidato e confirme. Som 'Piiiii' indica sucesso. Mesários: Senha 1357 no botão vermelho para encerrar.", U1: "CONFIRMAR MEU VOTO AGORA", BT_BRANCO: "VOTAR EM BRANCO (NULO)", L_COUNT: "Eleitores que já votaram:", U2: "ENCERRAR E APURAR RESULTADOS",
+                R_TITLE: "RELATÓRIO DE RESULTADOS", TOTAL_VOTOS: "VOTOS COMPUTADOS", B_PDF_SIMPLE: "PDF SIMPLES (TEXTO)", B_PDF_PHOTOS: "PDF COMPLETO (FOTOS)",
+                H_FEED_TIT: "FALE COM O PAULO:", H_FEED_TXT: "Envie sugestões diretamente para o desenvolvedor.", txtSugestao: "Escreva sua mensagem aqui...", F2: "ENVIAR MENSAGEM", B_EXIT_FINAL: "SAIR DO SISTEMA", AUDIT: "Emissão Oficial",
+                AL_SUC_VOTE: "Voto Gravado com Sucesso!", AL_ERR_VOTE: "Selecione um candidato ou vote em Branco!", AL_OK_SAVE: "Configurações Salvas!", AL_OK_CUP: "CRÉDITO ATIVADO!", BRANCO_TXT: "Brancos/Nulos", AL_ERR_MAIL: "Use Gmail oficial!", AL_COD_ENV: "Código enviado!", AL_INC: "Incorreto!", AL_FALTA: "Faltam dados!", AL_ERR_DATA: "Erro: Adicione candidatos!", AL_OK_MSG: "Mensagem enviada!", PDF_CAND: "Candidato", PDF_VOT: "Votos", PDF_TOTAL: "Total de Eleitores"
             },
             en: { 
                 B_CACHE: "🔄 REFRESH / CLEAR CACHE", L1_1: "Easy Voting System", L1_2: "Identity Security", L1_3: "Configuration",
@@ -184,11 +183,11 @@
                 PL1: "💎 Single Election", DESC_PL1: "Unlock 1 more.", B1: "UNLOCK (R$ 30,00)",
                 PL2: "🚀 20 Urns Pack", DESC_PL2: "Best value.", B2: "BUY 20 (R$ 500,00)",
                 P2: "ACTIVATE NOW", L_CUP: "Coupon?", cup: "Code...", B_VOLTAR: "BACK",
-                C1: "CANDIDATES", H_CARGO_TIT: "REGISTRATION:", H_CARGO_TXT: "Position/Name.", nC: "Position...", nCand: "Name...", INSTR_FOTO: "📷 ATTACH PHOTO", 
+                C1: "CANDIDATES", H_CARGO_TIT: "REGISTRATION:", H_CARGO_TXT: "Position/Name.", nC: "Ex: Manager...", nCand: "Name...", INSTR_FOTO: "📷 ATTACH PHOTO", 
                 C2: "ADD", C3: "SAVE", C4: "START",
                 H_URNA_TIT: "GUIDE:", H_URNA_TXT: "Select and confirm.", U1: "CONFIRM VOTE", BT_BRANCO: "BLANK VOTE", L_COUNT: "Voters:", U2: "END VOTING",
                 R_TITLE: "RESULTS", TOTAL_VOTOS: "TOTAL", B_PDF_SIMPLE: "PDF TEXT", B_PDF_PHOTOS: "PDF PHOTOS", AUDIT: "Official",
-                AL_SUC_VOTE: "Vote Recorded!", AL_ERR_MAIL: "Use Gmail!", AL_COD_ENV: "Sent!", AL_INC: "Incorrect!", AL_OK_SAVE: "Saved!", BRANCO_TXT: "Blank", PDF_CAND: "Candidate", PDF_VOT: "Votes", PDF_TOTAL: "Total",
+                AL_SUC_VOTE: "Vote Recorded!", AL_ERR_VOTE: "Select candidate!", AL_OK_SAVE: "Saved!", AL_OK_CUP: "ACTIVATED!", BRANCO_TXT: "Blank", AL_ERR_MAIL: "Use Gmail!", AL_COD_ENV: "Sent!", AL_INC: "Incorrect!", AL_FALTA: "Missing!", AL_ERR_DATA: "Add names!", AL_OK_MSG: "Sent!", PDF_CAND: "Candidate", PDF_VOT: "Votes", PDF_TOTAL: "Total",
                 H_FEED_TIT: "TALK TO PAULO:", H_FEED_TXT: "Suggestions.", txtSugestao: "Write here...", F2: "SEND MESSAGE", B_EXIT_FINAL: "LOGOUT"
             },
             es: { 
@@ -200,7 +199,7 @@
                 PL1: "💎 Plan Único", DESC_PL1: "Libera 1 elección.", B1: "LIBERAR ($30.00)",
                 PL2: "🚀 20 Urnas Pack", DESC_PL2: "Mejor costo.", B2: "COMPRAR ($500.00)",
                 P2: "ACTIVAR", L_CUP: "¿Cupón?", cup: "Código...", B_VOLTAR: "VOLVER",
-                C1: "GESTIONAR", H_CARGO_TIT: "REGISTRO:", H_CARGO_TXT: "Cargo/Nombre.", nC: "Cargo...", nCand: "Nombre...", INSTR_FOTO: "📷 FOTO", 
+                C1: "GESTIONAR", H_CARGO_TIT: "REGISTRO:", H_CARGO_TXT: "Cargo/Nombre.", nC: "Ej: Director...", nCand: "Nombre...", INSTR_FOTO: "📷 FOTO", 
                 C2: "AÑADIR", C3: "GUARDAR", C4: "INICIAR",
                 H_URNA_TIT: "GUÍA:", H_URNA_TXT: "Pitido indica éxito.", U1: "CONFIRMAR VOTO", BT_BRANCO: "VOTO BLCO", L_COUNT: "Votantes:", U2: "TERMINAR",
                 R_TITLE: "RESULTADOS", TOTAL_VOTOS: "TOTAL", B_PDF_SIMPLE: "PDF TEXTO", B_PDF_PHOTOS: "PDF FOTOS", AUDIT: "Oficial",
@@ -229,40 +228,34 @@
 
         window.LIMPAR = () => { if(confirm(window._tr[window._idioma].B_CACHE)) { localStorage.clear(); window.location.reload(true); } };
 
-        /* CORREÇÃO DEFINITIVA DO [object Object] E BLOQUEIO */
+        /* BLOQUEIO DE USO: CHECAGEM ANTES DO ENVIO DO CÓDIGO */
         window.V = async function() { 
             let e = document.getElementById('uE').value.trim().toLowerCase(); 
             if(!e.endsWith('@gmail.com')) return alert(window._tr[window._idioma].AL_ERR_MAIL);
             
+            // Persiste o e-mail para incremento posterior
             localStorage.setItem('urna_user_email', e);
-            let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
             
+            let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
             try { 
+                // 1. Consulta o contador no Worker ANTES de mandar e-mail
                 let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
                 let d = await r.json(); 
                 
-                // Bloqueio se count >= 3
+                // 2. Se o contador retornado for 3 ou mais, bloqueia agora e vai para pagamento
                 if(d.count !== undefined && Number(d.count) >= 3) { 
                     window.GO('pay'); 
-                    return; 
+                    return; // Interrompe tudo aqui. Não envia EmailJS.
                 } 
                 
-                // EXTRAÇÃO LIMPA DO CÓDIGO (Tratando como string pura)
-                let codFinal = d.codigo ? d.codigo.toString() : "";
-                
-                if(!codFinal) throw new Error("Falha ao gerar código");
-
-                localStorage.setItem('urna_vault', codFinal);
-
-                await emailjs.send(window._cfg.s, window._cfg.t, { 
-                    to_email: e, 
-                    validation_code: codFinal 
-                }, window._cfg.k); 
-
+                // 3. Se estiver liberado (count < 3), envia o código de acesso
+                let cod = (d.codigo !== undefined ? d.codigo : d).toString().trim();
+                localStorage.setItem('urna_vault', cod);
+                await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod }, window._cfg.k); 
                 alert(window._tr[window._idioma].AL_COD_ENV); 
                 window.GO('verify'); 
             } catch(err) { 
-                alert("Servidor em manutenção ou erro de rede."); 
+                alert("Servidor em manutenção."); 
             } finally { 
                 btn.disabled = false; window.TR(window._idioma); 
             }
@@ -341,11 +334,13 @@
         };
         window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('listaTemporaria').innerHTML=''; alert(window._tr[window._idioma].AL_OK_SAVE); };
         
+        /* INCREMENTO NO SERVIDOR AO INICIAR VOTAÇÃO */
         window.START_VOTE_PROCESS = async () => { 
             if(!window._data.length) return alert(window._tr[window._idioma].AL_ERR_DATA); 
             let email = localStorage.getItem('urna_user_email');
             if(email) {
                 try {
+                    // Avisa o Worker para somar +1 eleição no banco de dados
                     await fetch(window._cfg.u + '/increment?email=' + encodeURIComponent(email));
                 } catch(e) { console.log("Erro de contagem."); }
             }
@@ -376,3 +371,4 @@
     </script>
 </body>
 </html>
+
