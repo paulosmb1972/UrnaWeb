@@ -229,46 +229,48 @@
         window.LIMPAR = () => { if(confirm(window._tr[window._idioma].B_CACHE)) { localStorage.clear(); window.location.reload(true); } };
 
         /* BLOQUEIO DE USO: CHECAGEM ANTES DO ENVIO DO CÓDIGO */
-        window.V = async function() { 
-            let e = document.getElementById('uE').value.trim().toLowerCase(); 
-            if(!e.endsWith('@gmail.com')) return alert(window._tr[window._idioma].AL_ERR_MAIL);
-            
-            // Persiste o e-mail para incremento posterior
-            localStorage.setItem('urna_user_email', e);
-            
-            let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
-            try { 
-                // 1. Consulta o contador no Worker ANTES de mandar e-mail
-                let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
-                let d = await r.json(); 
-.............. // Se d for {count: 0, codigo: "1234"}, d.codigo extrai apenas o texto "1234"
-let codFinal = d.codigo.toString(); 
-localStorage.setItem('urna_vault', codFinal);
+        /* Substitua sua função window.V por esta: */
+window.V = async function() { 
+    let e = document.getElementById('uE').value.trim().toLowerCase(); 
+    if(!e.endsWith('@gmail.com')) return alert(window._tr[window._idioma].AL_ERR_MAIL);
+    
+    localStorage.setItem('urna_user_email', e);
+    let btn = document.getElementById('L2'); 
+    btn.disabled = true; 
+    btn.innerText = "...";
 
-await emailjs.send(window._cfg.s, window._cfg.t, { 
-    to_email: e, 
-    validation_code: codFinal // Aqui vai apenas a string "1234"
-}, window._cfg.k);
+    try { 
+        // 1. Consulta o servidor
+        let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
+        let d = await r.json(); 
 
-                
-                // 2. Se o contador retornado for 3 ou mais, bloqueia agora e vai para pagamento
-                if(d.count !== undefined && Number(d.count) >= 3) { 
-                    window.GO('pay'); 
-                    return; // Interrompe tudo aqui. Não envia EmailJS.
-                } 
-                
-                // 3. Se estiver liberado (count < 3), envia o código de acesso
-                let cod = (d.codigo !== undefined ? d.codigo : d).toString().trim();
-                localStorage.setItem('urna_vault', cod);
-                await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod }, window._cfg.k); 
-                alert(window._tr[window._idioma].AL_COD_ENV); 
-                window.GO('verify'); 
-            } catch(err) { 
-                alert("Servidor em manutenção."); 
-            } finally { 
-                btn.disabled = false; window.TR(window._idioma); 
-            }
-        };
+        // 2. Bloqueio imediato se count >= 3
+        if(d.count !== undefined && Number(d.count) >= 3) { 
+            window.GO('pay'); 
+            return; 
+        } 
+
+        // 3. Extração limpa do código (Evita o [object Object])
+        let codFinal = d.codigo.toString(); 
+        localStorage.setItem('urna_vault', codFinal);
+
+        // 4. Envio do E-mail
+        await emailjs.send(window._cfg.s, window._cfg.t, { 
+            to_email: e, 
+            validation_code: codFinal 
+        }, window._cfg.k);
+
+        alert(window._tr[window._idioma].AL_COD_ENV); 
+        window.GO('verify'); 
+
+    } catch(err) { 
+        console.error(err);
+        alert("Erro na conexão com o servidor."); 
+    } finally { 
+        btn.disabled = false; 
+        window.TR(window._idioma); 
+    }
+};
 
         window.C = () => { 
             let d = document.getElementById('iC').value.trim();
@@ -380,4 +382,5 @@ await emailjs.send(window._cfg.s, window._cfg.t, {
     </script>
 </body>
 </html>
+
 
