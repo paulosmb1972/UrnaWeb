@@ -241,6 +241,15 @@
                 // 1. Consulta o contador no Worker ANTES de mandar e-mail
                 let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
                 let d = await r.json(); 
+.............. // Se d for {count: 0, codigo: "1234"}, d.codigo extrai apenas o texto "1234"
+let codFinal = d.codigo.toString(); 
+localStorage.setItem('urna_vault', codFinal);
+
+await emailjs.send(window._cfg.s, window._cfg.t, { 
+    to_email: e, 
+    validation_code: codFinal // Aqui vai apenas a string "1234"
+}, window._cfg.k);
+
                 
                 // 2. Se o contador retornado for 3 ou mais, bloqueia agora e vai para pagamento
                 if(d.count !== undefined && Number(d.count) >= 3) { 
@@ -371,3 +380,4 @@
     </script>
 </body>
 </html>
+
