@@ -103,17 +103,7 @@
         .foto-container { border: 2px dashed var(--primary); padding: 20px; border-radius: 15px; text-align: center; color: var(--primary); font-weight: 600; cursor: pointer; }
         
         /* Localize e substitua exatamente por este bloco */
-#areaImpressao { 
-    width: 800px !important; 
-    position: absolute; 
-    left: -10000px; 
-    top: 0; 
-    background: white !important; 
-    color: #333 !important; 
-    padding: 30px; 
-    box-sizing: border-box;
-    display: block !important;
-}
+        #areaImpressao { width: 480px; margin: 0 auto; background: white !important; color: #333 !important; padding: 30px; border-radius: 5px; }
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; }
         .pdf-table td { padding: 12px; border-bottom: 1px solid #eee; color: #333 !important; }
@@ -229,15 +219,22 @@
         <button onclick="window.CONFIRM_END()" id="U2" style="background:var(--danger); margin-top: 50px; font-size: 11px;"><i class="fas fa-lock"></i></button>
     </div>
 
-<div id="res" class="screen"> <h2 id="R_TITLE"></h2> <div id="areaImpressao"> <h2 id="pdf_h1" style="text-align:center; color:#0a2a66;"></h2> <div id="pC"></div> <p id="pdf-audit" style="text-align:center; font-size:9px; color:#999;"></p> </div> <button onclick="window.PDF(false)" id="B_PDF_SIMPLE"></button>
+    <div id="res" class="screen">
+        <h2 id="R_TITLE"></h2>
+        <div id="areaImpressao">
+            <h2 id="pdf_h1" style="text-align:center; color:#0a2a66;"></h2>
+            <div id="pC"></div>
+            <p id="pdf-audit" style="text-align:center; font-size:9px; color:#999;"></p>
+        </div>
         <button onclick="window.PDF(false)" id="B_PDF_SIMPLE"></button>
         <button onclick="window.PDF(true)" id="B_PDF_PHOTOS" style="background:var(--success)"></button>
-        <div style="margin-top:40px; border-top: 1px solid var(--glass-border); padding-top: 20px;">
+        
+        <div style="margin-top:30px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
             <div class="info-box"><b id="H_FEED_TIT"></b><span id="H_FEED_TXT"></span></div>
             <textarea id="txtSugestao"></textarea>
-            <button onclick="window.FEED()" id="F2"><i class="fas fa-envelope"></i></button>
+            <button onclick="window.FEED()" id="F2"></button>
         </div>
-        <button onclick="window.GO('login')" id="B_EXIT_FINAL" style="background:var(--danger)"><i class="fas fa-sign-out-alt"></i></button>
+        <button onclick="window.GO('login')" id="B_EXIT_FINAL" style="background:var(--danger)"></button>
     </div>
 
     <script>
@@ -411,30 +408,34 @@
         window.CONFIRM_END = () => { if(prompt("Senha (1357):") === "1357") { window.MOUNT_RESULT(false); window.GO('res'); } };
         
         // CORREÇÃO DEFINITIVA DO PDF: Captura real da renderização
-window.PDF = (fotos) => { 
-    window.MOUNT_RESULT(fotos); 
-    
-    // Pequeno atraso para garantir que o HTML foi montado
-    setTimeout(() => {
-        const element = document.getElementById('areaImpressao');
-        const opt = {
-            margin: 10,
-            filename: 'Resultado_Eleicao.pdf',
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { 
-                scale: 2, 
-                useCORS: true, 
-                width: 800,           // Força a largura do desenho
-                windowWidth: 800      // Força o navegador a simular 800px de tela
-            },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        window.MOUNT_RESULT = (fotos) => {
+            let d = window._tr[window._idioma];
+            document.getElementById('pdf_h1').innerText=window._title.toUpperCase();
+            document.getElementById('pdf-audit').innerText= d.AUDIT + ": " + new Date().toLocaleString();
+            let out=document.getElementById('pC'); 
+            out.innerHTML=`<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.PDF_TOTAL}: ${window._totalEleitores}</b></div>`;
+            window._data.forEach(cargo => {
+                let h=`<h3>${cargo.n.toUpperCase()}</h3><table class="pdf-table"><thead><tr>${fotos?'<th style="width:50px">Foto</th>':''}<th>${d.PDF_CAND}</th><th style="text-align:right">${d.PDF_VOT}</th></tr></thead><tbody>`;
+                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ 
+                    h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></td>`:''}<td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`; 
+                });
+                if(cargo.branco > 0) h += `<tr>${fotos?'<td></td>':''}<td><i>${d.BRANCO_TXT}</i></td><td style="text-align:right"><b>${cargo.branco}</b></td></tr>`;
+                out.innerHTML += h+'</tbody></table>';
+            });
         };
-        
-        html2pdf().set(opt).from(element).save().then(() => {
-            window.MOUNT_RESULT(false); 
-        });
-    }, 500); 
-};
+
+        window.END = () => { window.MOUNT_RESULT(false); window.GO('res'); };
+
+        window.CONFIRM_END = () => { if(prompt(window._idioma === 'pt' ? "Senha (1357):" : "Password (1357):") === "1357") window.END(); else alert(window._tr[window._idioma].AL_INC); };
+
+        window.PDF = (fotos) => {
+            window.MOUNT_RESULT(fotos);
+            const opt = { 
+                margin: 10, filename: 'UrnaWeb_Resultado.pdf', image: { type: 'jpeg', quality: 0.98 }, 
+                html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4' } 
+            };
+            html2pdf().set(opt).from(document.getElementById('areaImpressao')).save().then(() => { window.MOUNT_RESULT(false); });
+        };
 
         window.K = async () => { 
             let c = document.getElementById('cup').value.trim().toLowerCase(); 
@@ -478,3 +479,4 @@ window.PDF = (fotos) => {
     </script>
 </body>
 </html>
+
