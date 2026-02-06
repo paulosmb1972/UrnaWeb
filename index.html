@@ -103,15 +103,20 @@
         .foto-container { border: 2px dashed var(--primary); padding: 20px; border-radius: 15px; text-align: center; color: var(--primary); font-weight: 600; cursor: pointer; }
         
 #areaImpressao { 
-    width: 800px; /* Largura ideal para caber no A4 sem cortes laterais */
-    background: white !important; 
-    color: #333 !important; 
+    width: 800px; 
+    background-color: white !important; 
+    color: #000000 !important; 
     padding: 40px; 
-    box-sizing: border-box; 
-    position: absolute; /* Mudado de fixed para absolute */
-    left: -9999px; /* Esconde da tela jogando para longe, mas mantém renderizável */
+    position: absolute; 
+    left: -10000px; /* Joga para fora da tela */
     top: 0;
-    z-index: -1;
+    display: block !important; /* Garante que não esteja com display:none */
+    opacity: 1 !important;
+}
+
+/* Garante que o texto dentro da tabela do PDF seja preto */
+#areaImpressao * {
+    color: #000 !important;
 }
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; border: 1px solid #ddd; }
