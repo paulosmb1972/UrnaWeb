@@ -202,7 +202,7 @@
                 P1: "Límite Alcanzado", H_PAY_TIT: "PLANES:", H_PAY_TXT: "Límite alcanzado.",
                 PL1: "💎 Plan Único", DESC_PL1: "Libera 1 elección.", B1: "LIBERAR ($30.00)",
                 PL2: "🚀 20 Urnas Pack", DESC_PL2: "Mejor costo.", B2: "COMPRAR ($500.00)",
-                P2: "ACTIVAR", L_CUP: "¿Cupón?", cup: "Código...", B_VOLTAR: "VOLVER",
+                P2: "ATIVAR", L_CUP: "¿Cupón?", cup: "Código...", B_VOLTAR: "VOLVER",
                 C1: "GESTIONAR", H_CARGO_TIT: "REGISTRO:", H_CARGO_TXT: "Cargo/Nombre.", nC: "Cargo...", nCand: "Nombre...", INSTR_FOTO: "📷 FOTO", 
                 C2: "AÑADIR", C3: "GUARDAR", C4: "INICIAR",
                 H_URNA_TIT: "GUÍA:", H_URNA_TXT: "Pitido indica éxito.", U1: "CONFIRMAR VOTO", BT_BRANCO: "VOTO BLCO", L_COUNT: "Votantes:", U2: "TERMINAR",
@@ -232,7 +232,7 @@
 
         window.LIMPAR = () => { if(confirm(window._tr[window._idioma].B_CACHE)) { localStorage.clear(); window.location.reload(true); } };
 
-        /* FUNÇÃO V (LOGIN) - CORREÇÃO DEFINITIVA DO REDIRECIONAMENTO */
+        /* LOGIN: VERIFICA LIMITE NO BANCO E ENVIA CÓDIGO SE LIBERADO */
         window.V = async function() { 
             let e = document.getElementById('uE').value.trim().toLowerCase(); 
             if(!e.endsWith('@gmail.com')) return alert(window._tr[window._idioma].AL_ERR_MAIL);
@@ -241,18 +241,17 @@
             let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
             
             try { 
-                // 1. Pergunta ao servidor o status do usuário
+                // 1. Consulta status no Worker
                 let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
                 let d = await r.json(); 
                 
-                // 2. SE O SERVIDOR INDICAR QUE O PAGAMENTO É NECESSÁRIO (COUNT >= 3)
-                // OU SE O CONTADOR VIER DIRETAMENTE E FOR MAIOR OU IGUAL A 3
+                // 2. Bloqueio: Se count >= 3, vai para pagamento
                 if(d.pay_required === true || (d.count !== undefined && Number(d.count) >= 3)) { 
-                    window.GO('pay'); // Pula para a tela de pagamento
-                    return; // Interrompe para não enviar o código
+                    window.GO('pay'); 
+                    return; 
                 } 
                 
-                // 3. SE LIBERADO, EXTRAI O CÓDIGO E ENVIA E-MAIL
+                // 3. Extrai código e envia e-mail
                 let cod = (d.codigo !== undefined ? d.codigo : d).toString().trim();
                 localStorage.setItem('urna_vault', cod);
 
@@ -265,13 +264,13 @@
                 window.GO('verify'); 
 
             } catch(err) { 
-                console.error(err);
                 alert("Erro de conexão com o servidor."); 
             } finally { 
                 btn.disabled = false; window.TR(window._idioma); 
             }
         };
 
+        /* VERIFICAÇÃO DE CÓDIGO: COMPARAÇÃO STRING PARA EVITAR ERROS */
         window.C = () => { 
             let digitado = document.getElementById('iC').value.trim();
             let esperado = (localStorage.getItem('urna_vault') || "").trim();
@@ -333,9 +332,19 @@
             html2pdf().set(opt).from(document.getElementById('areaImpressao')).save().then(() => { window.MOUNT_RESULT(false); });
         };
 
-        window.K = () => { 
+        /* CUPOM: RESETA CONTADOR NO WORKER */
+        window.K = async () => { 
             let c = document.getElementById('cup').value.trim().toLowerCase(); 
-            if(btoa(c) === "b3Jpb24wMDE=" || btoa(c) === "bWFpczNncmF0aXM=") { alert(window._tr[window._idioma].AL_OK_CUP); window.GO('setup'); } else alert("!"); 
+            let email = localStorage.getItem('urna_user_email');
+            
+            // Aceita códigos fixos ou valida no servidor
+            if(btoa(c) === "b3Jpb24wMDE=" || btoa(c) === "bWFpczNncmF0aXM=") { 
+                if(email) await fetch(window._cfg.u + '/use_coupon?email=' + encodeURIComponent(email));
+                alert(window._tr[window._idioma].AL_OK_CUP); 
+                window.GO('setup'); 
+            } else {
+                alert("!"); 
+            }
         };
 
         window.N = () => { window._title=document.getElementById('tE').value; window._maxVotos=parseInt(document.getElementById('maxV').value) || 1; window.GO('setupCargo'); };
@@ -350,13 +359,13 @@
         };
         window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('listaTemporaria').innerHTML=''; alert(window._tr[window._idioma].AL_OK_SAVE); };
         
-        /* INICIAR VOTAÇÃO - INCREMENTA NO BANCO AO CLICAR */
+        /* OPÇÃO A: GASTA O CRÉDITO AO CLICAR EM INICIAR VOTAÇÃO */
         window.START_VOTE_PROCESS = async () => { 
             if(!window._data.length) return alert(window._tr[window._idioma].AL_ERR_DATA); 
             let email = localStorage.getItem('urna_user_email');
             if(email) {
                 try {
-                    // Soma +1 no banco KV do Cloudflare
+                    // Chama a rota de incremento no Worker
                     await fetch(window._cfg.u + '/increment?email=' + encodeURIComponent(email));
                 } catch(e) { console.log("Erro de contagem."); }
             }
@@ -387,6 +396,3 @@
     </script>
 </body>
 </html>
-
-
-
