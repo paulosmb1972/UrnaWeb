@@ -13,7 +13,7 @@
     <meta name="theme-color" content="#0a2a66">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
+ 
     <style>
         :root { 
             --primary: #f39c12; 
@@ -25,9 +25,9 @@
             --danger: #e74c3c;
             --text: #ffffff;
         }
-
+ 
         body { 
-            margin: 0; 
+            margin: 0;
             font-family: 'Poppins', sans-serif; 
             background: radial-gradient(circle at top right, #1e3799, #0a2a66);
             color: var(--text); 
@@ -38,7 +38,7 @@
             user-select: none;
             overflow-x: hidden;
         }
-
+ 
         .screen { 
             display: none; 
             padding: 30px; 
@@ -53,32 +53,32 @@
             margin: 80px 0 20px 0;
             box-sizing: border-box;
         }
-
+ 
         .active { display: block; animation: slideUp 0.4s ease-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
+ 
         h2 { text-align: center; color: var(--primary); font-weight: 700; margin-bottom: 20px; font-size: 1.5rem; }
         .info-box { font-size: 13px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 15px; border-left: 4px solid var(--primary); margin-bottom: 20px; line-height: 1.6; }
         .info-box b { color: var(--primary); display: block; font-size: 11px; margin-bottom: 5px; }
-
+ 
         input, textarea { 
             width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: 1px solid var(--glass-border);
             background: rgba(255,255,255,0.9); color: #333; font-size: 15px; font-weight: 500; outline: none; box-sizing: border-box;
         }
-
+ 
         button { 
             width: 100%; padding: 16px; margin: 10px 0; border-radius: 12px; border: none; 
             font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s;
             display: flex; align-items: center; justify-content: center; gap: 10px;
             background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
         }
-
+ 
         button:hover { background: var(--primary-hover); transform: translateY(-2px); }
         button:active { transform: translateY(0); }
-        
+         
         button.secondary { background: transparent; border: 1px solid white; box-shadow: none; }
         button.success { background: var(--success); box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); }
-
+ 
         .lang-box { position: fixed; top: 20px; display: flex; gap: 15px; z-index: 1000; }
         .lang-btn { 
             cursor: pointer; transition: transform 0.3s; border: 2px solid transparent; border-radius: 50%; width: 40px; height: 40px; 
@@ -86,7 +86,7 @@
         }
         .lang-btn:hover { transform: scale(1.2); border-color: var(--primary); }
         .lang-btn img { width: 100%; height: 100%; object-fit: cover; }
-
+ 
         .grid-urna { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
         .card-candidato { 
             background: white; color: #333; padding: 10px; border-radius: 15px; text-align: center; 
@@ -95,52 +95,41 @@
         .card-candidato img { width: 100%; height: 100px; object-fit: cover; border-radius: 10px; margin-bottom: 8px; }
         .card-candidato b { font-size: 14px; display: block; }
         .card-candidato.selected-card { border-color: var(--success); background: #e8f8f0; }
-
+ 
         .voter-counter-box { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 15px; text-align: center; margin-top: 20px; border: 1px dashed var(--glass-border); }
         .voter-counter-box span { font-size: 11px; opacity: 0.8; text-transform: uppercase; }
         .voter-counter-box b { font-size: 28px; display: block; color: var(--primary); }
-
+ 
         .foto-container { border: 2px dashed var(--primary); padding: 20px; border-radius: 15px; text-align: center; color: var(--primary); font-weight: 600; cursor: pointer; }
         
-        /* Localize e substitua exatamente por este bloco */
         #areaImpressao { 
-    width: 750px !important; 
-    position: absolute; 
-    left: -10000px; 
-    top: 0; 
-    background: white !important; 
-    color: #333 !important; 
-    padding: 30px; 
-    box-sizing: border-box; 
-    display: block !important; 
-}
-        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; }
-        .pdf-table td { padding: 12px; border-bottom: 1px solid #eee; color: #333 !important; }
-        .lang-box { position: fixed; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px; }
-        .lang-box button { width: auto; padding: 6px 12px; background: #000; font-size: 10px; border: 1px solid var(--primary); box-shadow: none; }
-        .selected-card { border: 4px solid var(--success) !important; background: rgba(46, 204, 113, 0.2) !important; }
-        .voter-counter-box { background: rgba(0,0,0,0.4); border-radius: 10px; padding: 15px; margin-bottom: 20px; text-align: center; border: 1px solid var(--accent); }
-        .voter-counter-box span { font-size: 12px; color: var(--accent); display: block; margin-bottom: 5px; text-transform: uppercase; }
-        .voter-counter-box b { font-size: 24px; color: white; }
+            width: 750px !important; 
+            margin: 0 auto; 
+            background: white !important; 
+            color: #333 !important; 
+            padding: 40px; 
+            border-radius: 5px; 
+            position: absolute; 
+            left: -10000px; 
+            display: block !important;
+        }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; table-layout: fixed; }
+        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; border: 1px solid #ddd; }
+        .pdf-table td { padding: 12px; border: 1px solid #ddd; color: #333 !important; }
+        
+        .pay-card { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; margin-bottom: 15px; text-align: center; }
+        .cand-preview-list { margin-top: 15px; font-size: 12px; color: var(--primary); }
     </style>
 </head>
 <body>
-
+ 
     <div class="lang-box">
-        <div class="lang-btn" onclick="window.TR('pt')">
-            <img src="https://flagcdn.com/w80/br.png" title="Português">
-        </div>
-        <div class="lang-btn" onclick="window.TR('en')">
-            <img src="https://flagcdn.com/w80/us.png" title="English">
-        </div>
-        <div class="lang-btn" onclick="window.TR('es')">
-            <img src="https://flagcdn.com/w80/es.png" title="Español">
-        </div>
+        <div class="lang-btn" onclick="window.TR('pt')"><img src="https://flagcdn.com/w80/br.png" title="Português"></div>
+        <div class="lang-btn" onclick="window.TR('en')"><img src="https://flagcdn.com/w80/us.png" title="English"></div>
+        <div class="lang-btn" onclick="window.TR('es')"><img src="https://flagcdn.com/w80/es.png" title="Español"></div>
     </div>
-
-    <div id="login" class="screen
- active">
+ 
+    <div id="login" class="screen active">
         <h2 id="L1_1">UrnaWeb Digital</h2>
         <div class="info-box">
             <b id="H_LOGIN_TIT"><i class="fas fa-user-shield"></i> IDENTIFICAÇÃO</b>
@@ -150,7 +139,7 @@
         <button onclick="window.V()" id="L2"><i class="fas fa-paper-plane"></i></button>
         <button onclick="window.LIMPAR()" id="B_CACHE" class="secondary" style="font-size: 10px; border: none;"></button>
     </div>
-
+ 
     <div id="verify" class="screen">
         <h2 id="L1_2"></h2>
         <div class="info-box">
@@ -160,7 +149,7 @@
         <input id="iC" type="text" maxlength="4" style="text-align: center; font-size: 32px; letter-spacing: 15px;">
         <button onclick="window.C()" id="V3"><i class="fas fa-check-circle"></i></button>
     </div>
-
+ 
     <div id="setup" class="screen">
         <h2 id="L1_3"></h2>
         <div class="info-box">
@@ -171,7 +160,7 @@
         <input id="maxV" type="number" min="1" value="1">
         <button onclick="window.N()" id="S2"><i class="fas fa-arrow-right"></i></button>
     </div>
-
+ 
     <div id="pay" class="screen">
         <h2 id="P1"></h2>
         <div class="info-box"><b id="H_PAY_TIT"></b><span id="H_PAY_TXT"></span></div>
@@ -192,7 +181,7 @@
         </div>
         <button onclick="window.GO('login')" id="B_VOLTAR" class="secondary"><i class="fas fa-undo"></i></button>
     </div>
-
+ 
     <div id="setupCargo" class="screen">
         <h2 id="C1"></h2>
         <div class="info-box"><b id="H_CARGO_TIT"><i class="fas fa-users-cog"></i> REGISTRO</b><span id="H_CARGO_TXT"></span></div>
@@ -208,28 +197,27 @@
         <button onclick="window.SAVE()" id="C3" class="success"><i class="fas fa-save"></i></button>
         <button onclick="window.START_VOTE_PROCESS()" id="C4"><i class="fas fa-play"></i></button>
     </div>
-
-<div id="urna" class="screen">
-    <h2 id="uT"></h2>
-    <div class="info-box"><b id="H_URNA_TIT"><i class="fas fa-vote-yea"></i> CÉDULA</b><span id="H_URNA_TXT"></span></div>
-    <div id="gridUrna" class="grid-urna"></div>
-    
-    <button onclick="window.VOTE()" id="U1" class="success" style="height: 70px; font-size: 20px;">
-        <i class="fas fa-check"></i> CONFIRMAR
-    </button>
-
-    <button onclick="window.BRANCO()" id="BT_BRANCO" class="secondary" style="background: #ffffff; color: #333; margin-top: 10px;">
-        <i class="fas fa-eraser"></i> BRANCO
-    </button>
-
-    ...        
+ 
+    <div id="urna" class="screen">
+        <h2 id="uT"></h2>
+        <div class="info-box"><b id="H_URNA_TIT"><i class="fas fa-vote-yea"></i> CÉDULA</b><span id="H_URNA_TXT"></span></div>
+        <div id="gridUrna" class="grid-urna"></div>
+        
+        <button onclick="window.VOTE()" id="U1" class="success" style="height: 70px; font-size: 20px;">
+            <i class="fas fa-check"></i>
+        </button>
+ 
+        <button onclick="window.BRANCO()" id="BT_BRANCO" class="secondary" style="background: #ffffff; color: #333; margin-top: 10px;">
+            <i class="fas fa-eraser"></i>
+        </button>
+        
         <div class="voter-counter-box">
             <span id="L_COUNT"></span>
             <b id="voterCountDisplay">0</b>
         </div>
         <button onclick="window.CONFIRM_END()" id="U2" style="background:var(--danger); margin-top: 50px; font-size: 11px;"><i class="fas fa-lock"></i></button>
     </div>
-
+ 
     <div id="res" class="screen">
         <h2 id="R_TITLE"></h2>
         <div id="areaImpressao">
@@ -247,12 +235,12 @@
         </div>
         <button onclick="window.GO('login')" id="B_EXIT_FINAL" style="background:var(--danger)"></button>
     </div>
-
+ 
     <script>
         window._cfg = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
         emailjs.init(window._cfg.k);
         window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp=''; window._maxVotos=1; window._idioma='pt'; window._totalEleitores = 0;
-
+ 
         window._tr = {
             pt: { 
                 B_CACHE: "LIMPAR SISTEMA", L1_1: "UrnaWeb Digital", L1_2: "Segurança", L1_3: "Configurações",
@@ -303,7 +291,7 @@
                 H_FEED_TIT: "SOPORTE:", H_FEED_TXT: "¿Sugerencias?", F2: "ENVIAR", B_EXIT_FINAL: "SALIR"
             }
         };
-
+ 
         window.TR = (l) => { 
             window._idioma = l; const d = window._tr[l]; 
             for(let k in d){ 
@@ -314,16 +302,16 @@
                 } 
             } 
         };
-
+ 
         window.GO = (id) => {
             if(id === 'login') { localStorage.removeItem('urna_vault'); window._data = []; window._sel = []; window._idx = 0; window._totalEleitores = 0; }
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             window.TR(window._idioma);
         };
-
+ 
         window.LIMPAR = () => { if(confirm("Limpar cache?")) { localStorage.clear(); window.location.reload(true); } };
-
+ 
         window.V = async function() { 
             let e = document.getElementById('uE').value.trim().toLowerCase(); 
             if(!e.endsWith('@gmail.com')) return alert(window._tr[window._idioma].AL_ERR_MAIL);
@@ -339,13 +327,13 @@
                 alert(window._tr[window._idioma].AL_COD_ENV); window.GO('verify'); 
             } catch(err) { alert("Erro servidor"); } finally { btn.disabled = false; window.TR(window._idioma); }
         };
-
+ 
         window.C = () => { 
             let digitado = String(document.getElementById('iC').value).trim();
             let esperado = String(localStorage.getItem('urna_vault')).trim();
             if(digitado !== "" && digitado === esperado) window.GO('setup'); else alert(window._tr[window._idioma].AL_INC); 
         };
-
+ 
         window.START_VOTE_PROCESS = async () => { 
             if(!window._data.length) return alert("Erro Candidatos"); 
             let email = localStorage.getItem('urna_user_email');
@@ -354,23 +342,16 @@
             }
             window._idx=0; window.RUN(); window.GO('urna'); 
         };
-
+ 
         window.BIP = () => {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = ctx.createOscillator(); const g = ctx.createGain();
             osc.type = 'square'; osc.frequency.setValueAtTime(440, ctx.currentTime);
             g.gain.setValueAtTime(0.1, ctx.currentTime);
             osc.connect(g); g.connect(ctx.destination);
-            osc.start(); osc.stop(ctx.currentTime + 1);
+            osc.start(); osc.stop(ctx.currentTime + 0.2);
         };
-
-        window.VOTE = () => { 
-            if(!window._sel.length) return alert("Selecione um candidato!"); 
-            window.BIP();
-            window._sel.forEach(i => window._data[window._idx].c[i].v++); 
-            window.NEXT();
-        };
-
+ 
         window.BRANCO = () => {
             let cargo = window._data[window._idx];
             if(confirm(window._tr[window._idioma].BT_BRANCO + "?")) {
@@ -379,7 +360,14 @@
                 window.NEXT();
             }
         };
-
+ 
+        window.VOTE = () => { 
+            if(!window._sel.length) return alert("Selecione um candidato!"); 
+            window.BIP();
+            window._sel.forEach(i => window._data[window._idx].c[i].v++); 
+            window.NEXT();
+        };
+ 
         window.NEXT = () => {
             window._idx++; 
             if(window._idx < window._data.length) { window.RUN(); } 
@@ -391,44 +379,26 @@
                 window.RUN(); 
             }
         };
-
+ 
         window.RUN = () => {
             let cargo = window._data[window._idx]; document.getElementById('uT').innerText = cargo.n.toUpperCase();
             let g = document.getElementById('gridUrna'); g.innerHTML=''; window._sel=[];
             cargo.c.forEach((can, i) => {
                 let d=document.createElement('div'); d.className="card-candidato";
                 d.innerHTML = (can.f?`<img src="${can.f}">`:'')+`<b>${can.n}</b>`;
-                d.onclick=()=>{ if(window._sel.includes(i)) {window._sel.splice(window._sel.indexOf(i),1); d.classList.remove('selected-card');} else if(window._sel.length < window._maxVotos) {window._sel.push(i); d.classList.add('selected-card');}};
+                d.onclick=()=>{ 
+                    if(window._sel.includes(i)) {
+                        window._sel.splice(window._sel.indexOf(i),1);
+                        d.classList.remove('selected-card');
+                    } else if(window._sel.length < window._maxVotos) {
+                        window._sel.push(i);
+                        d.classList.add('selected-card');
+                    }
+                };
                 g.appendChild(d);
             });
         };
-
-window.MOUNT_RESULT = (fotos) => {
-    let d = window._tr[window._idioma] || window._tr.pt;
-    document.getElementById('pdf_h1').innerText = window._title.toUpperCase();
-    document.getElementById('pdf-audit').innerText = d.AUDIT + ": " + new Date().toLocaleString();
-    let out = document.getElementById('pC'); 
-    out.innerHTML = `<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.PDF_TOTAL}: ${window._totalEleitores}</b></div>`;
-    
-    window._data.forEach(cargo => {
-        let h = `<h3>${cargo.n.toUpperCase()}</h3><table class="pdf-table"><thead><tr>${fotos?'<th style="width:60px">Foto</th>':''}<th>${d.PDF_CAND}</th><th style="text-align:right">${d.PDF_VOT}</th></tr></thead><tbody>`;
-        
-        cargo.c.sort((a,b)=>b.v-a.v).forEach(can => { 
-            h += `<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></td>`:''}<td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`;
-        });
-
-        // Verificação crucial para exibir Brancos:
-        if (cargo.branco !== undefined) {
-            h += `<tr>${fotos?'<td></td>':''}<td><i>${d.BRANCO_TXT}</i></td><td style="text-align:right"><b>${cargo.branco}</b></td></tr>`;
-        }
-        
-        out.innerHTML += h + '</tbody></table>';
-    });
-};
-
-        window.CONFIRM_END = () => { if(prompt("Senha (1357):") === "1357") { window.MOUNT_RESULT(false); window.GO('res'); } };
-        
-        // CORREÇÃO DEFINITIVA DO PDF: Captura real da renderização
+ 
         window.MOUNT_RESULT = (fotos) => {
             let d = window._tr[window._idioma];
             document.getElementById('pdf_h1').innerText=window._title.toUpperCase();
@@ -436,52 +406,77 @@ window.MOUNT_RESULT = (fotos) => {
             let out=document.getElementById('pC'); 
             out.innerHTML=`<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.PDF_TOTAL}: ${window._totalEleitores}</b></div>`;
             window._data.forEach(cargo => {
-                let h=`<h3>${cargo.n.toUpperCase()}</h3><table class="pdf-table"><thead><tr>${fotos?'<th style="width:50px">Foto</th>':''}<th>${d.PDF_CAND}</th><th style="text-align:right">${d.PDF_VOT}</th></tr></thead><tbody>`;
+                let h=`<h3 style="color:#0a2a66; border-bottom:1px solid #ddd; padding-bottom:5px;">${cargo.n.toUpperCase()}</h3><table class="pdf-table"><thead><tr>${fotos?'<th style="width:60px">Foto</th>':''}<th>${d.PDF_CAND}</th><th style="text-align:right">${d.PDF_VOT}</th></tr></thead><tbody>`;
                 cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ 
-                    h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></td>`:''}<td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`; 
+                    h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></td>`:''}<td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`;
                 });
-                if(cargo.branco > 0) h += `<tr>${fotos?'<td></td>':''}<td><i>${d.BRANCO_TXT}</i></td><td style="text-align:right"><b>${cargo.branco}</b></td></tr>`;
+                h += `<tr>${fotos?'<td></td>':''}<td><i>${d.BRANCO_TXT}</i></td><td style="text-align:right"><b>${cargo.branco || 0}</b></td></tr>`;
                 out.innerHTML += h+'</tbody></table>';
             });
         };
-
-        window.END = () => { window.MOUNT_RESULT(false); window.GO('res'); };
-
-        window.CONFIRM_END = () => { if(prompt(window._idioma === 'pt' ? "Senha (1357):" : "Password (1357):") === "1357") window.END(); else alert(window._tr[window._idioma].AL_INC); };
-
-window.PDF = (fotos) => {
-    window.MOUNT_RESULT(fotos);
-    const opt = { 
-        margin: 10, 
-        filename: 'UrnaWeb_Resultado.pdf', 
-        image: { type: 'jpeg', quality: 0.98 }, 
-        html2canvas: { scale: 2, useCORS: true, width: 750, windowWidth: 750 }, 
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
-    };
-    html2pdf().set(opt).from(document.getElementById('areaImpressao')).save().then(() => { 
-        window.MOUNT_RESULT(false); 
-    });
-};
-
+ 
+        window.CONFIRM_END = () => { 
+            if(prompt(window._idioma === 'pt' ? "Senha (1357):" : "Password (1357):") === "1357") {
+                window.MOUNT_RESULT(false); 
+                window.GO('res'); 
+            } else {
+                alert(window._tr[window._idioma].AL_INC);
+            }
+        };
+ 
+        window.PDF = (fotos) => {
+            window.MOUNT_RESULT(fotos);
+            setTimeout(() => {
+                const element = document.getElementById('areaImpressao');
+                const opt = { 
+                    margin: 10, 
+                    filename: 'Resultado_Eleicao.pdf', 
+                    image: { type: 'jpeg', quality: 0.98 }, 
+                    html2canvas: { scale: 2, useCORS: true, width: 750, windowWidth: 750 }, 
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+                };
+                html2pdf().set(opt).from(element).save().then(() => { window.MOUNT_RESULT(false); });
+            }, 500);
+        };
+ 
         window.K = async () => { 
             let c = document.getElementById('cup').value.trim().toLowerCase(); 
             let email = localStorage.getItem('urna_user_email');
             if(btoa(c) === "b3Jpb24wMDE=" || btoa(c) === "bWFpczNncmF0aXM=") { 
                 if(email) await fetch(window._cfg.u + '/use_coupon?email=' + encodeURIComponent(email));
                 alert("OK!"); window.GO('setup'); 
+            } else {
+                alert("Cupom Inválido");
             }
         };
-
-        window.N = () => { window._title=document.getElementById('tE').value; window._maxVotos=parseInt(document.getElementById('maxV').value) || 1; window.GO('setupCargo'); };
-        window.PREV = (f) => { if (f.files && f.files[0]) { let r=new FileReader(); r.onload=(e)=>{window._fotoTemp=e.target.result; document.getElementById('imgPrev').src=e.target.result; document.getElementById('imgPrev').style.display='block';}; r.readAsDataURL(f.files[0]); } };
+ 
+        window.N = () => { 
+            window._title=document.getElementById('tE').value; 
+            window._maxVotos=parseInt(document.getElementById('maxV').value) || 1; 
+            window.GO('setupCargo'); 
+        };
+ 
+        window.PREV = (f) => { 
+            if (f.files && f.files[0]) { 
+                let r=new FileReader(); 
+                r.onload=(e)=>{
+                    window._fotoTemp=e.target.result; 
+                    document.getElementById('imgPrev').src=e.target.result; 
+                    document.getElementById('imgPrev').style.display='block';
+                }; 
+                r.readAsDataURL(f.files[0]); 
+            } 
+        };
+ 
         window.A = () => {
             let cargo=document.getElementById('nC').value, nome=document.getElementById('nCand').value;
-            if(!cargo || !nome) return;
+            if(!cargo || !nome) return alert("Preencha Cargo e Nome");
             if(!window._temp) window._temp={n:cargo, c:[], branco:0};
             window._temp.c.push({n:nome, v:0, f:window._fotoTemp});
             document.getElementById('listaTemporaria').innerHTML += `<div>👤 ${nome}</div>`;
             document.getElementById('nCand').value=''; window._fotoTemp=''; document.getElementById('imgPrev').style.display='none';
         };
+ 
         window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('listaTemporaria').innerHTML=''; alert("Salvo!"); };
         
         window.FEED = () => { 
@@ -500,7 +495,7 @@ window.PDF = (fotos) => {
                 alert("Erro ao enviar feedback.");
             });
         };
-
+ 
         window.GO('login');
     </script>
 </body>
