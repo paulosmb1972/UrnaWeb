@@ -41,7 +41,14 @@
         .img-preview { width: 125px; height: 125px; object-fit: cover; border-radius: 50%; display: none; margin: 10px auto; border: 4px solid var(--primary); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
         
         /* CONFIGURAÇÃO BLINDADA DO RESULTADO */
-        #areaImpressao { width: 480px; margin: 0 auto; background: white !important; color: #333 !important; padding: 30px; border-radius: 5px; }
+       #areaImpressao { 
+    width: 480px; 
+    margin: 0 auto; 
+    background: white !important; 
+    color: #333 !important; 
+    padding: 10px 30px 30px 30px; /* Reduzido o padding superior de 30px para 10px */
+    border-radius: 5px; 
+}
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; }
         .pdf-table td { padding: 12px; border-bottom: 1px solid #eee; color: #333 !important; }
@@ -326,18 +333,23 @@
            ====================================================
         */
         window.PDF = (fotos) => {
-            window.MOUNT_RESULT(fotos);
-            const opt = { 
-                margin: 10, 
-                filename: 'UrnaWeb_Resultado.pdf', 
-                image: { type: 'jpeg', quality: 0.98 }, 
-                html2canvas: { scale: 2, useCORS: true }, 
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
-            };
-            html2pdf().set(opt).from(document.getElementById('areaImpressao')).save().then(() => { 
-                window.MOUNT_RESULT(false); 
-            });
-        };
+    window.MOUNT_RESULT(fotos);
+    const opt = { 
+        margin: 5, // Reduzido de 10 para 5 para subir o conteúdo na folha
+        filename: 'UrnaWeb_Resultado.pdf', 
+        image: { type: 'jpeg', quality: 0.98 }, 
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true, 
+            scrollY: 0, // Garante que comece do topo do elemento
+            windowWidth: 500 // Garante largura fixa para evitar cortes laterais
+        }, 
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+    };
+    html2pdf().set(opt).from(document.getElementById('areaImpressao')).save().then(() => { 
+        window.MOUNT_RESULT(false); 
+    });
+};
 
         window.K = async () => { 
             let c = document.getElementById('cup').value.trim().toLowerCase(); 
@@ -383,3 +395,4 @@
     </script>
 </body>
 </html>
+
