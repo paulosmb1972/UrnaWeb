@@ -199,19 +199,20 @@
         <button onclick="window.START_VOTE_PROCESS()" id="C4"><i class="fas fa-play"></i></button>
     </div>
 
-    <div id="urna" class="screen">
-        <h2 id="uT"></h2>
-        <div class="info-box"><b id="H_URNA_TIT"><i class="fas fa-vote-yea"></i> CÉDULA</b><span id="H_URNA_TXT"></span></div>
-        <div id="gridUrna" class="grid-urna"></div>
-        
-        <button onclick="window.BRANCO()" id="BT_BRANCO" class="secondary" style="background: #ffffff; color: #333; margin-top: 10px;">
-            <i class="fas fa-eraser"></i>
-        </button>
+<div id="urna" class="screen">
+    <h2 id="uT"></h2>
+    <div class="info-box"><b id="H_URNA_TIT"><i class="fas fa-vote-yea"></i> CÉDULA</b><span id="H_URNA_TXT"></span></div>
+    <div id="gridUrna" class="grid-urna"></div>
+    
+    <button onclick="window.VOTE()" id="U1" class="success" style="height: 70px; font-size: 20px;">
+        <i class="fas fa-check"></i> CONFIRMAR
+    </button>
 
-        <button onclick="window.VOTE()" id="U1" class="success" style="height: 70px; font-size: 20px;">
-            <i class="fas fa-check"></i>
-        </button>
-        
+    <button onclick="window.BRANCO()" id="BT_BRANCO" class="secondary" style="background: #ffffff; color: #333; margin-top: 10px;">
+        <i class="fas fa-eraser"></i> BRANCO
+    </button>
+
+    ...        
         <div class="voter-counter-box">
             <span id="L_COUNT"></span>
             <b id="voterCountDisplay">0</b>
@@ -353,6 +354,13 @@
             osc.start(); osc.stop(ctx.currentTime + 1);
         };
 
+        window.VOTE = () => { 
+            if(!window._sel.length) return alert("Selecione um candidato!"); 
+            window.BIP();
+            window._sel.forEach(i => window._data[window._idx].c[i].v++); 
+            window.NEXT();
+        };
+
         window.BRANCO = () => {
             let cargo = window._data[window._idx];
             if(confirm(window._tr[window._idioma].BT_BRANCO + "?")) {
@@ -360,13 +368,6 @@
                 window.BIP();
                 window.NEXT();
             }
-        };
-
-        window.VOTE = () => { 
-            if(!window._sel.length) return alert("Selecione um candidato!"); 
-            window.BIP();
-            window._sel.forEach(i => window._data[window._idx].c[i].v++); 
-            window.NEXT();
         };
 
         window.NEXT = () => {
@@ -479,4 +480,5 @@
     </script>
 </body>
 </html>
+
 
