@@ -402,25 +402,48 @@
             });
         };
  
+        // LÓGICA NOVA: MOUNT_RESULT AGORA ATUALIZA O DOM IMEDIATAMENTE
         window.MOUNT_RESULT = (fotos) => {
-            let d = window._tr[window._idioma] || window._tr.pt;
-            document.getElementById('pdf_h1').innerText=window._title.toUpperCase();
-            document.getElementById('pdf-audit').innerText= d.AUDIT + ": " + new Date().toLocaleString();
-            let out=document.getElementById('pC'); 
-            out.innerHTML=`<div style="text-align:center; font-weight:bold; margin-bottom:20px; color:#333;">${d.PDF_TOTAL}: ${window._totalEleitores}</div>`;
+            const d = window._tr[window._idioma] || window._tr.pt;
+            const container = document.getElementById('pC');
+            const h2Title = document.getElementById('pdf_h1');
+            const audit = document.getElementById('pdf-audit');
+            
+            if(!container) return;
+            
+            h2Title.innerText = window._title.toUpperCase();
+            audit.innerText = d.AUDIT + ": " + new Date().toLocaleString();
+            
+            let content = `<div style="text-align:center; font-weight:bold; margin-bottom:20px; color:#333; border-bottom:2px solid #000; padding-bottom:10px;">${d.PDF_TOTAL}: ${window._totalEleitores}</div>`;
+            
             window._data.forEach(cargo => {
-                let h=`<h3 style="color:#0a2a66; border-bottom:1px solid #ddd; padding-bottom:5px;">${cargo.n.toUpperCase()}</h3><table class="pdf-table"><thead><tr>${fotos?'<th style="width:60px">Foto</th>':''}<th>${d.PDF_CAND}</th><th style="text-align:right; width:80px;">${d.PDF_VOT}</th></tr></thead><tbody>`;
-                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ 
-                    h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></td>`:''}<td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`;
+                content += `<h3 style="color:#0a2a66; border-bottom:1px solid #ddd; margin-top:20px;">${cargo.n.toUpperCase()}</h3>`;
+                content += `<table class="pdf-table"><thead><tr>${fotos?'<th style="width:60px">Foto</th>':''}<th>${d.PDF_CAND}</th><th style="text-align:right">${d.PDF_VOT}</th></tr></thead><tbody>`;
+                
+                cargo.c.sort((a,b) => b.v - a.v).forEach(can => {
+                    content += `<tr>
+                        ${fotos ? `<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></td>` : ''}
+                        <td>${can.n}</td>
+                        <td style="text-align:right"><b>${can.v}</b></td>
+                    </tr>`;
                 });
-                h += `<tr>${fotos?'<td></td>':''}<td><i>${d.BRANCO_TXT}</i></td><td style="text-align:right"><b>${cargo.branco || 0}</b></td></tr>`;
-                out.innerHTML += h+'</tbody></table>';
+                
+                // INCLUSÃO DOS BRANCOS SEMPRE NO FINAL DA TABELA DO CARGO
+                content += `<tr>
+                    ${fotos ? '<td></td>' : ''}
+                    <td><i>${d.BRANCO_TXT}</i></td>
+                    <td style="text-align:right"><b>${cargo.branco || 0}</b></td>
+                </tr>`;
+                
+                content += `</tbody></table>`;
             });
+            
+            container.innerHTML = content;
         };
  
         window.CONFIRM_END = () => { 
             if(prompt(window._idioma === 'pt' ? "Senha (1357):" : "Password (1357):") === "1357") {
-                window.MOUNT_RESULT(false); 
+                window.MOUNT_RESULT(false); // Prepara a tela visível primeiro
                 window.GO('res'); 
             } else {
                 alert(window._tr[window._idioma].AL_INC);
@@ -428,18 +451,22 @@
         };
  
         window.PDF = (fotos) => {
-            window.MOUNT_RESULT(fotos);
+            window.MOUNT_RESULT(fotos); // Atualiza os dados antes da captura
+            
             setTimeout(() => {
                 const element = document.getElementById('areaImpressao');
                 const opt = { 
                     margin: 10, 
-                    filename: 'UrnaWeb_Resultado.pdf', 
+                    filename: `Resultado_${window._title.replace(/\s+/g, '_')}.pdf`, 
                     image: { type: 'jpeg', quality: 0.98 }, 
-                    html2canvas: { scale: 2, useCORS: true, width: 750, windowWidth: 750 }, 
+                    html2canvas: { scale: 2, useCORS: true, logging: false, width: 750, windowWidth: 750 }, 
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
                 };
-                html2pdf().set(opt).from(element).save().then(() => { window.MOUNT_RESULT(false); });
-            }, 500);
+                
+                html2pdf().set(opt).from(element).save().then(() => {
+                    window.MOUNT_RESULT(false); // Volta ao modo simples após salvar
+                });
+            }, 800);
         };
  
         window.K = async () => { 
