@@ -39,7 +39,6 @@
             overflow-x: hidden;
         }
 
-        /* Container de Vidro */
         .screen { 
             display: none; 
             padding: 30px; 
@@ -58,12 +57,10 @@
         .active { display: block; animation: slideUp 0.4s ease-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Cabeçalhos e Textos */
         h2 { text-align: center; color: var(--primary); font-weight: 700; margin-bottom: 20px; font-size: 1.5rem; }
         .info-box { font-size: 13px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 15px; border-left: 4px solid var(--primary); margin-bottom: 20px; line-height: 1.6; }
         .info-box b { color: var(--primary); display: block; font-size: 11px; margin-bottom: 5px; }
 
-        /* Inputs e Botões */
         input, textarea { 
             width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: 1px solid var(--glass-border);
             background: rgba(255,255,255,0.9); color: #333; font-size: 15px; font-weight: 500; outline: none; box-sizing: border-box;
@@ -82,7 +79,6 @@
         button.secondary { background: transparent; border: 1px solid white; box-shadow: none; }
         button.success { background: var(--success); box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); }
 
-        /* Seletor de Idioma com Bandeiras */
         .lang-box { position: fixed; top: 20px; display: flex; gap: 15px; z-index: 1000; }
         .lang-btn { 
             cursor: pointer; transition: transform 0.3s; border: 2px solid transparent; border-radius: 50%; width: 40px; height: 40px; 
@@ -91,7 +87,6 @@
         .lang-btn:hover { transform: scale(1.2); border-color: var(--primary); }
         .lang-btn img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* Componentes da Urna */
         .grid-urna { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
         .card-candidato { 
             background: white; color: #333; padding: 10px; border-radius: 15px; text-align: center; 
@@ -105,11 +100,13 @@
         .voter-counter-box span { font-size: 11px; opacity: 0.8; text-transform: uppercase; }
         .voter-counter-box b { font-size: 28px; display: block; color: var(--primary); }
 
-        /* Estilo da Foto */
         .foto-container { border: 2px dashed var(--primary); padding: 20px; border-radius: 15px; text-align: center; color: var(--primary); font-weight: 600; cursor: pointer; }
         
-        /* Relatório PDF */
-        #areaImpressao { width: 100%; background: white !important; color: #333 !important; padding: 40px; box-sizing: border-box; border-radius: 0; }
+        /* Relatório PDF - Melhoria para evitar corte */
+        #areaImpressao { width: 800px; background: white !important; color: #333 !important; padding: 40px; box-sizing: border-box; border-radius: 0; position: absolute; left: -9999px; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; }
+        .pdf-table td { padding: 12px; border-bottom: 1px solid #eee; color: #333 !important; }
     </style>
 </head>
 <body>
@@ -251,7 +248,7 @@
                 C1: "CANDIDATOS", H_CARGO_TIT: "CADASTRO:", H_CARGO_TXT: "Cargo, Nome e Foto. Clique em Adicionar para cada um.", nC: "Ex: Presidente...", nCand: "Nome do Candidato...", INSTR_FOTO: "📷 FOTO", 
                 C2: "ADICIONAR CANDIDATO", C3: "SALVAR CARGO", C4: "ABRIR URNA PARA VOTOS",
                 H_URNA_TIT: "VOTAÇÃO:", H_URNA_TXT: "Escolha e confirme. Senha 1357 para encerrar.", U1: "CONFIRMAR VOTO", BT_BRANCO: "VOTO BRANCO / NULO", L_COUNT: "Eleitores que já votaram:", U2: "ENCERRAR ELEIÇÃO",
-                R_TITLE: "RESULTADOS OFICIAIS", B_PDF_SIMPLE: "RELATÓRIO SIMPLES", B_PDF_PHOTOS: "RELATÓRIO COM FOTOS", AUDIT: "Certificado Digital",
+                R_TITLE: "RESULTADOS OFICIAIS", B_PDF_SIMPLE: "RELATÓRIO SIMPLES", B_PDF_PHOTOS: "RELATÓRIO COM FOTOS", AUDIT: "Emissão Oficial",
                 AL_SUC_VOTE: "Voto Gravado!", AL_ERR_MAIL: "Use Gmail oficial!", AL_COD_ENV: "Enviado!", AL_INC: "Incorreto!", AL_OK_SAVE: "Salvo!", BRANCO_TXT: "Brancos", PDF_CAND: "Candidato", PDF_VOT: "Votos", PDF_TOTAL: "Total Eleitores",
                 H_FEED_TIT: "SUPORTE:", H_FEED_TXT: "Dúvidas ou sugestões?", F2: "ENVIAR FEEDBACK", B_EXIT_FINAL: "SAIR"
             },
@@ -402,7 +399,20 @@
         };
 
         window.CONFIRM_END = () => { if(prompt("Senha (1357):") === "1357") { window.MOUNT_RESULT(false); window.GO('res'); } };
-        window.PDF = (fotos) => { window.MOUNT_RESULT(fotos); html2pdf().set({ margin:10, filename:'resultado.pdf', html2canvas:{scale:2}, jsPDF:{unit:'mm',format:'a4'} }).from(document.getElementById('areaImpressao')).save(); };
+        
+        // CORREÇÃO DO PDF: FORÇANDO LARGURA FIXA DE 800PX
+        window.PDF = (fotos) => { 
+            window.MOUNT_RESULT(fotos); 
+            const element = document.getElementById('areaImpressao');
+            const opt = {
+                margin: 10,
+                filename: 'Resultado_UrnaWeb.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, width: 800, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save(); 
+        };
 
         window.K = async () => { 
             let c = document.getElementById('cup').value.trim().toLowerCase(); 
@@ -424,7 +434,26 @@
             document.getElementById('nCand').value=''; window._fotoTemp=''; document.getElementById('imgPrev').style.display='none';
         };
         window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('listaTemporaria').innerHTML=''; alert("Salvo!"); };
-        window.FEED = () => { alert("Feedback Enviado!"); };
+        
+        // CORREÇÃO DO FEEDBACK: USANDO TAGS CORRETAS
+        window.FEED = () => { 
+            let m = document.getElementById('txtSugestao').value.trim(); 
+            if(!m) return alert("Escreva sua mensagem!");
+            
+            let emailRemetente = localStorage.getItem('urna_user_email') || "anonimo";
+
+            emailjs.send(window._cfg.s, window._cfg.t, { 
+                to_email: "paulosmb1972@gmail.com", 
+                user_email: emailRemetente,
+                validation_code: m,
+                election_title: "FEEDBACK URNAWEB"
+            }, window._cfg.k).then(() => {
+                alert("Feedback enviado com sucesso!");
+                document.getElementById('txtSugestao').value = '';
+            }).catch(() => {
+                alert("Erro ao enviar feedback.");
+            });
+        };
 
         window.GO('login');
     </script>
