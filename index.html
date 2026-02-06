@@ -5,11 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UrnaWeb Digital - Sistema de Votação Fácil</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="UrnaWeb">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2633/2633814.png">
-    <meta name="theme-color" content="#0a2a66">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
@@ -117,12 +112,10 @@
         <div id="gridUrna" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 20px;"></div>
         <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success); margin-bottom: 20px;"></button>
         <button onclick="window.BRANCO()" id="BT_BRANCO" style="height:60px; background:#ffffff; color:#333; margin-bottom: 20px; border: 2px solid #ccc;"></button>
-        
         <div class="voter-counter-box">
             <span id="L_COUNT"></span>
             <b id="voterCountDisplay">0</b>
         </div>
-
         <button onclick="window.CONFIRM_END()" id="U2" style="background:var(--danger); opacity: 0.6; font-size: 12px; padding: 10px; margin-top: 80px;"></button>
     </div>
 
@@ -135,7 +128,6 @@
         </div>
         <button onclick="window.PDF(false)" id="B_PDF_SIMPLE"></button>
         <button onclick="window.PDF(true)" id="B_PDF_PHOTOS" style="background:var(--success)"></button>
-        
         <div style="margin-top:30px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
             <div class="info-box"><b id="H_FEED_TIT"></b><span id="H_FEED_TXT"></span></div>
             <textarea id="txtSugestao"></textarea>
@@ -168,7 +160,7 @@
                 H_LOGIN_TIT: "ACESSO AO SISTEMA:", H_LOGIN_TXT: "Bem-vindo! Valide seu e-mail Gmail oficial para começar. Novos usuários possuem 3 eleições gratuitas.", uE: "Digite seu e-mail Gmail aqui...", L2: "SOLICITAR CÓDIGO DE ACESSO POR E-MAIL",
                 H_VERIFY_TIT: "VERIFICAÇÃO DE SEGURANÇA:", H_VERIFY_TXT: "Um código de validação foi enviado. Digite os 4 dígitos recebidos.", iC: "Código...", V3: "CONFIRMAR CÓDIGO E ENTRAR",
                 H_SETUP_TIT: "DETALHES DO EVENTO:", H_SETUP_TXT: "Título da eleição e limite de votos.", tE: "Título da eleição...", S2: "SALVAR E AVANÇAR",
-                P1: "Limite de Testes Atingido", H_PAY_TIT: "PLANOS:", H_PAY_TXT: "Você atingiu o limite de 3 eleições gratuitas. Ative um plano para continuar.",
+                P1: "Limite de Testes Atingido", H_PAY_TIT: "PLANOS:", H_PAY_TXT: "Você atingiu o limite de 3 eleições gratuitas.",
                 PL1: "💎 Eleição Única", DESC_PL1: "Liberação para mais 1 eleição oficial.", B1: "LIBERAR 1 (R$ 30,00)",
                 PL2: "🚀 Pacote 20 Urnas", DESC_PL2: "Melhor custo-benefício institucional.", B2: "COMPRAR PACOTE 20 (R$ 500,00)",
                 P2: "ATIVAR AGORA", L_CUP: "Cupom ou Senha Mestre?", cup: "Digite aqui...", B_VOLTAR: "VOLTAR AO INÍCIO",
@@ -176,7 +168,7 @@
                 C2: "ADICIONAR À LISTA", C3: "SALVAR CANDIDATOS", C4: "INICIAR VOTAÇÃO AGORA",
                 H_URNA_TIT: "GUIA:", H_URNA_TXT: "Selecione e confirme. Senha 1357 para encerrar.", U1: "CONFIRMAR MEU VOTO AGORA", BT_BRANCO: "VOTAR EM BRANCO (NULO)", L_COUNT: "Eleitores que já votaram:", U2: "ENCERRAR E APURAR RESULTADOS",
                 R_TITLE: "RELATÓRIO", TOTAL_VOTOS: "VOTOS COMPUTADOS", B_PDF_SIMPLE: "PDF SIMPLES", B_PDF_PHOTOS: "PDF COMPLETO", AUDIT: "Emissão Oficial",
-                AL_SUC_VOTE: "Gravado!", AL_ERR_VOTE: "Selecione um candidato!", AL_OK_SAVE: "Salvo!", AL_OK_CUP: "CRÉDITO ATIVADO!", BRANCO_TXT: "Brancos", AL_ERR_MAIL: "Use Gmail oficial!", AL_COD_ENV: "Enviado!", AL_INC: "Incorreto!", AL_FALTA: "Faltam dados!", AL_ERR_DATA: "Adicione candidatos!", AL_OK_MSG: "Mensagem enviada!", PDF_CAND: "Candidato", PDF_VOT: "Votos", PDF_TOTAL: "Total de Eleitores"
+                AL_SUC_VOTE: "Gravado!", AL_ERR_VOTE: "Selecione um candidato!", AL_OK_SAVE: "Salvo!", AL_OK_CUP: "ATIVADO!", BRANCO_TXT: "Brancos", AL_ERR_MAIL: "Use Gmail oficial!", AL_COD_ENV: "Enviado!", AL_INC: "Incorreto!", AL_FALTA: "Faltam dados!", AL_ERR_DATA: "Adicione candidatos!", AL_OK_MSG: "Mensagem enviada!", PDF_CAND: "Candidato", PDF_VOT: "Votos", PDF_TOTAL: "Total de Eleitores"
             },
             en: { 
                 B_CACHE: "🔄 REFRESH / CLEAR CACHE", L1_1: "Easy Voting System", L1_2: "Identity Security", L1_3: "Configuration",
@@ -187,7 +179,7 @@
                 PL1: "💎 Single Election", DESC_PL1: "Unlock 1 more.", B1: "UNLOCK (R$ 30,00)",
                 PL2: "🚀 20 Urns Pack", DESC_PL2: "Best value.", B2: "BUY 20 (R$ 500,00)",
                 P2: "ACTIVATE NOW", L_CUP: "Coupon?", cup: "Code...", B_VOLTAR: "BACK",
-                C1: "CANDIDATES", H_CARGO_TIT: "REGISTRATION:", H_CARGO_TXT: "Position/Name.", nC: "Position...", nCand: "Name...", INSTR_FOTO: "📷 ATTACH PHOTO", 
+                C1: "CANDIDATES", H_CARGO_TIT: "REGISTRATION:", H_CARGO_TXT: "Position/Name.", nC: "Ex: Manager...", nCand: "Name...", INSTR_FOTO: "📷 ATTACH PHOTO", 
                 C2: "ADD", C3: "SAVE", C4: "START",
                 H_URNA_TIT: "GUIDE:", H_URNA_TXT: "Select and confirm.", U1: "CONFIRM VOTE", BT_BRANCO: "BLANK VOTE", L_COUNT: "Voters:", U2: "END VOTING",
                 R_TITLE: "RESULTS", TOTAL_VOTOS: "TOTAL", B_PDF_SIMPLE: "PDF TEXT", B_PDF_PHOTOS: "PDF PHOTOS", AUDIT: "Official",
@@ -202,7 +194,7 @@
                 P1: "Límite Alcanzado", H_PAY_TIT: "PLANES:", H_PAY_TXT: "Límite alcanzado.",
                 PL1: "💎 Plan Único", DESC_PL1: "Libera 1 elección.", B1: "LIBERAR ($30.00)",
                 PL2: "🚀 20 Urnas Pack", DESC_PL2: "Mejor costo.", B2: "COMPRAR ($500.00)",
-                P2: "ATIVAR", L_CUP: "¿Cupón?", cup: "Código...", B_VOLTAR: "VOLVER",
+                P2: "ACTIVAR", L_CUP: "¿Cupón?", cup: "Código...", B_VOLTAR: "VOLVER",
                 C1: "GESTIONAR", H_CARGO_TIT: "REGISTRO:", H_CARGO_TXT: "Cargo/Nombre.", nC: "Cargo...", nCand: "Nombre...", INSTR_FOTO: "📷 FOTO", 
                 C2: "AÑADIR", C3: "GUARDAR", C4: "INICIAR",
                 H_URNA_TIT: "GUÍA:", H_URNA_TXT: "Pitido indica éxito.", U1: "CONFIRMAR VOTO", BT_BRANCO: "VOTO BLCO", L_COUNT: "Votantes:", U2: "TERMINAR",
@@ -232,73 +224,26 @@
 
         window.LIMPAR = () => { if(confirm(window._tr[window._idioma].B_CACHE)) { localStorage.clear(); window.location.reload(true); } };
 
-        /* LOGIN: VERIFICA BLOQUEIO */
         window.V = async function() { 
             let e = document.getElementById('uE').value.trim().toLowerCase(); 
             if(!e.endsWith('@gmail.com')) return alert(window._tr[window._idioma].AL_ERR_MAIL);
-            
             localStorage.setItem('urna_user_email', e);
             let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
-            
             try { 
                 let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
                 let d = await r.json(); 
-                
-                if(d.pay_required === true || (d.count !== undefined && Number(d.count) >= 3)) { 
-                    window.GO('pay'); 
-                    return; 
-                } 
-                
-                let cod = (d.codigo !== undefined ? d.codigo : d).toString().trim();
+                if(d.pay_required === true) { window.GO('pay'); return; } 
+                let cod = d.codigo.toString().trim();
                 localStorage.setItem('urna_vault', cod);
-
                 await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod }, window._cfg.k); 
-                alert(window._tr[window._idioma].AL_COD_ENV); 
-                window.GO('verify'); 
-            } catch(err) { 
-                alert("Erro de conexão."); 
-            } finally { 
-                btn.disabled = false; window.TR(window._idioma); 
-            }
+                alert(window._tr[window._idioma].AL_COD_ENV); window.GO('verify'); 
+            } catch(err) { alert("Erro de conexão com o servidor."); } finally { btn.disabled = false; window.TR(window._idioma); }
         };
 
         window.C = () => { 
             let digitado = document.getElementById('iC').value.trim();
             let esperado = (localStorage.getItem('urna_vault') || "").trim();
-            if(digitado !== "" && String(digitado) === String(esperado)) window.GO('setup'); 
-            else alert(window._tr[window._idioma].AL_INC); 
-        };
-
-        /* GASTO DE CRÉDITO: SOLUÇÃO DEFINITIVA */
-        window.START_VOTE_PROCESS = async () => { 
-            if(!window._data.length) return alert(window._tr[window._idioma].AL_ERR_DATA); 
-            let email = localStorage.getItem('urna_user_email');
-            
-            // Bloqueia o botão para evitar cliques duplos
-            let btn = document.getElementById('C4');
-            btn.disabled = true;
-            btn.innerText = "...";
-
-            if(email) {
-                try {
-                    // Espera a confirmação do servidor ANTES de entrar na urna
-                    let r = await fetch(window._cfg.u + '/increment?email=' + encodeURIComponent(email));
-                    let res = await r.json();
-                    
-                    if(res.success) {
-                        window._idx=0; window.RUN(); window.GO('urna');
-                    } else {
-                        alert("Erro ao processar crédito.");
-                    }
-                } catch(e) { 
-                    alert("Erro de comunicação com o servidor.");
-                } finally {
-                    btn.disabled = false;
-                    window.TR(window._idioma);
-                }
-            } else {
-                window.GO('login');
-            }
+            if(digitado !== "" && digitado === esperado) window.GO('setup'); else alert(window._tr[window._idioma].AL_INC); 
         };
 
         window.BRANCO = () => {
@@ -332,7 +277,7 @@
             window._data.forEach(cargo => {
                 let h=`<h3>${cargo.n.toUpperCase()}</h3><table class="pdf-table"><thead><tr>${fotos?'<th style="width:50px">Foto</th>':''}<th>${d.PDF_CAND}</th><th style="text-align:right">${d.PDF_VOT}</th></tr></thead><tbody>`;
                 cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ 
-                    h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></td>`:''}<td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`; 
+                    h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></td>`:''}<td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`;
                 });
                 if(cargo.branco > 0) h += `<tr>${fotos?'<td></td>':''}<td><i>${d.BRANCO_TXT}</i></td><td style="text-align:right"><b>${cargo.branco}</b></td></tr>`;
                 out.innerHTML += h+'</tbody></table>';
@@ -340,14 +285,11 @@
         };
 
         window.END = () => { window.MOUNT_RESULT(false); window.GO('res'); };
-        window.CONFIRM_END = () => { if(prompt("Senha (1357):") === "1357") window.END(); else alert("!"); };
+        window.CONFIRM_END = () => { if(prompt(window._idioma === 'pt' ? "Senha (1357):" : "Password (1357):") === "1357") window.END(); else alert(window._tr[window._idioma].AL_INC); };
 
         window.PDF = (fotos) => {
             window.MOUNT_RESULT(fotos);
-            const opt = { 
-                margin: 10, filename: 'UrnaWeb_Resultado.pdf', image: { type: 'jpeg', quality: 0.98 }, 
-                html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4' } 
-            };
+            const opt = { margin: 10, filename: 'UrnaWeb_Resultado.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4' } };
             html2pdf().set(opt).from(document.getElementById('areaImpressao')).save().then(() => { window.MOUNT_RESULT(false); });
         };
 
@@ -372,6 +314,18 @@
         };
         window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('listaTemporaria').innerHTML=''; alert(window._tr[window._idioma].AL_OK_SAVE); };
         
+        window.START_VOTE_PROCESS = async () => { 
+            if(!window._data.length) return alert(window._tr[window._idioma].AL_ERR_DATA); 
+            let email = localStorage.getItem('urna_user_email');
+            if(email) {
+                try {
+                    // Chama explicitamente a rota de incremento
+                    await fetch(window._cfg.u + '/increment?email=' + encodeURIComponent(email));
+                } catch(e) { console.log("Erro de contagem."); }
+            }
+            window._idx=0; window.RUN(); window.GO('urna'); 
+        };
+
         window.RUN = () => {
             let cargo = window._data[window._idx]; document.getElementById('uT').innerText = cargo.n.toUpperCase();
             let g = document.getElementById('gridUrna'); g.innerHTML=''; window._sel=[];
