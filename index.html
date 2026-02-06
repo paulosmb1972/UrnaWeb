@@ -102,11 +102,24 @@
 
         .foto-container { border: 2px dashed var(--primary); padding: 20px; border-radius: 15px; text-align: center; color: var(--primary); font-weight: 600; cursor: pointer; }
         
-        /* Relatório PDF - Melhoria para evitar corte */
-        #areaImpressao { width: 800px; background: white !important; color: #333 !important; padding: 40px; box-sizing: border-box; border-radius: 0; position: absolute; left: -9999px; }
+        /* CORREÇÃO DO PDF: Oculto para o usuário mas visível para o motor de renderização */
+        #areaImpressao { 
+            width: 700px; 
+            background: white !important; 
+            color: #333 !important; 
+            padding: 40px; 
+            box-sizing: border-box; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            z-index: -9999; 
+            opacity: 0; 
+            pointer-events: none;
+            transform: scale(1);
+        }
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; }
-        .pdf-table td { padding: 12px; border-bottom: 1px solid #eee; color: #333 !important; }
+        .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; border: 1px solid #ddd; }
+        .pdf-table td { padding: 12px; border: 1px solid #ddd; color: #333 !important; }
     </style>
 </head>
 <body>
@@ -215,9 +228,9 @@
     <div id="res" class="screen">
         <h2 id="R_TITLE"></h2>
         <div id="areaImpressao">
-            <h2 id="pdf_h1" style="color:#0a2a66; margin-bottom: 30px;"></h2>
+            <h2 id="pdf_h1" style="color:#0a2a66; margin-bottom: 20px; text-align: center;"></h2>
             <div id="pC"></div>
-            <p id="pdf-audit" style="text-align:center; font-size:10px; color:#666; margin-top: 40px; border-top: 1px solid #eee; padding-top: 10px;"></p>
+            <p id="pdf-audit" style="text-align:center; font-size:10px; color:#666; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px;"></p>
         </div>
         <button onclick="window.PDF(false)" id="B_PDF_SIMPLE"><i class="fas fa-file-alt"></i></button>
         <button onclick="window.PDF(true)" id="B_PDF_PHOTOS" class="success"><i class="fas fa-file-pdf"></i></button>
@@ -230,7 +243,6 @@
     </div>
 
     <script>
-        // Configurações e Estado Global
         window._cfg = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
         emailjs.init(window._cfg.k);
         window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp=''; window._maxVotos=1; window._idioma='pt'; window._totalEleitores = 0;
@@ -277,7 +289,7 @@
                 PL1: "💎 Plan Único", B1: "LIBERAR 1",
                 PL2: "🚀 Pack 20", B2: "COMPRAR PACK",
                 P2: "ACTIVAR", L_CUP: "¿Cupón?", cup: "Código...", B_VOLTAR: "VOLVER",
-                C1: "GESTIÓN", H_CARGO_TIT: "REGISTRO:", H_CARGO_TXT: "Cargo, Nombre y Foto.", nC: "Ex: Presidente...", nCand: "Nombre...", INSTR_FOTO: "📷 FOTO", 
+                C1: "GESTIÓN", H_CARGO_TIT: "REGISTRO:", H_CARGO_TXT: "Cargo, Nome e Foto.", nC: "Ex: Presidente...", nCand: "Nombre...", INSTR_FOTO: "📷 FOTO", 
                 C2: "AÑADIR", C3: "GUARDAR", C4: "INICIAR VOTOS",
                 H_URNA_TIT: "VOTACIÓN:", H_URNA_TXT: "Clave 1357 para cerrar.", U1: "CONFIRMAR VOTO", BT_BRANCO: "VOTO BLANCO", L_COUNT: "Votantes:", U2: "TERMINAR",
                 R_TITLE: "RESULTADOS", B_PDF_SIMPLE: "PDF TEXTO", B_PDF_PHOTOS: "PDF COMPLETO", AUDIT: "Certificado",
@@ -392,7 +404,7 @@
             let out=document.getElementById('pC'); out.innerHTML=`<div style="text-align:center; font-weight:bold; margin-bottom:20px;">${d.PDF_TOTAL}: ${window._totalEleitores}</div>`;
             window._data.forEach(cargo => {
                 let h=`<h3>${cargo.n.toUpperCase()}</h3><table class="pdf-table"><thead><tr>${fotos?'<th>Foto</th>':''}<th>${d.PDF_CAND}</th><th>${d.PDF_VOT}</th></tr></thead><tbody>`;
-                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;border-radius:50%"></td>`:''}<td>${can.n}</td><td>${can.v}</td></tr>`; });
+                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:50px;height:50px;object-fit:cover;border-radius:5px"></td>`:''}<td>${can.n}</td><td>${can.v}</td></tr>`; });
                 if(cargo.branco > 0) h += `<tr>${fotos?'<td></td>':''}<td><i>${d.BRANCO_TXT}</i></td><td>${cargo.branco}</td></tr>`;
                 out.innerHTML += h+'</tbody></table>';
             });
@@ -400,17 +412,25 @@
 
         window.CONFIRM_END = () => { if(prompt("Senha (1357):") === "1357") { window.MOUNT_RESULT(false); window.GO('res'); } };
         
-        // CORREÇÃO DO PDF: FORÇANDO LARGURA FIXA DE 800PX
+        // CORREÇÃO DEFINITIVA DO PDF: Captura real da renderização
         window.PDF = (fotos) => { 
             window.MOUNT_RESULT(fotos); 
             const element = document.getElementById('areaImpressao');
+            
             const opt = {
                 margin: 10,
-                filename: 'Resultado_UrnaWeb.pdf',
+                filename: 'Resultado_Eleicao.pdf',
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, width: 800, useCORS: true },
+                html2canvas: { 
+                    scale: 3, // Aumenta a resolução
+                    useCORS: true, 
+                    letterRendering: true,
+                    width: 700 // Garante que a largura do canvas seja suficiente para a tabela
+                },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
+
+            // Gera o PDF a partir do elemento invisível mas renderizado
             html2pdf().set(opt).from(element).save(); 
         };
 
@@ -435,13 +455,10 @@
         };
         window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('listaTemporaria').innerHTML=''; alert("Salvo!"); };
         
-        // CORREÇÃO DO FEEDBACK: USANDO TAGS CORRETAS
         window.FEED = () => { 
             let m = document.getElementById('txtSugestao').value.trim(); 
             if(!m) return alert("Escreva sua mensagem!");
-            
             let emailRemetente = localStorage.getItem('urna_user_email') || "anonimo";
-
             emailjs.send(window._cfg.s, window._cfg.t, { 
                 to_email: "paulosmb1972@gmail.com", 
                 user_email: emailRemetente,
