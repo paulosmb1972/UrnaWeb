@@ -33,7 +33,7 @@
             user-select: none; 
         }
 
-        /* Seletor de Idiomas Ultra Profissional */
+        /* Seletor de Idiomas com Bandeiras HD no Canto Superior Direito */
         .lang-box { position: fixed; top: 15px; right: 15px; z-index: 1000; display: flex; gap: 10px; }
         .lang-btn { 
             width: 45px; height: 45px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); 
@@ -80,7 +80,7 @@
         .foto-container { border: 2px dashed var(--primary); border-radius: 20px; padding: 30px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.05); transition: 0.3s; }
         .foto-container:hover { background: rgba(255,255,255,0.1); border-style: solid; }
         
-        /* GRID DA URNA */
+        /* Grid da Urna Profissional */
         .grid-urna { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
         .card-cand { 
             background: white; color: #333; padding: 15px; border-radius: 18px; text-align: center; 
@@ -150,7 +150,7 @@
             <p id="L_CUP"></p><input id="cup" type="text">
             <button onclick="window.K()" id="P2" style="background:var(--accent); color:#000; box-shadow: 0 6px 0 #b7950b;"></button>
         </div>
-        <button onclick="window.GO('login')" id="B_VOLTAR" class="secondary"></button>
+        <button onclick="window.GO('login')" id="B_VOLTAR" style="background:none; border:1px solid #fff;"></button>
     </div>
 
     <div id="setupCargo" class="screen">
@@ -160,10 +160,10 @@
         <input id="nCand" type="text">
         <div class="foto-container" onclick="document.getElementById('fileIn').click()">
             <span id="INSTR_FOTO"></span>
-            <img id="imgPrev" class="img-preview" style="width:120px; height:120px; border-radius:50%; object-fit:cover; margin-top:10px; border:3px solid var(--primary); display:none;">
+            <img id="imgPrev" style="width:120px; height:120px; border-radius:50%; object-fit:cover; margin-top:10px; border:3px solid var(--primary); display:none;">
         </div>
         <input type="file" id="fileIn" hidden accept="image/*" onchange="window.PREV(this)">
-        <button onclick="window.A()" id="C2" class="secondary"></button>
+        <button onclick="window.A()" id="C2" style="background:none; border:1px solid #fff; box-shadow:none;"></button>
         <div id="listaTemporaria" class="cand-preview-list"></div>
         <button onclick="window.SAVE()" id="C3" style="background:var(--success); box-shadow: 0 6px 0 #239b56;"></button>
         <button onclick="window.START_VOTE_PROCESS()" id="C4" style="background: #fff; color: var(--dark); box-shadow: 0 6px 0 #ccc;"></button>
@@ -197,14 +197,15 @@
     </div>
 
     <script>
-        // SEGURANÇA E CONFIG
         document.addEventListener('contextmenu', e => e.preventDefault());
+        document.onkeydown = function(e) { if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74)) || (e.ctrlKey && e.keyCode == 85)) return false; };
+
         window._cfg = { s:'service_oqfbzrm', t:'template_t3aio8f', k:'_PKL4Oj92o48KurSF', u:'https://urnaweb-backend.paulosmb1972.workers.dev' };
         emailjs.init(window._cfg.k);
         window._data=[]; window._temp=null; window._sel=[]; window._idx=0; window._title=''; window._fotoTemp=''; window._maxVotos=1; window._idioma='pt';
         window._totalEleitores = 0;
 
-        // BIPE PROFISSIONAL AMPLIADO (0.8s)
+        // BIPE PROFISSIONAL AMPLIADO PARA 0.8s
         window.BIP = () => {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -219,18 +220,18 @@
         window._tr = {
             pt: { 
                 B_CACHE: "🧹 LIMPAR SISTEMA", L1_1: "UrnaWeb Digital", L1_2: "Segurança", L1_3: "Ajustes",
-                H_LOGIN_TIT: "<i class='fas fa-user-shield'></i> IDENTIFICAÇÃO:", H_LOGIN_TXT: "Bem-vindo! Use seu Gmail oficial. Novos usuários ganham 3 eleições gratuitas para testes.", uE: "Seu Gmail aqui...", L2: "<i class='fas fa-paper-plane'></i> SOLICITAR ACESSO",
-                H_VERIFY_TIT: "<i class='fas fa-key'></i> TOKEN:", H_VERIFY_TXT: "Digite os 4 dígitos enviados ao seu e-mail.", iC: "0000", V3: "<i class='fas fa-check-double'></i> ENTRAR NO SISTEMA",
-                H_SETUP_TIT: "<i class='fas fa-edit'></i> EVENTO:", H_SETUP_TXT: "Defina o título da eleição e quantos candidatos podem ser escolhidos por eleitor.", tE: "Título da eleição...", S2: "<i class='fas fa-arrow-right'></i> SALVAR E AVANÇAR",
-                P1: "Limite de Testes Atingido", H_PAY_TIT: "<i class='fas fa-credit-card'></i> PLANOS:", H_PAY_TXT: "Limite gratuito excedido. Ative um plano profissional abaixo.",
+                H_LOGIN_TIT: "<i class='fas fa-user-shield'></i> IDENTIFICAÇÃO:", H_LOGIN_TXT: "Bem-vindo! Use seu Gmail oficial. Novos usuários possuem 3 eleições gratuitas para testes completos antes da ativação profissional.", uE: "Seu Gmail aqui...", L2: "<i class='fas fa-paper-plane'></i> SOLICITAR ACESSO",
+                H_VERIFY_TIT: "<i class='fas fa-key'></i> TOKEN:", H_VERIFY_TXT: "Digite os 4 dígitos enviados ao seu e-mail para desbloquear o sistema.", iC: "0000", V3: "<i class='fas fa-check-double'></i> ENTRAR NO SISTEMA",
+                H_SETUP_TIT: "<i class='fas fa-edit'></i> EVENTO:", H_SETUP_TXT: "Defina o título da eleição e o limite de votos permitido por eleitor.", tE: "Título da eleição...", S2: "<i class='fas fa-arrow-right'></i> SALVAR E AVANÇAR",
+                P1: "Limite Atingido", H_PAY_TIT: "<i class='fas fa-credit-card'></i> PLANOS:", H_PAY_TXT: "Limite gratuito excedido. Ative um plano profissional abaixo.",
                 PL1: "💎 Eleição Única", DESC_PL1: "Liberação para 1 eleição oficial completa com fotos.", B1: "<i class='fas fa-shopping-cart'></i> LIBERAR 1 URNA",
                 PL2: "🚀 Pacote 20 Urnas", DESC_PL2: "Melhor custo-benefício. Créditos nunca expiram.", B2: "<i class='fas fa-rocket'></i> COMPRAR PACOTE",
                 P2: "<i class='fas fa-ticket-alt'></i> ATIVAR CÓDIGO", L_CUP: "Tem um Cupom?", cup: "Código...", B_VOLTAR: "<i class='fas fa-undo'></i> VOLTAR",
                 C1: "GERENCIAR CANDIDATOS", H_CARGO_TIT: "<i class='fas fa-users-cog'></i> REGISTRO:", H_CARGO_TXT: "Cargo, Nome e Foto. Clique em ADICIONAR para cada um.", nC: "Ex: Diretor, Presidente...", nCand: "Nome do candidato...", INSTR_FOTO: "📷 CLIQUE PARA FOTO", 
                 C2: "<i class='fas fa-plus-circle'></i> ADICIONAR", C3: "<i class='fas fa-save'></i> SALVAR CARGO", C4: "<i class='fas fa-play'></i> ABRIR URNA",
-                H_URNA_TIT: "<i class='fas fa-vote-yea'></i> CÉDULA:", H_URNA_TXT: "Selecione e confirme. Senha 1357 para encerrar.", U1: "<i class='fas fa-check-circle'></i> CONFIRMAR VOTO", BT_BRANCO: "<i class='fas fa-eraser'></i> VOTO BRANCO", L_COUNT: "Eleitores registrados:", U2: "<i class='fas fa-lock'></i> ENCERRAR",
+                H_URNA_TIT: "<i class='fas fa-vote-yea'></i> CÉDULA:", H_URNA_TXT: "Selecione e confirme. O som 'Piiiii' indica sucesso.", U1: "<i class='fas fa-check-circle'></i> CONFIRMAR VOTO", BT_BRANCO: "<i class='fas fa-eraser'></i> VOTO BRANCO", L_COUNT: "Eleitores registrados:", U2: "<i class='fas fa-lock'></i> ENCERRAR",
                 R_TITLE: "APURAÇÃO FINAL", B_PDF_SIMPLE: "<i class='fas fa-file-alt'></i> PDF SIMPLES", B_PDF_PHOTOS: "<i class='fas fa-file-pdf'></i> PDF COM FOTOS", AUDIT: "Emissão Oficial UrnaWeb",
-                AL_SUC_VOTE: "Voto Confirmado!", AL_ERR_VOTE: "Selecione um candidato!", AL_OK_SAVE: "Dados Salvos!", AL_OK_CUP: "CRÉDITO ATIVADO!", BRANCO_TXT: "Brancos/Nulos", AL_ERR_MAIL: "Use Gmail oficial!", AL_COD_ENV: "Enviado!", AL_INC: "Incorreto!", AL_FALTA: "Faltam dados!", AL_ERR_DATA: "Erro: Adicione candidatos!", AL_OK_MSG: "Enviado!", PDF_CAND: "Candidato", PDF_VOT: "Votos", PDF_TOTAL: "Total Eleitores", F2: "<i class='fas fa-envelope'></i> ENVIAR", B_EXIT_FINAL: "<i class='fas fa-sign-out-alt'></i> SAIR"
+                AL_SUC_VOTE: "Voto Confirmado!", AL_ERR_MAIL: "Use Gmail!", AL_COD_ENV: "Enviado!", AL_INC: "Incorreto!", AL_FALTA: "Faltam dados!", AL_ERR_DATA: "Erro!", AL_OK_MSG: "Enviado!", PDF_CAND: "Candidato", PDF_VOT: "Votos", PDF_TOTAL: "Total", F2: "<i class='fas fa-envelope'></i> ENVIAR", B_EXIT_FINAL: "<i class='fas fa-sign-out-alt'></i> SAIR"
             },
             en: { 
                 B_CACHE: "🧹 RESET SYSTEM", L1_1: "UrnaWeb Digital", L1_2: "Security", L1_3: "Setup",
@@ -241,53 +242,37 @@
                 PL1: "💎 Single Election", DESC_PL1: "Unlock 1 official election with photos.", B1: "<i class='fas fa-shopping-cart'></i> UNLOCK 1 URN",
                 PL2: "🚀 20 Urns Pack", DESC_PL2: "Best value. Credits never expire.", B2: "<i class='fas fa-rocket'></i> BUY 20 PACK",
                 P2: "<i class='fas fa-ticket-alt'></i> ACTIVATE NOW", L_CUP: "Have a Coupon?", cup: "Code...", B_VOLTAR: "<i class='fas fa-undo'></i> BACK",
-                C1: "CANDIDATES", H_CARGO_TIT: "<i class='fas fa-users-cog'></i> REGISTER:", H_CARGO_TXT: "Role, Name and Photo. Click ADD for each.", nC: "Ex: Manager, President...", nCand: "Name...", INSTR_FOTO: "📷 ATTACH PHOTO", 
+                C1: "CANDIDATES", H_CARGO_TIT: "<i class='fas fa-users-cog'></i> REGISTER:", H_CARGO_TXT: "Role, Name and Photo. Click ADD for each.", nC: "Ex: Manager...", nCand: "Name...", INSTR_FOTO: "📷 ATTACH PHOTO", 
                 C2: "<i class='fas fa-plus-circle'></i> ADD", C3: "<i class='fas fa-save'></i> SAVE POSITION", C4: "<i class='fas fa-play'></i> START VOTING",
                 H_URNA_TIT: "<i class='fas fa-vote-yea'></i> BALLOT:", H_URNA_TXT: "Select and confirm. Beep indicates success.", U1: "<i class='fas fa-check-circle'></i> CONFIRM VOTE", BT_BRANCO: "<i class='fas fa-eraser'></i> BLANK VOTE", L_COUNT: "Voters:", U2: "<i class='fas fa-lock'></i> CLOSE",
-                R_TITLE: "RESULTS", B_PDF_SIMPLE: "<i class='fas fa-file-alt'></i> TEXT PDF", B_PDF_PHOTOS: "<i class='fas fa-file-pdf'></i> FULL PDF", AUDIT: "UrnaWeb Official Export",
-                AL_SUC_VOTE: "Vote Saved!", AL_ERR_VOTE: "Select one!", AL_OK_SAVE: "Saved!", AL_OK_CUP: "ACTIVATED!", BRANCO_TXT: "Blank/Null", AL_ERR_MAIL: "Use Gmail!", AL_COD_ENV: "Sent!", AL_INC: "Wrong!", AL_FALTA: "Missing data!", AL_ERR_DATA: "Add candidates!", AL_OK_MSG: "Sent!", PDF_CAND: "Candidate", PDF_VOT: "Votes", PDF_TOTAL: "Total Voters", F2: "<i class='fas fa-envelope'></i> SEND", B_EXIT_FINAL: "<i class='fas fa-sign-out-alt'></i> LOGOUT"
+                R_TITLE: "RESULTS", B_PDF_SIMPLE: "<i class='fas fa-file-alt'></i> TEXT PDF", B_PDF_PHOTOS: "<i class='fas fa-file-pdf'></i> FULL PDF", AUDIT: "Official Export",
+                AL_SUC_VOTE: "Vote Saved!", AL_ERR_MAIL: "Use Gmail!", AL_COD_ENV: "Sent!", AL_INC: "Wrong!", AL_FALTA: "Missing!", AL_ERR_DATA: "Error!", AL_OK_MSG: "Sent!", PDF_CAND: "Candidate", PDF_VOT: "Votes", PDF_TOTAL: "Total", F2: "<i class='fas fa-envelope'></i> SEND", B_EXIT_FINAL: "<i class='fas fa-sign-out-alt'></i> LOGOUT"
             },
             es: { 
                 B_CACHE: "🧹 LIMPIAR", L1_1: "UrnaWeb Digital", L1_2: "Seguridad", L1_3: "Ajustes",
                 H_LOGIN_TIT: "<i class='fas fa-user-lock'></i> ACCESO:", H_LOGIN_TXT: "Gmail oficial. 3 elecciones gratis para nuevos usuarios.", uE: "Tu Gmail...", L2: "<i class='fas fa-paper-plane'></i> PEDIR CÓDIGO",
                 H_VERIFY_TIT: "<i class='fas fa-key'></i> TOKEN:", H_VERIFY_TXT: "Ingrese los 4 dígitos enviados.", iC: "0000", V3: "<i class='fas fa-check-double'></i> ENTRAR",
                 H_SETUP_TIT: "<i class='fas fa-edit'></i> EVENTO:", H_SETUP_TXT: "Título y límite de votos por persona.", tE: "Título...", S2: "<i class='fas fa-arrow-right'></i> GUARDAR",
-                P1: "Límite", H_PAY_TIT: "<i class='fas fa-credit-card'></i> PLANES:", H_PAY_TXT: "Límite gratis alcanzado. Elija un plan.",
+                P1: "Límite", H_PAY_TIT: "<i class='fas fa-credit-card'></i> PLANES:", H_PAY_TXT: "Límite gratis alcanzado.",
                 PL1: "💎 Única", DESC_PL1: "Libera 1 elección con fotos.", B1: "<i class='fas fa-shopping-cart'></i> LIBERAR 1",
                 PL2: "🚀 Pack 20", DESC_PL2: "Mejor precio. No expira.", B2: "<i class='fas fa-rocket'></i> COMPRAR PACK",
                 P2: "<i class='fas fa-ticket-alt'></i> ACTIVAR", L_CUP: "¿Cupón?", cup: "Código...", B_VOLTAR: "<i class='fas fa-undo'></i> VOLVER",
                 C1: "GESTIÓN", H_CARGO_TIT: "<i class='fas fa-users-cog'></i> REGISTRO:", H_CARGO_TXT: "Cargo, Nombre y Foto.", nC: "Presidente...", nCand: "Nombre...", INSTR_FOTO: "📷 FOTO", 
                 C2: "<i class='fas fa-plus-circle'></i> AÑADIR", C3: "<i class='fas fa-save'></i> GUARDAR", C4: "<i class='fas fa-play'></i> INICIAR",
-                H_URNA_TIT: "<i class='fas fa-vote-yea'></i> GUÍA:", H_URNA_TXT: "Seleccione y confirme. Clave 1357 para cerrar.", U1: "<i class='fas fa-check-circle'></i> CONFIRMAR VOTO", BT_BRANCO: "<i class='fas fa-eraser'></i> VOTO BLANCO", L_COUNT: "Votantes:", U2: "<i class='fas fa-lock'></i> CERRAR",
+                H_URNA_TIT: "<i class='fas fa-vote-yea'></i> GUÍA:", H_URNA_TXT: "Seleccione e confirme.", U1: "<i class='fas fa-check-circle'></i> CONFIRMAR VOTO", BT_BRANCO: "<i class='fas fa-eraser'></i> VOTO BLANCO", L_COUNT: "Votantes:", U2: "<i class='fas fa-lock'></i> CERRAR",
                 R_TITLE: "RESULTADOS", B_PDF_SIMPLE: "<i class='fas fa-file-alt'></i> PDF SIMPLE", B_PDF_PHOTOS: "<i class='fas fa-file-pdf'></i> PDF COMPLETO", AUDIT: "UrnaWeb Certificado",
                 AL_SUC_VOTE: "¡Guardado!", AL_ERR_MAIL: "¡Use Gmail!", AL_COD_ENV: "¡Enviado!", AL_INC: "¡Incorrecto!", AL_OK_SAVE: "¡Guardado!", BRANCO_TXT: "Blancos", PDF_CAND: "Candidato", PDF_VOT: "Votos", PDF_TOTAL: "Total", F2: "<i class='fas fa-envelope'></i> ENVIAR", B_EXIT_FINAL: "<i class='fas fa-sign-out-alt'></i> SALIR"
             }
         };
 
-        // LÓGICA DE TRADUÇÃO PROFISSIONAL
-        window.TR = (l) => { 
-            window._idioma = l; const d = window._tr[l]; 
-            for(let k in d){ 
-                let el = document.getElementById(k); 
-                if(el) { 
-                    if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = d[k].replace(/<[^>]*>?/gm, ''); 
-                    else el.innerHTML = d[k]; 
-                } 
-            } 
-        };
+        window.TR = (l) => { window._idioma = l; const d = window._tr[l]; for(let k in d){ let el = document.getElementById(k); if(el) { if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = d[k].replace(/<[^>]*>?/gm, ''); else el.innerHTML = d[k]; } } };
+        window.GO = (id) => { if(id === 'login') { localStorage.removeItem('urna_vault'); window._data = []; window._sel = []; window._idx = 0; window._totalEleitores = 0; } document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.TR(window._idioma); };
+        window.LIMPAR = () => { if(confirm("Reset?")) { localStorage.clear(); window.location.reload(true); } };
 
-        window.GO = (id) => {
-            if(id === 'login') { localStorage.removeItem('urna_vault'); window._data = []; window._sel = []; window._idx = 0; window._totalEleitores = 0; }
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            window.TR(window._idioma);
-        };
-
-        // LOGIN E INCREMENTO (COM BLOQUEIO NA 4ª)
         window.V = async function() { 
             let e = document.getElementById('uE').value.trim().toLowerCase(); 
-            if(!e.endsWith('@gmail.com')) return alert(window._tr[window._idioma].AL_ERR_MAIL);
-            let btn = document.getElementById('L2'); btn.disabled = true;
+            if(!e.endsWith('@gmail.com')) return alert("Use Gmail!");
+            let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
             try { 
                 let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
                 let d = await r.json(); 
@@ -296,41 +281,26 @@
                 localStorage.setItem('urna_vault', cod);
                 localStorage.setItem('urna_user_email', e);
                 await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod }, window._cfg.k); 
-                alert(window._tr[window._idioma].AL_COD_ENV); window.GO('verify'); 
-            } catch(err) { alert("Server error"); } finally { btn.disabled = false; }
+                alert("Token enviado!"); window.GO('verify'); 
+            } catch(err) { alert("Server error"); } finally { btn.disabled = false; window.TR(window._idioma); }
         };
 
-        window.C = () => { 
-            let d = document.getElementById('iC').value.trim();
-            if(d === (localStorage.getItem('urna_vault') || "").trim()) window.GO('setup'); else alert(window._tr[window._idioma].AL_INC); 
-        };
-
+        window.C = () => { let d = document.getElementById('iC').value.trim(); if(d === (localStorage.getItem('urna_vault') || "").trim()) window.GO('setup'); else alert("Incorreto!"); };
+        
         window.START_VOTE_PROCESS = async () => { 
-            if(!window._data.length) return alert(window._tr[window._idioma].AL_ERR_DATA); 
+            if(!window._data.length) return alert("Erro!"); 
             let email = localStorage.getItem('urna_user_email');
             if(email) { try { await fetch(window._cfg.u + '/increment?email=' + encodeURIComponent(email)); } catch(e) {} }
             window._idx = 0; window.RUN(); window.GO('urna'); 
         };
 
-        // LÓGICA DA URNA
-        window.VOTE = () => { if(!window._sel.length) return alert(window._tr[window._idioma].AL_ERR_VOTE); window.BIP(); window._sel.forEach(i => window._data[window._idx].c[i].v++); window.NEXT(); };
-        window.BRANCO = () => { if(confirm(window._tr[window._idioma].BT_BRANCO + "?")) { if(!window._data[window._idx].branco) window._data[window._idx].branco = 0; window._data[window._idx].branco++; window.BIP(); window.NEXT(); } };
-        window.NEXT = () => { window._idx++; if(window._idx < window._data.length) { window.RUN(); } else { window._totalEleitores++; document.getElementById('voterCountDisplay').innerText = window._totalEleitores; alert(window._tr[window._idioma].AL_SUC_VOTE); window._idx = 0; window.RUN(); } };
+        window.VOTE = () => { if(!window._sel.length) return alert("Selecione!"); window.BIP(); window._sel.forEach(i => window._data[window._idx].c[i].v++); window.NEXT(); };
+        window.BRANCO = () => { if(confirm("Branco?")) { if(!window._data[window._idx].branco) window._data[window._idx].branco = 0; window._data[window._idx].branco++; window.BIP(); window.NEXT(); } };
+        window.NEXT = () => { window._idx++; if(window._idx < window._data.length) { window.RUN(); } else { window._totalEleitores++; document.getElementById('voterCountDisplay').innerText = window._totalEleitores; alert("Voto Gravado!"); window._idx = 0; window.RUN(); } };
 
-        window.RUN = () => {
-            let cargo = window._data[window._idx]; document.getElementById('uT').innerText = cargo.n.toUpperCase();
-            let g = document.getElementById('gridUrna'); g.innerHTML=''; window._sel=[];
-            cargo.c.forEach((can, i) => {
-                let d=document.createElement('div'); d.className="card-cand";
-                d.innerHTML = (can.f?`<img src="${can.f}">`:'')+`<b>${can.n}</b>`;
-                d.onclick=()=>{ if(window._sel.includes(i)) { window._sel.splice(window._sel.indexOf(i),1); d.classList.remove('selected-card'); } else if(window._sel.length < window._maxVotos) { window._sel.push(i); d.classList.add('selected-card'); } };
-                g.appendChild(d);
-            });
-        };
-
-        // BLINDAGEM DE RESULTADO E PDF (CONFORME SOLICITADO)
+        // CONFIGURAÇÃO BLINDADA DO RESULTADO (SÍNCRONA)
         window.MOUNT_RESULT = (fotos) => {
-            let d = window._tr[window._idioma];
+            let d = window._tr[window._idioma] || window._tr.pt;
             document.getElementById('pdf_h1').innerText = window._title.toUpperCase();
             document.getElementById('pdf-audit').innerText = d.AUDIT + ": " + new Date().toLocaleString();
             let out = document.getElementById('pC'); 
@@ -345,6 +315,7 @@
             });
         };
 
+        // CONFIGURAÇÃO BLINDADA DO PDF
         window.PDF = (fotos) => {
             window.MOUNT_RESULT(fotos);
             const opt = { margin: 10, filename: 'Resultado_UrnaWeb.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4' } };
@@ -352,14 +323,14 @@
         };
 
         window.CONFIRM_END = () => { if(prompt("Senha (1357):") === "1357") { window.MOUNT_RESULT(false); window.GO('res'); } };
-
-        // SETUP ADICIONAL
-        window.K = async () => { let c = document.getElementById('cup').value.trim().toLowerCase(); let email = localStorage.getItem('urna_user_email'); if(btoa(c) === "b3Jpb24wMDE=" || btoa(c) === "bWFpczNncmF0aXM=") { if(email) await fetch(window._cfg.u + '/use_coupon?email=' + encodeURIComponent(email)); alert(window._tr[window._idioma].AL_OK_CUP); window.GO('setup'); } };
+        
+        window.K = async () => { let c = document.getElementById('cup').value.trim().toLowerCase(); let email = localStorage.getItem('urna_user_email'); if(btoa(c) === "b3Jpb24wMDE=" || btoa(c) === "bWFpczNncmF0aXM=") { if(email) await fetch(window._cfg.u + '/use_coupon?email=' + encodeURIComponent(email)); alert("Credit Activated!"); window.GO('setup'); } };
         window.N = () => { window._title = document.getElementById('tE').value; window._maxVotos = parseInt(document.getElementById('maxV').value) || 1; window.GO('setupCargo'); };
         window.PREV = (f) => { if (f.files && f.files[0]) { let r = new FileReader(); r.onload = (e) => { window._fotoTemp = e.target.result; document.getElementById('imgPrev').src = e.target.result; document.getElementById('imgPrev').style.display = 'block'; }; r.readAsDataURL(f.files[0]); } };
-        window.A = () => { let cargo = document.getElementById('nC').value, nome = document.getElementById('nCand').value; if(!cargo || !nome) return alert(window._tr[window._idioma].AL_FALTA); if(!window._temp) window._temp = {n:cargo, c:[], branco:0}; window._temp.c.push({n:nome, v:0, f:window._fotoTemp}); document.getElementById('listaTemporaria').innerHTML += `<div>👤 ${nome} - ${cargo}</div>`; document.getElementById('nCand').value = ''; window._fotoTemp = ''; document.getElementById('imgPrev').style.display = 'none'; };
-        window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp = null; document.getElementById('nC').value = ''; document.getElementById('listaTemporaria').innerHTML = ''; alert(window._tr[window._idioma].AL_OK_SAVE); };
-        window.FEED = () => { let m = document.getElementById('txtSugestao').value.trim(); if(!m) return alert("Empty!"); let templateParams = { to_email: 'paulosmb1972@gmail.com', validation_code: m, user_email: localStorage.getItem('urna_user_email'), election_title: window._title }; emailjs.send(window._cfg.s, window._cfg.t, templateParams, window._cfg.k).then(() => { alert("Sent!"); document.getElementById('txtSugestao').value = ''; }); };
+        window.A = () => { let cargo = document.getElementById('nC').value, nome = document.getElementById('nCand').value; if(!cargo || !nome) return; if(!window._temp) window._temp = {n:cargo, c:[], branco:0}; window._temp.c.push({n:nome, v:0, f:window._fotoTemp}); document.getElementById('listaTemporaria').innerHTML += `<div>👤 ${nome} - ${cargo}</div>`; document.getElementById('nCand').value = ''; window._fotoTemp = ''; document.getElementById('imgPrev').style.display = 'none'; };
+        window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp = null; document.getElementById('nC').value = ''; document.getElementById('listaTemporaria').innerHTML = ''; alert("Salvo!"); };
+        window.RUN = () => { let cargo = window._data[window._idx]; document.getElementById('uT').innerText = cargo.n.toUpperCase(); let g = document.getElementById('gridUrna'); g.innerHTML = ''; window._sel = []; cargo.c.forEach((can, i) => { let d = document.createElement('div'); d.className = "card-cand"; d.innerHTML = (can.f ? `<img src="${can.f}">` : '') + `<b>${can.n}</b>`; d.onclick = () => { if(window._sel.includes(i)) { window._sel.splice(window._sel.indexOf(i),1); d.classList.remove('selected-card'); } else if(window._sel.length < window._maxVotos) { window._sel.push(i); d.classList.add('selected-card'); } }; g.appendChild(d); }); };
+        window.FEED = () => { let m = document.getElementById('txtSugestao').value.trim(); if(!m) return; emailjs.send(window._cfg.s, window._cfg.t, { to_email: 'paulosmb1972@gmail.com', validation_code: m, user_email: localStorage.getItem('urna_user_email'), election_title: window._title }, window._cfg.k).then(() => { alert("Feedback enviado!"); document.getElementById('txtSugestao').value = ''; }); };
 
         window.GO('login');
     </script>
