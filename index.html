@@ -236,17 +236,28 @@
 
         window.LIMPAR = () => { if(confirm("Limpar cache?")) { localStorage.clear(); window.location.reload(true); } };
 
-        window.V = async function() { 
-            let e = document.getElementById('uE').value.trim().toLowerCase(); 
-            if(!e.endsWith('@gmail.com')) return alert(window._tr[window._idioma].AL_ERR_MAIL);
-            localStorage.setItem('urna_user_email', e);
-            let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
-            try { 
-                let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
-                let d = await r.json(); 
-                if(d.pay_required === true || (d.count !== undefined && Number(d.count) >= 3)) { window.GO('pay'); return; } 
-                let cod = (d.codigo || d).toString().trim();
-                localStorage.setItem('urna_vault', cod);
+window.V = async function() { 
+    let e = document.getElementById('uE').value.trim().toLowerCase(); 
+    if(!e.endsWith('@gmail.com')) return alert(window._tr[window._idioma].AL_ERR_MAIL);
+    localStorage.setItem('urna_user_email', e);
+    let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
+    try { 
+        // 1. Ele faz uma requisição ao seu Worker/Backend
+        let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
+        let d = await r.json(); 
+        
+        // 2. AQUI ESTÁ A LÓGICA DE BLOQUEIO:
+        // Se o servidor responder que o pagamento é obrigatório OU
+        // se o contador (d.count) for maior ou igual a 3
+        if(d.pay_required === true || (d.count !== undefined && Number(d.count) >= 3)) { 
+            window.GO('pay'); // 3. Redireciona para a tela de pagamento
+            return; 
+        } 
+        
+        // Se for menor que 3, ele gera o código e segue para a verificação
+        let cod = (d.codigo || d).toString().trim();
+        localStorage.setItem('urna_vault', cod);
+        // ... restante do código de envio de e-mail
                 await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod }, window._cfg.k); 
                 alert(window._tr[window._idioma].AL_COD_ENV); window.GO('verify'); 
             } catch(err) { alert("Erro servidor"); } finally { btn.disabled = false; window.TR(window._idioma); }
@@ -258,12 +269,16 @@
             if(digitado !== "" && digitado === esperado) window.GO('setup'); else alert(window._tr[window._idioma].AL_INC); 
         };
 
-        window.START_VOTE_PROCESS = async () => { 
-            if(!window._data.length) return alert("Erro Candidatos"); 
-            let email = localStorage.getItem('urna_user_email');
-            if(email) {
-                try { await fetch(window._cfg.u + '/increment?email=' + encodeURIComponent(email)); } catch(e) {}
-            }
+window.START_VOTE_PROCESS = async () => { 
+    // ...
+    if(email) {
+        try { 
+            // Incrementa o contador no banco de dados para a próxima vez
+            await fetch(window._cfg.u + '/increment?email=' + encodeURIComponent(email)); 
+        } catch(e) {}
+    }
+    // ...
+};
             window._idx=0; window.RUN(); window.GO('urna'); 
         };
 
