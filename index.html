@@ -103,7 +103,17 @@
         .foto-container { border: 2px dashed var(--primary); padding: 20px; border-radius: 15px; text-align: center; color: var(--primary); font-weight: 600; cursor: pointer; }
         
         /* Localize e substitua exatamente por este bloco */
-        #areaImpressao { width: 480px; margin: 0 auto; background: white !important; color: #333 !important; padding: 30px; border-radius: 5px; }
+        #areaImpressao { 
+    width: 750px !important; 
+    position: absolute; 
+    left: -10000px; 
+    top: 0; 
+    background: white !important; 
+    color: #333 !important; 
+    padding: 30px; 
+    box-sizing: border-box; 
+    display: block !important; 
+}
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; }
         .pdf-table td { padding: 12px; border-bottom: 1px solid #eee; color: #333 !important; }
@@ -393,18 +403,28 @@
             });
         };
 
-        window.MOUNT_RESULT = (fotos) => {
-            let d = window._tr[window._idioma];
-            document.getElementById('pdf_h1').innerText=window._title.toUpperCase();
-            document.getElementById('pdf-audit').innerText= d.AUDIT + ": " + new Date().toLocaleString();
-            let out=document.getElementById('pC'); out.innerHTML=`<div style="text-align:center; font-weight:bold; margin-bottom:20px;">${d.PDF_TOTAL}: ${window._totalEleitores}</div>`;
-            window._data.forEach(cargo => {
-                let h=`<h3>${cargo.n.toUpperCase()}</h3><table class="pdf-table"><thead><tr>${fotos?'<th>Foto</th>':''}<th>${d.PDF_CAND}</th><th>${d.PDF_VOT}</th></tr></thead><tbody>`;
-                cargo.c.sort((a,b)=>b.v-a.v).forEach(can=>{ h+=`<tr>${fotos?`<td><img src="${can.f}" style="width:50px;height:50px;object-fit:cover;border-radius:5px"></td>`:''}<td>${can.n}</td><td>${can.v}</td></tr>`; });
-                if(cargo.branco > 0) h += `<tr>${fotos?'<td></td>':''}<td><i>${d.BRANCO_TXT}</i></td><td>${cargo.branco}</td></tr>`;
-                out.innerHTML += h+'</tbody></table>';
-            });
-        };
+window.MOUNT_RESULT = (fotos) => {
+    let d = window._tr[window._idioma] || window._tr.pt;
+    document.getElementById('pdf_h1').innerText = window._title.toUpperCase();
+    document.getElementById('pdf-audit').innerText = d.AUDIT + ": " + new Date().toLocaleString();
+    let out = document.getElementById('pC'); 
+    out.innerHTML = `<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.PDF_TOTAL}: ${window._totalEleitores}</b></div>`;
+    
+    window._data.forEach(cargo => {
+        let h = `<h3>${cargo.n.toUpperCase()}</h3><table class="pdf-table"><thead><tr>${fotos?'<th style="width:60px">Foto</th>':''}<th>${d.PDF_CAND}</th><th style="text-align:right">${d.PDF_VOT}</th></tr></thead><tbody>`;
+        
+        cargo.c.sort((a,b)=>b.v-a.v).forEach(can => { 
+            h += `<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></td>`:''}<td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`;
+        });
+
+        // Verificação crucial para exibir Brancos:
+        if (cargo.branco !== undefined) {
+            h += `<tr>${fotos?'<td></td>':''}<td><i>${d.BRANCO_TXT}</i></td><td style="text-align:right"><b>${cargo.branco}</b></td></tr>`;
+        }
+        
+        out.innerHTML += h + '</tbody></table>';
+    });
+};
 
         window.CONFIRM_END = () => { if(prompt("Senha (1357):") === "1357") { window.MOUNT_RESULT(false); window.GO('res'); } };
         
@@ -429,14 +449,19 @@
 
         window.CONFIRM_END = () => { if(prompt(window._idioma === 'pt' ? "Senha (1357):" : "Password (1357):") === "1357") window.END(); else alert(window._tr[window._idioma].AL_INC); };
 
-        window.PDF = (fotos) => {
-            window.MOUNT_RESULT(fotos);
-            const opt = { 
-                margin: 10, filename: 'UrnaWeb_Resultado.pdf', image: { type: 'jpeg', quality: 0.98 }, 
-                html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4' } 
-            };
-            html2pdf().set(opt).from(document.getElementById('areaImpressao')).save().then(() => { window.MOUNT_RESULT(false); });
-        };
+window.PDF = (fotos) => {
+    window.MOUNT_RESULT(fotos);
+    const opt = { 
+        margin: 10, 
+        filename: 'UrnaWeb_Resultado.pdf', 
+        image: { type: 'jpeg', quality: 0.98 }, 
+        html2canvas: { scale: 2, useCORS: true, width: 750, windowWidth: 750 }, 
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+    };
+    html2pdf().set(opt).from(document.getElementById('areaImpressao')).save().then(() => { 
+        window.MOUNT_RESULT(false); 
+    });
+};
 
         window.K = async () => { 
             let c = document.getElementById('cup').value.trim().toLowerCase(); 
@@ -480,5 +505,3 @@
     </script>
 </body>
 </html>
-
-
