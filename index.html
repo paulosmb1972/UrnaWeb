@@ -176,7 +176,7 @@
                 C2: "ADICIONAR À LISTA", C3: "SALVAR CANDIDATOS", C4: "INICIAR VOTAÇÃO AGORA",
                 H_URNA_TIT: "GUIA:", H_URNA_TXT: "Selecione e confirme. Senha 1357 para encerrar.", U1: "CONFIRMAR MEU VOTO AGORA", BT_BRANCO: "VOTAR EM BRANCO (NULO)", L_COUNT: "Eleitores que já votaram:", U2: "ENCERRAR E APURAR RESULTADOS",
                 R_TITLE: "RELATÓRIO", TOTAL_VOTOS: "VOTOS COMPUTADOS", B_PDF_SIMPLE: "PDF SIMPLES", B_PDF_PHOTOS: "PDF COMPLETO", AUDIT: "Emissão Oficial",
-                AL_SUC_VOTE: "Gravado!", AL_ERR_VOTE: "Selecione um candidato!", AL_OK_SAVE: "Salvo!", AL_OK_CUP: "ATIVADO!", BRANCO_TXT: "Brancos", AL_ERR_MAIL: "Use Gmail oficial!", AL_COD_ENV: "Enviado!", AL_INC: "Incorreto!", AL_FALTA: "Faltam dados!", AL_ERR_DATA: "Adicione candidatos!", AL_OK_MSG: "Mensagem enviada!", PDF_CAND: "Candidato", PDF_VOT: "Votos", PDF_TOTAL: "Total de Eleitores"
+                AL_SUC_VOTE: "Gravado!", AL_ERR_VOTE: "Selecione um candidato!", AL_OK_SAVE: "Salvo!", AL_OK_CUP: "CRÉDITO ATIVADO!", BRANCO_TXT: "Brancos", AL_ERR_MAIL: "Use Gmail oficial!", AL_COD_ENV: "Enviado!", AL_INC: "Incorreto!", AL_FALTA: "Faltam dados!", AL_ERR_DATA: "Adicione candidatos!", AL_OK_MSG: "Mensagem enviada!", PDF_CAND: "Candidato", PDF_VOT: "Votos", PDF_TOTAL: "Total de Eleitores"
             },
             en: { 
                 B_CACHE: "🔄 REFRESH / CLEAR CACHE", L1_1: "Easy Voting System", L1_2: "Identity Security", L1_3: "Configuration",
@@ -232,7 +232,7 @@
 
         window.LIMPAR = () => { if(confirm(window._tr[window._idioma].B_CACHE)) { localStorage.clear(); window.location.reload(true); } };
 
-        /* LOGIN: VERIFICA LIMITE NO BANCO E ENVIA CÓDIGO SE LIBERADO */
+        /* LOGIN: VERIFICA BLOQUEIO */
         window.V = async function() { 
             let e = document.getElementById('uE').value.trim().toLowerCase(); 
             if(!e.endsWith('@gmail.com')) return alert(window._tr[window._idioma].AL_ERR_MAIL);
@@ -241,43 +241,63 @@
             let btn = document.getElementById('L2'); btn.disabled = true; btn.innerText = "...";
             
             try { 
-                // 1. Consulta status no Worker
                 let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
                 let d = await r.json(); 
                 
-                // 2. Bloqueio: Se count >= 3, vai para pagamento
                 if(d.pay_required === true || (d.count !== undefined && Number(d.count) >= 3)) { 
                     window.GO('pay'); 
                     return; 
                 } 
                 
-                // 3. Extrai código e envia e-mail
                 let cod = (d.codigo !== undefined ? d.codigo : d).toString().trim();
                 localStorage.setItem('urna_vault', cod);
 
-                await emailjs.send(window._cfg.s, window._cfg.t, { 
-                    to_email: e, 
-                    validation_code: cod 
-                }, window._cfg.k); 
-
+                await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod }, window._cfg.k); 
                 alert(window._tr[window._idioma].AL_COD_ENV); 
                 window.GO('verify'); 
-
             } catch(err) { 
-                alert("Erro de conexão com o servidor."); 
+                alert("Erro de conexão."); 
             } finally { 
                 btn.disabled = false; window.TR(window._idioma); 
             }
         };
 
-        /* VERIFICAÇÃO DE CÓDIGO: COMPARAÇÃO STRING PARA EVITAR ERROS */
         window.C = () => { 
             let digitado = document.getElementById('iC').value.trim();
             let esperado = (localStorage.getItem('urna_vault') || "").trim();
-            if(digitado !== "" && String(digitado) === String(esperado)) {
-                window.GO('setup'); 
+            if(digitado !== "" && String(digitado) === String(esperado)) window.GO('setup'); 
+            else alert(window._tr[window._idioma].AL_INC); 
+        };
+
+        /* GASTO DE CRÉDITO: SOLUÇÃO DEFINITIVA */
+        window.START_VOTE_PROCESS = async () => { 
+            if(!window._data.length) return alert(window._tr[window._idioma].AL_ERR_DATA); 
+            let email = localStorage.getItem('urna_user_email');
+            
+            // Bloqueia o botão para evitar cliques duplos
+            let btn = document.getElementById('C4');
+            btn.disabled = true;
+            btn.innerText = "...";
+
+            if(email) {
+                try {
+                    // Espera a confirmação do servidor ANTES de entrar na urna
+                    let r = await fetch(window._cfg.u + '/increment?email=' + encodeURIComponent(email));
+                    let res = await r.json();
+                    
+                    if(res.success) {
+                        window._idx=0; window.RUN(); window.GO('urna');
+                    } else {
+                        alert("Erro ao processar crédito.");
+                    }
+                } catch(e) { 
+                    alert("Erro de comunicação com o servidor.");
+                } finally {
+                    btn.disabled = false;
+                    window.TR(window._idioma);
+                }
             } else {
-                alert(window._tr[window._idioma].AL_INC); 
+                window.GO('login');
             }
         };
 
@@ -320,8 +340,7 @@
         };
 
         window.END = () => { window.MOUNT_RESULT(false); window.GO('res'); };
-
-        window.CONFIRM_END = () => { if(prompt(window._idioma === 'pt' ? "Senha (1357):" : "Password (1357):") === "1357") window.END(); else alert(window._tr[window._idioma].AL_INC); };
+        window.CONFIRM_END = () => { if(prompt("Senha (1357):") === "1357") window.END(); else alert("!"); };
 
         window.PDF = (fotos) => {
             window.MOUNT_RESULT(fotos);
@@ -332,19 +351,13 @@
             html2pdf().set(opt).from(document.getElementById('areaImpressao')).save().then(() => { window.MOUNT_RESULT(false); });
         };
 
-        /* CUPOM: RESETA CONTADOR NO WORKER */
         window.K = async () => { 
             let c = document.getElementById('cup').value.trim().toLowerCase(); 
             let email = localStorage.getItem('urna_user_email');
-            
-            // Aceita códigos fixos ou valida no servidor
             if(btoa(c) === "b3Jpb24wMDE=" || btoa(c) === "bWFpczNncmF0aXM=") { 
                 if(email) await fetch(window._cfg.u + '/use_coupon?email=' + encodeURIComponent(email));
-                alert(window._tr[window._idioma].AL_OK_CUP); 
-                window.GO('setup'); 
-            } else {
-                alert("!"); 
-            }
+                alert(window._tr[window._idioma].AL_OK_CUP); window.GO('setup'); 
+            } else alert("!"); 
         };
 
         window.N = () => { window._title=document.getElementById('tE').value; window._maxVotos=parseInt(document.getElementById('maxV').value) || 1; window.GO('setupCargo'); };
@@ -359,19 +372,6 @@
         };
         window.SAVE = () => { if(window._temp) window._data.push(window._temp); window._temp=null; document.getElementById('nC').value=''; document.getElementById('listaTemporaria').innerHTML=''; alert(window._tr[window._idioma].AL_OK_SAVE); };
         
-        /* OPÇÃO A: GASTA O CRÉDITO AO CLICAR EM INICIAR VOTAÇÃO */
-        window.START_VOTE_PROCESS = async () => { 
-            if(!window._data.length) return alert(window._tr[window._idioma].AL_ERR_DATA); 
-            let email = localStorage.getItem('urna_user_email');
-            if(email) {
-                try {
-                    // Chama a rota de incremento no Worker
-                    await fetch(window._cfg.u + '/increment?email=' + encodeURIComponent(email));
-                } catch(e) { console.log("Erro de contagem."); }
-            }
-            window._idx=0; window.RUN(); window.GO('urna'); 
-        };
-
         window.RUN = () => {
             let cargo = window._data[window._idx]; document.getElementById('uT').innerText = cargo.n.toUpperCase();
             let g = document.getElementById('gridUrna'); g.innerHTML=''; window._sel=[];
