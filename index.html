@@ -102,7 +102,18 @@
 
         .foto-container { border: 2px dashed var(--primary); padding: 20px; border-radius: 15px; text-align: center; color: var(--primary); font-weight: 600; cursor: pointer; }
         
-        #areaImpressao { width: 800px; position: absolute; left: -10000px; top: 0; background: white !important; color: #333 !important; padding: 40px; display: block !important; }
+        /* Localize e substitua exatamente por este bloco */
+#areaImpressao { 
+    width: 800px !important; 
+    position: absolute; 
+    left: -10000px; 
+    top: 0; 
+    background: white !important; 
+    color: #333 !important; 
+    padding: 30px; 
+    box-sizing: border-box;
+    display: block !important;
+}
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; }
         .pdf-table td { padding: 12px; border-bottom: 1px solid #eee; color: #333 !important; }
@@ -128,7 +139,8 @@
         </div>
     </div>
 
-    <div id="login" class="screen active">
+    <div id="login" class="screen
+ active">
         <h2 id="L1_1">UrnaWeb Digital</h2>
         <div class="info-box">
             <b id="H_LOGIN_TIT"><i class="fas fa-user-shield"></i> IDENTIFICAÇÃO</b>
@@ -217,13 +229,7 @@
         <button onclick="window.CONFIRM_END()" id="U2" style="background:var(--danger); margin-top: 50px; font-size: 11px;"><i class="fas fa-lock"></i></button>
     </div>
 
-    <div id="res" class="screen">
-        <h2 id="R_TITLE"></h2>
-<div id="areaImpressao">
-    <h2 id="pdf_h1" style="text-align:center; color:#0a2a66;"></h2>
-    <div id="pC"></div>
-    <p id="pdf-audit" style="text-align:center; font-size:9px; color:#999;"></p>
-</div>
+<div id="res" class="screen"> <h2 id="R_TITLE"></h2> <div id="areaImpressao"> <h2 id="pdf_h1" style="text-align:center; color:#0a2a66;"></h2> <div id="pC"></div> <p id="pdf-audit" style="text-align:center; font-size:9px; color:#999;"></p> </div> <button onclick="window.PDF(false)" id="B_PDF_SIMPLE"></button>
         <button onclick="window.PDF(false)" id="B_PDF_SIMPLE"></button>
         <button onclick="window.PDF(true)" id="B_PDF_PHOTOS" style="background:var(--success)"></button>
         <div style="margin-top:40px; border-top: 1px solid var(--glass-border); padding-top: 20px;">
@@ -407,26 +413,27 @@
         // CORREÇÃO DEFINITIVA DO PDF: Captura real da renderização
 window.PDF = (fotos) => { 
     window.MOUNT_RESULT(fotos); 
-    // Aguarda 500ms para as imagens e textos carregarem no DOM
+    
+    // Pequeno atraso para garantir que o HTML foi montado
     setTimeout(() => {
         const element = document.getElementById('areaImpressao');
         const opt = {
             margin: 10,
-            filename: 'UrnaWeb_Resultado.pdf',
+            filename: 'Resultado_Eleicao.pdf',
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { 
                 scale: 2, 
                 useCORS: true, 
-                letterRendering: true,
-                width: 800, 
-                windowWidth: 800 
+                width: 800,           // Força a largura do desenho
+                windowWidth: 800      // Força o navegador a simular 800px de tela
             },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
+        
         html2pdf().set(opt).from(element).save().then(() => {
-            window.MOUNT_RESULT(false); // Reseta a visualização após salvar
+            window.MOUNT_RESULT(false); 
         });
-    }, 500);
+    }, 500); 
 };
 
         window.K = async () => { 
