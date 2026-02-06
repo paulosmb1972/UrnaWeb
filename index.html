@@ -205,26 +205,26 @@
         <div id="gridUrna" class="grid-urna"></div>
         
         <button onclick="window.VOTE()" id="U1" class="success" style="height: 70px; font-size: 20px;">
-            <i class="fas fa-check"></i>
+            <i class="fas fa-check"></i> CONFIRMAR VOTO
         </button>
  
         <button onclick="window.BRANCO()" id="BT_BRANCO" class="secondary" style="background: #ffffff; color: #333; margin-top: 10px;">
-            <i class="fas fa-eraser"></i>
+            <i class="fas fa-eraser"></i> BRANCO / NULO
         </button>
         
         <div class="voter-counter-box">
             <span id="L_COUNT"></span>
             <b id="voterCountDisplay">0</b>
         </div>
-        <button onclick="window.CONFIRM_END()" id="U2" style="background:var(--danger); margin-top: 50px; font-size: 11px;"><i class="fas fa-lock"></i></button>
+        <button onclick="window.CONFIRM_END()" id="U2" style="background:var(--danger); margin-top: 50px; font-size: 11px;"><i class="fas fa-lock"></i> ENCERRAR</button>
     </div>
  
     <div id="res" class="screen">
         <h2 id="R_TITLE"></h2>
         <div id="areaImpressao">
-            <h2 id="pdf_h1" style="text-align:center; color:#0a2a66;"></h2>
+            <h2 id="pdf_h1" style="text-align:center; color:#0a2a66; margin:0;"></h2>
             <div id="pC" style="color:#333 !important;"></div>
-            <p id="pdf-audit" style="text-align:center; font-size:9px; color:#999;"></p>
+            <p id="pdf-audit" style="text-align:center; font-size:9px; color:#999; margin-top:20px;"></p>
         </div>
         <button onclick="window.PDF(false)" id="B_PDF_SIMPLE"></button>
         <button onclick="window.PDF(true)" id="B_PDF_PHOTOS" class="success" style="background:var(--success)"></button>
@@ -270,7 +270,7 @@
                 P2: "ACTIVATE", L_CUP: "Have a coupon?", cup: "Code...", B_VOLTAR: "BACK",
                 C1: "CANDIDATES", H_CARGO_TIT: "REGISTRATION:", H_CARGO_TXT: "Role, Name and Photo. Click Add for each.", nC: "Ex: President...", nCand: "Name...", INSTR_FOTO: "📷 PHOTO", 
                 C2: "ADD CANDIDATE", C3: "SAVE ROLE", C4: "OPEN URN FOR VOTING",
-                H_URNA_TIT: "VOTING:", H_URNA_TXT: "Select and confirm. Password 1357 to close.", U1: "CONFIRMAR VOTO", BT_BRANCO: "BLANK VOTE", L_COUNT: "Voters so far:", U2: "CLOSE ELECTION",
+                H_URNA_TIT: "VOTING:", H_URNA_TXT: "Select and confirm. Password 1357 to close.", U1: "CONFIRM VOTE", BT_BRANCO: "BLANK VOTE", L_COUNT: "Voters so far:", U2: "CLOSE ELECTION",
                 R_TITLE: "OFFICIAL RESULTS", B_PDF_SIMPLE: "SIMPLE REPORT", B_PDF_PHOTOS: "FULL PDF REPORT", AUDIT: "Digital Certificate",
                 AL_SUC_VOTE: "Vote Saved!", AL_ERR_MAIL: "Use Gmail!", AL_COD_ENV: "Sent!", AL_INC: "Wrong!", AL_OK_SAVE: "Saved!", BRANCO_TXT: "Blanks", PDF_CAND: "Candidate", PDF_VOT: "Votes", PDF_TOTAL: "Total Voters",
                 H_FEED_TIT: "SUPPORT:", H_FEED_TXT: "Feedback?", F2: "SEND FEEDBACK", B_EXIT_FINAL: "LOGOUT"
@@ -407,19 +407,29 @@
             document.getElementById('pdf_h1').innerText = window._title.toUpperCase();
             document.getElementById('pdf-audit').innerText = d.AUDIT + ": " + new Date().toLocaleString();
             
-            let html = `<div style="text-align:center; font-weight:bold; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px; color:#333;">${d.PDF_TOTAL}: ${window._totalEleitores}</div>`;
+            let htmlStr = `<div style="text-align:center; font-weight:bold; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px; color:#333;">${d.PDF_TOTAL}: ${window._totalEleitores}</div>`;
             
             window._data.forEach(cargo => {
-                html += `<h3 style="color:#0a2a66; border-bottom:1px solid #ddd; margin-top:15px;">${cargo.n.toUpperCase()}</h3>`;
-                html += `<table class="pdf-table"><thead><tr>${fotos?'<th style="width:60px">Foto</th>':''}<th>${d.PDF_CAND}</th><th style="text-align:right">${d.PDF_VOT}</th></tr></thead><tbody>`;
+                htmlStr += `<h3 style="color:#0a2a66; border-bottom:1px solid #ddd; margin-top:20px;">${cargo.n.toUpperCase()}</h3>`;
+                htmlStr += `<table class="pdf-table"><thead><tr>${fotos?'<th style="width:60px">Foto</th>':''}<th>${d.PDF_CAND}</th><th style="text-align:right">${d.PDF_VOT}</th></tr></thead><tbody>`;
                 
                 cargo.c.sort((a,b)=>b.v-a.v).forEach(can => {
-                    html += `<tr>${fotos?`<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></td>`:''}<td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`;
+                    htmlStr += `<tr>
+                        ${fotos ? `<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></td>` : ''}
+                        <td>${can.n}</td>
+                        <td style="text-align:right"><b>${can.v}</b></td>
+                    </tr>`;
                 });
                 
-                html += `<tr>${fotos?'<td></td>':''}<td><i>${d.BRANCO_TXT}</i></td><td style="text-align:right"><b>${cargo.branco || 0}</b></td></tr></tbody></table>`;
+                // LINHA DE BRANCOS OBRIGATÓRIA
+                htmlStr += `<tr>
+                    ${fotos ? '<td></td>' : ''}
+                    <td><i>${d.BRANCO_TXT}</i></td>
+                    <td style="text-align:right"><b>${cargo.branco || 0}</b></td>
+                </tr></tbody></table>`;
             });
-            document.getElementById('pC').innerHTML = html;
+            
+            document.getElementById('pC').innerHTML = htmlStr;
         };
  
         window.CONFIRM_END = () => { 
@@ -433,14 +443,14 @@
  
         window.PDF = (fotos) => {
             window.MOUNT_RESULT(fotos);
+            const element = document.getElementById('areaImpressao');
             const opt = { 
                 margin: 10, 
                 filename: 'Resultado.pdf', 
-                image: { type: 'jpeg', quality: 0.98 }, 
                 html2canvas: { scale: 2, useCORS: true }, 
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
             };
-            html2pdf().set(opt).from(document.getElementById('areaImpressao')).save();
+            html2pdf().set(opt).from(element).save();
         };
  
         window.K = async () => { 
