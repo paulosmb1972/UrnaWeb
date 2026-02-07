@@ -5,14 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UrnaWeb Digital - Sistema de Votação Fácil</title>
     <link rel="manifest" href="manifest.json">
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    .screen #areaImpressao {
-    max-width: none !important;
-    width: 210mm !important;
-}
+    /* ===== CORREÇÃO DEFINITIVA PDF ===== */
 #res.screen {
     max-width: none !important;
+}
+
+#res.screen #areaImpressao {
+    width: 210mm !important;
+    max-width: none !important;
+    margin: 0 auto !important;
 }
     <style>
         /* MODIFICAÇÃO PONTUAL: CORES LARANJA E AZUL */
@@ -419,6 +420,7 @@ window.PDF = (fotos) => {
     </script>
 </body>
 </html>
+
 
 
 
