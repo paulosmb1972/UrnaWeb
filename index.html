@@ -15,6 +15,28 @@
     max-width: none !important;
     margin: 0 auto !important;
 }
+   @media screen {
+    #areaImpressao {
+        display: block;
+    }
+}
+
+@media print {
+    body {
+        display: block !important;
+    }
+
+    .screen {
+        max-width: none !important;
+        padding: 0 !important;
+    }
+
+    #areaImpressao {
+        width: 210mm !important;
+        padding: 15mm !important;
+        margin: 0 !important;
+    }
+}
     <style>
         /* MODIFICAÇÃO PONTUAL: CORES LARANJA E AZUL */
         :root { --primary: #f39c12; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; }
@@ -35,12 +57,9 @@
         .img-preview { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; display: none; margin: 10px auto; border: 2px solid var(--accent); }
         .cand-preview-list { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-top: 10px; max-height: 150px; overflow-y: auto; border: 1px solid #34495e; font-size: 12px; }
       #areaImpressao {
-    width: 794px;
     box-sizing: border-box;
-    margin: 0 auto;
     background: white !important;
     color: #333 !important;
-    padding: 30px;
     border-radius: 0;
 }
 
@@ -353,10 +372,10 @@ window.PDF = (fotos) => {
     html2canvas: { 
     scale: 2,
     useCORS: true,
+    scrollX: 0,
     scrollY: 0,
-    width: el.scrollWidth,
-    windowWidth: el.scrollWidth
-},
+    windowWidth: 1123,   // A4 real em px @96dpi
+}
     pagebreak: { 
         mode: ['css', 'legacy']
     },
@@ -420,6 +439,7 @@ window.PDF = (fotos) => {
     </script>
 </body>
 </html>
+
 
 
 
