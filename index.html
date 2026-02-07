@@ -7,6 +7,13 @@
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    .screen #areaImpressao {
+    max-width: none !important;
+    width: 210mm !important;
+}
+#res.screen {
+    max-width: none !important;
+}
     <style>
         /* MODIFICAÇÃO PONTUAL: CORES LARANJA E AZUL */
         :root { --primary: #f39c12; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; }
@@ -412,6 +419,7 @@ window.PDF = (fotos) => {
     </script>
 </body>
 </html>
+
 
 
 
