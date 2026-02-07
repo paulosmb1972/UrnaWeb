@@ -44,8 +44,17 @@
         .img-preview { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; display: none; margin: 10px auto; border: 2px solid var(--accent); }
         .cand-preview-list { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-top: 10px; max-height: 150px; overflow-y: auto; border: 1px solid #34495e; font-size: 12px; }
         
-/* CONFIGURAÇÃO DINÂMICA DO RESULTADO - PROTEÇÃO CONTRA CORTES */
-        #areaImpressao { width: 480px; margin: 0 auto; background: white !important; color: #333 !important; padding: 30px; border-radius: 5px; }
+/* CORREÇÃO PONTUAL: ISOLAMENTO PARA CAPTURA */
+#areaImpressao { 
+    width: 650px !important; 
+    margin: 0 auto !important; 
+    background: white !important; 
+    color: #333 !important; 
+    padding: 30px !important; 
+    border-radius: 5px; 
+    display: block !important; /* Força saída do modo flex do body */
+    position: relative !important;
+}
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; }
         .pdf-table td { padding: 12px; border-bottom: 1px solid #eee; color: #333 !important; }
@@ -326,21 +335,19 @@
         window.END = () => { window.MOUNT_RESULT(false); window.GO('res'); };
         window.CONFIRM_END = () => { if(prompt(window._idioma === 'pt' ? "Senha (1357):" : "Password (1357):") === "1357") window.END(); else alert(window._tr[window._idioma].AL_INC); };
 
-        /* CONFIGURAÇÃO BLINDADA DO PDF - PROTEÇÃO CONTRA CORTES */
 window.PDF = (fotos) => {
     window.MOUNT_RESULT(fotos);
     const element = document.getElementById('areaImpressao');
     
     const opt = { 
-        margin: [10, 5, 10, 5], // Margens: Topo, Esquerda, Fundo, Direita
-        filename: 'UrnaWeb_Resultado.pdf', 
+        margin: [10, 10, 10, 10], 
+        filename: 'Resultado_UrnaWeb.pdf', 
         image: { type: 'jpeg', quality: 0.98 }, 
         html2canvas: { 
             scale: 2, 
             useCORS: true, 
-            scrollY: 0, // Garante que comece do topo do elemento
-            scrollX: 0,
-            windowWidth: 750 // FORÇA LARGURA DE DESKTOP NA CAPTURA (Evita corte vertical)
+            scrollY: -window.scrollY, // COMPENSAÇÃO DINÂMICA DE SCROLL
+            windowWidth: 800 // Simula tela larga para evitar quebras
         }, 
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
     };
