@@ -36,6 +36,18 @@
     border-radius: 0;
 }
 
+        @media print {
+    body {
+        display: block !important;
+        align-items: unset !important;
+    }
+
+    #areaImpressao {
+        width: 210mm !important;
+        margin: 0 !important;
+    }
+}
+
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; }
         .pdf-table td { padding: 12px; border-bottom: 1px solid #eee; color: #333 !important; }
@@ -331,11 +343,12 @@ window.PDF = (fotos) => {
     filename: 'UrnaWeb_Relatorio.pdf', 
     image: { type: 'jpeg', quality: 0.98 }, 
     html2canvas: { 
-        scale: 2,
-        useCORS: true,
-        scrollY: 0,
-        windowWidth: 794
-    },
+    scale: 2,
+    useCORS: true,
+    scrollY: 0,
+    width: el.scrollWidth,
+    windowWidth: el.scrollWidth
+},
     pagebreak: { 
         mode: ['css', 'legacy']
     },
@@ -399,6 +412,7 @@ window.PDF = (fotos) => {
     </script>
 </body>
 </html>
+
 
 
 
