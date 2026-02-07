@@ -44,15 +44,13 @@
         .img-preview { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; display: none; margin: 10px auto; border: 2px solid var(--accent); }
         .cand-preview-list { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-top: 10px; max-height: 150px; overflow-y: auto; border: 1px solid #34495e; font-size: 12px; }
         
-        /* CONFIGURAÇÃO BLINDADA DO RESULTADO */
-        /* CONFIGURAÇÃO BLINDADA DO RESULTADO */
-#areaImpressao { 
-    width: 480px; 
-    margin: 0 auto; 
+       #areaImpressao { 
+    width: 650px !important; /* Largura ideal para preencher o A4 vertical */
+    margin: 0 !important; 
     background: white !important; 
     color: #333 !important; 
-    padding: 10px 30px 30px 30px; /* Reduza o primeiro valor (topo) para 10px */
-    border-radius: 5px; 
+    padding: 20px !important; 
+    box-sizing: border-box;
 }
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; }
@@ -315,7 +313,12 @@
         };
 
         /* CONFIGURAÇÃO BLINDADA DO RESULTADO */
-        window.MOUNT_RESULT = (fotos) => {
+       window.MOUNT_RESULT = (fotos) => {
+    // ... código anterior ...
+    // Certifique-se que a tabela ocupe 100% da área de impressão
+    let h = `<h3>${cargo.n.toUpperCase()}</h3><table class="pdf-table" style="width:100%"><thead>...`;
+    // ... resto da função ...
+};
             let d = window._tr[window._idioma];
             document.getElementById('pdf_h1').innerText = window._title.toUpperCase();
             document.getElementById('pdf-audit').innerText = d.AUDIT + ": " + new Date().toLocaleString();
@@ -337,23 +340,29 @@
         /* CONFIGURAÇÃO BLINDADA DO PDF - PROTEÇÃO CONTRA CORTES */
 window.PDF = (fotos) => {
     window.MOUNT_RESULT(fotos);
+    const elemento = document.getElementById('areaImpressao');
+    
     const opt = { 
-        margin: 5, // Margem pequena para subir o conteúdo na folha
+        margin: [10, 10, 10, 10], // Margens: topo, esquerda, baixo, direita
         filename: 'UrnaWeb_Resultado.pdf', 
         image: { type: 'jpeg', quality: 0.98 }, 
         html2canvas: { 
             scale: 2, 
             useCORS: true, 
-            scrollY: 0, // CRÍTICO: Garante que o PDF comece do topo do elemento, não do scroll da tela
-            windowWidth: 500 // Mantém a largura estável para evitar cortes laterais
+            scrollY: 0, 
+            scrollX: 0,
+            width: 650, // Força a captura da largura total definida no CSS
+            windowWidth: 650 // Simula um navegador desta largura para o layout não quebrar
         }, 
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
     };
-    html2pdf().set(opt).from(document.getElementById('areaImpressao')).save().then(() => { 
+
+    html2pdf().set(opt).from(elemento).save().then(() => { 
+        window.BIP();
         window.MOUNT_RESULT(false); 
     });
 };
-
+        
         window.K = async () => { 
             let c = document.getElementById('cup').value.trim().toLowerCase(); 
             let email = localStorage.getItem('urna_user_email');
@@ -398,5 +407,6 @@ window.PDF = (fotos) => {
     </script>
 </body>
 </html>
+
 
 
