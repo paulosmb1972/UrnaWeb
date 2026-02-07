@@ -26,8 +26,8 @@
         .foto-container { border: 2px dashed var(--primary); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.05); }
         .img-preview { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; display: none; margin: 10px auto; border: 2px solid var(--accent); }
         .cand-preview-list { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-top: 10px; max-height: 150px; overflow-y: auto; border: 1px solid #34495e; font-size: 12px; }
-        #areaImpressao {
-    width: 794px;              /* A4 em px (96dpi) */
+      #areaImpressao {
+    width: 794px;
     box-sizing: border-box;
     margin: 0 auto;
     background: white !important;
@@ -35,7 +35,7 @@
     padding: 30px;
     border-radius: 0;
 }
-}
+
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; }
         .pdf-table td { padding: 12px; border-bottom: 1px solid #eee; color: #333 !important; }
@@ -327,15 +327,18 @@ window.PDF = (fotos) => {
     el.style.position = "relative";
     
     const opt = { 
-    margin: [10, 10, 10, 10],   // margens reais (mm)
+    margin: [10, 10, 10, 10],
     filename: 'UrnaWeb_Relatorio.pdf', 
     image: { type: 'jpeg', quality: 0.98 }, 
     html2canvas: { 
         scale: 2,
         useCORS: true,
         scrollY: 0,
-        windowWidth: 794        // IGUAL ao CSS
-    }, 
+        windowWidth: 794
+    },
+    pagebreak: { 
+        mode: ['css', 'legacy']
+    },
     jsPDF: { 
         unit: 'mm',
         format: 'a4',
@@ -396,6 +399,7 @@ window.PDF = (fotos) => {
     </script>
 </body>
 </html>
+
 
 
 
