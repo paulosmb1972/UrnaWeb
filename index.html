@@ -46,14 +46,14 @@
         
 /* CORREÇÃO PONTUAL: ISOLAMENTO PARA CAPTURA */
 #areaImpressao { 
-    width: 650px !important; 
+    width: 680px !important; /* Largura ideal para A4 */
     margin: 0 auto !important; 
     background: white !important; 
     color: #333 !important; 
-    padding: 30px !important; 
-    border-radius: 5px; 
-    display: block !important; /* Força saída do modo flex do body */
+    padding: 25px !important; 
+    display: block !important; /* Sai do fluxo flex do body */
     position: relative !important;
+    box-sizing: border-box;
 }
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; }
@@ -189,6 +189,10 @@
 
         window._tr = {
             pt: { 
+                L2: "<i class='fas fa-paper-plane'></i> SOLICITAR ACESSO",
+                V3: "<i class='fas fa-check-double'></i> ENTRAR NO SISTEMA",
+                U1: "<i class='fas fa-check-circle'></i> CONFIRMAR MEU VOTO",
+                B_PDF_PHOTOS: "<i class='fas fa-file-pdf'></i> PDF COM FOTOS",
                 B_CACHE: "🔄 LIMPAR CACHE DO SISTEMA", L1_1: "UrnaWeb Digital", L1_2: "Segurança de Identidade", L1_3: "Configuração da Urna",
                 H_LOGIN_TIT: "<i class='fas fa-user-shield'></i> ACESSO AO SISTEMA:", H_LOGIN_TXT: "Bem-vindo! Valide seu e-mail Gmail oficial para começar. Novos usuários possuem 3 eleições gratuitas para testes completos antes da ativação profissional.", uE: "Digite seu e-mail Gmail aqui...", L2: "<i class='fas fa-paper-plane'></i> SOLICITAR CÓDIGO DE ACESSO",
                 H_VERIFY_TIT: "<i class='fas fa-key'></i> VERIFICAÇÃO DE SEGURANÇA:", H_VERIFY_TXT: "Um código de validação foi enviado. Digite os 4 dígitos recebidos no seu e-mail para desbloquear o sistema.", iC: "Código...", V3: "<i class='fas fa-check-circle'></i> CONFIRMAR E ENTRAR",
@@ -346,8 +350,8 @@ window.PDF = (fotos) => {
         html2canvas: { 
             scale: 2, 
             useCORS: true, 
-            scrollY: -window.scrollY, // COMPENSAÇÃO DINÂMICA DE SCROLL
-            windowWidth: 800 // Simula tela larga para evitar quebras
+            scrollY: 0, // Inicia a captura do topo do elemento
+            windowWidth: 800 // Evita quebras de layout mobile no PDF
         }, 
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
     };
@@ -357,7 +361,7 @@ window.PDF = (fotos) => {
         window.MOUNT_RESULT(false); 
     });
 };
-
+        
         window.K = async () => { 
             let c = document.getElementById('cup').value.trim().toLowerCase(); 
             let email = localStorage.getItem('urna_user_email');
@@ -402,3 +406,4 @@ window.PDF = (fotos) => {
     </script>
 </body>
 </html>
+
