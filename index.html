@@ -45,7 +45,15 @@
         .cand-preview-list { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-top: 10px; max-height: 150px; overflow-y: auto; border: 1px solid #34495e; font-size: 12px; }
         
         /* CONFIGURAÇÃO BLINDADA DO RESULTADO */
-        #areaImpressao { width: 480px; margin: 0 auto; background: white !important; color: #333 !important; padding: 30px; border-radius: 5px; }
+        /* CONFIGURAÇÃO BLINDADA DO RESULTADO */
+#areaImpressao { 
+    width: 480px; 
+    margin: 0 auto; 
+    background: white !important; 
+    color: #333 !important; 
+    padding: 10px 30px 30px 30px; /* Reduza o primeiro valor (topo) para 10px */
+    border-radius: 5px; 
+}
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .pdf-table th { background: #0a2a66 !important; color: white !important; padding: 12px; text-align: left; }
         .pdf-table td { padding: 12px; border-bottom: 1px solid #eee; color: #333 !important; }
@@ -327,20 +335,24 @@
         window.CONFIRM_END = () => { if(prompt(window._idioma === 'pt' ? "Senha (1357):" : "Password (1357):") === "1357") window.END(); else alert(window._tr[window._idioma].AL_INC); };
 
         /* CONFIGURAÇÃO BLINDADA DO PDF - PROTEÇÃO CONTRA CORTES */
-        window.PDF = (fotos) => {
-            window.MOUNT_RESULT(fotos);
-            const opt = { 
-                margin: 5, 
-                filename: 'UrnaWeb_Resultado.pdf', 
-                image: { type: 'jpeg', quality: 0.98 }, 
-                html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 500 }, 
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
-            };
-            html2pdf().set(opt).from(document.getElementById('areaImpressao')).save().then(() => { 
-                window.BIP();
-                window.MOUNT_RESULT(false); 
-            });
-        };
+window.PDF = (fotos) => {
+    window.MOUNT_RESULT(fotos);
+    const opt = { 
+        margin: 5, // Margem pequena para subir o conteúdo na folha
+        filename: 'UrnaWeb_Resultado.pdf', 
+        image: { type: 'jpeg', quality: 0.98 }, 
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true, 
+            scrollY: 0, // CRÍTICO: Garante que o PDF comece do topo do elemento, não do scroll da tela
+            windowWidth: 500 // Mantém a largura estável para evitar cortes laterais
+        }, 
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+    };
+    html2pdf().set(opt).from(document.getElementById('areaImpressao')).save().then(() => { 
+        window.MOUNT_RESULT(false); 
+    });
+};
 
         window.K = async () => { 
             let c = document.getElementById('cup').value.trim().toLowerCase(); 
@@ -386,4 +398,5 @@
     </script>
 </body>
 </html>
+
 
