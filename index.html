@@ -16,14 +16,13 @@
        /* BANDEIRAS ULTRAS E EVIDENTES */
 .lang-box { position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; gap: 12px; }
 .lang-box button { 
-    width: 60px; height: 60px; /* Tamanho massivo */
-    border-radius: 50%; border: 3px solid var(--primary); 
+    width: 65px; height: 65px; border-radius: 50%; border: 4px solid var(--primary); 
     background: #000; cursor: pointer; display: flex; align-items: center; 
-    justify-content: center; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-    padding: 0; overflow: hidden; box-shadow: 0 0 20px rgba(243, 156, 18, 0.3);
+    justify-content: center; transition: 0.4s; padding: 0; overflow: hidden;
+    box-shadow: 0 0 15px rgba(243, 156, 18, 0.5);
 }
 .lang-box button img { width: 100%; height: 100%; object-fit: cover; }
-.lang-box button:hover { transform: scale(1.2) rotate(5deg); box-shadow: 0 0 30px var(--primary); }
+.lang-box button:hover { transform: scale(1.25); box-shadow: 0 0 30px var(--primary); border-color: white; }
         
         .screen { display: none; padding: 20px; width: 100%; max-width: 600px; box-sizing: border-box; }
         .active { display: block; animation: fadeIn 0.3s; }
@@ -183,74 +182,67 @@
 
         window._tr = {
     pt: { 
-        B_CACHE: "🔄 PURGAR NÚCLEO E REGISTROS", 
-        L1_1: "UrnaWeb Quantum Pro", 
-        L1_2: "Criptografia de Identidade", 
-        L1_3: "Setup de Escrutínio",
-        H_LOGIN_TIT: "GATEWAY DE SEGURANÇA NACIONAL:", 
-        H_LOGIN_TXT: "Protocolo de Defesa Ativo. Autenticação obrigatória via Gmail para validação de privilégios de Administrador de Sistema. Ambientes de teste possuem 3 ciclos de auditoria total para verificação de estresse e conformidade antes do deploy em larga escala profissional.", 
+        B_CACHE: "🔄 PURGAR NÚCLEO E REGISTROS", L1_1: "UrnaWeb Quantum Pro", L1_2: "Criptografia de Identidade", L1_3: "Setup de Escrutínio",
+        H_LOGIN_TIT: "GATEWAY DE SEGURANÇA:", H_LOGIN_TXT: "Protocolo de Defesa Ativo. Autenticação via Gmail obrigatória para validação de privilégios de Administrador. Novos terminais possuem 3 ciclos de auditoria total para verificação de conformidade antes do deploy profissional.",
         L2: "<i class='fas fa-paper-plane'></i> DISPARAR TOKEN CRIPTOGRÁFICO",
-        H_VERIFY_TIT: "AUTENTICAÇÃO MULTIFATOR (MFA):", 
-        H_VERIFY_TXT: "Token de alta segurança transmitido. Insira a sequência numérica de 4 dígitos para autorizar o acesso ao núcleo de votação e certificar a integridade absoluta da sessão de escrutínio.", 
+        H_VERIFY_TIT: "VALIDAÇÃO MULTIFATOR (MFA):", H_VERIFY_TXT: "Token de alta segurança transmitido. Insira a sequência numérica para autorizar o acesso ao núcleo de votação e certificar a integridade absoluta da sessão.",
         V3: "<i class='fas fa-check-double'></i> AUTORIZAR E IMPLANTAR",
-        H_SETUP_TIT: "PARÂMETROS DE GOVERNANÇA:", 
-        H_SETUP_TXT: "Estabeleça o cabeçalho oficial e a volumetria de votos permitidos por cédula única. Estes parâmetros são protegidos por inmutabilidade digital; após a abertura da urna, qualquer alteração violará os logs de auditoria e conformidade.", 
+        H_SETUP_TIT: "PARÂMETROS DE GOVERNANÇA:", H_SETUP_TXT: "Estabeleça o cabeçalho oficial e a volumetria de votos. Estes parâmetros são protegidos por inmutabilidade digital; após a abertura da urna, qualquer alteração violará os logs de auditoria.",
         S2: "<i class='fas fa-save'></i> CONSOLIDAR E AVANÇAR",
-        R_TITLE: "RELATÓRIO DE AUDITORIA FORENSE", 
-        AUDIT: "Certificado de Integridade Digital UrnaWeb v3.0"
+        C1: "GERENCIAMENTO DE ATIVOS", H_CARGO_TIT: "REGISTRO DE CANDIDATURAS:", H_CARGO_TXT: "Insira os metadados dos candidatos e anexe a biometria visual. O registro deve ser validado individualmente antes da consolidação do banco de dados eleitoral.",
+        C2: "ADICIONAR AO BANCO", C3: "CONSOLIDAR CARGO", C4: "INICIALIZAR PROTOCOLO DE VOTO",
+        H_URNA_TIT: "TERMINAL DE VOTAÇÃO:", H_URNA_TXT: "Interface de escrutínio blindada. Selecione o ativo e confirme. O sinal acústico confirma a gravação criptográfica no banco de dados.",
+        U1: "CONFIRMAR VOTO", BT_BRANCO: "VOTO EM BRANCO", L_COUNT: "Sessões de voto processadas:", U2: "ENCERRAR E GERAR RELATÓRIO FORENSE",
+        R_TITLE: "AUDITORIA DE RESULTADOS", B_PDF_SIMPLE: "LOG DE DADOS (TEXTO)", B_PDF_PHOTOS: "RELATÓRIO FORENSE COMPLETO",
+        AUDIT: "Certificado de Integridade Digital UrnaWeb v3.0", PDF_TOTAL: "Quórum Total Verificado"
     },
     en: { 
-        B_CACHE: "🔄 PURGE KERNEL & LOGS", 
-        L1_1: "UrnaWeb Quantum OS", 
-        L1_2: "Identity Cryptography", 
-        L1_3: "Scrutiny Parameters",
-        H_LOGIN_TIT: "SECURE ACCESS GATEWAY:", 
-        H_LOGIN_TXT: "Security Protocols Active. Mandatory authentication via official Gmail for system administrator privileges. Corporate Security Protocol: 3 full-cycle auditing sessions permitted for stress-testing and environmental compliance before professional-grade deployment.", 
+        B_CACHE: "🔄 PURGE KERNEL & LOGS", L1_1: "UrnaWeb Quantum OS", L1_2: "Identity Cryptography", L1_3: "Scrutiny Parameters",
+        H_LOGIN_TIT: "SECURE ACCESS GATEWAY:", H_LOGIN_TXT: "Security Protocols Active. Mandatory authentication via official Gmail for system administrator privileges. 3 full-cycle auditing sessions permitted for stress-testing before professional deployment.",
         L2: "<i class='fas fa-paper-plane'></i> GENERATE ENCRYPTED TOKEN",
-        H_VERIFY_TIT: "MULTI-FACTOR AUTHENTICATION (MFA):", 
-        H_VERIFY_TXT: "Secure cryptographic token dispatched. Input the 4-digit numeric sequence to authorize administrative privileges and unlock the encrypted voting core, ensuring total session integrity.", 
+        H_VERIFY_TIT: "MULTI-FACTOR AUTHENTICATION:", H_VERIFY_TXT: "Secure cryptographic token dispatched. Input the 4-digit sequence to authorize administrative access and unlock the encrypted voting core.",
         V3: "<i class='fas fa-check-double'></i> AUTHORIZE & DEPLOY CORE",
-        H_SETUP_TIT: "GOVERNANCE FRAMEWORK SETUP:", 
-        H_SETUP_TXT: "Define official ballot headers and voting threshold constraints. These parameters abide by digital immutability protocols; once the urn is initialized, the configuration is locked to maintain electoral integrity and forensic traceability.", 
+        H_SETUP_TIT: "GOVERNANCE FRAMEWORK:", H_SETUP_TXT: "Define official ballot headers and voting threshold. Parameters abide by digital immutability; once initialized, the configuration is locked to maintain forensic traceability.",
         S2: "<i class='fas fa-save'></i> COMMIT & INITIALIZE",
-        R_TITLE: "OFFICIAL FORENSIC AUDIT REPORT", 
-        AUDIT: "UrnaWeb Digital Signature of Integrity"
+        C1: "ASSET MANAGEMENT", H_CARGO_TIT: "CANDIDACY REGISTRATION:", H_CARGO_TXT: "Input candidate metadata and attach visual biometry. Every entry must be validated before consolidating the electoral database.",
+        C2: "ADD TO DATABASE", C3: "COMMIT POSITION", C4: "START VOTING PROTOCOL",
+        H_URNA_TIT: "VOTING TERMINAL:", H_URNA_TXT: "Hardened scrutiny interface. Select asset and confirm. Acoustic signal confirms cryptographic write to database.",
+        U1: "CONFIRM VOTE", BT_BRANCO: "BLANK VOTE", L_COUNT: "Verified processed sessions:", U2: "END & GENERATE FORENSIC REPORT",
+        R_TITLE: "RESULTS FORENSIC AUDIT", B_PDF_SIMPLE: "DATA LOG (TEXT)", B_PDF_PHOTOS: "FULL FORENSIC REPORT",
+        AUDIT: "UrnaWeb Official Digital Signature", PDF_TOTAL: "Total Verified Voter Quorum"
     },
     es: { 
-        B_CACHE: "🔄 PURGAR NÚCLEO Y REGISTROS", 
-        L1_1: "UrnaWeb Quantum Pro", 
-        L1_2: "Criptografía de Identidad", 
-        L1_3: "Ajustes de Escrutinio",
-        H_LOGIN_TIT: "PUERTA DE ACCESO DE SEGURIDAD:", 
-        H_LOGIN_TXT: "Protocolo de Defensa Activo. Autenticación obligatoria vía Gmail oficial para validación de privilegios administrativos. El entorno de auditoría permite 3 despliegues electorales completos para pruebas de integridad y cumplimiento antes de la licencia profesional ilimitada.", 
+        B_CACHE: "🔄 PURGAR NÚCLEO Y REGISTROS", L1_1: "UrnaWeb Quantum Pro", L1_2: "Criptografía de Identidad", L1_3: "Ajustes de Escrutinio",
+        H_LOGIN_TIT: "PUERTA DE ACCESO SEGURA:", H_LOGIN_TXT: "Protocolo de Defensa Activo. Autenticación vía Gmail oficial para privilegios administrativos. El entorno permite 3 despliegues electorales de prueba antes de la licencia profesional.",
         L2: "<i class='fas fa-paper-plane'></i> SOLICITAR TOKEN CRIPTOGRÁFICO",
-        H_VERIFY_TIT: "AUTENTICACIÓN MULTIFACTOR (MFA):", 
-        H_VERIFY_TXT: "Se ha despachado un código criptográfico de alta seguridad. Ingrese los 4 dígitos numéricos para autorizar sus credenciales administrativas y desbloquear el sistema de escrutinio, garantizando la integridad de la sesión.", 
+        H_VERIFY_TIT: "AUTENTICACIÓN MULTIFACTOR:", H_VERIFY_TXT: "Token de alta seguridad despachado. Ingrese los 4 dígitos para autorizar credenciales administrativas y desbloquear el núcleo de escrutinio.",
         V3: "<i class='fas fa-check-double'></i> VALIDAR E INICIALIZAR",
-        H_SETUP_TIT: "CONFIGURACIÓN DE GOBERNANZA:", 
-        H_SETUP_TXT: "Defina el título oficial y el límite de votos por boleta. Estos parámetros son inmutables; tras el inicio de la votación, cualquier modificación violará el protocolo de transparencia y la trazabilidad forense de los datos.", 
+        H_SETUP_TIT: "CONFIGURACIÓN DE GOBERNANZA:", H_SETUP_TXT: "Defina el título oficial y límite de votos. Los parámetros são inmutables; tras el inicio, cualquier modificación violará o protocolo de transparencia y trazabilidad.",
         S2: "<i class='fas fa-save'></i> CONSOLIDAR Y CONTINUAR",
-        R_TITLE: "REPORTE DE AUDITORÍA FORENSE", 
-        AUDIT: "Firma Digital de Integridad UrnaWeb Oficial"
+        C1: "GESTIÓN DE ACTIVOS", H_CARGO_TIT: "REGISTRO DE CANDIDATURAS:", H_CARGO_TXT: "Ingrese los metadatos y biometría visual. Cada registro debe ser validado antes de consolidar la base de datos electoral.",
+        C2: "AGREGAR A BASE DE DATOS", C3: "CONSOLIDAR CARGO", C4: "INICIAR PROTOCOLO DE VOTO",
+        H_URNA_TIT: "TERMINAL DE VOTACIÓN:", H_URNA_TXT: "Interface de escrutinio blindada. Seleccione el activo y confirme. El pitido confirma la grabación criptográfica en la base de datos.",
+        U1: "CONFIRMAR VOTO", BT_BRANCO: "VOTO BLANCO", L_COUNT: "Sesiones procesadas:", U2: "TERMINAR Y GENERAR REPORTE FORENSE",
+        R_TITLE: "AUDITORÍA DE RESULTADOS", B_PDF_SIMPLE: "LOG DE DATOS (TEXTO)", B_PDF_PHOTOS: "REPORTE FORENSE FULL",
+        AUDIT: "Firma Digital de Integridad UrnaWeb Oficial", PDF_TOTAL: "Quórum Total Certificado"
     }
 };
-        window.TR = (l) => { 
-            window._idioma = l; const d = window._tr[l]; if(!d) return;
-            for(let k in d){ 
-                let el = document.getElementById(k); 
-                if(el) { 
-                    if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = d[k].replace(/<[^>]*>?/gm, ''); 
-                    else el.innerHTML = d[k]; 
-                } 
-            } 
-        };
+        window.TR = (l) => {
+    window._idioma = l; const d = window._tr[l]; if(!d) return;
+    for(let k in d){
+        let el = document.getElementById(k);
+        if(el) {
+            if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = d[k].replace(/<[^>]*>?/gm, '');
+            else el.innerHTML = d[k];
+        }
+    }
+};
 
         window.GO = (id) => {
-            if(id === 'login') { localStorage.removeItem('urna_vault'); window._data = []; window._sel = []; window._idx = 0; window._totalEleitores = 0; }
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            window.TR(window._idioma);
-        };
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.TR(window._idioma); // <--- ESTA LINHA GARANTE A TRADUÇÃO EM TODAS AS TELAS
+};
 
         window.LIMPAR = () => { if(confirm(window._tr[window._idioma].B_CACHE)) { localStorage.clear(); window.location.reload(true); } };
 
@@ -382,6 +374,7 @@
     </script>
 </body>
 </html>
+
 
 
 
