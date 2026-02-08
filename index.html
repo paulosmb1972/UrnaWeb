@@ -59,10 +59,10 @@
 <body>
 
     <div class="lang-box">
-        <button onclick="window.TR('pt')" title="Português">🇧🇷</button>
-        <button onclick="window.TR('en')" title="English">🇺🇸</button>
-        <button onclick="window.TR('es')" title="Español">🇪🇸</button>
-    </div>
+    <button onclick="window.TR('pt')" title="Português"><img src="https://flagcdn.com/w80/br.png" width="30"></button>
+    <button onclick="window.TR('en')" title="English"><img src="https://flagcdn.com/w80/us.png" width="30"></button>
+    <button onclick="window.TR('es')" title="Español"><img src="https://flagcdn.com/w80/es.png" width="30"></button>
+</div>
 
     <div id="login" class="screen active">
         <button onclick="window.LIMPAR()" id="B_CACHE" style="background:none; border:1px solid rgba(255,255,255,0.3); font-size:11px; padding:10px; margin-top:20px; box-shadow:none; color:#ccc;"></button>
@@ -195,7 +195,9 @@
                 R_TITLE: "RELATÓRIO DE RESULTADOS", TOTAL_VOTOS: "VOTOS COMPUTADOS", B_PDF_SIMPLE: "<i class='fas fa-file-alt'></i> PDF SIMPLES (TEXTO)", B_PDF_PHOTOS: "<i class='fas fa-file-pdf'></i> PDF COMPLETO (FOTOS)",
                 H_FEED_TIT: "<i class='fas fa-comment-dots'></i> FALE COM O PAULO:", H_FEED_TXT: "Envie sugestões ou dúvidas diretamente para o desenvolvedor do sistema.", txtSugestao: "Escreva sua mensagem aqui...", F2: "<i class='fas fa-envelope'></i> ENVIAR MENSAGEM", B_EXIT_FINAL: "<i class='fas fa-sign-out-alt'></i> SAIR DO SISTEMA", AUDIT: "Emissão Oficial UrnaWeb",
                 AL_SUC_VOTE: "Voto Gravado com Sucesso!", AL_ERR_VOTE: "Selecione um candidato!", AL_OK_SAVE: "Configurações Salvas!", AL_OK_CUP: "CRÉDITO ATIVADO!", BRANCO_TXT: "Brancos/Nulos", AL_ERR_MAIL: "Use Gmail oficial!", AL_COD_ENV: "Código enviado!", AL_INC: "Incorreto!", AL_FALTA: "Faltam dados!", AL_ERR_DATA: "Erro: Adicione candidatos!", AL_OK_MSG: "Mensagem enviada!", PDF_CAND: "Candidato", PDF_VOT: "Votos", PDF_TOTAL: "Total de Eleitores"
-            },
+            L1_1: "UrnaWeb Digital", L2: "<i class='fas fa-paper-plane'></i> SOLICITAR ACESSO",
+        H_LOGIN_TIT: "ACESSO AO SISTEMA:", R_TITLE: "APURAÇÃO FINAL"
+    },
             en: { 
                 B_CACHE: "🔄 CLEAR SYSTEM CACHE", L1_1: "UrnaWeb Digital", L1_2: "Identity Security", L1_3: "Urn Setup",
                 H_LOGIN_TIT: "<i class='fas fa-user-shield'></i> SYSTEM ACCESS:", H_LOGIN_TXT: "Welcome! Validate your official Gmail to start. New users get 3 free elections for testing.", uE: "Enter your Gmail here...", L2: "<i class='fas fa-paper-plane'></i> REQUEST ACCESS CODE",
@@ -211,7 +213,11 @@
                 R_TITLE: "RESULTS REPORT", TOTAL_VOTOS: "VOTES COUNTED", B_PDF_SIMPLE: "<i class='fas fa-file-alt'></i> SIMPLE PDF (TEXT)", B_PDF_PHOTOS: "<i class='fas fa-file-pdf'></i> FULL PDF (PHOTOS)",
                 H_FEED_TIT: "<i class='fas fa-comment-dots'></i> TALK TO PAULO:", H_FEED_TXT: "Send suggestions directly to the developer.", txtSugestao: "Write here...", F2: "<i class='fas fa-envelope'></i> SEND MESSAGE", B_EXIT_FINAL: "<i class='fas fa-sign-out-alt'></i> LOGOUT", AUDIT: "Official UrnaWeb Report",
                 AL_SUC_VOTE: "Vote Recorded!", AL_ERR_VOTE: "Select a candidate!", AL_OK_SAVE: "Settings Saved!", AL_OK_CUP: "ACTIVATED!", BRANCO_TXT: "Blank/Null", AL_ERR_MAIL: "Use Gmail!", AL_COD_ENV: "Code sent!", AL_INC: "Incorrect!", AL_FALTA: "Missing data!", AL_ERR_DATA: "Add candidates!", AL_OK_MSG: "Message sent!", PDF_CAND: "Candidate", PDF_VOT: "Votes", PDF_TOTAL: "Total Voters"
-            },
+            L1_1: "Digital Voting OS", L2: "<i class='fas fa-paper-plane'></i> REQUEST ACCESS ID",
+        H_LOGIN_TIT: "ID VERIFICATION:", R_TITLE: "AUDIT REPORT",
+        B_PDF_SIMPLE: "EXPORT TEXT DATA", B_PDF_PHOTOS: "EXPORT FULL AUDIT",
+        B_CACHE: "🔄 RESET SYSTEM", B_EXIT_FINAL: "LOGOUT", AUDIT: "Official Audit Log"
+    },
             es: { 
                 B_CACHE: "🔄 LIMPIAR CACHÉ", L1_1: "UrnaWeb Digital", L1_2: "Seguridad", L1_3: "Configuración",
                 H_LOGIN_TIT: "<i class='fas fa-user-shield'></i> ACCESO:", H_LOGIN_TXT: "¡Bienvenido! Valide su Gmail oficial. Los nuevos usuarios tienen 3 elecciones gratis.", uE: "Su Gmail aquí...", L2: "<i class='fas fa-paper-plane'></i> PEDIR CÓDIGO",
@@ -226,8 +232,12 @@
                 H_URNA_TIT: "<i class='fas fa-vote-yea'></i> GUÍA:", H_URNA_TXT: "Seleccione y confirme. Pitido indica éxito.", U1: "<i class='fas fa-check'></i> CONFIRMAR VOTO", BT_BRANCO: "<i class='fas fa-eraser'></i> VOTO BLANCO", L_COUNT: "Votantes:", U2: "<i class='fas fa-lock'></i> TERMINAR",
                 R_TITLE: "REPORTE FINAL", TOTAL_VOTOS: "VOTOS", B_PDF_SIMPLE: "<i class='fas fa-file-alt'></i> PDF TEXTO", B_PDF_PHOTOS: "<i class='fas fa-file-pdf'></i> PDF COMPLETO", AUDIT: "Emisión Oficial UrnaWeb",
                 AL_SUC_VOTE: "¡Voto Guardado!", AL_ERR_MAIL: "¡Use Gmail!", AL_COD_ENV: "¡Enviado!", AL_INC: "¡Incorrecto!", AL_OK_SAVE: "¡Guardado!", BRANCO_TXT: "Blanco", PDF_CAND: "Candidato", PDF_VOT: "Votos", PDF_TOTAL: "Total"
-            }
-        };
+           L1_1: "Sistema de Escrutinio", L2: "<i class='fas fa-paper-plane'></i> PEDIR CÓDIGO",
+        H_LOGIN_TIT: "VERIFICACIÓN:", R_TITLE: "RECUENTO OFICIAL",
+        B_PDF_SIMPLE: "DESCARGAR LOGS", B_PDF_PHOTOS: "DESCARGAR ACTA FULL",
+        B_CACHE: "🔄 REINICIAR", B_EXIT_FINAL: "CERRAR SESIÓN", AUDIT: "Certificado de Auditoría"
+    }
+};
 
         window.TR = (l) => { 
             window._idioma = l; const d = window._tr[l]; if(!d) return;
@@ -377,3 +387,4 @@
     </script>
 </body>
 </html>
+
