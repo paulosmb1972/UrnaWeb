@@ -88,12 +88,17 @@
         .foto-container { border: 2px dashed var(--primary); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.05); }
         .img-preview { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; display: none; margin: 10px auto; border: 2px solid var(--accent); }
         .cand-preview-list { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-top: 10px; max-height: 150px; overflow-y: auto; border: 1px solid #34495e; font-size: 12px; }
-      #areaImpressao {
+      #areaImpressao { 
+    width: 790px !important; /* Largura fixa que cabe no A4 sem espremer */
+    margin: 0 !important; 
+    padding: 40px !important; 
+    background: white !important; 
+    color: #333 !important; 
+    display: block !important; /* Mata o flexbox do body durante a captura */
+    position: absolute !important;
+    left: -9999px !important; /* Mantém longe da vista do usuário */
+    top: 0 !important;
     box-sizing: border-box;
-    background: white !important;
-    color: #333 !important;
-    width: 210mm;
-    min-height: 297mm;
 }
 
         @media print {
@@ -394,34 +399,25 @@ window.PDF = (fotos) => {
     window.MOUNT_RESULT(fotos);
     const el = document.getElementById('areaImpressao');
     
-    // Torna o elemento "visível" para o motor de captura momentaneamente
+    // Torna o elemento renderizável para o motor de captura
     el.style.left = "0px";
     el.style.position = "relative";
     
     const opt = { 
-    margin: [10, 10, 10, 10],
-    filename: 'UrnaWeb_Relatorio.pdf', 
-    image: { type: 'jpeg', quality: 0.98 }, 
-   html2canvas: { 
-    scale: 2,
-    useCORS: true,
-    scrollX: 0,
-    scrollY: 0,
-    windowWidth: 1123,   // A4 real @96dpi
-    windowHeight: 1587  // A4 real @96dpi
-}
-    pagebreak: { 
-        mode: ['css', 'legacy']
-    },
-    jsPDF: { 
-        unit: 'mm',
-        format: 'a4',
-        orientation: 'portrait'
-    }
-};
+        margin: [10, 5, 10, 5], 
+        filename: 'Relatorio_UrnaWeb.pdf', 
+        image: { type: 'jpeg', quality: 0.98 }, 
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true, 
+            scrollY: 0, // Garante que comece do topo do documento
+            windowWidth: 800 // FORÇA LARGURA DE DESKTOP (Resolve o corte vertical)
+        }, 
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+    };
 
     html2pdf().set(opt).from(el).save().then(() => { 
-        // Esconde o elemento novamente
+        // Esconde o elemento novamente após gerar
         el.style.left = "-9999px";
         el.style.position = "absolute";
         window.BIP();
@@ -473,6 +469,7 @@ window.PDF = (fotos) => {
     </script>
 </body>
 </html>
+
 
 
 
