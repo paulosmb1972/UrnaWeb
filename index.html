@@ -16,11 +16,13 @@
         /* Bandeiras no Canto Superior Direito */
         .lang-box { position: fixed; top: 15px; right: 15px; z-index: 1000; display: flex; gap: 10px; }
         .lang-box button { 
-            width: 45px; height: 45px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); 
-            background: #000; cursor: pointer; display: flex; align-items: center; justify-content: center; 
-            font-size: 18px; transition: 0.3s; padding: 0; overflow: hidden;
-        }
-        .lang-box button:hover { transform: scale(1.1); border-color: var(--primary); }
+    width: 55px; height: 55px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.5); 
+    background: #000; cursor: pointer; display: flex; align-items: center; justify-content: center; 
+    transition: 0.3s; padding: 0; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+.lang-box button img { width: 100%; height: 100%; object-fit: cover; }
+.lang-box button:hover { transform: scale(1.15); border-color: var(--primary); }
+                .lang-box button:hover { transform: scale(1.1); border-color: var(--primary); }
 
         .screen { display: none; padding: 20px; width: 100%; max-width: 600px; box-sizing: border-box; }
         .active { display: block; animation: fadeIn 0.3s; }
@@ -59,10 +61,10 @@
 <body>
 
     <div class="lang-box">
-        <button onclick="window.TR('pt')" title="Português">🇧🇷</button>
-        <button onclick="window.TR('en')" title="English">🇺🇸</button>
-        <button onclick="window.TR('es')" title="Español">🇪🇸</button>
-    </div>
+    <button onclick="window.TR('pt')" title="Português"><img src="https://flagcdn.com/w80/br.png"></button>
+    <button onclick="window.TR('en')" title="English"><img src="https://flagcdn.com/w80/us.png"></button>
+    <button onclick="window.TR('es')" title="Español"><img src="https://flagcdn.com/w80/es.png"></button>
+</div>
 
     <div id="login" class="screen active">
         <button onclick="window.LIMPAR()" id="B_CACHE" style="background:none; border:1px solid rgba(255,255,255,0.3); font-size:11px; padding:10px; margin-top:20px; box-shadow:none; color:#ccc;"></button>
@@ -377,3 +379,4 @@
     </script>
 </body>
 </html>
+
