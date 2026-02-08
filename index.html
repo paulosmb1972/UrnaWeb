@@ -5,9 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UrnaWeb Digital - Sistema de Votação Fácil</title>
     <link rel="manifest" href="manifest.json">
-    /* ===== CORREÇÃO DEFINITIVA PDF ===== */
+    <style>
+
+/* ===== CORREÇÃO DEFINITIVA PDF (ATIVA DE VERDADE) ===== */
 #res.screen {
     max-width: none !important;
+    width: 100% !important;
+}
+
+#res.screen #areaImpressao {
+    width: 210mm !important;
+    max-width: none !important;
+    margin: 0 auto !important;
+}
+
+@media screen {
+    #areaImpressao {
+        display: block;
+    }
+}
+
+@media print {
+    body {
+        display: block !important;
+    }
+
+    .screen {
+        max-width: none !important;
+        padding: 0 !important;
+    }
+
+    #areaImpressao {
+        width: 210mm !important;
+        padding: 15mm !important;
+        margin: 0 !important;
+    }
 }
 
 #res.screen #areaImpressao {
@@ -60,7 +92,8 @@
     box-sizing: border-box;
     background: white !important;
     color: #333 !important;
-    border-radius: 0;
+    width: 210mm;
+    min-height: 297mm;
 }
 
         @media print {
@@ -369,12 +402,13 @@ window.PDF = (fotos) => {
     margin: [10, 10, 10, 10],
     filename: 'UrnaWeb_Relatorio.pdf', 
     image: { type: 'jpeg', quality: 0.98 }, 
-    html2canvas: { 
+   html2canvas: { 
     scale: 2,
     useCORS: true,
     scrollX: 0,
     scrollY: 0,
-    windowWidth: 1123,   // A4 real em px @96dpi
+    windowWidth: 1123,   // A4 real @96dpi
+    windowHeight: 1587  // A4 real @96dpi
 }
     pagebreak: { 
         mode: ['css', 'legacy']
@@ -439,6 +473,7 @@ window.PDF = (fotos) => {
     </script>
 </body>
 </html>
+
 
 
 
