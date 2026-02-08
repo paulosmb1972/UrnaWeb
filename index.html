@@ -13,25 +13,18 @@
         :root { --primary: #f39c12; --dark: #0a2a66; --accent: #f1c40f; --danger: #e74c3c; --success: #2ecc71; }
         body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; user-select: none; }
         
-        /* Bandeiras no Canto Superior Direito */
-       /* BANDEIRAS MAXIMIZADAS */
-.lang-box { position: fixed; top: 15px; right: 15px; z-index: 1000; display: flex; gap: 12px; }
+       /* BANDEIRAS ULTRAS E EVIDENTES */
+.lang-box { position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; gap: 12px; }
 .lang-box button { 
-    width: 55px; height: 55px; /* Tamanho maior para evidência */
-    border-radius: 50%; border: 3px solid rgba(255,255,255,0.4); 
+    width: 60px; height: 60px; /* Tamanho massivo */
+    border-radius: 50%; border: 3px solid var(--primary); 
     background: #000; cursor: pointer; display: flex; align-items: center; 
-    justify-content: center; transition: 0.3s ease; padding: 0; overflow: hidden;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    justify-content: center; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    padding: 0; overflow: hidden; box-shadow: 0 0 20px rgba(243, 156, 18, 0.3);
 }
 .lang-box button img { width: 100%; height: 100%; object-fit: cover; }
-.lang-box button:hover { transform: scale(1.15); border-color: var(--primary); }
-                .lang-box button { 
-            width: 45px; height: 45px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); 
-            background: #000; cursor: pointer; display: flex; align-items: center; justify-content: center; 
-            font-size: 18px; transition: 0.3s; padding: 0; overflow: hidden;
-        }
-        .lang-box button:hover { transform: scale(1.1); border-color: var(--primary); }
-
+.lang-box button:hover { transform: scale(1.2) rotate(5deg); box-shadow: 0 0 30px var(--primary); }
+        
         .screen { display: none; padding: 20px; width: 100%; max-width: 600px; box-sizing: border-box; }
         .active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -73,7 +66,6 @@
     <button onclick="window.TR('en')" title="English"><img src="https://flagcdn.com/w80/us.png"></button>
     <button onclick="window.TR('es')" title="Español"><img src="https://flagcdn.com/w80/es.png"></button>
 </div>
-
     <div id="login" class="screen active">
         <button onclick="window.LIMPAR()" id="B_CACHE" style="background:none; border:1px solid rgba(255,255,255,0.3); font-size:11px; padding:10px; margin-top:20px; box-shadow:none; color:#ccc;"></button>
         <h2 id="L1_1"></h2>
@@ -191,43 +183,55 @@
 
         window._tr = {
     pt: { 
-        B_CACHE: "🔄 LIMPAR CACHE DO SISTEMA", L1_1: "UrnaWeb Digital", L1_2: "Segurança de Identidade", L1_3: "Configuração da Urna",
-        H_LOGIN_TIT: "ACESSO AO SISTEMA:", 
-        H_LOGIN_TXT: "Protocolo de Segurança Ativo. Valide seu e-mail Gmail oficial para autenticação de administrador. Novos usuários possuem 3 eleições de auditoria gratuitas antes da licença profissional.", 
-        L2: "<i class='fas fa-paper-plane'></i> GERAR CÓDIGO DE ACESSO",
-        H_VERIFY_TIT: "VALIDAÇÃO MULTIFATOR:", 
-        H_VERIFY_TXT: "Token criptográfico disparado. Insira a sequência numérica de 4 dígitos recebida para autorizar o acesso administrativo e desbloquear o núcleo da urna.", 
-        V3: "<i class='fas fa-check-circle'></i> AUTENTICAR E ENTRAR",
-        H_SETUP_TIT: "ESCOPO DA ELEIÇÃO:", 
-        H_SETUP_TXT: "Defina o cabeçalho oficial e as restrições de voto. Estes parâmetros garantem a lisura do escrutínio e não podem ser alterados após o início da sessão.", 
+        B_CACHE: "🔄 PURGAR REGISTROS E CACHE", 
+        L1_1: "UrnaWeb Digital Pro", 
+        L1_2: "Autenticação de Identidade", 
+        L1_3: "Parâmetros do Sistema",
+        H_LOGIN_TIT: "GATEWAY DE ACESSO:", 
+        H_LOGIN_TXT: "Protocolo de Segurança Ativo. Autentique-se via Gmail para validação de privilégios administrativos. Novos terminais possuem 3 ciclos de escrutínio para auditoria completa antes da ativação da licença institucional de larga escala.", 
+        L2: "<i class='fas fa-paper-plane'></i> DISPARAR TOKEN DE ACESSO",
+        H_VERIFY_TIT: "VALIDAÇÃO MULTIFATOR (MFA):", 
+        H_VERIFY_TXT: "Token criptográfico enviado. Insira a sequência numérica de 4 dígitos para autorizar o acesso ao núcleo de votação e validar a integridade da sessão.", 
+        V3: "<i class='fas fa-check-double'></i> AUTORIZAR E INICIALIZAR",
+        H_SETUP_TIT: "CONFIGURAÇÃO DE ESCOPO:", 
+        H_SETUP_TXT: "Defina o cabeçalho oficial e a volumetria de votos permitidos. Estes parâmetros tornam-se imutáveis após a abertura da urna para garantir a lisura e a conformidade auditável do processo.", 
         S2: "<i class='fas fa-save'></i> COMMIT E AVANÇAR",
-        R_TITLE: "RELATÓRIO DE AUDITORIA FINAL", AUDIT: "Assinatura Digital UrnaWeb Oficial"
+        R_TITLE: "RELATÓRIO DE AUDITORIA FINAL", 
+        AUDIT: "Assinatura Digital UrnaWeb de Integridade"
     },
     en: { 
-        B_CACHE: "🔄 FLUSH SYSTEM CACHE", L1_1: "UrnaWeb Secure Digital", L1_2: "Identity Authentication", L1_3: "Core Configuration",
-        H_LOGIN_TIT: "SECURE GATEWAY ACCESS:", 
-        H_LOGIN_TXT: "Cybersecurity Protocol Active. Authenticate via official Gmail for admin privileges. Trial environment: 3 full-cycle elections for stress testing before pro activation.", 
-        L2: "<i class='fas fa-paper-plane'></i> DISPATCH ACCESS TOKEN",
+        B_CACHE: "🔄 FLUSH SYSTEM REGISTRIES", 
+        L1_1: "UrnaWeb Secure OS", 
+        L1_2: "Identity Authentication", 
+        L1_3: "Core Parameters",
+        H_LOGIN_TIT: "SECURE ACCESS GATEWAY:", 
+        H_LOGIN_TXT: "Cybersecurity Protocol Active. Authenticate via official Gmail for admin privileges. System monitoring enabled: Trial environment restricted to 3 full-cycle elections for stress testing before official deployment.", 
+        L2: "<i class='fas fa-paper-plane'></i> GENERATE ACCESS TOKEN",
         H_VERIFY_TIT: "MULTI-FACTOR AUTHENTICATION:", 
-        H_VERIFY_TXT: "Encrypted token dispatched. Input the 4-digit numeric sequence to authorize administrative access and unlock the voting core.", 
-        V3: "<i class='fas fa-check-circle'></i> AUTHORIZE & INITIALIZE",
-        H_SETUP_TIT: "ELECTION PARAMETERS:", 
-        H_SETUP_TXT: "Define global header and voting constraints. These parameters ensure electoral integrity and data immutability during the active session.", 
+        H_VERIFY_TXT: "Encrypted token dispatched. Input the 4-digit verification sequence to authorize administrative access and unlock the encrypted voting core.", 
+        V3: "<i class='fas fa-check-double'></i> AUTHORIZE & DEPLOY",
+        H_SETUP_TIT: "ELECTION SCOPE DEFINITION:", 
+        H_SETUP_TXT: "Define global election header and multi-choice constraints. These parameters ensure electoral integrity and data immutability during the active session. Once committed, they cannot be altered.", 
         S2: "<i class='fas fa-save'></i> COMMIT PARAMETERS",
-        R_TITLE: "OFFICIAL AUDIT REPORT", AUDIT: "UrnaWeb Official Digital Integrity Signature"
+        R_TITLE: "OFFICIAL AUDIT REPORT", 
+        AUDIT: "Official UrnaWeb Digital Integrity Signature"
     },
     es: { 
-        B_CACHE: "🔄 PURGAR REGISTROS", L1_1: "UrnaWeb Digital Pro", L1_2: "Seguridad de Identidad", L1_3: "Ajustes del Sistema",
+        B_CACHE: "🔄 PURGAR REGISTROS", 
+        L1_1: "UrnaWeb Escrutinio Pro", 
+        L1_2: "Seguridad de Identidad", 
+        L1_3: "Ajustes del Sistema",
         H_LOGIN_TIT: "PUERTA DE ACCESO SEGURA:", 
-        H_LOGIN_TXT: "Protocolo de Seguridad Nivel 1. Autentíquese vía Gmail oficial. Entorno de auditoría: 3 despliegues electorales completos permitidos antes de la licencia profesional.", 
+        H_LOGIN_TXT: "Protocolo de Seguridad Nivel 1. Autentíquese vía Gmail oficial. Entorno de auditoría: se permiten 3 despliegues electorales completos para pruebas de integridad antes de la licencia profesional.", 
         L2: "<i class='fas fa-paper-plane'></i> SOLICITAR TOKEN DE ACCESO",
         H_VERIFY_TIT: "AUTENTICACIÓN MULTIFACTOR:", 
-        H_VERIFY_TXT: "Se ha enviado un token criptográfico. Ingrese los 4 dígitos numéricos para validar sus credenciales administrativas y desbloquear el sistema de escrutinio.", 
-        V3: "<i class='fas fa-check-circle'></i> VALIDAR E INGRESAR",
+        H_VERIFY_TXT: "Se ha enviado un token criptográfico. Ingrese los 4 dígitos numéricos para validar sus credenciales administrativas y desbloquear o núcleo del sistema de escrutinio.", 
+        V3: "<i class='fas fa-check-double'></i> VALIDAR E INGRESAR",
         H_SETUP_TIT: "CONFIGURACIÓN DEL ESCRUTINIO:", 
-        H_SETUP_TXT: "Defina el título oficial y el límite de votos. Estos parámetros son vinculantes para garantizar la transparencia y la inmutabilidad de los datos electorais.", 
+        H_SETUP_TXT: "Defina el título oficial y el límite de votos. Estos parámetros son vinculantes para garantizar la transparencia y la inmutabilidad de los datos electorales durante todo el proceso.", 
         S2: "<i class='fas fa-save'></i> REGISTRAR Y CONTINUAR",
-        R_TITLE: "REPORTE DE AUDITORÍA FINAL", AUDIT: "Firma Digital de Integridad UrnaWeb"
+        R_TITLE: "REPORTE DE AUDITORÍA FINAL", 
+        AUDIT: "Firma Digital de Integridad UrnaWeb"
     }
 };
         window.TR = (l) => { 
@@ -378,4 +382,5 @@
     </script>
 </body>
 </html>
+
 
