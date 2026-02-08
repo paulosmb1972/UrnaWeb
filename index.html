@@ -14,8 +14,18 @@
         body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--dark); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; user-select: none; }
         
         /* Bandeiras no Canto Superior Direito */
-        .lang-box { position: fixed; top: 15px; right: 15px; z-index: 1000; display: flex; gap: 10px; }
-        .lang-box button { 
+       /* BANDEIRAS MAXIMIZADAS */
+.lang-box { position: fixed; top: 15px; right: 15px; z-index: 1000; display: flex; gap: 12px; }
+.lang-box button { 
+    width: 55px; height: 55px; /* Tamanho maior para evidência */
+    border-radius: 50%; border: 3px solid rgba(255,255,255,0.4); 
+    background: #000; cursor: pointer; display: flex; align-items: center; 
+    justify-content: center; transition: 0.3s ease; padding: 0; overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+.lang-box button img { width: 100%; height: 100%; object-fit: cover; }
+.lang-box button:hover { transform: scale(1.15); border-color: var(--primary); }
+                .lang-box button { 
             width: 45px; height: 45px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); 
             background: #000; cursor: pointer; display: flex; align-items: center; justify-content: center; 
             font-size: 18px; transition: 0.3s; padding: 0; overflow: hidden;
@@ -59,10 +69,10 @@
 <body>
 
     <div class="lang-box">
-        <button onclick="window.TR('pt')" title="Português">🇧🇷</button>
-        <button onclick="window.TR('en')" title="English">🇺🇸</button>
-        <button onclick="window.TR('es')" title="Español">🇪🇸</button>
-    </div>
+    <button onclick="window.TR('pt')" title="Português"><img src="https://flagcdn.com/w80/br.png"></button>
+    <button onclick="window.TR('en')" title="English"><img src="https://flagcdn.com/w80/us.png"></button>
+    <button onclick="window.TR('es')" title="Español"><img src="https://flagcdn.com/w80/es.png"></button>
+</div>
 
     <div id="login" class="screen active">
         <button onclick="window.LIMPAR()" id="B_CACHE" style="background:none; border:1px solid rgba(255,255,255,0.3); font-size:11px; padding:10px; margin-top:20px; box-shadow:none; color:#ccc;"></button>
@@ -180,55 +190,46 @@
         };
 
         window._tr = {
-            pt: { 
-                B_CACHE: "🔄 LIMPAR CACHE DO SISTEMA", L1_1: "UrnaWeb Digital", L1_2: "Segurança de Identidade", L1_3: "Configuração da Urna",
-                H_LOGIN_TIT: "<i class='fas fa-user-shield'></i> ACESSO AO SISTEMA:", H_LOGIN_TXT: "Bem-vindo! Valide seu e-mail Gmail oficial para começar. Novos usuários possuem 3 eleições gratuitas para testes completos antes da ativação profissional.", uE: "Digite seu e-mail Gmail aqui...", L2: "<i class='fas fa-paper-plane'></i> SOLICITAR CÓDIGO DE ACESSO",
-                H_VERIFY_TIT: "<i class='fas fa-key'></i> VERIFICAÇÃO DE SEGURANÇA:", H_VERIFY_TXT: "Um código de validação foi enviado. Digite os 4 dígitos recebidos no seu e-mail para desbloquear o sistema.", iC: "Código...", V3: "<i class='fas fa-check-circle'></i> CONFIRMAR E ENTRAR",
-                H_SETUP_TIT: "<i class='fas fa-cog'></i> DETALHES DO EVENTO:", H_SETUP_TXT: "Dê um título para a eleição (ex: CIPA 2026) e defina quantos candidatos o eleitor pode escolher em cada cédula.", tE: "Título da eleição ou cargo principal...", S2: "<i class='fas fa-arrow-right'></i> SALVAR E AVANÇAR",
-                P1: "Limite de Testes Atingido", H_PAY_TIT: "<i class='fas fa-credit-card'></i> PLANOS DE ATIVAÇÃO:", H_PAY_TXT: "Você utilizou seu limite de 3 eleições gratuitas. Para realizar eleições ilimitadas, ative um plano profissional abaixo.",
-                PL1: "💎 Eleição Única Profissional", DESC_PL1: "Liberação para mais 1 eleição oficial completa. Ideal para eventos pontuais. Inclui fotos e relatório PDF oficial.", B1: "<i class='fas fa-shopping-cart'></i> LIBERAR 1 URNA (R$ 30,00)",
-                PL2: "🚀 Pacote Institucional 20 Urnas", DESC_PL2: "O melhor custo-benefício. Sai por apenas R$ 25,00 cada urna. Os créditos nunca expiram no seu e-mail.", B2: "<i class='fas fa-rocket'></i> COMPRAR PACOTE 20 (R$ 500,00)",
-                P2: "<i class='fas fa-ticket-alt'></i> ATIVAR CRÉDITO AGORA", L_CUP: "Tem um Cupom ou Senha Mestre?", cup: "Digite o código aqui...", B_VOLTAR: "<i class='fas fa-undo'></i> VOLTAR AO INÍCIO",
-                C1: "GERENCIAR CANDIDATOS", H_CARGO_TIT: "<i class='fas fa-users-cog'></i> COMO CADASTRAR:", H_CARGO_TXT: "Digite o Cargo, depois o Nome e anexe a foto. Clique em ADICIONAR antes de salvar o cargo.", nC: "Ex: Diretor, Presidente...", nCand: "Nome do candidato...", INSTR_FOTO: "📷 CLIQUE PARA ANEXAR FOTO", 
-                C2: "<i class='fas fa-plus'></i> ADICIONAR À LISTA", C3: "<i class='fas fa-save'></i> SALVAR CARGO", C4: "<i class='fas fa-play'></i> INICIAR VOTAÇÃO AGORA",
-                H_URNA_TIT: "<i class='fas fa-vote-yea'></i> GUIA DO ELEITOR:", H_URNA_TXT: "Selecione o candidato e confirme. O som 'Piiiii' indica sucesso. Mesários: Senha 1357 no botão vermelho para encerrar.", U1: "<i class='fas fa-check'></i> CONFIRMAR MEU VOTO", BT_BRANCO: "<i class='fas fa-eraser'></i> VOTAR EM BRANCO", L_COUNT: "Eleitores que já votaram:", U2: "<i class='fas fa-lock'></i> ENCERRAR ELEIÇÃO",
-                R_TITLE: "RELATÓRIO DE RESULTADOS", TOTAL_VOTOS: "VOTOS COMPUTADOS", B_PDF_SIMPLE: "<i class='fas fa-file-alt'></i> PDF SIMPLES (TEXTO)", B_PDF_PHOTOS: "<i class='fas fa-file-pdf'></i> PDF COMPLETO (FOTOS)",
-                H_FEED_TIT: "<i class='fas fa-comment-dots'></i> FALE COM O PAULO:", H_FEED_TXT: "Envie sugestões ou dúvidas diretamente para o desenvolvedor do sistema.", txtSugestao: "Escreva sua mensagem aqui...", F2: "<i class='fas fa-envelope'></i> ENVIAR MENSAGEM", B_EXIT_FINAL: "<i class='fas fa-sign-out-alt'></i> SAIR DO SISTEMA", AUDIT: "Emissão Oficial UrnaWeb",
-                AL_SUC_VOTE: "Voto Gravado com Sucesso!", AL_ERR_VOTE: "Selecione um candidato!", AL_OK_SAVE: "Configurações Salvas!", AL_OK_CUP: "CRÉDITO ATIVADO!", BRANCO_TXT: "Brancos/Nulos", AL_ERR_MAIL: "Use Gmail oficial!", AL_COD_ENV: "Código enviado!", AL_INC: "Incorreto!", AL_FALTA: "Faltam dados!", AL_ERR_DATA: "Erro: Adicione candidatos!", AL_OK_MSG: "Mensagem enviada!", PDF_CAND: "Candidato", PDF_VOT: "Votos", PDF_TOTAL: "Total de Eleitores"
-            },
-            en: { 
-                B_CACHE: "🔄 CLEAR SYSTEM CACHE", L1_1: "UrnaWeb Digital", L1_2: "Identity Security", L1_3: "Urn Setup",
-                H_LOGIN_TIT: "<i class='fas fa-user-shield'></i> SYSTEM ACCESS:", H_LOGIN_TXT: "Welcome! Validate your official Gmail to start. New users get 3 free elections for testing.", uE: "Enter your Gmail here...", L2: "<i class='fas fa-paper-plane'></i> REQUEST ACCESS CODE",
-                H_VERIFY_TIT: "<i class='fas fa-key'></i> SECURITY VERIFICATION:", H_VERIFY_TXT: "A code was sent. Enter the 4 digits from your email to unlock.", iC: "Code...", V3: "<i class='fas fa-check-circle'></i> CONFIRM AND ENTER",
-                H_SETUP_TIT: "<i class='fas fa-cog'></i> EVENT DETAILS:", H_SETUP_TXT: "Set an election title and how many candidates a voter can choose.", tE: "Election title or position...", S2: "<i class='fas fa-arrow-right'></i> SAVE AND PROCEED",
-                P1: "Trial Limit Reached", H_PAY_TIT: "<i class='fas fa-credit-card'></i> ACTIVATION PLANS:", H_PAY_TXT: "You used your 3 free trials. Activate a pro plan below to continue.",
-                PL1: "💎 Single Pro Election", DESC_PL1: "Unlock 1 more official election. Includes photos and official PDF report.", B1: "<i class='fas fa-shopping-cart'></i> UNLOCK 1 URN ($ 30.00)",
-                PL2: "🚀 Institutional Pack 20", DESC_PL2: "Best value. Only $ 25.00 per urn. Credits never expire.", B2: "<i class='fas fa-rocket'></i> BUY 20 PACK ($ 500.00)",
-                P2: "<i class='fas fa-ticket-alt'></i> ACTIVATE NOW", L_CUP: "Have a Coupon?", cup: "Code here...", B_VOLTAR: "<i class='fas fa-undo'></i> BACK TO START",
-                C1: "MANAGE CANDIDATES", H_CARGO_TIT: "<i class='fas fa-users-cog'></i> HOW TO REGISTER:", H_CARGO_TXT: "Enter Position, Name, and attach photo. Click ADD before saving.", nC: "Ex: Manager, President...", nCand: "Candidate name...", INSTR_FOTO: "📷 ATTACH PHOTO", 
-                C2: "<i class='fas fa-plus'></i> ADD TO LIST", C3: "<i class='fas fa-save'></i> SAVE POSITION", C4: "<i class='fas fa-play'></i> START VOTING NOW",
-                H_URNA_TIT: "<i class='fas fa-vote-yea'></i> VOTER GUIDE:", H_URNA_TXT: "Select candidate and confirm. 'Beep' sound means success.", U1: "<i class='fas fa-check'></i> CONFIRM MY VOTE", BT_BRANCO: "<i class='fas fa-eraser'></i> BLANK VOTE", L_COUNT: "Voters so far:", U2: "<i class='fas fa-lock'></i> END ELECTION",
-                R_TITLE: "RESULTS REPORT", TOTAL_VOTOS: "VOTES COUNTED", B_PDF_SIMPLE: "<i class='fas fa-file-alt'></i> SIMPLE PDF (TEXT)", B_PDF_PHOTOS: "<i class='fas fa-file-pdf'></i> FULL PDF (PHOTOS)",
-                H_FEED_TIT: "<i class='fas fa-comment-dots'></i> TALK TO PAULO:", H_FEED_TXT: "Send suggestions directly to the developer.", txtSugestao: "Write here...", F2: "<i class='fas fa-envelope'></i> SEND MESSAGE", B_EXIT_FINAL: "<i class='fas fa-sign-out-alt'></i> LOGOUT", AUDIT: "Official UrnaWeb Report",
-                AL_SUC_VOTE: "Vote Recorded!", AL_ERR_VOTE: "Select a candidate!", AL_OK_SAVE: "Settings Saved!", AL_OK_CUP: "ACTIVATED!", BRANCO_TXT: "Blank/Null", AL_ERR_MAIL: "Use Gmail!", AL_COD_ENV: "Code sent!", AL_INC: "Incorrect!", AL_FALTA: "Missing data!", AL_ERR_DATA: "Add candidates!", AL_OK_MSG: "Message sent!", PDF_CAND: "Candidate", PDF_VOT: "Votes", PDF_TOTAL: "Total Voters"
-            },
-            es: { 
-                B_CACHE: "🔄 LIMPIAR CACHÉ", L1_1: "UrnaWeb Digital", L1_2: "Seguridad", L1_3: "Configuración",
-                H_LOGIN_TIT: "<i class='fas fa-user-shield'></i> ACCESO:", H_LOGIN_TXT: "¡Bienvenido! Valide su Gmail oficial. Los nuevos usuarios tienen 3 elecciones gratis.", uE: "Su Gmail aquí...", L2: "<i class='fas fa-paper-plane'></i> PEDIR CÓDIGO",
-                H_VERIFY_TIT: "<i class='fas fa-key'></i> VERIFICACIÓN:", H_VERIFY_TXT: "Se envió un código. Ingrese los 4 dígitos para desbloquear.", iC: "Código...", V3: "<i class='fas fa-check-circle'></i> ENTRAR",
-                H_SETUP_TIT: "<i class='fas fa-cog'></i> DETALLES:", H_SETUP_TXT: "Título de la elección y cuántos candidatos se pueden elegir.", tE: "Título o cargo...", S2: "<i class='fas fa-arrow-right'></i> GUARDAR",
-                P1: "Límite Alcanzado", H_PAY_TIT: "<i class='fas fa-credit-card'></i> PLANES:", H_PAY_TXT: "Usó sus 3 pruebas gratis. Active un plano pro abajo.",
-                PL1: "💎 Elección Única", DESC_PL1: "Libera 1 elección oficial. Inclui fotos y reporte PDF.", B1: "<i class='fas fa-shopping-cart'></i> LIBERAR 1 URNA",
-                PL2: "🚀 Paquete 20", DESC_PL2: "Mejor valor. Solo R$ 25,00 cada urna. No expira.", B2: "<i class='fas fa-rocket'></i> COMPRAR PACK 20",
-                P2: "<i class='fas fa-ticket-alt'></i> ACTIVAR AHORA", L_CUP: "¿Tiene Cupón?", cup: "Código...", B_VOLTAR: "<i class='fas fa-undo'></i> VOLVER",
-                C1: "GESTIONAR CANDIDATOS", H_CARGO_TIT: "<i class='fas fa-users-cog'></i> REGISTRO:", H_CARGO_TXT: "Cargo, Nombre y Foto. Clic en ADICIONAR antes de guardar.", nC: "Ej: Director, Presidente...", nCand: "Nombre...", INSTR_FOTO: "📷 FOTO", 
-                C2: "<i class='fas fa-plus'></i> ADICIONAR", C3: "<i class='fas fa-save'></i> GUARDAR", C4: "<i class='fas fa-play'></i> INICIAR VOTOS",
-                H_URNA_TIT: "<i class='fas fa-vote-yea'></i> GUÍA:", H_URNA_TXT: "Seleccione y confirme. Pitido indica éxito.", U1: "<i class='fas fa-check'></i> CONFIRMAR VOTO", BT_BRANCO: "<i class='fas fa-eraser'></i> VOTO BLANCO", L_COUNT: "Votantes:", U2: "<i class='fas fa-lock'></i> TERMINAR",
-                R_TITLE: "REPORTE FINAL", TOTAL_VOTOS: "VOTOS", B_PDF_SIMPLE: "<i class='fas fa-file-alt'></i> PDF TEXTO", B_PDF_PHOTOS: "<i class='fas fa-file-pdf'></i> PDF COMPLETO", AUDIT: "Emisión Oficial UrnaWeb",
-                AL_SUC_VOTE: "¡Voto Guardado!", AL_ERR_MAIL: "¡Use Gmail!", AL_COD_ENV: "¡Enviado!", AL_INC: "¡Incorrecto!", AL_OK_SAVE: "¡Guardado!", BRANCO_TXT: "Blanco", PDF_CAND: "Candidato", PDF_VOT: "Votos", PDF_TOTAL: "Total"
-            }
-        };
-
+    pt: { 
+        B_CACHE: "🔄 LIMPAR CACHE DO SISTEMA", L1_1: "UrnaWeb Digital", L1_2: "Segurança de Identidade", L1_3: "Configuração da Urna",
+        H_LOGIN_TIT: "ACESSO AO SISTEMA:", 
+        H_LOGIN_TXT: "Protocolo de Segurança Ativo. Valide seu e-mail Gmail oficial para autenticação de administrador. Novos usuários possuem 3 eleições de auditoria gratuitas antes da licença profissional.", 
+        L2: "<i class='fas fa-paper-plane'></i> GERAR CÓDIGO DE ACESSO",
+        H_VERIFY_TIT: "VALIDAÇÃO MULTIFATOR:", 
+        H_VERIFY_TXT: "Token criptográfico disparado. Insira a sequência numérica de 4 dígitos recebida para autorizar o acesso administrativo e desbloquear o núcleo da urna.", 
+        V3: "<i class='fas fa-check-circle'></i> AUTENTICAR E ENTRAR",
+        H_SETUP_TIT: "ESCOPO DA ELEIÇÃO:", 
+        H_SETUP_TXT: "Defina o cabeçalho oficial e as restrições de voto. Estes parâmetros garantem a lisura do escrutínio e não podem ser alterados após o início da sessão.", 
+        S2: "<i class='fas fa-save'></i> COMMIT E AVANÇAR",
+        R_TITLE: "RELATÓRIO DE AUDITORIA FINAL", AUDIT: "Assinatura Digital UrnaWeb Oficial"
+    },
+    en: { 
+        B_CACHE: "🔄 FLUSH SYSTEM CACHE", L1_1: "UrnaWeb Secure Digital", L1_2: "Identity Authentication", L1_3: "Core Configuration",
+        H_LOGIN_TIT: "SECURE GATEWAY ACCESS:", 
+        H_LOGIN_TXT: "Cybersecurity Protocol Active. Authenticate via official Gmail for admin privileges. Trial environment: 3 full-cycle elections for stress testing before pro activation.", 
+        L2: "<i class='fas fa-paper-plane'></i> DISPATCH ACCESS TOKEN",
+        H_VERIFY_TIT: "MULTI-FACTOR AUTHENTICATION:", 
+        H_VERIFY_TXT: "Encrypted token dispatched. Input the 4-digit numeric sequence to authorize administrative access and unlock the voting core.", 
+        V3: "<i class='fas fa-check-circle'></i> AUTHORIZE & INITIALIZE",
+        H_SETUP_TIT: "ELECTION PARAMETERS:", 
+        H_SETUP_TXT: "Define global header and voting constraints. These parameters ensure electoral integrity and data immutability during the active session.", 
+        S2: "<i class='fas fa-save'></i> COMMIT PARAMETERS",
+        R_TITLE: "OFFICIAL AUDIT REPORT", AUDIT: "UrnaWeb Official Digital Integrity Signature"
+    },
+    es: { 
+        B_CACHE: "🔄 PURGAR REGISTROS", L1_1: "UrnaWeb Digital Pro", L1_2: "Seguridad de Identidad", L1_3: "Ajustes del Sistema",
+        H_LOGIN_TIT: "PUERTA DE ACCESO SEGURA:", 
+        H_LOGIN_TXT: "Protocolo de Seguridad Nivel 1. Autentíquese vía Gmail oficial. Entorno de auditoría: 3 despliegues electorales completos permitidos antes de la licencia profesional.", 
+        L2: "<i class='fas fa-paper-plane'></i> SOLICITAR TOKEN DE ACCESO",
+        H_VERIFY_TIT: "AUTENTICACIÓN MULTIFACTOR:", 
+        H_VERIFY_TXT: "Se ha enviado un token criptográfico. Ingrese los 4 dígitos numéricos para validar sus credenciales administrativas y desbloquear el sistema de escrutinio.", 
+        V3: "<i class='fas fa-check-circle'></i> VALIDAR E INGRESAR",
+        H_SETUP_TIT: "CONFIGURACIÓN DEL ESCRUTINIO:", 
+        H_SETUP_TXT: "Defina el título oficial y el límite de votos. Estos parámetros son vinculantes para garantizar la transparencia y la inmutabilidad de los datos electorais.", 
+        S2: "<i class='fas fa-save'></i> REGISTRAR Y CONTINUAR",
+        R_TITLE: "REPORTE DE AUDITORÍA FINAL", AUDIT: "Firma Digital de Integridad UrnaWeb"
+    }
+};
         window.TR = (l) => { 
             window._idioma = l; const d = window._tr[l]; if(!d) return;
             for(let k in d){ 
@@ -377,3 +378,4 @@
     </script>
 </body>
 </html>
+
