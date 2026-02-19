@@ -65,14 +65,14 @@ body {
    AJUSTES DE RESPONSIVIDADE (MOBILE-FIRST)
    ========================================================================== */
 
-/* 1. Ajuste do Container Principal */
+/* Ajuste para telas de qualquer tamanho */
 .screen { 
     display: none; 
-    padding: 15px; 
-    width: 95%;            /* Usa quase toda a largura em telas pequenas */
-    max-width: 500px;      /* Mas não passa de 500px em telas grandes */
-    margin: 0 auto;
+    padding: 20px; 
+    width: 100%; 
+    max-width: 600px; 
     box-sizing: border-box; 
+    margin: 0 auto; /* Centraliza o conteúdo no notebook */
 }
 
 /* 2. Ajuste de Inputs e Botões para toque (Touch Friendly) */
@@ -83,11 +83,17 @@ input, button, textarea {
     font-size: 16px;       /* Mantém 16px para o iPhone não dar zoom automático */
 }
 
-/* 3. Grid da Urna (Candidatos) */
+/* O Grid se ajusta sozinho: se a tela for pequena, ele faz 1 coluna. Se for grande, faz 2 ou mais */
 #gridUrna {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Ajusta colunas sozinho */
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+    gap: 15px; 
+    margin-bottom: 20px;
+}
+
+/* Garante que imagens e inputs não estourem a largura do celular */
+img, input, button, textarea {
+    max-width: 100%;
 }
 
 /* 4. Ajuste das Bandeiras (Idiomas) */
@@ -286,4 +292,5 @@ button:active {
     border-bottom: 1px solid #eee; 
     color: #333 !important; 
 }
+
 
