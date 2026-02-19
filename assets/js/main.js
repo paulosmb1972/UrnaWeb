@@ -301,11 +301,14 @@ window.PDF = (fotos) => {
    ========================================================================== */
 window.K = async () => { 
     let c = document.getElementById('cup').value.trim().toLowerCase(); 
-    let email = localStorage.getItem('urna_user_email');
-    if(btoa(c) === "b3Jpb24wMDE=" || btoa(c) === "bWFpczNncmF0aXM=") { 
-        if(email) await fetch(window._cfg.u + '/use_coupon?email=' + encodeURIComponent(email));
-        alert("Crédito ativado!"); window.GO('setup'); 
-    } else alert("Cupom Inválido!"); 
+    // Exemplo de cupom que libera o sistema: "liberar100"
+    if(btoa(c) === "bGliZXJhcjEwMA==") { // "liberar100" em base64
+        localStorage.setItem('urna_paga', 'true'); // AQUI ESTÁ O SEGREDO
+        alert("MUITO OBRIGADO! Seu UrnaWeb agora está liberado para mais de 10 votos."); 
+        window.GO('setup'); 
+    } else {
+        alert("Cupom inválido ou já utilizado.");
+    }
 };
 
 window.FEED = () => { 
@@ -319,6 +322,7 @@ window.FEED = () => {
 };
 
 window.GO('login');
+
 
 
 
