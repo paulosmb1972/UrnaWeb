@@ -203,12 +203,28 @@ window.BRANCO = () => {
 };
 
 window.NEXT = () => {
+    // --- LÓGICA COMERCIAL: TRAVA DE 10 VOTOS ---
+    // Verificamos se o usuário já pagou (salvo no navegador)
+    let jaPagou = localStorage.getItem('urna_paga') === 'true';
+    
+    // Se não pagou e já chegou em 10 votos, bloqueamos!
+    if (!jaPagou && window._totalEleitores >= 10) {
+        alert("🔒 OPA, CHEGAMOS NO LIMITE! \n\nEsta versão de teste permite até 10 votos. Sua eleição está fazendo sucesso! Para continuar recebendo mais votos, escolha um de nossos planos na tela de pagamento.");
+        window.GO('pay'); // Manda o usuário direto para o pagamento
+        return;
+    }
+
+    // --- CONTINUAÇÃO NORMAL DO SISTEMA ---
     window._idx++; 
     if(window._idx < window._data.length) { 
         window.RUN(); 
     } else { 
         window._totalEleitores++;
         document.getElementById('voterCountDisplay').innerText = window._totalEleitores;
+        
+        // Toca o som de "Confirmado"
+        window.BIP(); 
+        
         alert(window._tr[window._idioma].AL_SUC_VOTE); 
         window._idx = 0; 
         window.RUN(); 
@@ -303,6 +319,7 @@ window.FEED = () => {
 };
 
 window.GO('login');
+
 
 
 
