@@ -69,7 +69,7 @@ window._tr = {
         AL_SUC_VOTE: "¡Sesión Grabada!", AL_ERR_MAIL: "¡E-mail Inválido!", AL_COD_ENV: "¡Token Enviado!", AL_INC: "¡Acceso Denegado!", BRANCO_TXT: "Blanco/Nulo"
     }
 };
-        window.TR = (l) => { 
+       window.TR = (l) => { 
             window._idioma = l; const d = window._tr[l]; if(!d) return;
             for(let k in d){ 
                 let el = document.getElementById(k); 
@@ -79,5 +79,6 @@ window._tr = {
                 } 
             } 
         };
+
 
 
