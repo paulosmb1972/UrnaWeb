@@ -266,7 +266,6 @@ window.PDF = (fotos) => {
         document.body.removeChild(clone);
         alert("Erro ao gerar PDF. Verifique se o título da eleição não tem caracteres estranhos.");
     });
-};, 500); 
 };
 
 /* ==========================================================================
@@ -292,5 +291,6 @@ window.FEED = () => {
 };
 
 window.GO('login');
+
 
 
