@@ -191,30 +191,67 @@ window.START_VOTE_PROCESS = async () => {
 };
 
 window.RUN = () => {
-    let cargo = window._data[window._idx]; 
-    document.getElementById('uT').innerText = cargo.n.toUpperCase();
-    let g = document.getElementById('gridUrna'); // Localize esta linha dentro de window.RUN:
-d.innerHTML = (can.f ? `<img src="${can.f}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;"><br>` : '') + `<b>${can.n}</b>`;
-
-// Altere para esta (usando 'aspect-ratio' ou uma altura que funcione bem em ambos):
-d.innerHTML = (can.f ? `<img src="${can.f}" style="width:100%; aspect-ratio: 1/1; max-height:150px; object-fit:cover; border-radius:8px;"><br>` : '') + `<b>${can.n}</b>`; 
-    window._sel = [];
+    // 1. Localiza os elementos da Urna
+    const displayCargo = document.getElementById('uT');
+    const grid = document.getElementById('gridUrna');
     
-    cargo.c.forEach((can, i) => {
-        let d = document.createElement('div'); 
-        d.className = 'cand-card'; // Adicione estilo no CSS para cand-card se desejar
-        d.style = "background:white;color:black;padding:10px;border-radius:10px;text-align:center;cursor:pointer;border:4px solid transparent;";
-        d.innerHTML = (can.f ? `<img src="${can.f}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;"><br>` : '') + `<b>${can.n}</b>`;
-        d.onclick = () => { 
-            if(window._sel.includes(i)) { 
-                window._sel.splice(window._sel.indexOf(i),1); 
-                d.classList.remove('selected-card'); 
-            } else if(window._sel.length < window._maxVotos) { 
-                window._sel.push(i); 
-                d.classList.add('selected-card'); 
-            } 
+    // Verifica se os elementos existem antes de continuar
+    if (!displayCargo || !grid) {
+        console.error("Erro: Elementos da urna não encontrados no HTML.");
+        return;
+    }
+
+    // 2. Pega os dados do cargo atual
+    const cargoAtual = window._data[window._idx];
+    if (!cargoAtual) {
+        console.error("Erro: Dados do cargo não encontrados.");
+        return;
+    }
+
+    // 3. Atualiza o título do cargo
+    displayCargo.innerText = cargoAtual.n.toUpperCase();
+    
+    // 4. Limpa o grid e reseta a seleção
+    grid.innerHTML = '';
+    window._sel = [];
+
+    // 5. Renderiza os cards dos candidatos
+    cargoAtual.c.forEach((can, i) => {
+        const card = document.createElement('div');
+        card.className = 'cand-card';
+        
+        // Estilo inline para garantir que apareça (pode ser movido para o CSS depois)
+        card.style.cssText = `
+            background: white;
+            color: black;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            border: 4px solid transparent;
+            transition: 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        `;
+
+        // Conteúdo do Card (Foto + Nome)
+        const imgHtml = can.f ? `<img src="${can.f}" style="width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:8px; margin-bottom:10px;">` : `<div style="width:100%; aspect-ratio:1/1; background:#eee; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:10px;"><i class="fas fa-user fa-2x" style="color:#ccc;"></i></div>`;
+        
+        card.innerHTML = `${imgHtml}<b style="display:block; font-size:14px; text-transform:uppercase;">${can.n}</b>`;
+
+        // Evento de Seleção
+        card.onclick = () => {
+            if (window._sel.includes(i)) {
+                window._sel = window._sel.filter(item => item !== i);
+                card.style.borderColor = "transparent";
+                card.style.background = "white";
+            } else if (window._sel.length < window._maxVotos) {
+                window._sel.push(i);
+                card.style.borderColor = "var(--success)";
+                card.style.background = "rgba(46, 204, 113, 0.1)";
+            }
         };
-        g.appendChild(d);
+
+        grid.appendChild(card);
     });
 };
 
@@ -320,6 +357,7 @@ window.FEED = () => {
 
 // Start
 window.GO('login');
+
 
 
 
