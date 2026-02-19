@@ -264,10 +264,12 @@ window.VOTE = () => {
 
 window.BRANCO = () => {
     let cargo = window._data[window._idx];
-    if(confirm(window._tr[window._idioma].BT_BRANCO + "?")) {
-        if(!cargo.branco) cargo.branco = 0; 
+    // Pergunta se confirma o voto em branco usando o idioma atual
+    if(confirm((window._tr[window._idioma].BT_BRANCO || "Votar em Branco") + "?")) {
+        if(cargo.branco === undefined) cargo.branco = 0; 
         cargo.branco++; 
-        window.BIP(); window.NEXT();
+        window.BIP(); 
+        window.NEXT();
     }
 };
 
@@ -365,6 +367,7 @@ window.FEED = () => {
 
 // Start
 window.GO('login');
+
 
 
 
