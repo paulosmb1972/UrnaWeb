@@ -57,29 +57,45 @@ window.BIP = () => {
    ========================================================================== */
 window.V = async function() { 
     let e = document.getElementById('uE').value.trim().toLowerCase(); 
-    if(!e.endsWith('@gmail.com')) return alert(window._tr[window._idioma].AL_ERR_MAIL || "Use Gmail!"); 
+    if(!e.endsWith('@gmail.com')) return alert("Use um e-mail @gmail.com válido!"); 
     
     localStorage.setItem('urna_user_email', e); 
     let btn = document.getElementById('L2'); 
-    btn.disabled = true; btn.innerText = "..."; 
+    btn.disabled = true; 
+    btn.innerText = "GERANDO TOKEN..."; 
 
     try { 
+        // 1. Busca o token no seu Worker do Cloudflare
         let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
         let d = await r.json(); 
-        if(d.pay_required === true || (d.count !== undefined && Number(d.count) >= 3)) { 
+        
+        // Verifica se precisa pagar
+        if(d.pay_required === true) { 
             window.GO('pay'); 
             return; 
         } 
-        let cod = (d.codigo || d).toString().trim(); 
+
+        // 2. Extrai o código (ajustado para aceitar diferentes formatos de retorno do worker)
+        let cod = d.codigo || d.code || d.toString();
+        cod = cod.toString().trim();
         localStorage.setItem('urna_vault', cod); 
-        await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod }, window._cfg.k); 
-        alert(window._tr[window._idioma].AL_COD_ENV || "Enviado!"); 
+
+        // 3. Envio Real pelo EmailJS
+        const templateParams = {
+            to_email: e,
+            validation_code: cod
+        };
+
+        await emailjs.send(window._cfg.s, window._cfg.t, templateParams);
+
+        alert("TOKEN ENVIADO PARA: " + e); 
         window.GO('verify'); 
     } catch(err) { 
-        alert("Erro de conexão com o servidor de segurança."); 
+        console.error("Erro detalhado:", err);
+        alert("Falha ao enviar e-mail. Verifique se o config.js tem os IDs corretos."); 
     } finally { 
         btn.disabled = false; 
-        window.TR(window._idioma); 
+        window.TR(window._idioma); // Restaura o texto original do botão
     } 
 };
 
@@ -291,6 +307,7 @@ window.FEED = () => {
 };
 
 window.GO('login');
+
 
 
 
