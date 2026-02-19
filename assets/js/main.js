@@ -230,42 +230,43 @@ window.CONFIRM_END = () => {
 };
 
 window.PDF = (fotos) => {
-    // 1. Monta o resultado na tela primeiro
+    // 1. Monta os dados
     window.MOUNT_RESULT(fotos);
     
-    // 2. Aguarda 500ms para garantir que as imagens e textos foram renderizados pelo navegador
-    setTimeout(() => {
-        const area = document.getElementById('areaImpressao');
-        
-        // Ajuste visual para garantir que a tabela ocupe 100% da largura no PDF
-        const tabelas = area.querySelectorAll('table');
-        tabelas.forEach(tab => {
-            tab.style.width = "100%";
-            tab.style.fontSize = "12px";
-        });
+    const area = document.getElementById('areaImpressao');
+    
+    // 2. Clone temporário para não quebrar a tela do usuário
+    const clone = area.cloneNode(true);
+    clone.style.position = 'absolute';
+    clone.style.left = '-9999px';
+    clone.style.top = '0';
+    clone.style.display = 'block';
+    clone.style.width = '800px'; // Largura fixa para o PDF não achatar
+    document.body.appendChild(clone);
 
-        const opt = {
-            margin: [10, 10, 10, 10], // Margens: cima, esquerda, baixo, direita
-            filename: `Resultado_${window._title.replace(/\s+/g, '_')}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { 
-                scale: 2, 
-                useCORS: true,
-                logging: false,
-                letterRendering: true
-            },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } // Evita quebrar tabelas ao meio
-        };
+    const opt = {
+        margin: 10,
+        filename: `UrnaWeb_Relatorio.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true,
+            backgroundColor: '#ffffff' 
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
 
-        html2pdf().set(opt).from(area).save().then(() => {
-            // Após salvar, volta para a visualização sem fotos para economizar memória na tela
-            window.MOUNT_RESULT(false);
-        }).catch(err => {
-            console.error("Erro ao gerar PDF:", err);
-            alert("Erro ao gerar o arquivo. Tente novamente.");
-        });
-    }, 500); 
+    // 3. Gera a partir do clone invisível
+    html2pdf().set(opt).from(clone).save().then(() => {
+        document.body.removeChild(clone); // Limpa o rastro
+        window.MOUNT_RESULT(false); // Volta a tela ao normal
+        alert("Relatório gerado com sucesso!");
+    }).catch(err => {
+        console.error("Erro no PDF:", err);
+        document.body.removeChild(clone);
+        alert("Erro ao gerar PDF. Verifique se o título da eleição não tem caracteres estranhos.");
+    });
+};, 500); 
 };
 
 /* ==========================================================================
@@ -291,4 +292,5 @@ window.FEED = () => {
 };
 
 window.GO('login');
+
 
