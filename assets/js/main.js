@@ -1,4 +1,5 @@
-console.log("Main JS carregado!");
+console.log("UrnaWeb Main JS Ativo!");
+
 /* ==========================================================================
    VARIÁVEIS DE ESTADO E INICIALIZAÇÃO
    ========================================================================== */
@@ -12,21 +13,19 @@ window._maxVotos = 1;
 window._idioma = 'pt';
 window._totalEleitores = 0;
 
+// Bloqueio de inspeção básica
 document.addEventListener('contextmenu', e => e.preventDefault());
 document.onkeydown = function(e) { 
     if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74)) || (e.ctrlKey && e.keyCode == 85)) return false; 
 };
 
 /* ==========================================================================
-   NAVEGAÇÃO E UTILITÁRIOS
+   NAVEGAÇÃO E IDENTIDADE DO APARELHO
    ========================================================================== */
 window.GO = (id) => {
     if(id === 'login') { 
         localStorage.removeItem('urna_vault'); 
-        window._data = []; 
-        window._sel = []; 
-        window._idx = 0; 
-        window._totalEleitores = 0; 
+        window._data = []; window._sel = []; window._idx = 0; window._totalEleitores = 0; 
     }
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     const target = document.getElementById(id);
@@ -34,26 +33,21 @@ window.GO = (id) => {
     if(window.TR) window.TR(window._idioma);
 };
 
-window.LIMPAR = () => { 
-    if(confirm(window._tr[window._idioma].B_CACHE)) { 
-        localStorage.clear(); 
-        window.location.reload(true); 
-    } 
-};
-
-window.BIP = () => {
+// Captura Identidade Digital (Prevenção de Fraudes)
+window.CAPTURA_DADOS = async () => {
     try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator(); const g = ctx.createGain();
-        osc.type = 'square'; osc.frequency.setValueAtTime(440, ctx.currentTime);
-        g.gain.setValueAtTime(0.1, ctx.currentTime);
-        osc.connect(g); g.connect(ctx.destination);
-        osc.start(); osc.stop(ctx.currentTime + 0.7); 
-    } catch(e){}
+        const r = await fetch('https://api.ipify.org?format=json');
+        const d = await r.json();
+        localStorage.setItem('_u_secure_hash', btoa(d.ip));
+    } catch (e) {}
+    
+    const idUnico = btoa([navigator.userAgent, screen.colorDepth].join('|')).substring(0, 16);
+    localStorage.setItem('_dev_id', idUnico);
 };
+window.CAPTURA_DADOS();
 
 /* ==========================================================================
-   AUTENTICAÇÃO E SEGURANÇA
+   AUTENTICAÇÃO E SEGURANÇA (TOKEN)
    ========================================================================== */
 window.V = async function() { 
     let e = document.getElementById('uE').value.trim().toLowerCase(); 
@@ -61,41 +55,23 @@ window.V = async function() {
     
     localStorage.setItem('urna_user_email', e); 
     let btn = document.getElementById('L2'); 
-    btn.disabled = true; 
-    btn.innerText = "GERANDO TOKEN..."; 
+    btn.disabled = true; btn.innerText = "GERANDO TOKEN..."; 
 
     try { 
-        // 1. Busca o token no seu Worker do Cloudflare
         let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
         let d = await r.json(); 
-        
-        // Verifica se precisa pagar
-        if(d.pay_required === true) { 
-            window.GO('pay'); 
-            return; 
-        } 
+        if(d.pay_required === true) { window.GO('pay'); return; } 
 
-        // 2. Extrai o código (ajustado para aceitar diferentes formatos de retorno do worker)
-        let cod = d.codigo || d.code || d.toString();
-        cod = cod.toString().trim();
+        let cod = (d.codigo || d.code || d).toString().trim();
         localStorage.setItem('urna_vault', cod); 
 
-        // 3. Envio Real pelo EmailJS
-        const templateParams = {
-            to_email: e,
-            validation_code: cod
-        };
-
-        await emailjs.send(window._cfg.s, window._cfg.t, templateParams);
-
+        await emailjs.send(window._cfg.s, window._cfg.t, { to_email: e, validation_code: cod });
         alert("TOKEN ENVIADO PARA: " + e); 
         window.GO('verify'); 
     } catch(err) { 
-        console.error("Erro detalhado:", err);
-        alert("Falha ao enviar e-mail. Verifique se o config.js tem os IDs corretos."); 
+        alert("Falha ao enviar e-mail. Verifique sua conexão."); 
     } finally { 
-        btn.disabled = false; 
-        window.TR(window._idioma); // Restaura o texto original do botão
+        btn.disabled = false; window.TR(window._idioma); 
     } 
 };
 
@@ -132,10 +108,8 @@ window.A = () => {
     if (!cargo || !nome) return alert("Preencha cargo e nome!");
     if (!window._temp) window._temp = { n: cargo, c: [], branco: 0 };
     window._temp.c.push({ n: nome, v: 0, f: window._fotoTemp });
-    const lista = document.getElementById('listaTemporaria');
-    lista.innerHTML += `<div style="padding:5px;border-bottom:1px solid rgba(255,255,255,0.1)">👤 <b>${nome}</b></div>`;
-    document.getElementById('nCand').value = '';
-    window._fotoTemp = '';
+    document.getElementById('listaTemporaria').innerHTML += `<div style="padding:5px;border-bottom:1px solid rgba(255,255,255,0.1)">👤 <b>${nome}</b></div>`;
+    document.getElementById('nCand').value = ''; window._fotoTemp = '';
     document.getElementById('imgPrev').style.display = 'none';
 };
 
@@ -148,22 +122,46 @@ window.SAVE = () => {
     alert("Cargo salvo!");
 };
 
+/* ==========================================================================
+   LOGICA DE CRÉDITOS E TRAVAS
+   ========================================================================== */
 window.START_VOTE_PROCESS = async () => {
     let creditos = parseInt(localStorage.getItem('urna_creditos') || "0");
 
-    // Se tiver créditos (e não for o Orion), consome 1 agora
+    // Consome crédito apenas se tiver (usuários pagantes)
     if (creditos > 0 && creditos < 900000) {
         localStorage.setItem('urna_creditos', (creditos - 1).toString());
-        console.log("Crédito gasto! Restam: " + (creditos - 1));
+        console.log("Crédito consumido.");
     }
 
-    // Validação básica de candidatos
     if (window._temp) { window._data.push(JSON.parse(JSON.stringify(window._temp))); window._temp = null; }
     if (window._data.length === 0) return alert("Adicione candidatos primeiro!");
     
     window._idx = 0;
     window.RUN();
     window.GO('urna');
+};
+
+window.NEXT = () => {
+    let creditos = parseInt(localStorage.getItem('urna_creditos') || "0");
+    
+    // Regra Comercial: Trava no 10º voto se não houver saldo
+    if (creditos <= 0 && window._totalEleitores >= 10) {
+        alert("🔒 LIMITE ALCANÇADO: Adquira um plano para continuar recebendo votos.");
+        window.GO('pay');
+        return;
+    }
+
+    window._idx++; 
+    if(window._idx < window._data.length) { 
+        window.RUN(); 
+    } else { 
+        window._totalEleitores++;
+        document.getElementById('voterCountDisplay').innerText = window._totalEleitores;
+        window.BIP(); 
+        alert(window._tr[window._idioma].AL_SUC_VOTE); 
+        window._idx = 0; window.RUN(); 
+    }
 };
 
 /* ==========================================================================
@@ -174,15 +172,14 @@ window.RUN = () => {
     const grid = document.getElementById('gridUrna');
     const cargoAtual = window._data[window._idx];
     displayCargo.innerText = cargoAtual.n.toUpperCase();
-    grid.innerHTML = '';
-    window._sel = [];
+    grid.innerHTML = ''; window._sel = [];
 
     cargoAtual.c.forEach((can, i) => {
         const card = document.createElement('div');
         card.className = 'cand-card';
         card.style.cssText = `background:white;color:black;padding:15px;border-radius:12px;text-align:center;cursor:pointer;border:4px solid transparent;`;
-        const imgHtml = can.f ? `<img src="${can.f}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:8px;margin-bottom:10px;">` : `<div style="width:100%;aspect-ratio:1/1;background:#eee;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;"><i class="fas fa-user fa-2x" style="color:#ccc;"></i></div>`;
-        card.innerHTML = `${imgHtml}<b>${can.n}</b>`;
+        const img = can.f ? `<img src="${can.f}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:8px;margin-bottom:10px;">` : `<div style="width:100%;aspect-ratio:1/1;background:#eee;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;"><i class="fas fa-user fa-2x"></i></div>`;
+        card.innerHTML = `${img}<b>${can.n}</b>`;
         card.onclick = () => {
             if (window._sel.includes(i)) {
                 window._sel = window._sel.filter(item => item !== i);
@@ -197,41 +194,16 @@ window.RUN = () => {
 };
 
 window.VOTE = () => { 
-    if(!window._sel.length) return alert("Selecione um candidato ou vote em Branco."); 
+    if(!window._sel.length) return alert("Selecione um candidato!"); 
     window.BIP(); 
     window._sel.forEach(i => window._data[window._idx].c[i].v++); 
     window.NEXT();
 };
 
 window.BRANCO = () => {
-    let cargo = window._data[window._idx];
-    if(confirm((window._tr[window._idioma].BT_BRANCO || "Voto em Branco") + "?")) {
-        cargo.branco = (cargo.branco || 0) + 1; 
-        window.BIP(); 
-        window.NEXT();
-    }
-};
-
-window.NEXT = () => {
-    let creditos = parseInt(localStorage.getItem('urna_creditos') || "0");
-    
-    // REGRA: Se não tem crédito E já chegou no 10º voto, TRAVA.
-    if (creditos <= 0 && window._totalEleitores >= 10) {
-        alert("🔒 LIMITE DE TESTE: Esta eleição atingiu 10 votos. Para continuar, adquira um plano profissional.");
-        window.GO('pay');
-        return;
-    }
-
-    window._idx++; 
-    if(window._idx < window._data.length) { 
-        window.RUN(); 
-    } else { 
-        window._totalEleitores++;
-        document.getElementById('voterCountDisplay').innerText = window._totalEleitores;
-        window.BIP(); 
-        alert(window._tr[window._idioma].AL_SUC_VOTE); 
-        window._idx = 0; 
-        window.RUN(); 
+    if(confirm((window._tr[window._idioma].BT_BRANCO || "Votar em Branco") + "?")) {
+        window._data[window._idx].branco = (window._data[window._idx].branco || 0) + 1; 
+        window.BIP(); window.NEXT();
     }
 };
 
@@ -250,132 +222,77 @@ window.MOUNT_RESULT = (fotos) => {
         cargo.c.sort((a,b) => b.v - a.v).forEach(can => { 
             h += `<tr>${fotos ? `<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></td>` : ''}<td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`; 
         });
-        // Votos em Branco
-        let brancos = cargo.branco || 0;
-        h += `<tr>${fotos?'<td></td>':''}<td><i>${d.BRANCO_TXT || 'Brancos'}</i></td><td style="text-align:right"><b>${brancos}</b></td></tr>`;
+        h += `<tr>${fotos?'<td></td>':''}<td><i>${d.BRANCO_TXT}</i></td><td style="text-align:right"><b>${cargo.branco || 0}</b></td></tr>`;
         out.innerHTML += h + '</tbody></table>';
     });
 };
 
 window.CONFIRM_END = () => { 
-    let pass = window._idioma === 'pt' ? "Senha (1357):" : "Password (1357):";
-    if(prompt(pass) === "1357") {
-        window.MOUNT_RESULT(false); 
-        window.GO('res');
+    if(prompt("Senha (1357):") === "1357") {
+        window.MOUNT_RESULT(false); window.GO('res');
     } else alert("Acesso Negado!");
 };
 
-// Procure onde você encerra a votação (ex: CONFIRM_END ou função similar)
-window.FINALIZAR_ELEICAO = () => {
-    let creditos = parseInt(localStorage.getItem('urna_creditos') || "0");
-
-    if (creditos > 0) {
-        // Se ele tem créditos, diminui 1
-        localStorage.setItem('urna_creditos', (creditos - 1).toString());
-        
-        // Se acabarem os créditos agora, remove o status de pago
-        if (creditos - 1 <= 0) {
-            localStorage.setItem('urna_paga', 'false');
-        }
-        
-        // Segue para mostrar o resultado
-        window.GO('res');
-    } else {
-        alert("Seus créditos acabaram. Por favor, adquira um novo plano.");
-        window.GO('pay');
-    }
-};
-
 window.PDF = (fotos) => {
-    // 1. Monta os dados na div
     window.MOUNT_RESULT(fotos);
-    
     const area = document.getElementById('areaImpressao');
-    
-    // 2. Força a visibilidade para o navegador conseguir "ler" o conteúdo
     area.style.display = 'block';
-    area.style.position = 'relative';
-    area.style.opacity = '1';
-
     const opt = {
-        margin: 10,
-        filename: `Relatorio_${window._title || 'UrnaWeb'}.pdf`,
+        margin: 10, filename: `UrnaWeb_${window._title}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-            scale: 2, 
-            useCORS: true,
-            backgroundColor: '#ffffff',
-            scrollY: 0 // Garante que comece do topo
-        },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
-
-    // 3. Pequeno delay para garantir a renderização antes da captura
     setTimeout(() => {
-        html2pdf().set(opt).from(area).save().then(() => {
-            console.log("PDF gerado!");
-            window.MOUNT_RESULT(false); // Reseta a view
-        }).catch(err => {
-            console.error("Erro no PDF:", err);
-        });
+        html2pdf().set(opt).from(area).save().then(() => { window.MOUNT_RESULT(false); });
     }, 500);
 };
 
 /* ==========================================================================
-   FINANCEIRO E FEEDBACK
+   CUPONS E FINANCEIRO
    ========================================================================== */
 window.K = async () => { 
     let campo = document.getElementById('cup');
     let c = campo.value.trim().toLowerCase(); 
-    let codObscuro = btoa(c); 
+    let cod = btoa(c); 
     
-    // Verifica se este cupom já foi usado NESTE navegador
-    if (localStorage.getItem('usado_' + codObscuro)) {
-        alert("Epa! Este cupom já foi resgatado anteriormente.");
-        campo.value = "";
+    if (localStorage.getItem('usado_' + cod)) {
+        alert("Este cupom já foi usado neste aparelho.");
         return;
     }
 
-    let creditosAtuais = parseInt(localStorage.getItem('urna_creditos') || "0");
+    let atuais = parseInt(localStorage.getItem('urna_creditos') || "0");
 
-    if (codObscuro === "b3Jpb24wMDE=") { // orion001
+    if (cod === "b3Jpb24wMDE=") { // orion001
         localStorage.setItem('urna_creditos', "999999");
-        alert("Olá Orion! Acesso mestre liberado.");
-        window.GO('setup');
-    } 
-    else if (codObscuro === "cHJvbW8wMQ==") { // promo01
-        liberar(1, codObscuro);
-    } 
-    else if (codObscuro === "cHJvbW8wMg==") { // promo02
-        liberar(2, codObscuro);
-    } 
-    else if (codObscuro === "cHJvbW8wMw==") { // promo03
-        liberar(3, codObscuro);
-    } 
-    else {
+        alert("Acesso Mestre Ativado.");
+    } else if (cod === "cHJvbW8wMQ==") { // promo01
+        localStorage.setItem('urna_creditos', (atuais + 1).toString());
+        localStorage.setItem('usado_' + cod, 'true');
+        alert("1 Eleição Adicionada!");
+    } else if (cod === "cHJvbW8wMg==") { // promo02
+        localStorage.setItem('urna_creditos', (atuais + 2).toString());
+        localStorage.setItem('usado_' + cod, 'true');
+        alert("2 Eleições Adicionadas!");
+    } else if (cod === "cHJvbW8wMw==") { // promo03
+        localStorage.setItem('urna_creditos', (atuais + 3).toString());
+        localStorage.setItem('usado_' + cod, 'true');
+        alert("3 Eleições Adicionadas!");
+    } else {
         alert("Cupom inválido!");
+        return;
     }
-
-    function liberar(qtd, hash) {
-        localStorage.setItem('urna_creditos', (creditosAtuais + qtd).toString());
-        localStorage.setItem('usado_' + hash, 'true'); // Bloqueia o reuso do cupom
-        alert("Sucesso! Você ganhou " + qtd + " eleição(ões) grátis.");
-        window.GO('setup');
-    }
-    campo.value = "";
+    window.GO('setup'); campo.value = "";
 };
 
-window.FEED = () => { 
-    let m = document.getElementById('txtSugestao').value.trim(); 
-    if(!m) return alert("Escreva algo antes de enviar."); 
-    let params = { to_email: 'paulosmb1972@gmail.com', validation_code: m, user_email: localStorage.getItem('urna_user_email'), election_title: window._title };
-    emailjs.send(window._cfg.s, window._cfg.t, params, window._cfg.k).then(() => { 
-        alert("Enviado!"); 
-        document.getElementById('txtSugestao').value = ''; 
-    });
+window.LIMPAR = () => { 
+    if(confirm("Deseja apagar todos os dados desta urna?")) { 
+        localStorage.clear(); window.location.reload(); 
+    } 
 };
 
 window.GO('login');
+
 
 
 
