@@ -110,35 +110,73 @@ window.PREV = (f) => {
     } 
 };
 
+/* ==========================================================================
+   CORREÇÃO: ADICIONAR E CONSOLIDAR
+   ========================================================================== */
+
 window.A = () => {
-    let cargo = document.getElementById('nC').value, nome = document.getElementById('nCand').value;
-    if(!cargo || !nome) return alert(window._tr[window._idioma].AL_FALTA || "Dados incompletos");
-    if(!window._temp) window._temp = {n:cargo, c:[], branco:0};
-    window._temp.c.push({n:nome, v:0, f:window._fotoTemp});
-    document.getElementById('listaTemporaria').innerHTML += `<div>👤 ${nome} - ${cargo}</div>`;
-    document.getElementById('nCand').value = ''; 
+    let cargoInput = document.getElementById('nC');
+    let nomeInput = document.getElementById('nCand');
+    
+    let cargo = cargoInput.value.trim();
+    let nome = nomeInput.value.trim();
+
+    if(!cargo || !nome) {
+        alert("Por favor, preencha o cargo e o nome do candidato.");
+        return;
+    }
+
+    // Se é o primeiro candidato deste cargo, inicializa o objeto temporário
+    if(!window._temp) {
+        window._temp = { n: cargo, c: [], branco: 0 };
+    }
+
+    // Adiciona o candidato à lista temporária
+    window._temp.c.push({ n: nome, v: 0, f: window._fotoTemp });
+
+    // Atualiza a lista visual para o usuário ver que funcionou
+    document.getElementById('listaTemporaria').innerHTML += `<div>👤 ${nome} (${cargo})</div>`;
+    
+    // Limpa apenas o campo do nome e a foto para o próximo candidato
+    nomeInput.value = ''; 
     window._fotoTemp = ''; 
     document.getElementById('imgPrev').style.display = 'none';
 };
 
 window.SAVE = () => { 
-    if(window._temp) window._data.push(window._temp); 
+    if(!window._temp || window._temp.c.length === 0) {
+        alert("Adicione pelo menos um candidato antes de salvar o cargo.");
+        return;
+    }
+
+    // Salva o cargo consolidado na lista oficial de votação
+    window._data.push(window._temp); 
+    
+    // Reseta para o próximo cargo (Ex: depois de Vereador, configurar Prefeito)
     window._temp = null; 
     document.getElementById('nC').value = ''; 
     document.getElementById('listaTemporaria').innerHTML = ''; 
-    alert(window._tr[window._idioma].AL_OK_SAVE || "Cargo Consolidado!"); 
+    
+    alert("Cargo e Candidatos salvos com sucesso!"); 
 };
 
-/* ==========================================================================
-   PROCESSO DE VOTAÇÃO (URNA)
-   ========================================================================== */
 window.START_VOTE_PROCESS = async () => { 
-    if(!window._data.length) return alert("Adicione ao menos um cargo."); 
-    let email = localStorage.getItem('urna_user_email');
-    if(email) {
-        try { await fetch(window._cfg.u + '/increment?email=' + encodeURIComponent(email)); } catch(e) {}
+    if(window._data.length === 0) {
+        alert("Erro: Você precisa 'Consolidar o Cargo' antes de iniciar a votação.");
+        return;
     }
-    window._idx = 0; window.RUN(); window.GO('urna'); 
+    
+    // Tenta avisar o servidor (se falhar, ele ignora e segue o jogo)
+    try { 
+        let email = localStorage.getItem('urna_user_email');
+        if(email && window._cfg && window._cfg.u) {
+            fetch(window._cfg.u + '/increment?email=' + encodeURIComponent(email)); 
+        }
+    } catch(e) { console.log("Servidor off, seguindo..."); }
+
+    window._idx = 0; 
+    window.RUN(); 
+    window.GO('urna'); 
 };
 
 window.RUN = () => {
@@ -271,5 +309,6 @@ window.FEED = () => {
 
 // Start
 window.GO('login');
+
 
 
