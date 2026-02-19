@@ -246,42 +246,38 @@ window.CONFIRM_END = () => {
 };
 
 window.PDF = (fotos) => {
-    // 1. Monta os dados
+    // 1. Monta os dados na div
     window.MOUNT_RESULT(fotos);
     
     const area = document.getElementById('areaImpressao');
     
-    // 2. Clone temporário para não quebrar a tela do usuário
-    const clone = area.cloneNode(true);
-    clone.style.position = 'absolute';
-    clone.style.left = '-9999px';
-    clone.style.top = '0';
-    clone.style.display = 'block';
-    clone.style.width = '800px'; // Largura fixa para o PDF não achatar
-    document.body.appendChild(clone);
+    // 2. Força a visibilidade para o navegador conseguir "ler" o conteúdo
+    area.style.display = 'block';
+    area.style.position = 'relative';
+    area.style.opacity = '1';
 
     const opt = {
         margin: 10,
-        filename: `UrnaWeb_Relatorio.pdf`,
+        filename: `Relatorio_${window._title || 'UrnaWeb'}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
             scale: 2, 
             useCORS: true,
-            backgroundColor: '#ffffff' 
+            backgroundColor: '#ffffff',
+            scrollY: 0 // Garante que comece do topo
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    // 3. Gera a partir do clone invisível
-    html2pdf().set(opt).from(clone).save().then(() => {
-        document.body.removeChild(clone); // Limpa o rastro
-        window.MOUNT_RESULT(false); // Volta a tela ao normal
-        alert("Relatório gerado com sucesso!");
-    }).catch(err => {
-        console.error("Erro no PDF:", err);
-        document.body.removeChild(clone);
-        alert("Erro ao gerar PDF. Verifique se o título da eleição não tem caracteres estranhos.");
-    });
+    // 3. Pequeno delay para garantir a renderização antes da captura
+    setTimeout(() => {
+        html2pdf().set(opt).from(area).save().then(() => {
+            console.log("PDF gerado!");
+            window.MOUNT_RESULT(false); // Reseta a view
+        }).catch(err => {
+            console.error("Erro no PDF:", err);
+        });
+    }, 500);
 };
 
 /* ==========================================================================
@@ -307,6 +303,7 @@ window.FEED = () => {
 };
 
 window.GO('login');
+
 
 
 
