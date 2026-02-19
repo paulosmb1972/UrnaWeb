@@ -260,14 +260,25 @@ button:active { transform: translateY(3px); box-shadow: none; }
    CONFIGURAÇÃO DO PDF / IMPRESSÃO
    ========================================================================== */
 #areaImpressao { 
-    width: 100%;
-    max-width: 480px; 
-    margin: 0 auto; 
     background: white !important; 
-    color: #333 !important; 
+    color: #000 !important; 
     padding: 20px; 
-    border-radius: 5px; 
-    overflow-x: auto;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 5px;
+}
+
+/* Garante que dentro do PDF as tabelas fiquem visíveis */
+#areaImpressao table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-top: 10px !important;
+}
+
+#areaImpressao th, #areaImpressao td {
+    border: 1px solid #ccc !important;
+    padding: 8px !important;
+    color: #000 !important;
 }
 
 .pdf-table { 
@@ -323,5 +334,6 @@ button:active { transform: translateY(3px); box-shadow: none; }
 #areaImpressao button, #areaImpressao i.fa-trash {
     display: none !important;
 }
+
 
 
