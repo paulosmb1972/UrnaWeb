@@ -19,25 +19,113 @@
         <button onclick="window.TR('es')"><img src="https://flagcdn.com/w80/es.png"></button>
     </div>
 
-   <script src="assets/js/config.js" defer></script>
-    <script src="assets/js/i18n.js" defer></script>
-    <script src="assets/js/main.js" defer></script>
+    <div id="login" class="screen active">
+        <button onclick="window.LIMPAR()" id="B_CACHE" style="background:none; border:1px solid rgba(255,255,255,0.3); font-size:11px; padding:10px; margin-top:20px; color:#ccc;"></button>
+        <h2 id="L1_1"></h2>
+        <div class="info-box"><b id="H_LOGIN_TIT"></b><span id="H_LOGIN_TXT"></span></div>
+        <input id="uE" type="email">
+        <button onclick="window.V()" id="L2"></button>
+    </div>
+
+    <div id="verify" class="screen">
+        <h2 id="L1_2"></h2>
+        <div class="info-box"><b id="H_VERIFY_TIT"></b><span id="H_VERIFY_TXT"></span></div>
+        <input id="iC" type="text" maxlength="4" style="text-align: center; font-size: 24px; letter-spacing: 10px;">
+        <button onclick="window.C()" id="V3"></button>
+    </div>
+
+    <div id="setup" class="screen">
+        <h2 id="L1_3"></h2>
+        <div class="info-box"><b id="H_SETUP_TIT"></b><span id="H_SETUP_TXT"></span></div>
+        <input id="tE" type="text">
+        <input id="maxV" type="number" min="1" value="1">
+        <button onclick="window.N()" id="S2"></button>
+    </div>
+
+    <div id="pay" class="screen">
+        <h2 id="P1"></h2>
+        <div class="info-box"><b id="H_PAY_TIT"></b><span id="H_PAY_TXT"></span></div>
+        <div class="pay-card">
+            <h3 id="PL1"></h3>
+            <span style="font-size:28px; color:var(--accent); font-weight:bold;">R$ 30,00</span>
+            <button onclick="window.open('https://mpago.la/2maEAFx')" id="B1"></button>
+        </div>
+        <div class="pay-card">
+            <h3 id="PL2"></h3>
+            <span style="font-size:28px; color:var(--success); font-weight:bold;">R$ 500,00</span>
+            <button onclick="window.open('https://mpago.la/1VakcdN')" id="B2"></button>
+        </div>
+        <div class="pay-card" style="border: 2px solid var(--accent);">
+            <p id="L_CUP"></p><input id="cup" type="text">
+            <button onclick="window.K()" id="P2" style="background:var(--accent); color:#000;"></button>
+        </div>
+        <button onclick="window.GO('login')" id="B_VOLTAR" style="background:none; border:1px solid #fff;"></button>
+    </div>
+
+    <div id="setupCargo" class="screen">
+        <h2 id="C1"></h2>
+        <div class="info-box"><b id="H_CARGO_TIT"></b><span id="H_CARGO_TXT"></span></div>
+        <input id="nC" type="text">
+        <input id="nCand" type="text">
+        <div class="foto-container" onclick="document.getElementById('fileIn').click()">
+            <span id="INSTR_FOTO"></span>
+            <img id="imgPrev" class="img-preview">
+        </div>
+        <input type="file" id="fileIn" hidden accept="image/*" onchange="window.PREV(this)">
+        <button onclick="window.A()" id="C2"></button>
+        <div id="listaTemporaria" class="cand-preview-list"></div>
+        <button onclick="window.SAVE()" id="C3" style="background:var(--success)"></button>
+        <button onclick="window.START_VOTE_PROCESS()" id="C4"></button>
+    </div>
+
+    <div id="urna" class="screen">
+        <h2 id="uT"></h2>
+        <div class="info-box"><b id="H_URNA_TIT"></b><span id="H_URNA_TXT"></span></div>
+        <div id="gridUrna" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 20px;"></div>
+        <button onclick="window.VOTE()" id="U1" style="height:80px; background:var(--success); margin-bottom: 20px;"></button>
+        <button onclick="window.BRANCO()" id="BT_BRANCO" style="height:60px; background:#ffffff; color:#333; margin-bottom: 20px; border: 2px solid #ccc;"></button>
+        <div class="voter-counter-box">
+            <span id="L_COUNT"></span>
+            <b id="voterCountDisplay">0</b>
+        </div>
+        <button onclick="window.CONFIRM_END()" id="U2" style="background:var(--danger); opacity: 0.6; font-size: 12px; padding: 10px; margin-top: 80px;"></button>
+    </div>
+
+    <div id="res" class="screen">
+        <h2 id="R_TITLE"></h2>
+        <div id="areaImpressao">
+            <h2 id="pdf_h1" style="text-align:center; color:#0a2a66;"></h2>
+            <div id="pC"></div>
+            <p id="pdf-audit" style="text-align:center; font-size:9px; color:#999;"></p>
+        </div>
+        <button onclick="window.PDF(false)" id="B_PDF_SIMPLE"></button>
+        <button onclick="window.PDF(true)" id="B_PDF_PHOTOS" style="background:var(--success)"></button>
+        <div style="margin-top:30px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
+            <div class="info-box"><b id="H_FEED_TIT"></b><span id="H_FEED_TXT"></span></div>
+            <textarea id="txtSugestao"></textarea>
+            <button onclick="window.FEED()" id="F2"></button>
+        </div>
+        <button onclick="window.GO('login')" id="B_EXIT_FINAL" style="background:var(--danger)"></button>
+    </div>
+
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/i18n.js"></script>
+    <script src="assets/js/main.js"></script>
 
     <script>
-        // Este código espera todos os arquivos acima carregarem
-        window.addEventListener('load', () => {
-            console.log("Arquivos carregados. Iniciando...");
-            if (typeof window.GO === 'function') {
-                window.TR('pt'); // Aplica o idioma
-                window.GO('login'); // Abre a tela
+        // Função de inicialização forçada
+        function initSystem() {
+            console.log("Checando funções...");
+            if (typeof window.GO === 'function' && typeof window.TR === 'function') {
+                window.TR('pt'); // Aplica os textos
+                window.GO('login'); // Mostra a tela
+                console.log("UrnaWeb Ativa!");
             } else {
-                alert("Erro crítico: O sistema não encontrou as funções de votação.");
+                console.log("Aguardando scripts...");
+                setTimeout(initSystem, 300);
             }
-        });
+        }
+        window.onload = initSystem;
     </script>
 </body>
-
-
-
-
-
+</html>
