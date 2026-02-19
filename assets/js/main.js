@@ -150,24 +150,17 @@ window.SAVE = () => {
 
 window.START_VOTE_PROCESS = async () => {
     let creditos = parseInt(localStorage.getItem('urna_creditos') || "0");
-    let jaPagou = localStorage.getItem('urna_paga') === 'true';
 
-    // Se ele não for o Orion (créditos infinitos) e não tiver saldo
-    if (!jaPagou || creditos <= 0) {
-        // Se ele ainda tem o limite de 10 votos grátis, deixamos passar
-        // Mas se ele já usou um cupom antes e os créditos zeraram, ele volta pro grátis
-        localStorage.setItem('urna_paga', 'false'); 
-    }
-
-    // Consome 1 crédito se ele tiver (e não for o Orion)
-    if (jaPagou && creditos > 0 && creditos < 900000) {
+    // Se tiver créditos (e não for o Orion), consome 1 agora
+    if (creditos > 0 && creditos < 900000) {
         localStorage.setItem('urna_creditos', (creditos - 1).toString());
-        console.log("Crédito consumido. Restantes: " + (creditos - 1));
+        console.log("Crédito gasto! Restam: " + (creditos - 1));
     }
 
-    // Código original de início...
+    // Validação básica de candidatos
     if (window._temp) { window._data.push(JSON.parse(JSON.stringify(window._temp))); window._temp = null; }
     if (window._data.length === 0) return alert("Adicione candidatos primeiro!");
+    
     window._idx = 0;
     window.RUN();
     window.GO('urna');
@@ -221,26 +214,21 @@ window.BRANCO = () => {
 
 window.NEXT = () => {
     let creditos = parseInt(localStorage.getItem('urna_creditos') || "0");
-    let eOrion = creditos > 900000;
     
-    // Trava se: não for o Orion E não tiver créditos ativos E já tiver 10 votos
-    if (!eOrion && creditos <= 0 && window._totalEleitores >= 10) {
-        alert("🔒 FIM DO TESTE GRÁTIS: Esta eleição atingiu 10 votos. Para continuar, use um cupom ou plano profissional.");
+    // REGRA: Se não tem crédito E já chegou no 10º voto, TRAVA.
+    if (creditos <= 0 && window._totalEleitores >= 10) {
+        alert("🔒 LIMITE DE TESTE: Esta eleição atingiu 10 votos. Para continuar, adquira um plano profissional.");
         window.GO('pay');
         return;
     }
-   
-    // --- CONTINUAÇÃO NORMAL DO SISTEMA ---
+
     window._idx++; 
     if(window._idx < window._data.length) { 
         window.RUN(); 
     } else { 
         window._totalEleitores++;
         document.getElementById('voterCountDisplay').innerText = window._totalEleitores;
-        
-        // Toca o som de "Confirmado"
         window.BIP(); 
-        
         alert(window._tr[window._idioma].AL_SUC_VOTE); 
         window._idx = 0; 
         window.RUN(); 
@@ -341,39 +329,37 @@ window.K = async () => {
     let c = campo.value.trim().toLowerCase(); 
     let codObscuro = btoa(c); 
     
-    // Verifica se este cupom já foi "queimado" neste navegador
+    // Verifica se este cupom já foi usado NESTE navegador
     if (localStorage.getItem('usado_' + codObscuro)) {
-        alert("Epa! Esse código já foi usado neste aparelho.");
+        alert("Epa! Este cupom já foi resgatado anteriormente.");
         campo.value = "";
         return;
     }
 
-    // Lógica de Ativação
-    if (codObscuro === "b3Jpb24wMDE=") { // Cupom: orion001
-        localStorage.setItem('urna_paga', 'true');
+    let creditosAtuais = parseInt(localStorage.getItem('urna_creditos') || "0");
+
+    if (codObscuro === "b3Jpb24wMDE=") { // orion001
         localStorage.setItem('urna_creditos', "999999");
-        alert("Acesso mestre ativado, Orion!");
+        alert("Olá Orion! Acesso mestre liberado.");
         window.GO('setup');
     } 
     else if (codObscuro === "cHJvbW8wMQ==") { // promo01
-        aplicarCredito(1, codObscuro);
+        liberar(1, codObscuro);
     } 
     else if (codObscuro === "cHJvbW8wMg==") { // promo02
-        aplicarCredito(2, codObscuro);
+        liberar(2, codObscuro);
     } 
     else if (codObscuro === "cHJvbW8wMw==") { // promo03
-        aplicarCredito(3, codObscuro);
+        liberar(3, codObscuro);
     } 
     else {
-        alert("Código inválido. Tente de novo!");
+        alert("Cupom inválido!");
     }
 
-    function aplicarCredito(qtd, hash) {
-        let atuais = parseInt(localStorage.getItem('urna_creditos') || "0");
-        localStorage.setItem('urna_creditos', (atuais + qtd).toString());
-        localStorage.setItem('usado_' + hash, 'true'); // Marca como usado pra sempre
-        localStorage.setItem('urna_paga', 'true'); // Libera a trava de 10 votos
-        alert("Sucesso! Você ganhou " + qtd + " crédito(s) de eleição.");
+    function liberar(qtd, hash) {
+        localStorage.setItem('urna_creditos', (creditosAtuais + qtd).toString());
+        localStorage.setItem('usado_' + hash, 'true'); // Bloqueia o reuso do cupom
+        alert("Sucesso! Você ganhou " + qtd + " eleição(ões) grátis.");
         window.GO('setup');
     }
     campo.value = "";
@@ -390,6 +376,7 @@ window.FEED = () => {
 };
 
 window.GO('login');
+
 
 
 
