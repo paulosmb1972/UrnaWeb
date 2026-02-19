@@ -19,18 +19,25 @@
         <button onclick="window.TR('es')"><img src="https://flagcdn.com/w80/es.png"></button>
     </div>
 
-    <script src="assets/js/config.js"></script>
+   <script src="assets/js/config.js"></script>
     <script src="assets/js/i18n.js"></script>
     <script src="assets/js/main.js"></script>
-<script src="assets/js/main.js"></script> <script>
-        // Garante que o sistema inicie mesmo que haja delay no carregamento
-        document.addEventListener('DOMContentLoaded', () => {
+
+    <script>
+        // Este código força o início assim que a página termina de carregar
+        window.onload = () => {
+            console.log("Iniciando sistema...");
             if (typeof window.GO === 'function') {
                 window.GO('login');
+                // Força a tradução inicial
+                if(window.TR) window.TR('pt');
+            } else {
+                console.error("Erro: Função GO não encontrada no main.js");
             }
-        });
+        };
     </script>
 </body>
 </html>
+
 
 
