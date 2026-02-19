@@ -114,69 +114,80 @@ window.PREV = (f) => {
    CORREÇÃO: ADICIONAR E CONSOLIDAR
    ========================================================================== */
 
-window.A = () => {
-    let cargoInput = document.getElementById('nC');
-    let nomeInput = document.getElementById('nCand');
-    
-    let cargo = cargoInput.value.trim();
-    let nome = nomeInput.value.trim();
+/* ==========================================================================
+   CORREÇÃO DE FLUXO: ADICIONAR, SALVAR E INICIAR
+   ========================================================================== */
 
-    if(!cargo || !nome) {
-        alert("Por favor, preencha o cargo e o nome do candidato.");
+window.A = () => {
+    const cargo = document.getElementById('nC').value.trim();
+    const nome = document.getElementById('nCand').value.trim();
+
+    if (!cargo || !nome) {
+        alert(window._tr[window._idioma].AL_FALTA || "Preencha cargo e nome!");
         return;
     }
 
-    // Se é o primeiro candidato deste cargo, inicializa o objeto temporário
-    if(!window._temp) {
+    // Inicializa o cargo temporário se ele não existir
+    if (!window._temp) {
         window._temp = { n: cargo, c: [], branco: 0 };
     }
 
-    // Adiciona o candidato à lista temporária
+    // Adiciona o candidato ao cargo atual
     window._temp.c.push({ n: nome, v: 0, f: window._fotoTemp });
 
-    // Atualiza a lista visual para o usuário ver que funcionou
-    document.getElementById('listaTemporaria').innerHTML += `<div>👤 ${nome} (${cargo})</div>`;
-    
-    // Limpa apenas o campo do nome e a foto para o próximo candidato
-    nomeInput.value = ''; 
-    window._fotoTemp = ''; 
+    // Atualiza a lista visual (Preview)
+    const lista = document.getElementById('listaTemporaria');
+    const item = document.createElement('div');
+    item.style = "padding: 5px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 13px;";
+    item.innerHTML = `👤 <b>${nome}</b> <small>(${cargo})</small>`;
+    lista.appendChild(item);
+
+    // Limpa campos para o próximo candidato do MESMO cargo
+    document.getElementById('nCand').value = '';
+    window._fotoTemp = '';
     document.getElementById('imgPrev').style.display = 'none';
 };
 
-window.SAVE = () => { 
-    if(!window._temp || window._temp.c.length === 0) {
-        alert("Adicione pelo menos um candidato antes de salvar o cargo.");
+window.SAVE = () => {
+    if (!window._temp || window._temp.c.length === 0) {
+        alert("Adicione candidatos antes de salvar o cargo!");
         return;
     }
 
-    // Salva o cargo consolidado na lista oficial de votação
-    window._data.push(window._temp); 
+    // Move do temporário para o banco de dados oficial da eleição
+    window._data.push(JSON.parse(JSON.stringify(window._temp))); 
     
-    // Reseta para o próximo cargo (Ex: depois de Vereador, configurar Prefeito)
-    window._temp = null; 
-    document.getElementById('nC').value = ''; 
-    document.getElementById('listaTemporaria').innerHTML = ''; 
+    // Reseta o temporário e a interface para um NOVO cargo (ex: Prefeito -> Vereador)
+    window._temp = null;
+    document.getElementById('nC').value = '';
+    document.getElementById('listaTemporaria').innerHTML = '';
     
-    alert("Cargo e Candidatos salvos com sucesso!"); 
+    alert("Cargo consolidado com sucesso!");
 };
 
-window.START_VOTE_PROCESS = async () => { 
-    if(window._data.length === 0) {
-        alert("Erro: Você precisa 'Consolidar o Cargo' antes de iniciar a votação.");
+window.START_VOTE_PROCESS = async () => {
+    // Caso o usuário tenha esquecido de clicar em SALVAR, mas tenha candidatos no TEMP
+    if (window._temp && window._temp.c.length > 0) {
+        window._data.push(JSON.parse(JSON.stringify(window._temp)));
+        window._temp = null;
+    }
+
+    if (window._data.length === 0) {
+        alert("Nenhum cargo configurado. Adicione candidatos e salve o cargo primeiro.");
         return;
     }
-    
-    // Tenta avisar o servidor (se falhar, ele ignora e segue o jogo)
-    try { 
-        let email = localStorage.getItem('urna_user_email');
-        if(email && window._cfg && window._cfg.u) {
-            fetch(window._cfg.u + '/increment?email=' + encodeURIComponent(email)); 
-        }
-    } catch(e) { console.log("Servidor off, seguindo..."); }
 
-    window._idx = 0; 
-    window.RUN(); 
-    window.GO('urna'); 
+    // Incremento de segurança (Opcional)
+    try {
+        let email = localStorage.getItem('urna_user_email');
+        if (email && window._cfg) {
+            fetch(`${window._cfg.u}/increment?email=${encodeURIComponent(email)}`);
+        }
+    } catch (e) {}
+
+    window._idx = 0;
+    window.RUN();
+    window.GO('urna');
 };
 
 window.RUN = () => {
@@ -309,6 +320,7 @@ window.FEED = () => {
 
 // Start
 window.GO('login');
+
 
 
 
