@@ -314,20 +314,28 @@ window.CONFIRM_END = () => {
     }
 };
 
-window.PDF = (fotos) => {
-    window.MOUNT_RESULT(fotos);
-    const opt = { 
-        margin: 10, 
-        filename: 'UrnaWeb_Resultado.pdf', 
-        image: { type: 'jpeg', quality: 0.98 }, 
-        html2canvas: { scale: 2, useCORS: true }, 
-        jsPDF: { unit: 'mm', format: 'a4' } 
-    };
-    html2pdf().set(opt).from(document.getElementById('areaImpressao')).save().then(() => { 
-        window.MOUNT_RESULT(false); 
+window.MOUNT_RESULT = (fotos) => {
+    let d = window._tr[window._idioma];
+    document.getElementById('pdf_h1').innerText = window._title.toUpperCase();
+    document.getElementById('pdf-audit').innerText = d.AUDIT + ": " + new Date().toLocaleString();
+    let out = document.getElementById('pC'); 
+    out.innerHTML = `<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.PDF_TOTAL}: ${window._totalEleitores}</b></div>`;
+    
+    window._data.forEach(cargo => {
+        let h = `<h3>${cargo.n.toUpperCase()}</h3><table class="pdf-table"><thead><tr>${fotos?'<th style="width:50px">Foto</th>':''}<th>${d.PDF_CAND}</th><th style="text-align:right">${d.PDF_VOT}</th></tr></thead><tbody>`;
+        
+        // Candidatos
+        cargo.c.sort((a,b) => b.v - a.v).forEach(can => { 
+            h += `<tr>${fotos ? `<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></td>` : ''}<td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`; 
+        });
+
+        // Votos em Branco (Garante que apareça mesmo que seja 0)
+        let totalBrancos = cargo.branco || 0;
+        h += `<tr>${fotos?'<td></td>':''}<td><i>${d.BRANCO_TXT || 'Votos em Branco'}</i></td><td style="text-align:right"><b>${totalBrancos}</b></td></tr>`;
+        
+        out.innerHTML += h + '</tbody></table>';
     });
 };
-
 /* ==========================================================================
    FINANCEIRO E FEEDBACK
    ========================================================================== */
@@ -357,6 +365,7 @@ window.FEED = () => {
 
 // Start
 window.GO('login');
+
 
 
 
