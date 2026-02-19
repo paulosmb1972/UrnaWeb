@@ -261,6 +261,27 @@ window.CONFIRM_END = () => {
     } else alert("Acesso Negado!");
 };
 
+// Procure onde você encerra a votação (ex: CONFIRM_END ou função similar)
+window.FINALIZAR_ELEICAO = () => {
+    let creditos = parseInt(localStorage.getItem('urna_creditos') || "0");
+
+    if (creditos > 0) {
+        // Se ele tem créditos, diminui 1
+        localStorage.setItem('urna_creditos', (creditos - 1).toString());
+        
+        // Se acabarem os créditos agora, remove o status de pago
+        if (creditos - 1 <= 0) {
+            localStorage.setItem('urna_paga', 'false');
+        }
+        
+        // Segue para mostrar o resultado
+        window.GO('res');
+    } else {
+        alert("Seus créditos acabaram. Por favor, adquira um novo plano.");
+        window.GO('pay');
+    }
+};
+
 window.PDF = (fotos) => {
     // 1. Monta os dados na div
     window.MOUNT_RESULT(fotos);
@@ -355,6 +376,7 @@ window.FEED = () => {
 };
 
 window.GO('login');
+
 
 
 
