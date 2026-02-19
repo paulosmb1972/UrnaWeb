@@ -230,18 +230,42 @@ window.CONFIRM_END = () => {
 };
 
 window.PDF = (fotos) => {
+    // 1. Monta o resultado na tela primeiro
     window.MOUNT_RESULT(fotos);
-    const area = document.getElementById('areaImpressao');
-    const opt = {
-        margin: 10,
-        filename: 'Resultado_UrnaWeb.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-    html2pdf().set(opt).from(area).save().then(() => {
-        window.MOUNT_RESULT(false);
-    });
+    
+    // 2. Aguarda 500ms para garantir que as imagens e textos foram renderizados pelo navegador
+    setTimeout(() => {
+        const area = document.getElementById('areaImpressao');
+        
+        // Ajuste visual para garantir que a tabela ocupe 100% da largura no PDF
+        const tabelas = area.querySelectorAll('table');
+        tabelas.forEach(tab => {
+            tab.style.width = "100%";
+            tab.style.fontSize = "12px";
+        });
+
+        const opt = {
+            margin: [10, 10, 10, 10], // Margens: cima, esquerda, baixo, direita
+            filename: `Resultado_${window._title.replace(/\s+/g, '_')}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { 
+                scale: 2, 
+                useCORS: true,
+                logging: false,
+                letterRendering: true
+            },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } // Evita quebrar tabelas ao meio
+        };
+
+        html2pdf().set(opt).from(area).save().then(() => {
+            // Após salvar, volta para a visualização sem fotos para economizar memória na tela
+            window.MOUNT_RESULT(false);
+        }).catch(err => {
+            console.error("Erro ao gerar PDF:", err);
+            alert("Erro ao gerar o arquivo. Tente novamente.");
+        });
+    }, 500); 
 };
 
 /* ==========================================================================
@@ -267,3 +291,4 @@ window.FEED = () => {
 };
 
 window.GO('login');
+
