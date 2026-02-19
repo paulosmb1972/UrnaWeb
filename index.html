@@ -19,29 +19,24 @@
         <button onclick="window.TR('es')"><img src="https://flagcdn.com/w80/es.png"></button>
     </div>
 
-   <script src="assets/js/config.js"></script>
-    <script src="assets/js/i18n.js"></script>
-    <script src="assets/js/main.js"></script>
+   <script src="assets/js/config.js" defer></script>
+    <script src="assets/js/i18n.js" defer></script>
+    <script src="assets/js/main.js" defer></script>
 
     <script>
-        // Função para garantir que a tela de login apareça
-        function ligarUrna() {
-            console.log("Tentando iniciar UrnaWeb...");
+        // Este código espera todos os arquivos acima carregarem
+        window.addEventListener('load', () => {
+            console.log("Arquivos carregados. Iniciando...");
             if (typeof window.GO === 'function') {
-                window.GO('login');
-                if(window.TR) window.TR('pt');
-                console.log("Sistema iniciado com sucesso!");
+                window.TR('pt'); // Aplica o idioma
+                window.GO('login'); // Abre a tela
             } else {
-                console.log("Aguardando carregamento do main.js...");
-                setTimeout(ligarUrna, 500); // Tenta novamente em meio segundo
+                alert("Erro crítico: O sistema não encontrou as funções de votação.");
             }
-        }
-
-        // Dispara assim que a página carregar
-        window.onload = ligarUrna;
+        });
     </script>
 </body>
-</html>
+
 
 
 
