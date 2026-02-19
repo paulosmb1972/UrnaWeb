@@ -62,24 +62,63 @@ body {
 }
 
 /* ==========================================================================
-   ESTRUTURA DE TELAS E ANIMAÇÕES
+   AJUSTES DE RESPONSIVIDADE (MOBILE-FIRST)
    ========================================================================== */
+
+/* 1. Ajuste do Container Principal */
 .screen { 
     display: none; 
-    padding: 20px; 
-    width: 100%; 
-    max-width: 600px; 
+    padding: 15px; 
+    width: 95%;            /* Usa quase toda a largura em telas pequenas */
+    max-width: 500px;      /* Mas não passa de 500px em telas grandes */
+    margin: 0 auto;
     box-sizing: border-box; 
 }
 
-.active { 
-    display: block; 
-    animation: fadeIn 0.3s; 
+/* 2. Ajuste de Inputs e Botões para toque (Touch Friendly) */
+input, button, textarea { 
+    width: 100%; 
+    padding: 15px;         /* Reduzido levemente para caber melhor no celular */
+    margin: 8px 0; 
+    font-size: 16px;       /* Mantém 16px para o iPhone não dar zoom automático */
 }
 
-@keyframes fadeIn { 
-    from { opacity: 0; } 
-    to { opacity: 1; } 
+/* 3. Grid da Urna (Candidatos) */
+#gridUrna {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Ajusta colunas sozinho */
+    gap: 12px;
+}
+
+/* 4. Ajuste das Bandeiras (Idiomas) */
+.lang-box { 
+    top: 10px; 
+    right: 10px; 
+    gap: 5px; 
+}
+
+.lang-box button { 
+    width: 40px;  /* Menores no celular */
+    height: 40px; 
+}
+
+/* 5. Regras para Telas Maiores (Notebook/Tablet) */
+@media (min-width: 768px) {
+    .lang-box button { 
+        width: 55px; 
+        height: 55px; 
+    }
+    .screen {
+        padding: 30px;
+    }
+    h2 { font-size: 24px; }
+}
+
+/* 6. Ajuste da Tabela do PDF (Para não quebrar no celular) */
+#areaImpressao {
+    width: 100%;
+    max-width: 480px;
+    overflow-x: auto; /* Permite scroll se a tabela for larga */
 }
 
 /* ==========================================================================
@@ -247,3 +286,4 @@ button:active {
     border-bottom: 1px solid #eee; 
     color: #333 !important; 
 }
+
