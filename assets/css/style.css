@@ -1,3 +1,15 @@
+/* Espaço para as bandeiras no topo */
+body {
+    padding-top: 70px !important;
+}
+
+.lang-box {
+    background: rgba(10, 42, 102, 0.8); /* Fundo semi-transparente para dar contraste */
+    padding: 5px;
+    border-radius: 0 0 0 20px;
+    box-shadow: -2px 2px 10px rgba(0,0,0,0.5);
+}
+
 /* ==========================================================================
    VARIÁVEIS E RESET
    ========================================================================== */
@@ -334,6 +346,7 @@ button:active { transform: translateY(3px); box-shadow: none; }
 #areaImpressao button, #areaImpressao i.fa-trash {
     display: none !important;
 }
+
 
 
 
