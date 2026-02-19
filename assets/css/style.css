@@ -23,20 +23,48 @@ body {
 }
 
 /* ==========================================================================
+   ESTRUTURA DE TELAS E RESPONSIVIDADE
+   ========================================================================== */
+.screen { 
+    display: none; 
+    padding: 15px; 
+    width: 95%;           /* No celular ocupa quase tudo */
+    max-width: 550px;     /* No notebook mantém um tamanho elegante */
+    margin: 0 auto;       /* Centraliza horizontalmente */
+    box-sizing: border-box; 
+    animation: fadeIn 0.3s;
+}
+
+.active { 
+    display: block !important; 
+}
+
+@keyframes fadeIn { 
+    from { opacity: 0; } 
+    to { opacity: 1; } 
+}
+
+/* Ajustes para Notebook/Tablet (Telas maiores que 768px) */
+@media (min-width: 768px) {
+    .screen { padding: 30px; }
+    h2 { font-size: 28px; }
+}
+
+/* ==========================================================================
    SELEÇÃO DE IDIOMAS (BANDEIRAS)
    ========================================================================== */
 .lang-box { 
     position: fixed; 
-    top: 15px; 
-    right: 15px; 
+    top: 10px; 
+    right: 10px; 
     z-index: 1000; 
     display: flex; 
-    gap: 10px; 
+    gap: 8px; 
 }
 
 .lang-box button { 
-    width: 55px; 
-    height: 55px; 
+    width: 42px; 
+    height: 42px; 
     border-radius: 50%; 
     border: 2px solid rgba(255,255,255,0.5); 
     background: #000; 
@@ -50,82 +78,13 @@ body {
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 
-.lang-box button img { 
-    width: 100%; 
-    height: 100%; 
-    object-fit: cover; 
-}
-
-.lang-box button:hover { 
-    transform: scale(1.15); 
-    border-color: var(--primary); 
-}
-
-/* ==========================================================================
-   AJUSTES DE RESPONSIVIDADE (MOBILE-FIRST)
-   ========================================================================== */
-
-/* Ajuste para telas de qualquer tamanho */
-.screen { 
-    display: none; 
-    padding: 20px; 
-    width: 100%; 
-    max-width: 600px; 
-    box-sizing: border-box; 
-    margin: 0 auto; /* Centraliza o conteúdo no notebook */
-}
-
-/* 2. Ajuste de Inputs e Botões para toque (Touch Friendly) */
-input, button, textarea { 
-    width: 100%; 
-    padding: 15px;         /* Reduzido levemente para caber melhor no celular */
-    margin: 8px 0; 
-    font-size: 16px;       /* Mantém 16px para o iPhone não dar zoom automático */
-}
-
-/* O Grid se ajusta sozinho: se a tela for pequena, ele faz 1 coluna. Se for grande, faz 2 ou mais */
-#gridUrna {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
-    gap: 15px; 
-    margin-bottom: 20px;
-}
-
-/* Garante que imagens e inputs não estourem a largura do celular */
-img, input, button, textarea {
-    max-width: 100%;
-}
-
-/* 4. Ajuste das Bandeiras (Idiomas) */
-.lang-box { 
-    top: 10px; 
-    right: 10px; 
-    gap: 5px; 
-}
-
-.lang-box button { 
-    width: 40px;  /* Menores no celular */
-    height: 40px; 
-}
-
-/* 5. Regras para Telas Maiores (Notebook/Tablet) */
 @media (min-width: 768px) {
-    .lang-box button { 
-        width: 55px; 
-        height: 55px; 
-    }
-    .screen {
-        padding: 30px;
-    }
-    h2 { font-size: 24px; }
+    .lang-box { top: 15px; right: 15px; gap: 12px; }
+    .lang-box button { width: 55px; height: 55px; }
 }
 
-/* 6. Ajuste da Tabela do PDF (Para não quebrar no celular) */
-#areaImpressao {
-    width: 100%;
-    max-width: 480px;
-    overflow-x: auto; /* Permite scroll se a tabela for larga */
-}
+.lang-box button img { width: 100%; height: 100%; object-fit: cover; }
+.lang-box button:hover { transform: scale(1.15); border-color: var(--primary); }
 
 /* ==========================================================================
    TIPOGRAFIA E COMPONENTES GERAIS
@@ -135,7 +94,8 @@ h2 {
     color: var(--primary); 
     margin-bottom: 5px; 
     text-transform: uppercase; 
-    letter-spacing: 1px; 
+    letter-spacing: 1px;
+    font-size: 1.4rem;
 }
 
 .info-box { 
@@ -158,15 +118,16 @@ h2 {
     text-transform: uppercase; 
 }
 
-/* FORMULÁRIOS */
+/* FORMULÁRIOS UNIFICADOS */
 input, button, textarea { 
     width: 100%; 
-    padding: 18px; 
-    margin: 10px 0; 
+    padding: 16px; 
+    margin: 8px 0; 
     border-radius: 10px; 
     border: none; 
     font-size: 16px; 
     box-sizing: border-box; 
+    max-width: 100%;
 }
 
 input { background: #fff; color: #333; font-weight: bold; }
@@ -185,10 +146,7 @@ button {
     gap: 10px; 
 }
 
-button:active { 
-    transform: translateY(3px); 
-    box-shadow: none; 
-}
+button:active { transform: translateY(3px); box-shadow: none; }
 
 /* ==========================================================================
    SISTEMA DE PAGAMENTO E SETUP
@@ -233,8 +191,16 @@ button:active {
 }
 
 /* ==========================================================================
-   INTERFACE DA URNA E CONTADORES
+   INTERFACE DA URNA INTELIGENTE
    ========================================================================== */
+#gridUrna {
+    display: grid;
+    /* Faz 1 coluna no celular e 2 no notebook automaticamente */
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
+    gap: 15px; 
+    margin-bottom: 20px;
+}
+
 .selected-card { 
     border: 4px solid var(--success) !important; 
     background: rgba(46, 204, 113, 0.2) !important; 
@@ -250,28 +216,27 @@ button:active {
 }
 
 .voter-counter-box span { 
-    font-size: 12px; 
+    font-size: 11px; 
     color: var(--accent); 
     display: block; 
     margin-bottom: 5px; 
     text-transform: uppercase; 
 }
 
-.voter-counter-box b { 
-    font-size: 24px; 
-    color: white; 
-}
+.voter-counter-box b { font-size: 24px; color: white; }
 
 /* ==========================================================================
    CONFIGURAÇÃO DO PDF / IMPRESSÃO
    ========================================================================== */
 #areaImpressao { 
-    width: 480px; 
+    width: 100%;
+    max-width: 480px; 
     margin: 0 auto; 
     background: white !important; 
     color: #333 !important; 
-    padding: 30px; 
+    padding: 20px; 
     border-radius: 5px; 
+    overflow-x: auto;
 }
 
 .pdf-table { 
@@ -283,14 +248,14 @@ button:active {
 .pdf-table th { 
     background: #0a2a66 !important; 
     color: white !important; 
-    padding: 12px; 
+    padding: 10px; 
     text-align: left; 
+    font-size: 12px;
 }
 
 .pdf-table td { 
-    padding: 12px; 
+    padding: 10px; 
     border-bottom: 1px solid #eee; 
     color: #333 !important; 
+    font-size: 12px;
 }
-
-
