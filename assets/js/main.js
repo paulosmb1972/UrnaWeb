@@ -144,7 +144,11 @@ window.START_VOTE_PROCESS = async () => {
 window.RUN = () => {
     let cargo = window._data[window._idx]; 
     document.getElementById('uT').innerText = cargo.n.toUpperCase();
-    let g = document.getElementById('gridUrna'); g.innerHTML = ''; 
+    let g = document.getElementById('gridUrna'); // Localize esta linha dentro de window.RUN:
+d.innerHTML = (can.f ? `<img src="${can.f}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;"><br>` : '') + `<b>${can.n}</b>`;
+
+// Altere para esta (usando 'aspect-ratio' ou uma altura que funcione bem em ambos):
+d.innerHTML = (can.f ? `<img src="${can.f}" style="width:100%; aspect-ratio: 1/1; max-height:150px; object-fit:cover; border-radius:8px;"><br>` : '') + `<b>${can.n}</b>`; 
     window._sel = [];
     
     cargo.c.forEach((can, i) => {
@@ -267,4 +271,5 @@ window.FEED = () => {
 
 // Start
 window.GO('login');
+
 
