@@ -149,8 +149,25 @@ window.SAVE = () => {
 };
 
 window.START_VOTE_PROCESS = async () => {
+    let creditos = parseInt(localStorage.getItem('urna_creditos') || "0");
+    let jaPagou = localStorage.getItem('urna_paga') === 'true';
+
+    // Se ele não for o Orion (créditos infinitos) e não tiver saldo
+    if (!jaPagou || creditos <= 0) {
+        // Se ele ainda tem o limite de 10 votos grátis, deixamos passar
+        // Mas se ele já usou um cupom antes e os créditos zeraram, ele volta pro grátis
+        localStorage.setItem('urna_paga', 'false'); 
+    }
+
+    // Consome 1 crédito se ele tiver (e não for o Orion)
+    if (jaPagou && creditos > 0 && creditos < 900000) {
+        localStorage.setItem('urna_creditos', (creditos - 1).toString());
+        console.log("Crédito consumido. Restantes: " + (creditos - 1));
+    }
+
+    // Código original de início...
     if (window._temp) { window._data.push(JSON.parse(JSON.stringify(window._temp))); window._temp = null; }
-    if (window._data.length === 0) return alert("Configure a eleição primeiro!");
+    if (window._data.length === 0) return alert("Adicione candidatos primeiro!");
     window._idx = 0;
     window.RUN();
     window.GO('urna');
@@ -203,17 +220,16 @@ window.BRANCO = () => {
 };
 
 window.NEXT = () => {
-    // --- LÓGICA COMERCIAL: TRAVA DE 10 VOTOS ---
-    // Verificamos se o usuário já pagou (salvo no navegador)
-    let jaPagou = localStorage.getItem('urna_paga') === 'true';
+    let creditos = parseInt(localStorage.getItem('urna_creditos') || "0");
+    let eOrion = creditos > 900000;
     
-    // Se não pagou e já chegou em 10 votos, bloqueamos!
-    if (!jaPagou && window._totalEleitores >= 10) {
-        alert("🔒 OPA, CHEGAMOS NO LIMITE! \n\nEsta versão de teste permite até 10 votos. Sua eleição está fazendo sucesso! Para continuar recebendo mais votos, escolha um de nossos planos na tela de pagamento.");
-        window.GO('pay'); // Manda o usuário direto para o pagamento
+    // Trava se: não for o Orion E não tiver créditos ativos E já tiver 10 votos
+    if (!eOrion && creditos <= 0 && window._totalEleitores >= 10) {
+        alert("🔒 FIM DO TESTE GRÁTIS: Esta eleição atingiu 10 votos. Para continuar, use um cupom ou plano profissional.");
+        window.GO('pay');
         return;
     }
-
+   
     // --- CONTINUAÇÃO NORMAL DO SISTEMA ---
     window._idx++; 
     if(window._idx < window._data.length) { 
@@ -374,6 +390,7 @@ window.FEED = () => {
 };
 
 window.GO('login');
+
 
 
 
