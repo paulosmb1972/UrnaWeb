@@ -300,15 +300,48 @@ window.PDF = (fotos) => {
    FINANCEIRO E FEEDBACK
    ========================================================================== */
 window.K = async () => { 
-    let c = document.getElementById('cup').value.trim().toLowerCase(); 
-    // Exemplo de cupom que libera o sistema: "liberar100"
-    if(btoa(c) === "bGliZXJhcjEwMA==") { // "liberar100" em base64
-        localStorage.setItem('urna_paga', 'true'); // AQUI ESTÁ O SEGREDO
-        alert("MUITO OBRIGADO! Seu UrnaWeb agora está liberado para mais de 10 votos."); 
-        window.GO('setup'); 
-    } else {
+    let campo = document.getElementById('cup');
+    let c = campo.value.trim().toLowerCase(); 
+    let cod = btoa(c); // Transforma o que o usuário digitou em código obscuro
+    
+    // Pega os créditos atuais (se não tiver, é zero)
+    let creditosAtuais = parseInt(localStorage.getItem('urna_creditos') || "0");
+
+    // VERIFICAÇÃO DOS CUPONS
+    if (cod === "b3Jpb24wMDE=") { // Cupom: orion001
+        localStorage.setItem('urna_paga', 'true');
+        localStorage.setItem('urna_creditos', "999999"); // Ilimitado
+        alert("Olá, Orion! Sistema liberado sem limites.");
+        window.GO('setup');
+    } 
+    else if (cod === "cHJvbW8wMQ==") { // Cupom: promo01
+        ativarCupom(1);
+    } 
+    else if (cod === "cHJvbW8wMg==") { // Cupom: promo02
+        ativarCupom(2);
+    } 
+    else if (cod === "cHJvbW8wMw==") { // Cupom: promo03
+        ativarCupom(3);
+    } 
+    else {
         alert("Cupom inválido ou já utilizado.");
+        return;
     }
+
+    function ativarCupom(qtd) {
+        // Verifica se este cupom já foi usado neste navegador
+        if (localStorage.getItem('usado_' + cod)) {
+            alert("Este cupom já foi resgatado neste aparelho!");
+        } else {
+            localStorage.setItem('urna_paga', 'true');
+            localStorage.setItem('urna_creditos', (creditosAtuais + qtd).toString());
+            localStorage.setItem('usado_' + cod, 'true'); // "Queima" o cupom
+            alert("Sucesso! Você ganhou " + qtd + " eleição(ões) grátis.");
+            window.GO('setup');
+        }
+    }
+    
+    campo.value = ""; // Limpa o campo
 };
 
 window.FEED = () => { 
@@ -322,6 +355,7 @@ window.FEED = () => {
 };
 
 window.GO('login');
+
 
 
 
