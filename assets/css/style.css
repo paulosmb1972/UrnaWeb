@@ -148,6 +148,37 @@ button {
 
 button:active { transform: translateY(3px); box-shadow: none; }
 
+/* Ajuste das Bandeiras para não sobrepor */
+.lang-box { 
+    position: absolute; /* Muda de fixed para absolute para rolar com a página */
+    top: 10px; 
+    right: 10px; 
+    display: flex; 
+    gap: 8px; 
+    z-index: 1000;
+}
+
+/* Garante que o conteúdo das telas comece abaixo das bandeiras no celular */
+.screen {
+    margin-top: 60px; /* Cria um espaço no topo para as bandeiras não cobrirem o título */
+    padding: 15px;
+    box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+    .screen {
+        margin-top: 20px; /* No computador pode ser menor */
+    }
+}
+
+/* Ajuste das bandeiras no celular para ficarem menores */
+@media (max-width: 480px) {
+    .lang-box button {
+        width: 35px;
+        height: 35px;
+    }
+}
+
 /* ==========================================================================
    SISTEMA DE PAGAMENTO E SETUP
    ========================================================================== */
@@ -259,3 +290,4 @@ button:active { transform: translateY(3px); box-shadow: none; }
     color: #333 !important; 
     font-size: 12px;
 }
+
