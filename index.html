@@ -24,20 +24,25 @@
     <script src="assets/js/main.js"></script>
 
     <script>
-        // Este código força o início assim que a página termina de carregar
-        window.onload = () => {
-            console.log("Iniciando sistema...");
+        // Função para garantir que a tela de login apareça
+        function ligarUrna() {
+            console.log("Tentando iniciar UrnaWeb...");
             if (typeof window.GO === 'function') {
                 window.GO('login');
-                // Força a tradução inicial
                 if(window.TR) window.TR('pt');
+                console.log("Sistema iniciado com sucesso!");
             } else {
-                console.error("Erro: Função GO não encontrada no main.js");
+                console.log("Aguardando carregamento do main.js...");
+                setTimeout(ligarUrna, 500); // Tenta novamente em meio segundo
             }
-        };
+        }
+
+        // Dispara assim que a página carregar
+        window.onload = ligarUrna;
     </script>
 </body>
 </html>
+
 
 
 
