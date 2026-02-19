@@ -323,46 +323,44 @@ window.PDF = (fotos) => {
 window.K = async () => { 
     let campo = document.getElementById('cup');
     let c = campo.value.trim().toLowerCase(); 
-    let cod = btoa(c); // Transforma o que o usuário digitou em código obscuro
+    let codObscuro = btoa(c); 
     
-    // Pega os créditos atuais (se não tiver, é zero)
-    let creditosAtuais = parseInt(localStorage.getItem('urna_creditos') || "0");
-
-    // VERIFICAÇÃO DOS CUPONS
-    if (cod === "b3Jpb24wMDE=") { // Cupom: orion001
-        localStorage.setItem('urna_paga', 'true');
-        localStorage.setItem('urna_creditos', "999999"); // Ilimitado
-        alert("Olá, Orion! Sistema liberado sem limites.");
-        window.GO('setup');
-    } 
-    else if (cod === "cHJvbW8wMQ==") { // Cupom: promo01
-        ativarCupom(1);
-    } 
-    else if (cod === "cHJvbW8wMg==") { // Cupom: promo02
-        ativarCupom(2);
-    } 
-    else if (cod === "cHJvbW8wMw==") { // Cupom: promo03
-        ativarCupom(3);
-    } 
-    else {
-        alert("Cupom inválido ou já utilizado.");
+    // Verifica se este cupom já foi "queimado" neste navegador
+    if (localStorage.getItem('usado_' + codObscuro)) {
+        alert("Epa! Esse código já foi usado neste aparelho.");
+        campo.value = "";
         return;
     }
 
-    function ativarCupom(qtd) {
-        // Verifica se este cupom já foi usado neste navegador
-        if (localStorage.getItem('usado_' + cod)) {
-            alert("Este cupom já foi resgatado neste aparelho!");
-        } else {
-            localStorage.setItem('urna_paga', 'true');
-            localStorage.setItem('urna_creditos', (creditosAtuais + qtd).toString());
-            localStorage.setItem('usado_' + cod, 'true'); // "Queima" o cupom
-            alert("Sucesso! Você ganhou " + qtd + " eleição(ões) grátis.");
-            window.GO('setup');
-        }
+    // Lógica de Ativação
+    if (codObscuro === "b3Jpb24wMDE=") { // Cupom: orion001
+        localStorage.setItem('urna_paga', 'true');
+        localStorage.setItem('urna_creditos', "999999");
+        alert("Acesso mestre ativado, Orion!");
+        window.GO('setup');
+    } 
+    else if (codObscuro === "cHJvbW8wMQ==") { // promo01
+        aplicarCredito(1, codObscuro);
+    } 
+    else if (codObscuro === "cHJvbW8wMg==") { // promo02
+        aplicarCredito(2, codObscuro);
+    } 
+    else if (codObscuro === "cHJvbW8wMw==") { // promo03
+        aplicarCredito(3, codObscuro);
+    } 
+    else {
+        alert("Código inválido. Tente de novo!");
     }
-    
-    campo.value = ""; // Limpa o campo
+
+    function aplicarCredito(qtd, hash) {
+        let atuais = parseInt(localStorage.getItem('urna_creditos') || "0");
+        localStorage.setItem('urna_creditos', (atuais + qtd).toString());
+        localStorage.setItem('usado_' + hash, 'true'); // Marca como usado pra sempre
+        localStorage.setItem('urna_paga', 'true'); // Libera a trava de 10 votos
+        alert("Sucesso! Você ganhou " + qtd + " crédito(s) de eleição.");
+        window.GO('setup');
+    }
+    campo.value = "";
 };
 
 window.FEED = () => { 
@@ -376,6 +374,7 @@ window.FEED = () => {
 };
 
 window.GO('login');
+
 
 
 
