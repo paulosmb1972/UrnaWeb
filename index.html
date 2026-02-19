@@ -22,5 +22,14 @@
     <script src="assets/js/config.js"></script>
     <script src="assets/js/i18n.js"></script>
     <script src="assets/js/main.js"></script>
+<script src="assets/js/main.js"></script> <script>
+        // Garante que o sistema inicie mesmo que haja delay no carregamento
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof window.GO === 'function') {
+                window.GO('login');
+            }
+        });
+    </script>
 </body>
 </html>
+
