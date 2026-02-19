@@ -108,11 +108,31 @@
         <button onclick="window.GO('login')" id="B_EXIT_FINAL" style="background:var(--danger)"></button>
     </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
     <script src="assets/js/config.js"></script>
     <script src="assets/js/i18n.js"></script>
     <script src="assets/js/main.js"></script>
 
     <script>
+        // ADICIONE ESTA LINHA PARA INICIALIZAR O EMAILJS
+        (function() {
+            if (window._cfg && window._cfg.k) {
+                emailjs.init(window._cfg.k); 
+            }
+        })();
+
+        function initSystem() {
+            if (typeof window.GO === 'function' && typeof window.TR === 'function') {
+                window.TR('pt');
+                window.GO('login');
+            } else {
+                setTimeout(initSystem, 300);
+            }
+        }
+        window.onload = initSystem;
+    </script>
         // Função de inicialização forçada
         function initSystem() {
             console.log("Checando funções...");
@@ -129,4 +149,5 @@
     </script>
 </body>
 </html>
+
 
