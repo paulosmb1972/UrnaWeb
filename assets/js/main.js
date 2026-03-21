@@ -177,103 +177,111 @@ window.CONFIRM_END = () => {
     } else alert("Senha incorreta!");
 };
 
+/* ==========================================================================
+   SOLUÇÃO DEFINITIVA PARA PDF (APURAÇÃO URNAWEB)
+   ========================================================================== */
 window.MOUNT_RESULT = (fotos) => {
     const out = document.getElementById('pC');
-    const area = document.getElementById('areaImpressao');
     
-    // Força o container a resetar qualquer posição anterior
-    area.style.display = "block";
-    area.style.position = "absolute";
-    area.style.top = "0";
-    area.style.left = "0";
-    area.style.zIndex = "-1000"; // Fica invisível atrás da interface mas legível para o script
-
+    // 1. Criamos o HTML do relatório com estilos internos (CSS Inline) para evitar erros
     let html = `
-        <div style="font-family: Arial, sans-serif; width: 700px; margin: 0; padding: 40px; background: #ffffff; color: #000000;">
-            <div style="text-align:center; border-bottom: 3px solid #0a2a66; padding-bottom: 15px; margin-bottom: 20px;">
-                <h1 style="margin:0; color:#0a2a66; font-size: 26px;">${window._title.toUpperCase()}</h1>
-                <p style="margin:5px 0; font-size: 12px; color: #555;">Relatório Oficial de Apuração</p>
-                <p style="margin:5px 0; font-size: 12px; color: #555;">Data: ${new Date().toLocaleString()}</p>
-            </div>
-            
-            <div style="background: #f2f2f2; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 30px;">
-                <span style="font-size: 18px; font-weight: bold; color: #0a2a66;">TOTAL DE ELEITORES: ${window._totalEleitores}</span>
-            </div>`;
+    <div id="pdf-content-wrapper" style="font-family: 'Helvetica', 'Arial', sans-serif; color: #000; background: #fff; padding: 30px; width: 700px; margin: 0 auto;">
+        
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
+            <h1 style="margin: 0; font-size: 24px; text-transform: uppercase;">${window._title || "RELATÓRIO DE VOTAÇÃO"}</h1>
+            <p style="margin: 5px 0; font-size: 12px;">Gerado em: ${new Date().toLocaleString()}</p>
+        </div>
+
+        <div style="background: #f0f0f0; padding: 10px; text-align: center; border: 1px solid #ccc; margin-bottom: 25px;">
+            <span style="font-size: 16px; font-weight: bold;">TOTAL DE ELEITORES QUE VOTARAM: ${window._totalEleitores}</span>
+        </div>`;
 
     window._data.forEach(cargo => {
         html += `
-            <div style="margin-top: 30px; page-break-inside: avoid;">
-                <h3 style="background: #0a2a66; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 4px; font-size: 18px;">CARGO: ${cargo.n.toUpperCase()}</h3>
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
-                    <thead>
-                        <tr style="border-bottom: 2px solid #000; background: #f2f2f2;">
-                            ${fotos ? '<th style="text-align: left; padding: 10px; width: 60px;">Foto</th>' : ''}
-                            <th style="text-align: left; padding: 10px;">Candidato</th>
-                            <th style="text-align: right; padding: 10px;">Votos</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
+        <div style="margin-bottom: 40px; page-break-inside: avoid;">
+            <h2 style="background: #0a2a66; color: #fff; padding: 8px; font-size: 18px; margin-bottom: 10px;">CARGO: ${cargo.n.toUpperCase()}</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #eee; border-bottom: 2px solid #000;">
+                        ${fotos ? '<th style="padding: 8px; text-align: left; width: 60px;">FOTO</th>' : ''}
+                        <th style="padding: 8px; text-align: left;">CANDIDATO</th>
+                        <th style="padding: 8px; text-align: right; width: 100px;">VOTOS</th>
+                    </tr>
+                </thead>
+                <tbody>`;
 
-        const lista = [...cargo.c].sort((a, b) => b.v - a.v);
-        lista.forEach(can => {
+        // Ordenar por votos
+        const candRank = [...cargo.c].sort((a, b) => b.v - a.v);
+
+        candRank.forEach(can => {
             html += `
-                <tr style="border-bottom: 1px solid #eee;">
-                    ${fotos ? `<td style="padding: 10px;"><img src="${can.f}" style="width:50px; height:50px; border-radius: 5px; object-fit:cover;"></td>` : ''}
-                    <td style="padding: 10px; font-size: 16px;">${can.n}</td>
-                    <td style="padding: 10px; text-align: right; font-size: 18px; font-weight: bold;">${can.v}</td>
-                </tr>`;
+            <tr style="border-bottom: 1px solid #ddd;">
+                ${fotos ? `<td style="padding: 5px;"><img src="${can.f || ''}" style="width: 50px; height: 50px; object-fit: cover; border: 1px solid #ccc;"></td>` : ''}
+                <td style="padding: 8px; font-size: 15px;">${can.n}</td>
+                <td style="padding: 8px; text-align: right; font-weight: bold; font-size: 16px;">${can.v}</td>
+            </tr>`;
         });
 
+        // Votos em Branco para este cargo
         html += `
-                <tr style="background: #f9f9f9; font-weight: bold; border-top: 1px solid #000;">
-                    ${fotos ? '<td></td>' : ''}
-                    <td style="padding: 10px; font-size: 16px;">VOTOS EM BRANCO</td>
-                    <td style="padding: 10px; text-align: right; font-size: 18px;">${cargo.branco || 0}</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>`;
+            <tr style="background: #fafafa; border-top: 1px solid #000; font-style: italic;">
+                ${fotos ? '<td></td>' : ''}
+                <td style="padding: 8px;">VOTOS EM BRANCO / NULOS</td>
+                <td style="padding: 8px; text-align: right; font-weight: bold;">${cargo.branco || 0}</td>
+            </tr>
+                </tbody>
+            </table>
+        </div>`;
     });
 
     html += `
-        <div style="margin-top: 50px; text-align: center; border-top: 1px solid #ccc; padding-top: 20px;">
-            <p style="font-size: 10px; color: #999;">Documento gerado digitalmente pela UrnaWeb - Autenticidade Garantida</p>
+        <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #666; border-top: 1px solid #eee; padding-top: 10px;">
+            Documento Processado Digitalmente por UrnaWeb - Presbiteriana de Caruaru
         </div>
     </div>`;
-    
+
     out.innerHTML = html;
 };
 
-window.PDF = (fotos) => {
-    // 1. Gera o conteúdo
-    window.MOUNT_RESULT(fotos);
+window.PDF = async (comFotos) => {
+    // 1. Prepara os dados
+    window.MOUNT_RESULT(comFotos);
     
-    // 2. IMPORTANTE: Rola a página para o topo antes de "fotografar" o PDF
-    // Isso evita que o PDF saia cortado se o usuário estiver no fim da página
-    window.scrollTo(0, 0);
+    // 2. Localiza o elemento
+    const elemento = document.getElementById('pC');
+    const areaPai = document.getElementById('areaImpressao');
+    
+    // 3. Força visibilidade temporária para o print
+    areaPai.style.display = 'block';
+    areaPai.style.position = 'absolute';
+    areaPai.style.left = '-9999px'; // Move para fora da tela do usuário mas deixa visível para a IA
+    areaPai.style.top = '0';
 
-    const area = document.getElementById('areaImpressao');
-    
-    const opt = {
-        margin: 0, // Margem interna do PDF tratada pelo HTML acima
-        filename: `Apuracao_UrnaWeb.pdf`,
-        image: { type: 'jpeg', quality: 1 },
+    // 4. Configuração Robusta
+    const opcoes = {
+        margin: [10, 10, 10, 10],
+        filename: `Apuracao_${window._title.replace(/\s+/g, '_')}.pdf`,
+        image: { type: 'jpeg', quality: 1.0 },
         html2canvas: { 
             scale: 2, 
             useCORS: true, 
+            letterRendering: true,
             backgroundColor: '#ffffff',
-            scrollY: 0, // Força o canvas a começar do topo zero
-            windowWidth: 800
+            scrollY: 0
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    // Pequeno delay para garantir que o scroll subiu e as fotos carregaram
-    setTimeout(() => {
-        html2pdf().set(opt).from(area).save().then(() => {
-            area.style.display = 'none'; // Esconde após gerar
-        });
-    }, 1000);
+    // 5. Execução com tratamento de erro
+    try {
+        await html2pdf().set(opcoes).from(elemento).save();
+    } catch (err) {
+        console.error("Erro no PDF:", err);
+        alert("Erro ao gerar PDF. Tente novamente.");
+    } finally {
+        // Esconde novamente após o processo
+        areaPai.style.display = 'none';
+    }
 };
 
 window.FEED = function() {
