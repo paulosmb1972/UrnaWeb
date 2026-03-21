@@ -179,28 +179,35 @@ window.CONFIRM_END = () => {
 
 window.MOUNT_RESULT = (fotos) => {
     const out = document.getElementById('pC');
-    // Força o container a ser visível e legível para o PDF
-    out.style.backgroundColor = "#ffffff";
-    out.style.color = "#000000";
-    out.style.padding = "20px";
-    out.style.display = "block";
+    const area = document.getElementById('areaImpressao');
+    
+    // Força o container a resetar qualquer posição anterior
+    area.style.display = "block";
+    area.style.position = "absolute";
+    area.style.top = "0";
+    area.style.left = "0";
+    area.style.zIndex = "-1000"; // Fica invisível atrás da interface mas legível para o script
 
     let html = `
-        <div style="font-family: Arial, sans-serif; width: 100%; max-width: 800px; margin: auto; background: #fff; color: #000; padding: 20px;">
+        <div style="font-family: Arial, sans-serif; width: 700px; margin: 0; padding: 40px; background: #ffffff; color: #000000;">
             <div style="text-align:center; border-bottom: 3px solid #0a2a66; padding-bottom: 15px; margin-bottom: 20px;">
-                <h1 style="margin:0; color:#0a2a66; font-size: 24px;">${window._title.toUpperCase()}</h1>
-                <p style="margin:5px 0; font-size: 14px;">Relatório de Apuração Gerado em: ${new Date().toLocaleString()}</p>
-                <h2 style="margin:10px 0; font-size: 20px; background: #eee; padding: 5px;">TOTAL DE ELEITORES: ${window._totalEleitores}</h2>
+                <h1 style="margin:0; color:#0a2a66; font-size: 26px;">${window._title.toUpperCase()}</h1>
+                <p style="margin:5px 0; font-size: 12px; color: #555;">Relatório Oficial de Apuração</p>
+                <p style="margin:5px 0; font-size: 12px; color: #555;">Data: ${new Date().toLocaleString()}</p>
+            </div>
+            
+            <div style="background: #f2f2f2; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 30px;">
+                <span style="font-size: 18px; font-weight: bold; color: #0a2a66;">TOTAL DE ELEITORES: ${window._totalEleitores}</span>
             </div>`;
 
     window._data.forEach(cargo => {
         html += `
             <div style="margin-top: 30px; page-break-inside: avoid;">
-                <h3 style="background: #0a2a66; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 4px;">CARGO: ${cargo.n.toUpperCase()}</h3>
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 16px;">
+                <h3 style="background: #0a2a66; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 4px; font-size: 18px;">CARGO: ${cargo.n.toUpperCase()}</h3>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
                     <thead>
                         <tr style="border-bottom: 2px solid #000; background: #f2f2f2;">
-                            ${fotos ? '<th style="text-align: left; padding: 10px;">Foto</th>' : ''}
+                            ${fotos ? '<th style="text-align: left; padding: 10px; width: 60px;">Foto</th>' : ''}
                             <th style="text-align: left; padding: 10px;">Candidato</th>
                             <th style="text-align: right; padding: 10px;">Votos</th>
                         </tr>
@@ -210,51 +217,63 @@ window.MOUNT_RESULT = (fotos) => {
         const lista = [...cargo.c].sort((a, b) => b.v - a.v);
         lista.forEach(can => {
             html += `
-                <tr style="border-bottom: 1px solid #ccc;">
-                    ${fotos ? `<td style="padding: 5px;"><img src="${can.f}" style="width:50px; height:50px; border-radius: 5px; object-fit:cover;"></td>` : ''}
-                    <td style="padding: 10px;">${can.n}</td>
-                    <td style="padding: 10px; text-align: right; font-weight: bold;">${can.v}</td>
+                <tr style="border-bottom: 1px solid #eee;">
+                    ${fotos ? `<td style="padding: 10px;"><img src="${can.f}" style="width:50px; height:50px; border-radius: 5px; object-fit:cover;"></td>` : ''}
+                    <td style="padding: 10px; font-size: 16px;">${can.n}</td>
+                    <td style="padding: 10px; text-align: right; font-size: 18px; font-weight: bold;">${can.v}</td>
                 </tr>`;
         });
 
         html += `
-                <tr style="background: #efefef; font-weight: bold; border-top: 2px solid #000;">
+                <tr style="background: #f9f9f9; font-weight: bold; border-top: 1px solid #000;">
                     ${fotos ? '<td></td>' : ''}
-                    <td style="padding: 10px;">VOTOS EM BRANCO</td>
-                    <td style="padding: 10px; text-align: right;">${cargo.branco || 0}</td>
+                    <td style="padding: 10px; font-size: 16px;">VOTOS EM BRANCO</td>
+                    <td style="padding: 10px; text-align: right; font-size: 18px;">${cargo.branco || 0}</td>
                 </tr>
             </tbody>
         </table>
     </div>`;
     });
 
-    html += `</div>`;
+    html += `
+        <div style="margin-top: 50px; text-align: center; border-top: 1px solid #ccc; padding-top: 20px;">
+            <p style="font-size: 10px; color: #999;">Documento gerado digitalmente pela UrnaWeb - Autenticidade Garantida</p>
+        </div>
+    </div>`;
+    
     out.innerHTML = html;
 };
 
 window.PDF = (fotos) => {
+    // 1. Gera o conteúdo
     window.MOUNT_RESULT(fotos);
-    const area = document.getElementById('areaImpressao');
-    area.style.display = 'block'; // Necessário para o html2pdf ler
+    
+    // 2. IMPORTANTE: Rola a página para o topo antes de "fotografar" o PDF
+    // Isso evita que o PDF saia cortado se o usuário estiver no fim da página
+    window.scrollTo(0, 0);
 
+    const area = document.getElementById('areaImpressao');
+    
     const opt = {
-        margin: 10,
-        filename: `Apuracao_${window._title}.pdf`,
+        margin: 0, // Margem interna do PDF tratada pelo HTML acima
+        filename: `Apuracao_UrnaWeb.pdf`,
         image: { type: 'jpeg', quality: 1 },
         html2canvas: { 
             scale: 2, 
             useCORS: true, 
-            backgroundColor: '#ffffff' // Força fundo branco no canvas
+            backgroundColor: '#ffffff',
+            scrollY: 0, // Força o canvas a começar do topo zero
+            windowWidth: 800
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
+    // Pequeno delay para garantir que o scroll subiu e as fotos carregaram
     setTimeout(() => {
         html2pdf().set(opt).from(area).save().then(() => {
-            // Após salvar, você pode voltar a ocultar se quiser
-            // area.style.display = 'none';
+            area.style.display = 'none'; // Esconde após gerar
         });
-    }, 1000); // Aumento do tempo para garantir o carregamento das imagens
+    }, 1000);
 };
 
 window.FEED = function() {
