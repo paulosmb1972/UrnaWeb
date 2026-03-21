@@ -183,28 +183,29 @@ window.CONFIRM_END = () => {
 window.MOUNT_RESULT = (fotos) => {
     const out = document.getElementById('pC');
     
-    // Meio-termo: 700px de largura com margem automática para centralizar
+    // Usamos largura de 700px dentro de uma área de 750px (50px de sobra de segurança)
     let html = `
-    <div id="pdf-content-wrapper" style="font-family: Arial, sans-serif; color: #000; background: #fff; padding: 30px; width: 700px; margin: 0 auto; box-sizing: border-box; position: relative;">
+    <div id="pdf-content-wrapper" style="font-family: Arial, sans-serif; color: #000; background: #fff; padding: 30px; width: 700px; margin: 0; box-sizing: border-box; text-align: left;">
         
-        <div style="text-align: center; border-bottom: 3px solid #0a2a66; padding-bottom: 15px; margin-bottom: 20px;">
-            <h1 style="margin: 0; font-size: 24px; color: #0a2a66; text-transform: uppercase;">${window._title.toUpperCase()}</h1>
-            <p style="margin: 5px 0; font-size: 12px; color: #666;">Relatório de Apuração - Gerado em: ${new Date().toLocaleString()}</p>
+        <div style="text-align: center; border-bottom: 4px solid #0a2a66; padding-bottom: 15px; margin-bottom: 25px;">
+            <h1 style="margin: 0; font-size: 26px; color: #0a2a66; letter-spacing: 1px;">${window._title.toUpperCase()}</h1>
+            <p style="margin: 5px 0; font-size: 13px; color: #444;">Relatório Oficial de Apuração Presbiteriana</p>
+            <p style="margin: 5px 0; font-size: 11px; color: #888;">Gerado em: ${new Date().toLocaleString()}</p>
         </div>
 
-        <div style="background: #f4f4f4; padding: 15px; text-align: center; border: 1px solid #ddd; margin-bottom: 25px; border-radius: 5px;">
-            <b style="font-size: 18px; color: #333;">TOTAL DE ELEITORES: ${window._totalEleitores}</b>
+        <div style="background: #f4f4f4; padding: 15px; text-align: center; border: 1px solid #ccc; margin-bottom: 30px; border-radius: 5px;">
+            <span style="font-size: 18px; font-weight: bold; color: #000;">ELEITORES CONTABILIZADOS: ${window._totalEleitores}</span>
         </div>`;
 
     window._data.forEach(cargo => {
         html += `
         <div style="margin-bottom: 40px; page-break-inside: avoid;">
-            <h3 style="background: #0a2a66; color: #fff; padding: 10px; margin: 0; border-radius: 5px 5px 0 0; font-size: 17px;">CARGO: ${cargo.n.toUpperCase()}</h3>
+            <h3 style="background: #0a2a66; color: #fff; padding: 12px; margin: 0; border-radius: 5px 5px 0 0; font-size: 18px; border: 1px solid #0a2a66;">CARGO: ${cargo.n.toUpperCase()}</h3>
             <table style="width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #000; table-layout: fixed;">
                 <thead>
                     <tr style="background: #eee; border-bottom: 2px solid #000;">
-                        ${fotos ? '<th style="padding: 10px; text-align: left; width: 75px;">FOTO</th>' : ''}
-                        <th style="padding: 10px; text-align: left;">CANDIDATO</th>
+                        ${fotos ? '<th style="padding: 10px; text-align: left; width: 80px;">FOTO</th>' : ''}
+                        <th style="padding: 10px; text-align: left;">NOME DO CANDIDATO</th>
                         <th style="padding: 10px; text-align: right; width: 100px;">VOTOS</th>
                     </tr>
                 </thead>
@@ -213,18 +214,18 @@ window.MOUNT_RESULT = (fotos) => {
         const lista = [...cargo.c].sort((a,b) => b.v - a.v);
         lista.forEach(can => {
             html += `
-                <tr style="border-bottom: 1px solid #ccc;">
-                    ${fotos ? `<td style="padding: 5px; text-align: center;"><img src="${can.f}" style="width: 55px; height: 55px; object-fit: cover; border: 1px solid #ddd; border-radius: 4px;"></td>` : ''}
-                    <td style="padding: 10px; font-size: 16px; word-wrap: break-word;">${can.n}</td>
-                    <td style="padding: 10px; text-align: right; font-size: 20px; font-weight: bold; color: #0a2a66;">${can.v}</td>
+                <tr style="border-bottom: 1px solid #ddd;">
+                    ${fotos ? `<td style="padding: 8px; text-align: center;"><img src="${can.f}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc;"></td>` : ''}
+                    <td style="padding: 12px; font-size: 16px;">${can.n}</td>
+                    <td style="padding: 12px; text-align: right; font-size: 20px; font-weight: bold; color: #0a2a66;">${can.v}</td>
                 </tr>`;
         });
 
         html += `
                 <tr style="background: #fafafa; border-top: 2px solid #000; font-weight: bold;">
                     ${fotos ? '<td></td>' : ''}
-                    <td style="padding: 10px; font-size: 16px;">VOTOS EM BRANCO</td>
-                    <td style="padding: 10px; text-align: right; font-size: 20px;">${cargo.branco || 0}</td>
+                    <td style="padding: 12px; font-size: 16px;">VOTOS EM BRANCO / NULOS</td>
+                    <td style="padding: 12px; text-align: right; font-size: 20px;">${cargo.branco || 0}</td>
                 </tr>
             </tbody>
         </table>
@@ -232,8 +233,8 @@ window.MOUNT_RESULT = (fotos) => {
     });
 
     html += `
-        <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #eee; padding-top: 10px;">
-            UrnaWeb Digital - Sistema Presbiteriano de Caruaru
+        <div style="margin-top: 40px; text-align: center; font-size: 10px; color: #aaa; border-top: 1px solid #eee; padding-top: 15px;">
+            Este documento é um registro digital oficial gerado pelo sistema UrnaWeb.
         </div>
     </div>`;
 
@@ -241,41 +242,54 @@ window.MOUNT_RESULT = (fotos) => {
 };
 
 window.PDF = async (comFotos) => {
+    // 1. Gera o conteúdo
     window.MOUNT_RESULT(comFotos);
     
-    const elemento = document.getElementById('pdf-content-wrapper');
+    const elemento = document.getElementById('pC');
     const areaPai = document.getElementById('areaImpressao');
     
-    // Reset de posição para evitar que o navegador empurre o print
-    areaPai.style.display = 'block';
-    areaPai.style.position = 'absolute';
-    areaPai.style.left = '0';
-    areaPai.style.top = '0';
-    areaPai.style.zIndex = '-9999';
-    window.scrollTo(0, 0); // Garante que o scroll não afete a captura
+    // 2. FORÇA O RESETE DE POSIÇÃO DO SITE (IMPEDE O CORTE LATERAL)
+    // Criamos um estilo temporário que "congela" o site no topo zero
+    const styleFix = document.createElement('style');
+    styleFix.innerHTML = `
+        body, html { margin: 0 !important; padding: 0 !important; overflow: visible !important; width: 800px !important; height: auto !important; background: #fff !important; }
+        .screen { display: none !important; } /* Esconde o site escuro atrás */
+        #areaImpressao { display: block !important; position: absolute !important; top: 0 !important; left: 0 !important; width: 750px !important; margin: 0 !important; padding: 0 !important; z-index: 99999 !important; background: #fff !important; }
+    `;
+    document.head.appendChild(styleFix);
+
+    // 3. Garante que o navegador está no topo absoluto
+    window.scrollTo(0, 0);
 
     const opcoes = {
-        margin: [10, 10, 10, 10], // Margens equilibradas (1cm em cada lado)
+        margin: [10, 10, 10, 10], // 1cm de margem em todos os lados do papel
         filename: `Apuracao_UrnaWeb.pdf`,
         image: { type: 'jpeg', quality: 1.0 },
         html2canvas: { 
             scale: 2, 
             useCORS: true, 
             backgroundColor: '#ffffff',
-            width: 720,       // Captura um pouco mais que os 700px do conteúdo
-            windowWidth: 750, // Janela virtual estável
+            width: 750,       // Captura exata
+            windowWidth: 750, // Garante que não haja sobra lateral
             scrollX: 0,
-            scrollY: 0
+            scrollY: 0,
+            x: 0, // Força a coordenada X no zero absoluto
+            y: 0
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
     try {
+        // 4. Aguarda um pouco para o navegador processar o fundo branco
+        await new Promise(r => setTimeout(r, 500));
         await html2pdf().set(opcoes).from(elemento).save();
     } catch (err) {
         alert("Erro ao gerar PDF.");
     } finally {
+        // 5. Remove o estilo de correção e volta o site ao normal
+        document.head.removeChild(styleFix);
         areaPai.style.display = 'none';
+        window.location.reload(); // Recarrega para garantir que o menu da urna volte ao normal
     }
 };
 
