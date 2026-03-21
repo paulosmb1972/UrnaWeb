@@ -248,13 +248,23 @@ window.FEED = function() {
 window.PDF = (fotos) => {
     window.MOUNT_RESULT(fotos);
     const area = document.getElementById('areaImpressao');
+    area.style.display = 'block'; // Garante que está visível para o script ler
+
     const opt = {
-        margin: 10, filename: `Relatorio_UrnaWeb.pdf`,
+        margin: [10, 10, 10, 10],
+        filename: `Resultado_${window._title}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
+        html2canvas: { scale: 2, logging: false, useCORS: true },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
-    html2pdf().set(opt).from(area).save();
+
+    // Aguarda 800ms para renderizar as imagens antes de salvar
+    setTimeout(() => {
+        html2pdf().set(opt).from(area).save().then(() => {
+            // Se quiser ocultar a área de impressão após salvar, descomente a linha abaixo
+            // area.style.display = 'none';
+        });
+    }, 800);
 };
 
 window.LIMPAR = () => { 
