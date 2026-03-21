@@ -258,54 +258,49 @@ window.MOUNT_RESULT = (fotos) => {
 };
 
 window.PDF = async (comFotos) => {
-    // 1. Gera o conteúdo
     window.MOUNT_RESULT(comFotos);
     
     const elemento = document.getElementById('pC');
     const areaPai = document.getElementById('areaImpressao');
     
-    // 2. FORÇA O RESETE DE POSIÇÃO DO SITE (IMPEDE O CORTE LATERAL)
-    // Criamos um estilo temporário que "congela" o site no topo zero
+    // Injeta o estilo para o PDF sair correto
     const styleFix = document.createElement('style');
+    styleFix.id = "temp-pdf-style";
     styleFix.innerHTML = `
-        body, html { margin: 0 !important; padding: 0 !important; overflow: visible !important; width: 800px !important; height: auto !important; background: #fff !important; }
-        .screen { display: none !important; } /* Esconde o site escuro atrás */
-        #areaImpressao { display: block !important; position: absolute !important; top: 0 !important; left: 0 !important; width: 750px !important; margin: 0 !important; padding: 0 !important; z-index: 99999 !important; background: #fff !important; }
+        body, html { margin: 0 !important; padding: 0 !important; background: #fff !important; }
+        .screen { display: none !important; }
+        #areaImpressao { display: block !important; position: absolute !important; top: 0 !important; left: 0 !important; width: 750px !important; z-index: 99999 !important; background: #fff !important; }
     `;
     document.head.appendChild(styleFix);
-
-    // 3. Garante que o navegador está no topo absoluto
     window.scrollTo(0, 0);
 
     const opcoes = {
-        margin: [10, 10, 10, 10], // 1cm de margem em todos os lados do papel
-        filename: `Apuracao_UrnaWeb.pdf`,
+        margin: 10,
+        filename: `Resultado_UrnaWeb.pdf`,
         image: { type: 'jpeg', quality: 1.0 },
-        html2canvas: { 
-            scale: 2, 
-            useCORS: true, 
-            backgroundColor: '#ffffff',
-            width: 750,       // Captura exata
-            windowWidth: 750, // Garante que não haja sobra lateral
-            scrollX: 0,
-            scrollY: 0,
-            x: 0, // Força a coordenada X no zero absoluto
-            y: 0
-        },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
     try {
-        // 4. Aguarda um pouco para o navegador processar o fundo branco
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 700)); // Espera renderizar
         await html2pdf().set(opcoes).from(elemento).save();
+        
+        // AVISO AO USUÁRIO
+        alert("PDF gerado com sucesso! Você pode enviar sua sugestão agora.");
+        
     } catch (err) {
         alert("Erro ao gerar PDF.");
     } finally {
-        // 5. Remove o estilo de correção e volta o site ao normal
-        document.head.removeChild(styleFix);
+        // REMOVE O ESTILO DE IMPRESSÃO PARA VOLTAR AO SITE NORMAL
+        const styleToRemove = document.getElementById('temp-pdf-style');
+        if(styleToRemove) document.head.removeChild(styleToRemove);
+        
         areaPai.style.display = 'none';
-        window.location.reload(); // Recarrega para garantir que o menu da urna volte ao normal
+
+        // IMPORTANTE: NÃO USE window.location.reload() AQUI!
+        // Apenas garanta que a tela de resultados ('res') continue ativa
+        window.GO('res'); 
     }
 };
 
@@ -377,17 +372,24 @@ window.BIP = () => {
         const context = new (window.AudioContext || window.webkitAudioContext)();
         const oscillator = context.createOscillator();
         const gainNode = context.createGain();
+
         oscillator.type = "sine";
-        oscillator.frequency.setValueAtTime(440, context.currentTime);
+        // Frequência de 440Hz (Lá) para um som mais clássico de urna
+        oscillator.frequency.setValueAtTime(440, context.currentTime); 
+        
         oscillator.connect(gainNode);
         gainNode.connect(context.destination);
-        gainNode.gain.setValueAtTime(0, context.currentTime);
-        gainNode.gain.linearRampToValueAtTime(1, context.currentTime + 0.01);
-        oscillator.start(context.currentTime);
-        oscillator.stop(context.currentTime + 0.2);
-    } catch(e) { console.log("Áudio bloqueado pelo navegador"); }
-};
 
+        gainNode.gain.setValueAtTime(0, context.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.5, context.currentTime + 0.01);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.5);
+
+        oscillator.start(context.currentTime);
+        oscillator.stop(context.currentTime + 0.5); // Duração estendida para meio segundo
+    } catch(e) { 
+        console.log("Áudio aguardando interação do usuário."); 
+    }
+};
 
 
 
