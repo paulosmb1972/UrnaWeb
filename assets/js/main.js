@@ -183,94 +183,98 @@ window.CONFIRM_END = () => {
 window.MOUNT_RESULT = (fotos) => {
     const out = document.getElementById('pC');
     
-    // Reduzi a largura para 650px para garantir margens de segurança no A4
+    // Largura interna de 700px dentro de um wrapper de 800px garante que nada corte
     let html = `
-    <div id="pdf-content-wrapper" style="font-family: Arial, sans-serif; color: #000; background: #fff; padding: 20px; width: 650px; margin: 0 auto; box-sizing: border-box;">
+    <div id="pdf-content-wrapper" style="font-family: Arial, sans-serif; color: #000; background: #fff; padding: 40px; width: 750px; box-sizing: border-box; margin: 0;">
         
-        <div style="text-align: center; border-bottom: 3px solid #0a2a66; padding-bottom: 15px; margin-bottom: 20px;">
-            <h1 style="margin: 0; font-size: 22px; text-transform: uppercase; color: #0a2a66;">${window._title || "RELATÓRIO DE VOTAÇÃO"}</h1>
-            <p style="margin: 5px 0; font-size: 11px; color: #666;">Documento Oficial - Gerado em: ${new Date().toLocaleString()}</p>
+        <div style="text-align: center; border-bottom: 4px solid #0a2a66; padding-bottom: 20px; margin-bottom: 20px;">
+            <h1 style="margin: 0; font-size: 26px; color: #0a2a66;">${window._title.toUpperCase()}</h1>
+            <p style="margin: 5px 0; font-size: 14px; color: #333;">RELATÓRIO DE APURAÇÃO DIGITAL</p>
         </div>
 
-        <div style="background: #f4f4f4; padding: 12px; text-align: center; border: 1px solid #ddd; margin-bottom: 20px; border-radius: 5px;">
-            <span style="font-size: 15px; font-weight: bold; color: #333;">TOTAL DE ELEITORES: ${window._totalEleitores}</span>
+        <div style="background: #eee; padding: 15px; text-align: center; margin-bottom: 30px; border-radius: 5px;">
+            <b style="font-size: 20px;">TOTAL DE VOTOS COMPUTADOS: ${window._totalEleitores}</b>
         </div>`;
 
     window._data.forEach(cargo => {
         html += `
-        <div style="margin-bottom: 35px; page-break-inside: avoid;">
-            <h2 style="background: #0a2a66; color: #fff; padding: 10px; font-size: 16px; margin-bottom: 0; border-radius: 4px 4px 0 0;">CARGO: ${cargo.n.toUpperCase()}</h2>
-            <table style="width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid #eee;">
+        <div style="margin-bottom: 40px; page-break-inside: avoid;">
+            <h3 style="background: #0a2a66; color: #fff; padding: 12px; margin: 0; border-radius: 5px 5px 0 0;">CARGO: ${cargo.n.toUpperCase()}</h3>
+            <table style="width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #000;">
                 <thead>
-                    <tr style="background: #eee; border-bottom: 2px solid #000;">
-                        ${fotos ? '<th style="padding: 10px; text-align: left; width: 70px; font-size: 12px;">FOTO</th>' : ''}
-                        <th style="padding: 10px; text-align: left; font-size: 12px;">CANDIDATO</th>
-                        <th style="padding: 10px; text-align: right; width: 80px; font-size: 12px;">VOTOS</th>
+                    <tr style="background: #ddd;">
+                        ${fotos ? '<th style="padding: 10px; text-align: left; width: 80px;">FOTO</th>' : ''}
+                        <th style="padding: 10px; text-align: left;">CANDIDATO</th>
+                        <th style="padding: 10px; text-align: right; width: 120px;">VOTOS</th>
                     </tr>
                 </thead>
                 <tbody>`;
 
-        const candRank = [...cargo.c].sort((a, b) => b.v - a.v);
-
-        candRank.forEach(can => {
+        const lista = [...cargo.c].sort((a,b) => b.v - a.v);
+        lista.forEach(can => {
             html += `
-            <tr style="border-bottom: 1px solid #eee;">
-                ${fotos ? `<td style="padding: 8px;"><img src="${can.f || ''}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;"></td>` : ''}
-                <td style="padding: 10px; font-size: 14px; word-wrap: break-word;">${can.n}</td>
-                <td style="padding: 10px; text-align: right; font-weight: bold; font-size: 16px; color: #0a2a66;">${can.v}</td>
-            </tr>`;
+                <tr style="border-bottom: 1px solid #ccc;">
+                    ${fotos ? `<td style="padding: 5px; text-align: center;"><img src="${can.f}" style="width: 60px; height: 60px; object-fit: cover; border: 1px solid #ddd;"></td>` : ''}
+                    <td style="padding: 10px; font-size: 18px;">${can.n}</td>
+                    <td style="padding: 10px; text-align: right; font-size: 22px; font-weight: bold; color: #0a2a66;">${can.v}</td>
+                </tr>`;
         });
 
         html += `
-            <tr style="background: #fafafa; border-top: 1px solid #000;">
-                ${fotos ? '<td></td>' : ''}
-                <td style="padding: 10px; font-size: 14px; font-style: italic;">VOTOS EM BRANCO / NULOS</td>
-                <td style="padding: 10px; text-align: right; font-weight: bold; font-size: 16px;">${cargo.branco || 0}</td>
-            </tr>
-                </tbody>
-            </table>
+                <tr style="background: #f9f9f9; border-top: 2px solid #000; font-weight: bold;">
+                    ${fotos ? '<td></td>' : ''}
+                    <td style="padding: 10px; font-size: 18px;">VOTOS EM BRANCO</td>
+                    <td style="padding: 10px; text-align: right; font-size: 22px;">${cargo.branco || 0}</td>
+                </tr>
+            </tbody>
+        </table>
         </div>`;
     });
 
-    html += `
-        <div style="margin-top: 40px; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #eee; padding-top: 15px;">
-            UrnaWeb Digital - Sistema de Votação Presbiteriana
-        </div>
-    </div>`;
-
+    html += `</div>`;
     out.innerHTML = html;
 };
 
 window.PDF = async (comFotos) => {
+    // 1. Gera o conteúdo no HTML
     window.MOUNT_RESULT(comFotos);
     
-    const elemento = document.getElementById('pC');
+    const elemento = document.getElementById('pdf-content-wrapper');
     const areaPai = document.getElementById('areaImpressao');
     
+    // 2. Torna visível mas fora da tela do usuário
     areaPai.style.display = 'block';
-    areaPai.style.position = 'absolute';
-    areaPai.style.left = '-10000px'; 
-    areaPai.style.top = '0';
+    areaPai.style.position = 'fixed';
+    areaPai.style.left = '0';
+    areaPai.style.top = '-5000px'; // Joga para longe lá no topo
+    areaPai.style.width = '800px'; // Define uma largura fixa para o container pai
+    areaPai.style.zIndex = '-9999';
 
+    // 3. Configurações de Captura para evitar cortes
     const opcoes = {
-        margin: 10, // Margem padrão do PDF
-        filename: `Apuracao_UrnaWeb.pdf`,
+        margin: [10, 5, 10, 5], // Margens: topo, esquerda, baixo, direita
+        filename: `Apuracao_UrnaWeb_${new Date().getTime()}.pdf`,
         image: { type: 'jpeg', quality: 1.0 },
         html2canvas: { 
             scale: 2, 
             useCORS: true, 
             backgroundColor: '#ffffff',
-            width: 680, // Força o capturador a ler apenas 680px de largura
-            windowWidth: 700 // Simula uma janela estreita para não sobrar espaço branco
+            width: 750,       // Captura exatamente 750px de largura
+            windowWidth: 800, // Simula um navegador de 800px de largura
+            scrollX: 0,
+            scrollY: 0
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
     try {
+        // 4. Executa a geração
         await html2pdf().set(opcoes).from(elemento).save();
     } catch (err) {
-        alert("Erro ao gerar PDF.");
+        console.error("Erro PDF:", err);
+        alert("Erro ao gerar o relatório.");
     } finally {
+        // 5. Limpeza
         areaPai.style.display = 'none';
     }
 };
