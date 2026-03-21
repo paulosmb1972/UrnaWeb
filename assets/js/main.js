@@ -183,51 +183,49 @@ window.CONFIRM_END = () => {
 window.MOUNT_RESULT = (fotos) => {
     const out = document.getElementById('pC');
     
-    // 1. Criamos o HTML do relatório com estilos internos (CSS Inline) para evitar erros
+    // Reduzi a largura para 650px para garantir margens de segurança no A4
     let html = `
-    <div id="pdf-content-wrapper" style="font-family: 'Helvetica', 'Arial', sans-serif; color: #000; background: #fff; padding: 30px; width: 700px; margin: 0 auto;">
+    <div id="pdf-content-wrapper" style="font-family: Arial, sans-serif; color: #000; background: #fff; padding: 20px; width: 650px; margin: 0 auto; box-sizing: border-box;">
         
-        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
-            <h1 style="margin: 0; font-size: 24px; text-transform: uppercase;">${window._title || "RELATÓRIO DE VOTAÇÃO"}</h1>
-            <p style="margin: 5px 0; font-size: 12px;">Gerado em: ${new Date().toLocaleString()}</p>
+        <div style="text-align: center; border-bottom: 3px solid #0a2a66; padding-bottom: 15px; margin-bottom: 20px;">
+            <h1 style="margin: 0; font-size: 22px; text-transform: uppercase; color: #0a2a66;">${window._title || "RELATÓRIO DE VOTAÇÃO"}</h1>
+            <p style="margin: 5px 0; font-size: 11px; color: #666;">Documento Oficial - Gerado em: ${new Date().toLocaleString()}</p>
         </div>
 
-        <div style="background: #f0f0f0; padding: 10px; text-align: center; border: 1px solid #ccc; margin-bottom: 25px;">
-            <span style="font-size: 16px; font-weight: bold;">TOTAL DE ELEITORES QUE VOTARAM: ${window._totalEleitores}</span>
+        <div style="background: #f4f4f4; padding: 12px; text-align: center; border: 1px solid #ddd; margin-bottom: 20px; border-radius: 5px;">
+            <span style="font-size: 15px; font-weight: bold; color: #333;">TOTAL DE ELEITORES: ${window._totalEleitores}</span>
         </div>`;
 
     window._data.forEach(cargo => {
         html += `
-        <div style="margin-bottom: 40px; page-break-inside: avoid;">
-            <h2 style="background: #0a2a66; color: #fff; padding: 8px; font-size: 18px; margin-bottom: 10px;">CARGO: ${cargo.n.toUpperCase()}</h2>
-            <table style="width: 100%; border-collapse: collapse;">
+        <div style="margin-bottom: 35px; page-break-inside: avoid;">
+            <h2 style="background: #0a2a66; color: #fff; padding: 10px; font-size: 16px; margin-bottom: 0; border-radius: 4px 4px 0 0;">CARGO: ${cargo.n.toUpperCase()}</h2>
+            <table style="width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid #eee;">
                 <thead>
                     <tr style="background: #eee; border-bottom: 2px solid #000;">
-                        ${fotos ? '<th style="padding: 8px; text-align: left; width: 60px;">FOTO</th>' : ''}
-                        <th style="padding: 8px; text-align: left;">CANDIDATO</th>
-                        <th style="padding: 8px; text-align: right; width: 100px;">VOTOS</th>
+                        ${fotos ? '<th style="padding: 10px; text-align: left; width: 70px; font-size: 12px;">FOTO</th>' : ''}
+                        <th style="padding: 10px; text-align: left; font-size: 12px;">CANDIDATO</th>
+                        <th style="padding: 10px; text-align: right; width: 80px; font-size: 12px;">VOTOS</th>
                     </tr>
                 </thead>
                 <tbody>`;
 
-        // Ordenar por votos
         const candRank = [...cargo.c].sort((a, b) => b.v - a.v);
 
         candRank.forEach(can => {
             html += `
-            <tr style="border-bottom: 1px solid #ddd;">
-                ${fotos ? `<td style="padding: 5px;"><img src="${can.f || ''}" style="width: 50px; height: 50px; object-fit: cover; border: 1px solid #ccc;"></td>` : ''}
-                <td style="padding: 8px; font-size: 15px;">${can.n}</td>
-                <td style="padding: 8px; text-align: right; font-weight: bold; font-size: 16px;">${can.v}</td>
+            <tr style="border-bottom: 1px solid #eee;">
+                ${fotos ? `<td style="padding: 8px;"><img src="${can.f || ''}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;"></td>` : ''}
+                <td style="padding: 10px; font-size: 14px; word-wrap: break-word;">${can.n}</td>
+                <td style="padding: 10px; text-align: right; font-weight: bold; font-size: 16px; color: #0a2a66;">${can.v}</td>
             </tr>`;
         });
 
-        // Votos em Branco para este cargo
         html += `
-            <tr style="background: #fafafa; border-top: 1px solid #000; font-style: italic;">
+            <tr style="background: #fafafa; border-top: 1px solid #000;">
                 ${fotos ? '<td></td>' : ''}
-                <td style="padding: 8px;">VOTOS EM BRANCO / NULOS</td>
-                <td style="padding: 8px; text-align: right; font-weight: bold;">${cargo.branco || 0}</td>
+                <td style="padding: 10px; font-size: 14px; font-style: italic;">VOTOS EM BRANCO / NULOS</td>
+                <td style="padding: 10px; text-align: right; font-weight: bold; font-size: 16px;">${cargo.branco || 0}</td>
             </tr>
                 </tbody>
             </table>
@@ -235,8 +233,8 @@ window.MOUNT_RESULT = (fotos) => {
     });
 
     html += `
-        <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #666; border-top: 1px solid #eee; padding-top: 10px;">
-            Documento Processado Digitalmente por UrnaWeb - Presbiteriana de Caruaru
+        <div style="margin-top: 40px; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #eee; padding-top: 15px;">
+            UrnaWeb Digital - Sistema de Votação Presbiteriana
         </div>
     </div>`;
 
