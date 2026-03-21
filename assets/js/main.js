@@ -178,93 +178,105 @@ window.CONFIRM_END = () => {
 };
 
 window.MOUNT_RESULT = (fotos) => {
-    document.getElementById('pdf_h1').innerText = window._title.toUpperCase();
-    let out = document.getElementById('pC'); 
-    
-    // Estilo do container de resultados
-    out.style.color = "#000";
+    const out = document.getElementById('pC');
+    // Força o container a ser visível e legível para o PDF
+    out.style.backgroundColor = "#ffffff";
+    out.style.color = "#000000";
     out.style.padding = "20px";
-    out.style.backgroundColor = "#fff";
+    out.style.display = "block";
 
-    let html = `<div style="text-align:center; margin-bottom:20px; border-bottom:2px solid #0a2a66; padding-bottom:10px;">
-                    <h2 style="margin:0; color:#0a2a66;">RELATÓRIO DE APURAÇÃO</h2>
-                    <b style="font-size:18px;">TOTAL DE ELEITORES: ${window._totalEleitores}</b>
-                </div>`;
-    
+    let html = `
+        <div style="font-family: Arial, sans-serif; width: 100%; max-width: 800px; margin: auto; background: #fff; color: #000; padding: 20px;">
+            <div style="text-align:center; border-bottom: 3px solid #0a2a66; padding-bottom: 15px; margin-bottom: 20px;">
+                <h1 style="margin:0; color:#0a2a66; font-size: 24px;">${window._title.toUpperCase()}</h1>
+                <p style="margin:5px 0; font-size: 14px;">Relatório de Apuração Gerado em: ${new Date().toLocaleString()}</p>
+                <h2 style="margin:10px 0; font-size: 20px; background: #eee; padding: 5px;">TOTAL DE ELEITORES: ${window._totalEleitores}</h2>
+            </div>`;
+
     window._data.forEach(cargo => {
-        html += `<div style="margin-top:30px;">
-                    <h3 style="background:#0a2a66; color:#fff; padding:8px; border-radius:5px;">${cargo.n.toUpperCase()}</h3>
-                    <table style="width:100%; border-collapse:collapse; margin-top:10px;">
-                        <thead>
-                            <tr style="border-bottom:2px solid #333; text-align:left;">
-                                ${fotos ? '<th style="padding:10px;">Foto</th>' : ''}
-                                <th style="padding:10px;">Candidato</th>
-                                <th style="padding:10px; text-align:right;">Votos</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
-        
-        // Ordena candidatos por votos
-        const candidatosOrdenados = [...cargo.c].sort((a,b) => b.v - a.v);
-        
-        candidatosOrdenados.forEach(can => { 
-            html += `<tr style="border-bottom:1px solid #ddd;">
-                        ${fotos ? `<td style="padding:5px;"><img src="${can.f}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;"></td>` : ''}
-                        <td style="padding:10px; font-size:16px;">${can.n}</td>
-                        <td style="padding:10px; text-align:right; font-size:18px;"><b>${can.v}</b></td>
-                    </tr>`; 
+        html += `
+            <div style="margin-top: 30px; page-break-inside: avoid;">
+                <h3 style="background: #0a2a66; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 4px;">CARGO: ${cargo.n.toUpperCase()}</h3>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 16px;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #000; background: #f2f2f2;">
+                            ${fotos ? '<th style="text-align: left; padding: 10px;">Foto</th>' : ''}
+                            <th style="text-align: left; padding: 10px;">Candidato</th>
+                            <th style="text-align: right; padding: 10px;">Votos</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+        const lista = [...cargo.c].sort((a, b) => b.v - a.v);
+        lista.forEach(can => {
+            html += `
+                <tr style="border-bottom: 1px solid #ccc;">
+                    ${fotos ? `<td style="padding: 5px;"><img src="${can.f}" style="width:50px; height:50px; border-radius: 5px; object-fit:cover;"></td>` : ''}
+                    <td style="padding: 10px;">${can.n}</td>
+                    <td style="padding: 10px; text-align: right; font-weight: bold;">${can.v}</td>
+                </tr>`;
         });
 
-        // Adiciona Votos em Branco
-        html += `<tr style="background:#f2f2f2; font-weight:bold;">
+        html += `
+                <tr style="background: #efefef; font-weight: bold; border-top: 2px solid #000;">
                     ${fotos ? '<td></td>' : ''}
-                    <td style="padding:10px;">VOTOS EM BRANCO</td>
-                    <td style="padding:10px; text-align:right;">${cargo.branco || 0}</td>
-                 </tr>
-                </tbody>
-            </table>
-        </div>`;
+                    <td style="padding: 10px;">VOTOS EM BRANCO</td>
+                    <td style="padding: 10px; text-align: right;">${cargo.branco || 0}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>`;
     });
 
+    html += `</div>`;
     out.innerHTML = html;
-};
-
-window.FEED = function() {
-    const texto = document.getElementById('txtSugestao').value;
-    if(!texto) return alert("Por favor, digite sua sugestão.");
-
-    // Usa as configurações do window._cfg definidas no config.js
-    emailjs.send(window._cfg.s, window._cfg.t, {
-        message: "SUGESTÃO URNAWEB: " + texto,
-        to_email: localStorage.getItem('urna_user_email') || "paulosmb1972@gmail.com"
-    }).then(() => {
-        alert("Sugestão/Pedido enviado com sucesso!");
-        document.getElementById('txtSugestao').value = "";
-    }).catch((err) => {
-        alert("Erro ao enviar. Verifique o EmailJS.");
-    });
 };
 
 window.PDF = (fotos) => {
     window.MOUNT_RESULT(fotos);
     const area = document.getElementById('areaImpressao');
-    area.style.display = 'block'; // Garante que está visível para o script ler
+    area.style.display = 'block'; // Necessário para o html2pdf ler
 
     const opt = {
-        margin: [10, 10, 10, 10],
-        filename: `Resultado_${window._title}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, logging: false, useCORS: true },
+        margin: 10,
+        filename: `Apuracao_${window._title}.pdf`,
+        image: { type: 'jpeg', quality: 1 },
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true, 
+            backgroundColor: '#ffffff' // Força fundo branco no canvas
+        },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    // Aguarda 800ms para renderizar as imagens antes de salvar
     setTimeout(() => {
         html2pdf().set(opt).from(area).save().then(() => {
-            // Se quiser ocultar a área de impressão após salvar, descomente a linha abaixo
+            // Após salvar, você pode voltar a ocultar se quiser
             // area.style.display = 'none';
         });
-    }, 800);
+    }, 1000); // Aumento do tempo para garantir o carregamento das imagens
+};
+
+window.FEED = function() {
+    const campoTexto = document.getElementById('txtSugestao');
+    const texto = campoTexto.value.trim();
+    
+    if(!texto) return alert("Por favor, digite sua sugestão.");
+
+    // Enviamos o texto da sugestão PARA A VARIÁVEL que o seu template já reconhece
+    const templateParams = {
+        validation_code: "SUGESTÃO: " + texto, // O template vai ler isso no lugar do código
+        to_email: "paulosmb1972@gmail.com"
+    };
+
+    emailjs.send(window._cfg.s, window._cfg.t, templateParams)
+    .then(() => {
+        alert("Sugestão/Pedido enviado com sucesso!");
+        campoTexto.value = "";
+    })
+    .catch((err) => {
+        alert("Erro ao enviar. Verifique a conexão.");
+    });
 };
 
 window.LIMPAR = () => { 
