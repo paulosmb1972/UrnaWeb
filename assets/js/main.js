@@ -155,15 +155,31 @@ window.BRANCO = () => {
 };
 
 window.PROXIMO_PASSO = () => {
+    window.BIP(); // Toca o som de confirmação
     window._idx++; 
+
+    // Se ainda houver cargos para votar (Ex: de Presidente para Secretário)
     if(window._idx < window._data.length) { 
         window.RUN(); 
     } else { 
+        // Votação do eleitor atual concluída
         window._totalEleitores++;
-        document.getElementById('voterCountDisplay').innerText = window._totalEleitores;
-        alert("Voto Confirmado!"); 
+        
+        // ATUALIZA O VISOR DE VOTOS
+        const visor = document.getElementById('voterCountDisplay');
+        if(visor) visor.innerText = window._totalEleitores;
+
+        // VERIFICAÇÃO DE LIMITE DE TESTE (10 ELEITORES)
+        if(window._totalEleitores >= 10) {
+            alert("Limite de teste atingido (10 eleitores). Para continuar, escolha um plano de ativação.");
+            window.MOUNT_PAYMENT(); // Função que vamos criar abaixo
+            window.GO('pay'); // Direciona para a tela de pagamento
+            return;
+        }
+
+        alert("Voto Confirmado com Sucesso!"); 
         window._idx = 0; 
-        window.RUN(); 
+        window.RUN(); // Volta para o primeiro cargo para o próximo eleitor
     }
 };
 
@@ -321,6 +337,56 @@ window.LIMPAR = () => {
 
 window.GO('login');
 
+window.MOUNT_PAYMENT = () => {
+    const telaPay = document.getElementById('pay'); // Certifique-se que existe <div id="pay"> no HTML
+    if(!telaPay) return;
+
+    telaPay.innerHTML = `
+        <div style="padding: 20px; text-align: center; color: #fff; background: #1a1a1a; height: 100vh;">
+            <h2 style="color: #ffc107;">Limite de Teste Atingido</h2>
+            <p>Para liberar mais votos e salvar seus resultados, escolha um plano:</p>
+            
+            <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 20px; align-items: center;">
+                
+                <div style="background: #333; padding: 20px; border-radius: 10px; width: 280px; border: 1px solid #444;">
+                    <h3>Eleição Única</h3>
+                    <p style="font-size: 24px; color: #28a745;">R$ 30,00</p>
+                    <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=paulosmb1972@gmail.com&item_name=Eleicao_Individual_UrnaWeb&amount=30.00&currency_code=BRL" 
+                       style="background: #0070ba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                       Pagar com PayPal
+                    </a>
+                </div>
+
+                <div style="background: #333; padding: 20px; border-radius: 10px; width: 280px; border: 1px solid #ffc107;">
+                    <h3>Pacote 20 Eleições</h3>
+                    <p style="font-size: 24px; color: #28a745;">R$ 500,00</p>
+                    <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=paulosmb1972@gmail.com&item_name=Pacote_20_Eleicoes_UrnaWeb&amount=500.00&currency_code=BRL" 
+                       style="background: #0070ba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                       Pagar com PayPal
+                    </a>
+                </div>
+
+                <p style="font-size: 12px; margin-top: 20px;">Após o pagamento, envie o comprovante para paulosmb1972@gmail.com para liberação total.</p>
+            </div>
+        </div>
+    `;
+};
+
+window.BIP = () => {
+    try {
+        const context = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = context.createOscillator();
+        const gainNode = context.createGain();
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(440, context.currentTime);
+        oscillator.connect(gainNode);
+        gainNode.connect(context.destination);
+        gainNode.gain.setValueAtTime(0, context.currentTime);
+        gainNode.gain.linearRampToValueAtTime(1, context.currentTime + 0.01);
+        oscillator.start(context.currentTime);
+        oscillator.stop(context.currentTime + 0.2);
+    } catch(e) { console.log("Áudio bloqueado pelo navegador"); }
+};
 
 
 
