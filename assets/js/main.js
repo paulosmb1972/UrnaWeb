@@ -200,11 +200,15 @@ window.VOTE = () => {
     window.NEXT();
 };
 
-window.BRANCO = () => {
-    if(confirm((window._tr[window._idioma].BT_BRANCO || "Votar em Branco") + "?")) {
-        window._data[window._idx].branco = (window._data[window._idx].branco || 0) + 1; 
-        window.BIP(); window.NEXT();
-    }
+window.BRANCO = function() {
+    // 1. Registrar na memória local
+    let votos = JSON.parse(localStorage.getItem('votos_urna')) || { branco: 0 };
+    votos.branco++;
+    localStorage.setItem('votos_urna', JSON.stringify(votos));
+
+    // 2. Feedback visual
+    alert("Voto em Branco Confirmado!");
+    window.GO('res'); // Vai para o resultado
 };
 
 /* ==========================================================================
