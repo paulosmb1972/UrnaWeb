@@ -242,42 +242,35 @@ window.MOUNT_RESULT = (fotos) => {
 };
 
 window.PDF = async (comFotos) => {
-    // 1. Prepara os dados
     window.MOUNT_RESULT(comFotos);
     
-    // 2. Localiza o elemento
     const elemento = document.getElementById('pC');
     const areaPai = document.getElementById('areaImpressao');
     
-    // 3. Força visibilidade temporária para o print
     areaPai.style.display = 'block';
     areaPai.style.position = 'absolute';
-    areaPai.style.left = '-9999px'; // Move para fora da tela do usuário mas deixa visível para a IA
+    areaPai.style.left = '-10000px'; 
     areaPai.style.top = '0';
 
-    // 4. Configuração Robusta
     const opcoes = {
-        margin: [10, 10, 10, 10],
-        filename: `Apuracao_${window._title.replace(/\s+/g, '_')}.pdf`,
+        margin: 10, // Margem padrão do PDF
+        filename: `Apuracao_UrnaWeb.pdf`,
         image: { type: 'jpeg', quality: 1.0 },
         html2canvas: { 
             scale: 2, 
             useCORS: true, 
-            letterRendering: true,
             backgroundColor: '#ffffff',
-            scrollY: 0
+            width: 680, // Força o capturador a ler apenas 680px de largura
+            windowWidth: 700 // Simula uma janela estreita para não sobrar espaço branco
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    // 5. Execução com tratamento de erro
     try {
         await html2pdf().set(opcoes).from(elemento).save();
     } catch (err) {
-        console.error("Erro no PDF:", err);
-        alert("Erro ao gerar PDF. Tente novamente.");
+        alert("Erro ao gerar PDF.");
     } finally {
-        // Esconde novamente após o processo
         areaPai.style.display = 'none';
     }
 };
