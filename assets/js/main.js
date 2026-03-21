@@ -20,34 +20,17 @@ document.onkeydown = function(e) {
 };
 
 /* ==========================================================================
-   NAVEGAÇÃO E IDENTIDADE DO APARELHO
+   NAVEGAÇÃO
    ========================================================================== */
 window.GO = (id) => {
-    if(id === 'login') { 
-        localStorage.removeItem('urna_vault'); 
-        window._data = []; window._sel = []; window._idx = 0; window._totalEleitores = 0; 
-    }
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     const target = document.getElementById(id);
     if(target) target.classList.add('active');
     if(window.TR) window.TR(window._idioma);
 };
 
-// Captura Identidade Digital (Prevenção de Fraudes)
-window.CAPTURA_DADOS = async () => {
-    try {
-        const r = await fetch('https://api.ipify.org?format=json');
-        const d = await r.json();
-        localStorage.setItem('_u_secure_hash', btoa(d.ip));
-    } catch (e) {}
-    
-    const idUnico = btoa([navigator.userAgent, screen.colorDepth].join('|')).substring(0, 16);
-    localStorage.setItem('_dev_id', idUnico);
-};
-window.CAPTURA_DADOS();
-
 /* ==========================================================================
-   AUTENTICAÇÃO E SEGURANÇA (TOKEN)
+   AUTENTICAÇÃO E SEGURANÇA
    ========================================================================== */
 window.V = async function() { 
     let e = document.getElementById('uE').value.trim().toLowerCase(); 
@@ -55,7 +38,7 @@ window.V = async function() {
     
     localStorage.setItem('urna_user_email', e); 
     let btn = document.getElementById('L2'); 
-    btn.disabled = true; btn.innerText = "GERANDO TOKEN..."; 
+    btn.disabled = true; btn.innerText = "Processando..."; 
 
     try { 
         let r = await fetch(window._cfg.u + '/?email=' + encodeURIComponent(e)); 
@@ -69,16 +52,16 @@ window.V = async function() {
         alert("TOKEN ENVIADO PARA: " + e); 
         window.GO('verify'); 
     } catch(err) { 
-        alert("Falha ao enviar e-mail. Verifique sua conexão."); 
+        alert("Falha ao conectar. Verifique sua conexão."); 
     } finally { 
-        btn.disabled = false; window.TR(window._idioma); 
+        btn.disabled = false;
     } 
 };
 
 window.C = () => { 
     let d = document.getElementById('iC').value.trim();
     if(d === (localStorage.getItem('urna_vault') || "").trim()) window.GO('setup'); 
-    else alert(window._tr[window._idioma].AL_INC); 
+    else alert("Token Incorreto!"); 
 };
 
 /* ==========================================================================
@@ -122,50 +105,17 @@ window.SAVE = () => {
     alert("Cargo salvo!");
 };
 
-/* ==========================================================================
-   LOGICA DE CRÉDITOS E TRAVAS
-   ========================================================================== */
-window.START_VOTE_PROCESS = async () => {
-    let creditos = parseInt(localStorage.getItem('urna_creditos') || "0");
-
-    // Consome crédito apenas se tiver (usuários pagantes)
-    if (creditos > 0 && creditos < 900000) {
-        localStorage.setItem('urna_creditos', (creditos - 1).toString());
-        console.log("Crédito consumido.");
-    }
-
+window.START_VOTE_PROCESS = () => {
     if (window._temp) { window._data.push(JSON.parse(JSON.stringify(window._temp))); window._temp = null; }
     if (window._data.length === 0) return alert("Adicione candidatos primeiro!");
-    
     window._idx = 0;
+    window._totalEleitores = 0;
     window.RUN();
     window.GO('urna');
 };
 
-window.NEXT = () => {
-    let creditos = parseInt(localStorage.getItem('urna_creditos') || "0");
-    
-    // Regra Comercial: Trava no 10º voto se não houver saldo
-    if (creditos <= 0 && window._totalEleitores >= 10) {
-        alert("🔒 LIMITE ALCANÇADO: Adquira um plano para continuar recebendo votos.");
-        window.GO('pay');
-        return;
-    }
-
-    window._idx++; 
-    if(window._idx < window._data.length) { 
-        window.RUN(); 
-    } else { 
-        window._totalEleitores++;
-        document.getElementById('voterCountDisplay').innerText = window._totalEleitores;
-        window.BIP(); 
-        alert(window._tr[window._idioma].AL_SUC_VOTE); 
-        window._idx = 0; window.RUN(); 
-    }
-};
-
 /* ==========================================================================
-   URNA (VOTAÇÃO)
+   URNA (VOTAÇÃO) - CORRIGIDA
    ========================================================================== */
 window.RUN = () => {
     const displayCargo = document.getElementById('uT');
@@ -178,7 +128,7 @@ window.RUN = () => {
         const card = document.createElement('div');
         card.className = 'cand-card';
         card.style.cssText = `background:white;color:black;padding:15px;border-radius:12px;text-align:center;cursor:pointer;border:4px solid transparent;`;
-        const img = can.f ? `<img src="${can.f}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:8px;margin-bottom:10px;">` : `<div style="width:100%;aspect-ratio:1/1;background:#eee;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;"><i class="fas fa-user fa-2x"></i></div>`;
+        const img = can.f ? `<img src="${can.f}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:8px;margin-bottom:10px;">` : `<div style="width:100%;height:100px;background:#eee;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;"><i class="fas fa-user fa-2x"></i></div>`;
         card.innerHTML = `${img}<b>${can.n}</b>`;
         card.onclick = () => {
             if (window._sel.includes(i)) {
@@ -195,129 +145,88 @@ window.RUN = () => {
 
 window.VOTE = () => { 
     if(!window._sel.length) return alert("Selecione um candidato!"); 
-    window.BIP(); 
     window._sel.forEach(i => window._data[window._idx].c[i].v++); 
-    window.NEXT();
+    window.PROXIMO_PASSO();
 };
 
-window.BRANCO = function() {
-    // 1. Registrar na memória local
-    let votos = JSON.parse(localStorage.getItem('votos_urna')) || { branco: 0 };
-    votos.branco++;
-    localStorage.setItem('votos_urna', JSON.stringify(votos));
+window.BRANCO = () => {
+    window._data[window._idx].branco++; // Salva no objeto da eleição atual
+    window.PROXIMO_PASSO();
+};
 
-    // 2. Feedback visual
-    alert("Voto em Branco Confirmado!");
-    window.GO('res'); // Vai para o resultado
+window.PROXIMO_PASSO = () => {
+    window._idx++; 
+    if(window._idx < window._data.length) { 
+        window.RUN(); 
+    } else { 
+        window._totalEleitores++;
+        document.getElementById('voterCountDisplay').innerText = window._totalEleitores;
+        alert("Voto Confirmado!"); 
+        window._idx = 0; 
+        window.RUN(); 
+    }
 };
 
 /* ==========================================================================
-   RESULTADOS E PDF
+   RESULTADOS E SUGESTÕES - CORRIGIDO
    ========================================================================== */
+window.CONFIRM_END = () => { 
+    if(prompt("Senha para encerrar (1357):") === "1357") {
+        window.MOUNT_RESULT(false); 
+        window.GO('res');
+    } else alert("Senha incorreta!");
+};
+
 window.MOUNT_RESULT = (fotos) => {
-    let d = window._tr[window._idioma];
     document.getElementById('pdf_h1').innerText = window._title.toUpperCase();
-    document.getElementById('pdf-audit').innerText = d.AUDIT + ": " + new Date().toLocaleString();
     let out = document.getElementById('pC'); 
-    out.innerHTML = `<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>${d.PDF_TOTAL}: ${window._totalEleitores}</b></div>`;
+    out.innerHTML = `<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>TOTAL DE ELEITORES: ${window._totalEleitores}</b></div>`;
     
     window._data.forEach(cargo => {
-        let h = `<h3>${cargo.n.toUpperCase()}</h3><table class="pdf-table"><thead><tr>${fotos?'<th style="width:50px">Foto</th>':''}<th>${d.PDF_CAND}</th><th style="text-align:right">${d.PDF_VOT}</th></tr></thead><tbody>`;
+        let h = `<h3 style="color:#000; margin-top:20px;">${cargo.n.toUpperCase()}</h3><table style="width:100%; border-collapse:collapse; color:#000;">`;
+        h += `<thead><tr style="border-bottom:2px solid #000;">${fotos?'<th>Foto</th>':''}<th>Candidato</th><th style="text-align:right">Votos</th></tr></thead><tbody>`;
+        
         cargo.c.sort((a,b) => b.v - a.v).forEach(can => { 
-            h += `<tr>${fotos ? `<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></td>` : ''}<td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`; 
+            h += `<tr style="border-bottom:1px solid #eee;">${fotos ? `<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;"></td>` : ''}<td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`; 
         });
-        h += `<tr>${fotos?'<td></td>':''}<td><i>${d.BRANCO_TXT}</i></td><td style="text-align:right"><b>${cargo.branco || 0}</b></td></tr>`;
+        h += `<tr style="background:#f9f9f9;">${fotos?'<td></td>':''}<td><i>VOTOS EM BRANCO</i></td><td style="text-align:right"><b>${cargo.branco || 0}</b></td></tr>`;
         out.innerHTML += h + '</tbody></table>';
     });
 };
 
-window.CONFIRM_END = () => { 
-    if(prompt("Senha (1357):") === "1357") {
-        window.MOUNT_RESULT(false); window.GO('res');
-    } else alert("Acesso Negado!");
+window.FEED = function() {
+    const texto = document.getElementById('txtSugestao').value;
+    if(!texto) return alert("Por favor, digite sua sugestão.");
+
+    // Usa as configurações do window._cfg definidas no config.js
+    emailjs.send(window._cfg.s, window._cfg.t, {
+        message: "SUGESTÃO URNAWEB: " + texto,
+        to_email: localStorage.getItem('urna_user_email') || "paulosmb1972@gmail.com"
+    }).then(() => {
+        alert("Sugestão/Pedido enviado com sucesso!");
+        document.getElementById('txtSugestao').value = "";
+    }).catch((err) => {
+        alert("Erro ao enviar. Verifique o EmailJS.");
+    });
 };
 
 window.PDF = (fotos) => {
     window.MOUNT_RESULT(fotos);
     const area = document.getElementById('areaImpressao');
-    area.style.display = 'block';
     const opt = {
-        margin: 10, filename: `UrnaWeb_${window._title}.pdf`,
+        margin: 10, filename: `Relatorio_UrnaWeb.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+        html2canvas: { scale: 2 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
-    setTimeout(() => {
-        html2pdf().set(opt).from(area).save().then(() => { window.MOUNT_RESULT(false); });
-    }, 500);
-};
-
-/* ==========================================================================
-   CUPONS E FINANCEIRO
-   ========================================================================== */
-window.K = async () => { 
-    let campo = document.getElementById('cup');
-    let c = campo.value.trim().toLowerCase(); 
-    let cod = btoa(c); 
-    
-    if (localStorage.getItem('usado_' + cod)) {
-        alert("Este cupom já foi usado neste aparelho.");
-        return;
-    }
-
-    let atuais = parseInt(localStorage.getItem('urna_creditos') || "0");
-
-    if (cod === "b3Jpb24wMDE=") { // orion001
-        localStorage.setItem('urna_creditos', "999999");
-        alert("Acesso Mestre Ativado.");
-    } else if (cod === "cHJvbW8wMQ==") { // promo01
-        localStorage.setItem('urna_creditos', (atuais + 1).toString());
-        localStorage.setItem('usado_' + cod, 'true');
-        alert("1 Eleição Adicionada!");
-    } else if (cod === "cHJvbW8wMg==") { // promo02
-        localStorage.setItem('urna_creditos', (atuais + 2).toString());
-        localStorage.setItem('usado_' + cod, 'true');
-        alert("2 Eleições Adicionadas!");
-    } else if (cod === "cHJvbW8wMw==") { // promo03
-        localStorage.setItem('urna_creditos', (atuais + 3).toString());
-        localStorage.setItem('usado_' + cod, 'true');
-        alert("3 Eleições Adicionadas!");
-    } else {
-        alert("Cupom inválido!");
-        return;
-    }
-    window.GO('setup'); campo.value = "";
+    html2pdf().set(opt).from(area).save();
 };
 
 window.LIMPAR = () => { 
-    if(confirm("Deseja apagar todos os dados desta urna?")) { 
-        localStorage.clear(); window.location.reload(); 
-    } 
+    if(confirm("Apagar todos os dados?")) { localStorage.clear(); window.location.reload(); } 
 };
 
 window.GO('login');
-
-// ... outras funções que já existem (GO, TR, V, etc) ...
-
-window.FEED = function() {
-    const texto = document.getElementById('txtSugestao').value;
-    if(!texto) {
-        alert("Por favor, digite sua sugestão antes de enviar.");
-        return;
-    }
-
-    // Importante: Você precisa substituir os termos abaixo pelos seus IDs do EmailJS
-    emailjs.send("service_id_aqui", "template_id_aqui", {
-        message: texto,
-        user_email: document.getElementById('uE') ? document.getElementById('uE').value : "Anônimo"
-    }).then(() => {
-        alert("Sugestão enviada com sucesso!");
-        document.getElementById('txtSugestao').value = "";
-    }).catch((err) => {
-        alert("Erro ao enviar: " + JSON.stringify(err));
-    });
-};
-
 
 
 
