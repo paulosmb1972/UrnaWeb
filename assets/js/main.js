@@ -297,6 +297,27 @@ window.LIMPAR = () => {
 
 window.GO('login');
 
+// ... outras funções que já existem (GO, TR, V, etc) ...
+
+window.FEED = function() {
+    const texto = document.getElementById('txtSugestao').value;
+    if(!texto) {
+        alert("Por favor, digite sua sugestão antes de enviar.");
+        return;
+    }
+
+    // Importante: Você precisa substituir os termos abaixo pelos seus IDs do EmailJS
+    emailjs.send("service_id_aqui", "template_id_aqui", {
+        message: texto,
+        user_email: document.getElementById('uE') ? document.getElementById('uE').value : "Anônimo"
+    }).then(() => {
+        alert("Sugestão enviada com sucesso!");
+        document.getElementById('txtSugestao').value = "";
+    }).catch((err) => {
+        alert("Erro ao enviar: " + JSON.stringify(err));
+    });
+};
+
 
 
 
