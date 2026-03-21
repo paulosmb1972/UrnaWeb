@@ -43,25 +43,34 @@
     </div>
 
     <div id="pay" class="screen">
-        <h2 id="P1"></h2>
-        <div class="info-box"><b id="H_PAY_TIT"></b><span id="H_PAY_TXT"></span></div>
-        <div class="pay-card">
-            <h3 id="PL1"></h3>
-            <span style="font-size:28px; color:var(--accent); font-weight:bold;">R$ 30,00</span>
-            <button onclick="window.open('https://mpago.la/2maEAFx')" id="B1"></button>
+    <h2 id="P1">Pagamento</h2>
+    <div class="info-box"><b id="H_PAY_TIT">Opções de Contribuição</b><span id="H_PAY_TXT"> Escolha entre pagamento nacional ou internacional.</span></div>
+    
+    <div class="pay-card">
+        <h3 id="PL1">Taxa Administrativa</h3>
+        <span style="font-size:28px; color:var(--accent); font-weight:bold;">R$ 30,00</span>
+        <div style="display:flex; gap:5px; margin-top:10px;">
+            <button onclick="window.open('https://mpago.la/2maEAFx')" id="B1" style="flex:1;">Mercado Pago</button>
+            <button onclick="window.open('https://www.paypal.com/paypalme/SEU_USUARIO/30brl')" style="flex:1; background:#003087; color:white;">PayPal</button>
         </div>
-        <div class="pay-card">
-            <h3 id="PL2"></h3>
-            <span style="font-size:28px; color:var(--success); font-weight:bold;">R$ 500,00</span>
-            <button onclick="window.open('https://mpago.la/1VakcdN')" id="B2"></button>
-        </div>
-        <div class="pay-card" style="border: 2px solid var(--accent);">
-            <p id="L_CUP"></p><input id="cup" type="text">
-            <button onclick="window.K()" id="P2" style="background:var(--accent); color:#000;"></button>
-        </div>
-        <button onclick="window.GO('login')" id="B_VOLTAR" style="background:none; border:1px solid #fff;"></button>
     </div>
 
+    <div class="pay-card">
+        <h3 id="PL2">Cota de Serviço</h3>
+        <span style="font-size:28px; color:var(--success); font-weight:bold;">R$ 500,00</span>
+        <div style="display:flex; gap:5px; margin-top:10px;">
+            <button onclick="window.open('https://mpago.la/1VakcdN')" id="B2" style="flex:1;">Mercado Pago</button>
+            <button onclick="window.open('https://www.paypal.com/paypalme/SEU_USUARIO/500brl')" style="flex:1; background:#003087; color:white;">PayPal</button>
+        </div>
+    </div>
+
+    <div class="pay-card" style="border: 2px solid var(--accent);">
+        <p id="L_CUP"></p><input id="cup" type="text">
+        <button onclick="window.K()" id="P2" style="background:var(--accent); color:#000;">Validar Cupom</button>
+    </div>
+    <button onclick="window.GO('login')" id="B_VOLTAR" style="background:none; border:1px solid #fff;">Voltar</button>
+</div>
+    
     <div id="setupCargo" class="screen">
         <h2 id="C1"></h2>
         <div class="info-box"><b id="H_CARGO_TIT"></b><span id="H_CARGO_TXT"></span></div>
