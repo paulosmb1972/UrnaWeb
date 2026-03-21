@@ -180,18 +180,53 @@ window.CONFIRM_END = () => {
 window.MOUNT_RESULT = (fotos) => {
     document.getElementById('pdf_h1').innerText = window._title.toUpperCase();
     let out = document.getElementById('pC'); 
-    out.innerHTML = `<div style="text-align:center; margin-bottom:15px; border-bottom:1px solid #000; padding-bottom:10px;"><b>TOTAL DE ELEITORES: ${window._totalEleitores}</b></div>`;
+    
+    // Estilo do container de resultados
+    out.style.color = "#000";
+    out.style.padding = "20px";
+    out.style.backgroundColor = "#fff";
+
+    let html = `<div style="text-align:center; margin-bottom:20px; border-bottom:2px solid #0a2a66; padding-bottom:10px;">
+                    <h2 style="margin:0; color:#0a2a66;">RELATÓRIO DE APURAÇÃO</h2>
+                    <b style="font-size:18px;">TOTAL DE ELEITORES: ${window._totalEleitores}</b>
+                </div>`;
     
     window._data.forEach(cargo => {
-        let h = `<h3 style="color:#000; margin-top:20px;">${cargo.n.toUpperCase()}</h3><table style="width:100%; border-collapse:collapse; color:#000;">`;
-        h += `<thead><tr style="border-bottom:2px solid #000;">${fotos?'<th>Foto</th>':''}<th>Candidato</th><th style="text-align:right">Votos</th></tr></thead><tbody>`;
+        html += `<div style="margin-top:30px;">
+                    <h3 style="background:#0a2a66; color:#fff; padding:8px; border-radius:5px;">${cargo.n.toUpperCase()}</h3>
+                    <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+                        <thead>
+                            <tr style="border-bottom:2px solid #333; text-align:left;">
+                                ${fotos ? '<th style="padding:10px;">Foto</th>' : ''}
+                                <th style="padding:10px;">Candidato</th>
+                                <th style="padding:10px; text-align:right;">Votos</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
         
-        cargo.c.sort((a,b) => b.v - a.v).forEach(can => { 
-            h += `<tr style="border-bottom:1px solid #eee;">${fotos ? `<td><img src="${can.f}" style="width:40px;height:40px;object-fit:cover;"></td>` : ''}<td>${can.n}</td><td style="text-align:right"><b>${can.v}</b></td></tr>`; 
+        // Ordena candidatos por votos
+        const candidatosOrdenados = [...cargo.c].sort((a,b) => b.v - a.v);
+        
+        candidatosOrdenados.forEach(can => { 
+            html += `<tr style="border-bottom:1px solid #ddd;">
+                        ${fotos ? `<td style="padding:5px;"><img src="${can.f}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;"></td>` : ''}
+                        <td style="padding:10px; font-size:16px;">${can.n}</td>
+                        <td style="padding:10px; text-align:right; font-size:18px;"><b>${can.v}</b></td>
+                    </tr>`; 
         });
-        h += `<tr style="background:#f9f9f9;">${fotos?'<td></td>':''}<td><i>VOTOS EM BRANCO</i></td><td style="text-align:right"><b>${cargo.branco || 0}</b></td></tr>`;
-        out.innerHTML += h + '</tbody></table>';
+
+        // Adiciona Votos em Branco
+        html += `<tr style="background:#f2f2f2; font-weight:bold;">
+                    ${fotos ? '<td></td>' : ''}
+                    <td style="padding:10px;">VOTOS EM BRANCO</td>
+                    <td style="padding:10px; text-align:right;">${cargo.branco || 0}</td>
+                 </tr>
+                </tbody>
+            </table>
+        </div>`;
     });
+
+    out.innerHTML = html;
 };
 
 window.FEED = function() {
