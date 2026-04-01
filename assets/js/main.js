@@ -155,31 +155,32 @@ window.BRANCO = () => {
 };
 
 window.PROXIMO_PASSO = () => {
-    window.BIP();
+    window.BIP(); // Som de confirmação
     window._idx++; 
 
-    // Se ainda houver cargos para o MESMO eleitor (Ex: votar para vice)
+    // Se ainda houver cargos para o mesmo eleitor votar (Ex: de Presbítero para Diácono)
     if(window._idx < window._data.length) { 
         window.RUN(); 
     } else { 
-        // Eleitor terminou todos os cargos
+        // Eleitor terminou todos os cargos da sua vez
         window._totalEleitores++;
         
         const visor = document.getElementById('voterCountDisplay');
         if(visor) visor.innerText = window._totalEleitores;
 
-        // VERIFICAÇÃO DE TRAVA APÓS O 10º ELEITOR
+        // TRAVA DE SEGURANÇA: Se não houver créditos e já tiver 10 votos
         let temCredito = localStorage.getItem('urna_creditos') === "999999";
 
         if(!temCredito && window._totalEleitores >= 10) {
-            alert("Limite de teste atingido (10 eleitores). Insira um cupom para liberar os resultados e continuar a votação.");
+            alert("Limite de teste atingido (10 eleitores). Insira seu cupom para continuar registrando votos.");
             window.MOUNT_PAYMENT();
             window.GO('pay');
-            // O sistema para aqui. window._idx não volta a 0 até que o cupom seja inserido em window.K
+            // O sistema "para" aqui e não reseta o _idx. 
+            // O reset só acontecerá quando o Cupom for validado na função window.K acima.
             return; 
         }
 
-        // Se tiver crédito ou ainda não chegou no 10º, segue normal
+        // Se tiver crédito ou for menos de 10 eleitores, reseta o ciclo normalmente
         alert("Voto Confirmado!"); 
         window._idx = 0; 
         window.RUN(); 
@@ -346,21 +347,27 @@ window.K = async () => {
     const mestre = "orion001";
 
     if (cupomDigitado === mestre || cuponsGratis.includes(cupomDigitado)) {
-        // Validação de uso único para os grátis
+        // Validação de uso único para os gratuitos
         if (cupomDigitado !== mestre && localStorage.getItem('usado_' + cupomDigitado)) {
-            alert("Este cupom já foi utilizado neste aparelho.");
+            alert("Este cupom já foi utilizado anteriormente neste aparelho.");
             return;
         }
 
-        // Libera créditos
+        // 1. Libera créditos no sistema
         localStorage.setItem('urna_creditos', "999999");
         if (cupomDigitado !== mestre) localStorage.setItem('usado_' + cupomDigitado, 'true');
 
-        alert("Cupom validado! Preparando próximo eleitor...");
+        alert("Cupom validado! Destravando urna...");
 
-        // ESSENCIAL: Reseta o ciclo para o próximo eleitor e volta para a urna
+        // 2. DESTRAVAMENTO REAL:
+        // Resetamos o índice de cargos para o início e limpamos a seleção
         window._idx = 0; 
+        window._sel = []; 
+        
+        // 3. Redesenhamos a tela com o primeiro cargo configurado
         window.RUN(); 
+        
+        // 4. Voltamos para a tela da Urna
         window.GO('urna'); 
         campo.value = ""; 
     } else { 
