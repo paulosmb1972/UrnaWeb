@@ -371,35 +371,50 @@ window.K = async () => {
 };
 
 window.MOUNT_PAYMENT = () => {
-    const telaPay = document.getElementById('pay'); // Certifique-se que existe <div id="pay"> no HTML
+    const telaPay = document.getElementById('pay');
     if(!telaPay) return;
 
     telaPay.innerHTML = `
-        <div style="padding: 20px; text-align: center; color: #fff; background: #1a1a1a; height: 100vh;">
-            <h2 style="color: #ffc107;">Limite de Teste Atingido</h2>
-            <p>Para liberar mais votos e salvar seus resultados, escolha um plano:</p>
+        <div style="padding: 20px; text-align: center; color: #fff; background: #1a1a1a; min-height: 100vh; font-family: Arial, sans-serif;">
+            <h2 style="color: #ffc107; margin-bottom: 10px;">Limite de Teste Atingido</h2>
+            <p style="margin-bottom: 30px;">Para liberar mais votos e salvar seus resultados, escolha um plano ou insira um cupom:</p>
             
-            <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 20px; align-items: center;">
+            <div style="display: flex; flex-direction: column; gap: 20px; align-items: center;">
                 
-                <div style="background: #333; padding: 20px; border-radius: 10px; width: 280px; border: 1px solid #444;">
-                    <h3>Eleição Única</h3>
-                    <p style="font-size: 24px; color: #28a745;">R$ 30,00</p>
+                <div style="background: #333; padding: 20px; border-radius: 10px; width: 300px; border: 1px solid #444; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                    <h3 style="margin: 0;">Eleição Única</h3>
+                    <p style="font-size: 28px; color: #28a745; font-weight: bold; margin: 10px 0;">R$ 30,00</p>
                     <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=paulosmb1972@gmail.com&item_name=Eleicao_Individual_UrnaWeb&amount=30.00&currency_code=BRL" 
-                       style="background: #0070ba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                       style="background: #0070ba; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
                        Pagar com PayPal
                     </a>
                 </div>
 
-                <div style="background: #333; padding: 20px; border-radius: 10px; width: 280px; border: 1px solid #ffc107;">
-                    <h3>Pacote 20 Eleições</h3>
-                    <p style="font-size: 24px; color: #28a745;">R$ 500,00</p>
+                <div style="background: #333; padding: 20px; border-radius: 10px; width: 300px; border: 1px solid #ffc107; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                    <h3 style="margin: 0;">Pacote 20 Eleições</h3>
+                    <p style="font-size: 28px; color: #28a745; font-weight: bold; margin: 10px 0;">R$ 500,00</p>
                     <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=paulosmb1972@gmail.com&item_name=Pacote_20_Eleicoes_UrnaWeb&amount=500.00&currency_code=BRL" 
-                       style="background: #0070ba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                       style="background: #0070ba; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
                        Pagar com PayPal
                     </a>
                 </div>
 
-                <p style="font-size: 12px; margin-top: 20px;">Após o pagamento, envie o comprovante para paulosmb1972@gmail.com para liberação total.</p>
+                <hr style="width: 80%; border: 0; border-top: 1px solid #444; margin: 20px 0;">
+
+                <div style="background: #222; padding: 20px; border-radius: 10px; width: 300px; border: 2px dashed #ffc107;">
+                    <p style="margin-bottom: 15px; font-weight: bold;">Possui um cupom?</p>
+                    <input id="cup" type="text" placeholder="Digite aqui (ex: orion001)" 
+                           style="width: 100%; padding: 12px; border-radius: 5px; border: 1px solid #555; background: #000; color: #fff; text-align: center; box-sizing: border-box; margin-bottom: 15px; font-size: 16px;">
+                    
+                    <button onclick="window.K()" 
+                            style="width: 100%; background: #ffc107; color: #000; padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; text-transform: uppercase;">
+                        Validar Cupom
+                    </button>
+                </div>
+
+                <button onclick="window.GO('login')" style="background: none; border: 1px solid #fff; color: #fff; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 20px;">
+                    Voltar ao Início
+                </button>
             </div>
         </div>
     `;
