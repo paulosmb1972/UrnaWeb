@@ -449,6 +449,33 @@ window.BIP = () => {
     }
 };
 
+window.RESET_GERAL = () => {
+    if(confirm("Deseja encerrar esta apuração e iniciar uma NOVA votação do zero? (Os votos atuais serão apagados)")) {
+        // Limpa os dados da votação atual
+        window._data = [];
+        window._temp = null;
+        window._sel = [];
+        window._idx = 0;
+        window._title = '';
+        window._fotoTemp = '';
+        window._totalEleitores = 0;
+
+        // Reseta o visor de votos na tela
+        const visor = document.getElementById('voterCountDisplay');
+        if(visor) visor.innerText = "0";
+
+        // Limpa campos de entrada de texto
+        if(document.getElementById('tE')) document.getElementById('tE').value = "";
+        if(document.getElementById('nC')) document.getElementById('nC').value = "";
+        if(document.getElementById('nCand')) document.getElementById('nCand').value = "";
+        if(document.getElementById('txtSugestao')) document.getElementById('txtSugestao').value = "";
+
+        // Volta para a tela de configuração (Setup) ou Login
+        alert("Sistema reiniciado. Pode configurar a nova eleição.");
+        window.GO('setup'); 
+    }
+};
+
 
 
 
