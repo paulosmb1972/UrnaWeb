@@ -155,31 +155,31 @@ window.BRANCO = () => {
 };
 
 window.PROXIMO_PASSO = () => {
-    window.BIP(); // Toca o som de confirmação
+    window.BIP();
     window._idx++; 
 
-    // Se ainda houver cargos para votar (Ex: de Presidente para Secretário)
     if(window._idx < window._data.length) { 
         window.RUN(); 
     } else { 
-        // Votação do eleitor atual concluída
         window._totalEleitores++;
         
-        // ATUALIZA O VISOR DE VOTOS
         const visor = document.getElementById('voterCountDisplay');
         if(visor) visor.innerText = window._totalEleitores;
 
-        // VERIFICAÇÃO DE LIMITE DE TESTE (10 ELEITORES)
-        if(window._totalEleitores >= 10) {
-            alert("Limite de teste atingido (10 eleitores). Para continuar, escolha um plano de ativação.");
-            window.MOUNT_PAYMENT(); // Função que vamos criar abaixo
-            window.GO('pay'); // Direciona para a tela de pagamento
-            return;
+        // VERIFICAÇÃO DE LIMITE
+        // Se não tiver créditos e chegar a 10, para aqui.
+        if(!localStorage.getItem('urna_creditos') && window._totalEleitores >= 10) {
+            alert("Limite de teste atingido. Insira um cupom para liberar os votos colhidos e continuar.");
+            window.MOUNT_PAYMENT();
+            window.GO('pay');
+            // IMPORTANTE: Reduzimos o contador para que o 10º voto 
+            // só seja "totalizado" após a liberação, ou mantemos para salvar.
+            return; 
         }
 
         alert("Voto Confirmado com Sucesso!"); 
         window._idx = 0; 
-        window.RUN(); // Volta para o primeiro cargo para o próximo eleitor
+        window.RUN(); 
     }
 };
 
@@ -339,32 +339,25 @@ window.K = async () => {
     let campo = document.getElementById('cup');
     let cupomDigitado = campo.value.trim().toLowerCase(); 
     
-    // 1. Cupom Pessoal Mestre (Uso Ilimitado)
-    if (cupomDigitado === "orion001") {
-        localStorage.setItem('urna_creditos', "999999");
-        alert("Acesso Mestre Ativado! Uso ilimitado liberado.");
-        window.GO('setup'); 
-        campo.value = ""; 
-        return;
-    }
-
-    // 2. Cupons de Uso Único (gratis01, gratis02, gratis03)
-    const cuponsGratis = ["gratis01", "gratis02", "gratis03"];
+    const cuponsValidos = ["orion001", "gratis01", "gratis02", "gratis03"];
     
-    if (cuponsGratis.includes(cupomDigitado)) {
-        // Verifica se este cupom já foi usado neste aparelho
-        if (localStorage.getItem('usado_' + cupomDigitado)) {
-            alert("Este cupom gratuito já foi utilizado anteriormente neste aparelho.");
+    if (cuponsValidos.includes(cupomDigitado)) {
+        if (cupomDigitado !== "orion001" && localStorage.getItem('usado_' + cupomDigitado)) {
+            alert("Este cupom já foi utilizado neste aparelho.");
             return;
         }
 
-        // Libera os créditos e marca como usado permanentemente no navegador
+        // Define créditos altos para ignorar a trava de 10
         localStorage.setItem('urna_creditos', "999999");
-        localStorage.setItem('usado_' + cupomDigitado, 'true');
+        if (cupomDigitado !== "orion001") {
+            localStorage.setItem('usado_' + cupomDigitado, 'true');
+        }
         
-        alert("Cupom validado! Eleição gratuita liberada.");
-        window.GO('setup'); 
-        campo.value = "";
+        alert("Cupom validado! Continuando votação...");
+        
+        // RETORNA PARA A URNA EXATAMENTE ONDE PAROU
+        window.GO('urna'); 
+        campo.value = ""; 
     } else { 
         alert("Cupom inválido!"); 
     }
