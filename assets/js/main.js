@@ -64,6 +64,22 @@ window.C = () => {
     else alert("Token Incorreto!"); 
 };
 
+window.RESET_TOTAL_E_LOGOUT = () => {
+    if(confirm("Deseja encerrar e sair? Uma nova eleição exigirá novo login.")) {
+        // Limpa dados da eleição
+        window._data = [];
+        window._totalEleitores = 0;
+        
+        // Limpa sessão e cupons temporários
+        localStorage.removeItem('urna_user_email');
+        localStorage.removeItem('urna_vault');
+        localStorage.removeItem('urna_creditos'); 
+        
+        alert("Sessão encerrada. Voltando ao início.");
+        window.GO('login'); // Certifique-se que o ID da tela inicial é 'login'
+    }
+};
+
 /* ==========================================================================
    CONFIGURAÇÃO DA ELEIÇÃO
    ========================================================================== */
