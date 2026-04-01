@@ -332,6 +332,44 @@ window.LIMPAR = () => {
 
 window.GO('login');
 
+/* ==========================================================================
+   CUPONS E FINANCEIRO
+   ========================================================================== */
+window.K = async () => { 
+    let campo = document.getElementById('cup');
+    let cupomDigitado = campo.value.trim().toLowerCase(); 
+    
+    // 1. Cupom Pessoal Mestre (Uso Ilimitado)
+    if (cupomDigitado === "orion001") {
+        localStorage.setItem('urna_creditos', "999999");
+        alert("Acesso Mestre Ativado! Uso ilimitado liberado.");
+        window.GO('setup'); 
+        campo.value = ""; 
+        return;
+    }
+
+    // 2. Cupons de Uso Único (gratis01, gratis02, gratis03)
+    const cuponsGratis = ["gratis01", "gratis02", "gratis03"];
+    
+    if (cuponsGratis.includes(cupomDigitado)) {
+        // Verifica se este cupom já foi usado neste aparelho
+        if (localStorage.getItem('usado_' + cupomDigitado)) {
+            alert("Este cupom gratuito já foi utilizado anteriormente neste aparelho.");
+            return;
+        }
+
+        // Libera os créditos e marca como usado permanentemente no navegador
+        localStorage.setItem('urna_creditos', "999999");
+        localStorage.setItem('usado_' + cupomDigitado, 'true');
+        
+        alert("Cupom validado! Eleição gratuita liberada.");
+        window.GO('setup'); 
+        campo.value = "";
+    } else { 
+        alert("Cupom inválido!"); 
+    }
+};
+
 window.MOUNT_PAYMENT = () => {
     const telaPay = document.getElementById('pay'); // Certifique-se que existe <div id="pay"> no HTML
     if(!telaPay) return;
