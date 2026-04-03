@@ -69,7 +69,7 @@ window.RESET_TOTAL_E_LOGOUT = () => {
         window._data = [];
         window._totalEleitores = 0;
         
-        // Limpa o e-mail e os créditos, mas NÃO apaga o histórico de cupons usados
+        // Limpa a sessão e os créditos para forçar novo login e novo limite de 10 votos
         localStorage.removeItem('urna_user_email');
         localStorage.removeItem('urna_vault');
         localStorage.removeItem('urna_creditos'); 
