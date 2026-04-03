@@ -36,7 +36,7 @@ window.V = async function() {
     let e = document.getElementById('uE').value.trim().toLowerCase(); 
     if(!e.endsWith('@gmail.com')) return alert("Use um e-mail @gmail.com válido!"); 
     
-    localStorage.setItem('urna_user_email', emailDigitado); 
+    localStorage.setItem('urna_user_email', e); 
     let btn = document.getElementById('L2'); 
     btn.disabled = true; btn.innerText = "Processando..."; 
 
@@ -66,17 +66,19 @@ window.C = () => {
 
 window.RESET_TOTAL_E_LOGOUT = () => {
     if(confirm("Deseja encerrar e sair? Uma nova eleição exigirá novo login.")) {
-        // Limpa dados da eleição
         window._data = [];
         window._totalEleitores = 0;
         
-        // Limpa sessão e cupons temporários
+        // Limpa o e-mail e os créditos, mas NÃO apaga o histórico de cupons usados
         localStorage.removeItem('urna_user_email');
         localStorage.removeItem('urna_vault');
         localStorage.removeItem('urna_creditos'); 
         
+        const visor = document.getElementById('voterCountDisplay');
+        if(visor) visor.innerText = "0";
+
         alert("Sessão encerrada. Voltando ao início.");
-        window.GO('login'); // Certifique-se que o ID da tela inicial é 'login'
+        window.GO('login'); 
     }
 };
 
