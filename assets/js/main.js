@@ -65,24 +65,27 @@ window.C = () => {
 };
 
 window.RESET_TOTAL_E_LOGOUT = () => {
-    if(confirm("Encerrar votação? Uma nova eleição exigirá novo login e o limite de 10 votos voltará a valer.")) {
-        // 1. Limpa os dados da eleição atual
+    if(confirm("Deseja encerrar e sair? Uma nova eleição exigirá novo login e o limite de 10 votos voltará a valer.")) {
+        
+        // 1. Limpa os dados da eleição (votos e candidatos)
         window._data = [];
+        window._temp = null;
         window._totalEleitores = 0;
         
-        // 2. REMOVE A AUTORIZAÇÃO: Faz o sistema travar na próxima eleição
+        // 2. DESTROI O CRÉDITO DO CUPOM: Garante que a próxima eleição comece travada
         localStorage.removeItem('urna_creditos'); 
         
-        // 3. REMOVE O LOGIN: Força voltar para a tela de E-mail
+        // 3. REMOVE O LOGIN E TOKEN: Força a volta para a tela de E-mail/Gmail
         localStorage.removeItem('urna_user_email');
         localStorage.removeItem('urna_vault');
         
-        if(document.getElementById('voterCountDisplay')) {
-            document.getElementById('voterCountDisplay').innerText = "0";
-        }
+        // 4. Limpa o visor visual de votos
+        const visor = document.getElementById('voterCountDisplay');
+        if(visor) visor.innerText = "0";
 
-        alert("Sistema reiniciado. Voltando ao início.");
-        window.GO('login'); // Redireciona para inserção do Gmail
+        // 5. DIRECIONA PARA O GMAIL (Tela de Login)
+        alert("Sessão encerrada com sucesso.");
+        window.GO('login'); 
     }
 };
 
