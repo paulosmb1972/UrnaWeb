@@ -66,18 +66,20 @@ window.C = () => {
 
 window.RESET_TOTAL_E_LOGOUT = () => {
     if(confirm("Encerrar votação e sair? Uma nova eleição exigirá novo login e terá limite de 10 votos.")) {
-        // Limpa os dados da eleição e votos
+        // 1. Limpa os dados da eleição e votos
         window._data = [];
         window._totalEleitores = 0;
         
-        // REMOVE O ACESSO LIBERADO: Faz o cupom anterior expirar para a nova eleição
+        // 2. REMOVE O ACESSO LIBERADO: Faz o cupom anterior expirar para a nova eleição
         localStorage.removeItem('urna_creditos'); 
         
-        // REMOVE O LOGIN: Força voltar para a tela de E-mail
+        // 3. REMOVE O LOGIN: Força voltar para a tela de E-mail
         localStorage.removeItem('urna_user_email');
         localStorage.removeItem('urna_vault');
         
-        if(document.getElementById('voterCountDisplay')) document.getElementById('voterCountDisplay').innerText = "0";
+        if(document.getElementById('voterCountDisplay')) {
+            document.getElementById('voterCountDisplay').innerText = "0";
+        }
 
         alert("Sistema reiniciado. Voltando ao início.");
         window.GO('login'); 
@@ -381,6 +383,7 @@ window.K = async () => {
     if (cuponsGratis.includes(cupomDigitado)) {
         let chaveUso = 'usado_' + cupomDigitado + '_' + emailUsuario;
 
+        // VERIFICAÇÃO: Se este Gmail já gastou este cupom específico
         if (localStorage.getItem(chaveUso)) {
             alert("Este cupom já foi utilizado por este e-mail anteriormente.");
             return;
@@ -392,9 +395,9 @@ window.K = async () => {
         // BLOQUEIO PERMANENTE: Registra que este Gmail já gastou este código
         localStorage.setItem(chaveUso, 'true'); 
         
-        alert("Cupom validado! Esta eleição está liberada para " + emailUsuario);
+        alert("Cupom validado! Esta eleição está liberada.");
         
-        // Destrava a urna para o 11º eleitor em diante
+        // Destrava a urna e volta para a votação
         window._idx = 0; 
         window._sel = []; 
         window.RUN(); 
