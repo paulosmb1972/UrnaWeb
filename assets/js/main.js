@@ -65,22 +65,23 @@ window.C = () => {
 };
 
 window.RESET_TOTAL_E_LOGOUT = () => {
-    if(confirm("Deseja encerrar e sair?")) {
-        // Limpa dados da eleição
+    if(confirm("Deseja encerrar esta apuração? Para uma nova eleição, será necessário novo login e o limite de 10 votos voltará a valer.")) {
+        // 1. Limpa os dados voláteis da eleição
         window._data = [];
         window._totalEleitores = 0;
         
-        // REMOVE OS CRÉDITOS: Isso garante que a próxima eleição comece do zero
-        // Mas o histórico de cupons usados (chaveUso) permanece no localStorage
+        // 2. Remove o acesso desta eleição (Faz o cupom 'expirar')
+        localStorage.removeItem('urna_creditos'); 
+        
+        // 3. Remove os dados da sessão atual para forçar novo Gmail/Token
         localStorage.removeItem('urna_user_email');
         localStorage.removeItem('urna_vault');
-        localStorage.removeItem('urna_creditos'); 
         
         const visor = document.getElementById('voterCountDisplay');
         if(visor) visor.innerText = "0";
 
-        alert("Votação encerrada. Faça um novo login para começar.");
-        window.GO('login'); // Volta para o campo de Gmail
+        alert("Sistema reiniciado. Voltando ao início.");
+        window.GO('login'); // Volta para a tela de inserir Gmail
     }
 };
 
@@ -189,11 +190,10 @@ window.PROXIMO_PASSO = () => {
         if(visor) visor.innerText = window._totalEleitores;
 
         // TRAVA DE SEGURANÇA: Se não houver créditos e já tiver 10 votos
-        let credito = localStorage.getItem('urna_creditos');
-let temAcesso = (credito === "999999" || credito === "CORTESIA_ATIVA");
+        let temAcesso = (credito === "ILIMITADO" || credito === "USO_UNICO");
 
 if(!temAcesso && window._totalEleitores >= 10) {
-    alert("Limite de teste atingido.");
+    alert("Limite de teste atingido (10 eleitores).");
     window.MOUNT_PAYMENT();
     window.GO('pay');
     return; 
