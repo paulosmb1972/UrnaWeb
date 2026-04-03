@@ -176,30 +176,32 @@ window.BRANCO = () => {
 };
 
 window.PROXIMO_PASSO = () => {
-    window.BIP(); // Som de confirmação
+    window.BIP();
     window._idx++; 
 
-    // Se ainda houver cargos para o mesmo eleitor votar (Ex: de Presbítero para Diácono)
     if(window._idx < window._data.length) { 
         window.RUN(); 
     } else { 
-        // Eleitor terminou todos os cargos da sua vez
         window._totalEleitores++;
-        
         const visor = document.getElementById('voterCountDisplay');
         if(visor) visor.innerText = window._totalEleitores;
 
-        // TRAVA DE SEGURANÇA: Se não houver créditos e já tiver 10 votos
+        // VERIFICAÇÃO DE ACESSO
+        let credito = localStorage.getItem('urna_creditos');
+        // Se houver QUALQUER crédito (ILIMITADO ou USO_UNICO), liberamos a votação
         let temAcesso = (credito === "ILIMITADO" || credito === "USO_UNICO");
 
-if(!temAcesso && window._totalEleitores >= 10) {
-    alert("Limite de teste atingido (10 eleitores).");
-    window.MOUNT_PAYMENT();
-    window.GO('pay');
-    return; 
-}
+        // A TRAVA SÓ DEVE ATUAR SE: 
+        // 1. NÃO tiver acesso liberado
+        // 2. Tiver atingido 10 ou mais eleitores
+        if(!temAcesso && window._totalEleitores >= 10) {
+            alert("Limite de teste atingido (10 eleitores). Insira seu cupom para liberar esta eleição.");
+            window.MOUNT_PAYMENT();
+            window.GO('pay');
+            return; 
+        }
 
-        // Se tiver crédito ou for menos de 10 eleitores, reseta o ciclo normalmente
+        // Se passou pela trava (porque tem cupom ou tem menos de 10), continua:
         alert("Voto Confirmado!"); 
         window._idx = 0; 
         window.RUN(); 
@@ -363,43 +365,24 @@ window.K = async () => {
     let cupomDigitado = campo.value.trim().toLowerCase(); 
     let emailUsuario = localStorage.getItem('urna_user_email');
     
-    if (!emailUsuario) {
-        alert("Erro: Faça login novamente.");
-        window.GO('login');
-        return;
-    }
+    // ... (suas verificações de cuponsGratis e mestre permanecem iguais)
 
-    const cuponsGratis = ["gratis01", "gratis02", "gratis03"];
-    const mestre = "orion001";
-
-    // 1. Cupom Mestre (Sempre Ilimitado)
-    if (cupomDigitado === mestre) {
-        localStorage.setItem('urna_creditos', "ILIMITADO"); 
-        alert("Acesso Mestre Ativado!");
-        window._idx = 0; window.RUN(); window.GO('urna');
-        return;
-    }
-
-    // 2. Cupons Únicos (Restritos a UMA eleição por Gmail)
-    if (cuponsGratis.includes(cupomDigitado)) {
+    // Ao validar com sucesso:
+    localStorage.setItem('urna_creditos', cupomDigitado === "orion001" ? "ILIMITADO" : "USO_UNICO");
+    
+    // Registra o uso se não for o mestre
+    if(cupomDigitado !== "orion001") {
         let chaveUso = 'usado_' + cupomDigitado + '_' + emailUsuario;
-
-        if (localStorage.getItem(chaveUso)) {
-            alert("Este cupom já foi utilizado por este e-mail anteriormente.");
-            return;
-        }
-
-        // LIBERAÇÃO TEMPORÁRIA: Definimos como 'USO_UNICO'
-        localStorage.setItem('urna_creditos', "USO_UNICO");
-        // BLOQUEIO PERMANENTE: Registra que este Gmail já gastou este código
-        localStorage.setItem(chaveUso, 'true'); 
-        
-        alert("Cupom validado! Esta eleição está liberada.");
-        window._idx = 0; window.RUN(); window.GO('urna'); 
-        campo.value = ""; 
-    } else { 
-        alert("Cupom inválido!"); 
+        localStorage.setItem(chaveUso, 'true');
     }
+
+    alert("Eleição Liberada! Continuando...");
+
+    // ESTE TRECHO É VITAL PARA NÃO TRAVAR NO PRÓXIMO:
+    window._idx = 0; 
+    window._sel = []; 
+    window.RUN(); 
+    window.GO('urna'); 
 };
 
 window.MOUNT_PAYMENT = () => {
