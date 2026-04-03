@@ -65,23 +65,22 @@ window.C = () => {
 };
 
 window.RESET_TOTAL_E_LOGOUT = () => {
-    if(confirm("Deseja encerrar esta apuração? Para uma nova eleição, será necessário novo login e o limite de 10 votos voltará a valer.")) {
-        // 1. Limpa os dados voláteis da eleição
+    if(confirm("Encerrar votação e sair? Uma nova eleição exigirá novo login e terá limite de 10 votos.")) {
+        // Limpa os dados da eleição e votos
         window._data = [];
         window._totalEleitores = 0;
         
-        // 2. Remove o acesso desta eleição (Faz o cupom 'expirar')
+        // REMOVE O ACESSO LIBERADO: Faz o cupom anterior expirar para a nova eleição
         localStorage.removeItem('urna_creditos'); 
         
-        // 3. Remove os dados da sessão atual para forçar novo Gmail/Token
+        // REMOVE O LOGIN: Força voltar para a tela de E-mail
         localStorage.removeItem('urna_user_email');
         localStorage.removeItem('urna_vault');
         
-        const visor = document.getElementById('voterCountDisplay');
-        if(visor) visor.innerText = "0";
+        if(document.getElementById('voterCountDisplay')) document.getElementById('voterCountDisplay').innerText = "0";
 
         alert("Sistema reiniciado. Voltando ao início.");
-        window.GO('login'); // Volta para a tela de inserir Gmail
+        window.GO('login'); 
     }
 };
 
@@ -186,18 +185,18 @@ window.PROXIMO_PASSO = () => {
         const visor = document.getElementById('voterCountDisplay');
         if(visor) visor.innerText = window._totalEleitores;
 
-        // VERIFICAÇÃO DE ACESSO LIBERADO
+        // VERIFICAÇÃO DE ACESSO
         let credito = localStorage.getItem('urna_creditos');
-       let temAcesso = (credito === "ILIMITADO" || credito === "USO_UNICO");
+        let temAcesso = (credito === "ILIMITADO" || credito === "USO_UNICO");
 
-if(!temAcesso && window._totalEleitores >= 10) {
-    alert("Limite de teste atingido (10 eleitores).");
-    window.MOUNT_PAYMENT();
-    window.GO('pay');
-    return; 
-}
+        // TRAVA: Se não tem acesso e tentou o 11º voto (ou mais)
+        if(!temAcesso && window._totalEleitores >= 10) {
+            alert("Limite de teste atingido (10 eleitores). Insira seu cupom para continuar.");
+            window.MOUNT_PAYMENT();
+            window.GO('pay');
+            return; 
+        }
 
-        // Se tem acesso (cupom inserido), a votação segue sem mais interrupções
         alert("Voto Confirmado!"); 
         window._idx = 0; 
         window.RUN(); 
@@ -372,7 +371,7 @@ window.K = async () => {
 
     // 1. Cupom Mestre (Sempre Ilimitado)
     if (cupomDigitado === mestre) {
-        localStorage.setItem('urna_creditos', "ILIMITADO"); 
+        localStorage.setItem('urna_creditos', "ILIMITADO");
         alert("Acesso Mestre Ativado!");
         window._idx = 0; window.RUN(); window.GO('urna');
         return;
@@ -389,11 +388,17 @@ window.K = async () => {
 
         // LIBERAÇÃO TEMPORÁRIA: Definimos como 'USO_UNICO'
         localStorage.setItem('urna_creditos', "USO_UNICO");
+        
         // BLOQUEIO PERMANENTE: Registra que este Gmail já gastou este código
         localStorage.setItem(chaveUso, 'true'); 
         
-        alert("Cupom validado! Esta eleição está liberada.");
-        window._idx = 0; window.RUN(); window.GO('urna'); 
+        alert("Cupom validado! Esta eleição está liberada para " + emailUsuario);
+        
+        // Destrava a urna para o 11º eleitor em diante
+        window._idx = 0; 
+        window._sel = []; 
+        window.RUN(); 
+        window.GO('urna'); 
         campo.value = ""; 
     } else { 
         alert("Cupom inválido!"); 
