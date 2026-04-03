@@ -374,25 +374,25 @@ window.K = async () => {
 
     // 1. Cupom Mestre (Sempre Ilimitado)
     if (cupomDigitado === mestre) {
-        localStorage.setItem('urna_creditos', "999999"); // Crédito perpétuo
+        localStorage.setItem('urna_creditos', "ILIMITADO"); 
         alert("Acesso Mestre Ativado!");
         window._idx = 0; window.RUN(); window.GO('urna');
         return;
     }
 
-    // 2. Cupons Únicos (Restritos a uma eleição por Gmail)
+    // 2. Cupons Únicos (Restritos a UMA eleição por Gmail)
     if (cuponsGratis.includes(cupomDigitado)) {
         let chaveUso = 'usado_' + cupomDigitado + '_' + emailUsuario;
 
         if (localStorage.getItem(chaveUso)) {
-            alert("Este cupom já foi utilizado por este e-mail.");
+            alert("Este cupom já foi utilizado por este e-mail anteriormente.");
             return;
         }
 
-        // LIBERAÇÃO TEMPORÁRIA: Usamos um marcador diferente de 999999
-        // para sabermos que esta é uma eleição "cortesia" que deve expirar
-        localStorage.setItem('urna_creditos', "CORTESIA_ATIVA");
-        localStorage.setItem(chaveUso, 'true'); // Bloqueia para o futuro
+        // LIBERAÇÃO TEMPORÁRIA: Definimos como 'USO_UNICO'
+        localStorage.setItem('urna_creditos', "USO_UNICO");
+        // BLOQUEIO PERMANENTE: Registra que este Gmail já gastou este código
+        localStorage.setItem(chaveUso, 'true'); 
         
         alert("Cupom validado! Esta eleição está liberada.");
         window._idx = 0; window.RUN(); window.GO('urna'); 
