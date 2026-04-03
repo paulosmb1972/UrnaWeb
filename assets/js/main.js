@@ -36,7 +36,7 @@ window.V = async function() {
     let e = document.getElementById('uE').value.trim().toLowerCase(); 
     if(!e.endsWith('@gmail.com')) return alert("Use um e-mail @gmail.com válido!"); 
     
-    localStorage.setItem('urna_user_email', e); 
+    localStorage.setItem('urna_user_email', emailDigitado); 
     let btn = document.getElementById('L2'); 
     btn.disabled = true; btn.innerText = "Processando..."; 
 
@@ -359,35 +359,57 @@ window.K = async () => {
     let campo = document.getElementById('cup');
     let cupomDigitado = campo.value.trim().toLowerCase(); 
     
+    // Captura o e-mail do usuário logado (salvo no login)
+    let emailUsuario = localStorage.getItem('urna_user_email');
+    
+    if (!emailUsuario) {
+        alert("Erro: Usuário não identificado. Por favor, faça login novamente.");
+        window.GO('login');
+        return;
+    }
+
     const cuponsGratis = ["gratis01", "gratis02", "gratis03"];
     const mestre = "orion001";
 
-    if (cupomDigitado === mestre || cuponsGratis.includes(cupomDigitado)) {
-        // Validação de uso único para os gratuitos
-        if (cupomDigitado !== mestre && localStorage.getItem('usado_' + cupomDigitado)) {
-            alert("Este cupom já foi utilizado anteriormente neste aparelho.");
+    // 1. Caso seja o Cupom Mestre (Uso Ilimitado)
+    if (cupomDigitado === mestre) {
+        localStorage.setItem('urna_creditos', "999999");
+        alert("Acesso Mestre Ativado! Continuando votação...");
+        window._idx = 0; 
+        window._sel = []; 
+        window.RUN(); 
+        window.GO('urna'); 
+        return;
+    }
+
+    // 2. Caso sejam os Cupons de Uso Único
+    if (cuponsGratis.includes(cupomDigitado)) {
+        
+        // CHAVE DE VÍNCULO: Cupom + E-mail (Ex: "gratis01_paulo@gmail.com")
+        let chaveUso = 'usado_' + cupomDigitado + '_' + emailUsuario;
+
+        // VERIFICAÇÃO: Se essa combinação já existe no banco de dados do navegador
+        if (localStorage.getItem(chaveUso)) {
+            alert("Este cupom já foi utilizado por este e-mail anteriormente.");
             return;
         }
 
-        // 1. Libera créditos no sistema
+        // Se chegou aqui, o cupom é válido e nunca foi usado por esse e-mail
         localStorage.setItem('urna_creditos', "999999");
-        if (cupomDigitado !== mestre) localStorage.setItem('usado_' + cupomDigitado, 'true');
+        
+        // REGISTRA O VÍNCULO: Marca que este e-mail gastou este cupom
+        localStorage.setItem(chaveUso, 'true');
+        
+        alert("Cupom validado com sucesso para " + emailUsuario + "!");
 
-        alert("Cupom validado! Destravando urna...");
-
-        // 2. DESTRAVAMENTO REAL:
-        // Resetamos o índice de cargos para o início e limpamos a seleção
+        // Destrava a urna e volta para a votação
         window._idx = 0; 
         window._sel = []; 
-        
-        // 3. Redesenhamos a tela com o primeiro cargo configurado
         window.RUN(); 
-        
-        // 4. Voltamos para a tela da Urna
         window.GO('urna'); 
         campo.value = ""; 
     } else { 
-        alert("Cupom inválido!"); 
+        alert("Cupom inválido ou expirado!"); 
     }
 };
 
