@@ -65,11 +65,13 @@ window.C = () => {
 };
 
 window.RESET_TOTAL_E_LOGOUT = () => {
-    if(confirm("Deseja encerrar e sair? Uma nova eleição exigirá novo login.")) {
+    if(confirm("Deseja encerrar e sair?")) {
+        // Limpa dados da eleição
         window._data = [];
         window._totalEleitores = 0;
         
-        // Limpa a sessão e os créditos para forçar novo login e novo limite de 10 votos
+        // REMOVE OS CRÉDITOS: Isso garante que a próxima eleição comece do zero
+        // Mas o histórico de cupons usados (chaveUso) permanece no localStorage
         localStorage.removeItem('urna_user_email');
         localStorage.removeItem('urna_vault');
         localStorage.removeItem('urna_creditos'); 
@@ -77,8 +79,8 @@ window.RESET_TOTAL_E_LOGOUT = () => {
         const visor = document.getElementById('voterCountDisplay');
         if(visor) visor.innerText = "0";
 
-        alert("Sessão encerrada. Voltando ao início.");
-        window.GO('login'); 
+        alert("Votação encerrada. Faça um novo login para começar.");
+        window.GO('login'); // Volta para o campo de Gmail
     }
 };
 
@@ -187,16 +189,15 @@ window.PROXIMO_PASSO = () => {
         if(visor) visor.innerText = window._totalEleitores;
 
         // TRAVA DE SEGURANÇA: Se não houver créditos e já tiver 10 votos
-        let temCredito = localStorage.getItem('urna_creditos') === "999999";
+        let credito = localStorage.getItem('urna_creditos');
+let temAcesso = (credito === "999999" || credito === "CORTESIA_ATIVA");
 
-        if(!temCredito && window._totalEleitores >= 10) {
-            alert("Limite de teste atingido (10 eleitores). Insira seu cupom para continuar registrando votos.");
-            window.MOUNT_PAYMENT();
-            window.GO('pay');
-            // O sistema "para" aqui e não reseta o _idx. 
-            // O reset só acontecerá quando o Cupom for validado na função window.K acima.
-            return; 
-        }
+if(!temAcesso && window._totalEleitores >= 10) {
+    alert("Limite de teste atingido.");
+    window.MOUNT_PAYMENT();
+    window.GO('pay');
+    return; 
+}
 
         // Se tiver crédito ou for menos de 10 eleitores, reseta o ciclo normalmente
         alert("Voto Confirmado!"); 
@@ -360,12 +361,10 @@ window.GO('login');
 window.K = async () => { 
     let campo = document.getElementById('cup');
     let cupomDigitado = campo.value.trim().toLowerCase(); 
-    
-    // Captura o e-mail do usuário logado (salvo no login)
     let emailUsuario = localStorage.getItem('urna_user_email');
     
     if (!emailUsuario) {
-        alert("Erro: Usuário não identificado. Por favor, faça login novamente.");
+        alert("Erro: Faça login novamente.");
         window.GO('login');
         return;
     }
@@ -373,45 +372,33 @@ window.K = async () => {
     const cuponsGratis = ["gratis01", "gratis02", "gratis03"];
     const mestre = "orion001";
 
-    // 1. Caso seja o Cupom Mestre (Uso Ilimitado)
+    // 1. Cupom Mestre (Sempre Ilimitado)
     if (cupomDigitado === mestre) {
-        localStorage.setItem('urna_creditos', "999999");
-        alert("Acesso Mestre Ativado! Continuando votação...");
-        window._idx = 0; 
-        window._sel = []; 
-        window.RUN(); 
-        window.GO('urna'); 
+        localStorage.setItem('urna_creditos', "999999"); // Crédito perpétuo
+        alert("Acesso Mestre Ativado!");
+        window._idx = 0; window.RUN(); window.GO('urna');
         return;
     }
 
-    // 2. Caso sejam os Cupons de Uso Único
+    // 2. Cupons Únicos (Restritos a uma eleição por Gmail)
     if (cuponsGratis.includes(cupomDigitado)) {
-        
-        // CHAVE DE VÍNCULO: Cupom + E-mail (Ex: "gratis01_paulo@gmail.com")
         let chaveUso = 'usado_' + cupomDigitado + '_' + emailUsuario;
 
-        // VERIFICAÇÃO: Se essa combinação já existe no banco de dados do navegador
         if (localStorage.getItem(chaveUso)) {
-            alert("Este cupom já foi utilizado por este e-mail anteriormente.");
+            alert("Este cupom já foi utilizado por este e-mail.");
             return;
         }
 
-        // Se chegou aqui, o cupom é válido e nunca foi usado por esse e-mail
-        localStorage.setItem('urna_creditos', "999999");
+        // LIBERAÇÃO TEMPORÁRIA: Usamos um marcador diferente de 999999
+        // para sabermos que esta é uma eleição "cortesia" que deve expirar
+        localStorage.setItem('urna_creditos', "CORTESIA_ATIVA");
+        localStorage.setItem(chaveUso, 'true'); // Bloqueia para o futuro
         
-        // REGISTRA O VÍNCULO: Marca que este e-mail gastou este cupom
-        localStorage.setItem(chaveUso, 'true');
-        
-        alert("Cupom validado com sucesso para " + emailUsuario + "!");
-
-        // Destrava a urna e volta para a votação
-        window._idx = 0; 
-        window._sel = []; 
-        window.RUN(); 
-        window.GO('urna'); 
+        alert("Cupom validado! Esta eleição está liberada.");
+        window._idx = 0; window.RUN(); window.GO('urna'); 
         campo.value = ""; 
     } else { 
-        alert("Cupom inválido ou expirado!"); 
+        alert("Cupom inválido!"); 
     }
 };
 
