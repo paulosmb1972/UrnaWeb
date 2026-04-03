@@ -65,20 +65,23 @@ window.C = () => {
 };
 
 window.RESET_TOTAL_E_LOGOUT = () => {
-    if(confirm("Deseja encerrar e sair? A próxima eleição travará novamente após 10 votos.")) {
+    if(confirm("Deseja encerrar esta apuração? Para uma nova eleição, será necessário novo login e o limite de 10 votos voltará a valer.")) {
+        // 1. Limpa os dados voláteis da eleição
         window._data = [];
         window._totalEleitores = 0;
         
-        // Remove a permissão da eleição atual
+        // 2. Remove o acesso desta eleição (Faz o cupom 'expirar')
         localStorage.removeItem('urna_creditos'); 
-        // Remove o login atual para exigir novo Gmail/Token
+        
+        // 3. Remove os dados da sessão atual para forçar novo Gmail/Token
         localStorage.removeItem('urna_user_email');
         localStorage.removeItem('urna_vault');
         
-        if(document.getElementById('voterCountDisplay')) document.getElementById('voterCountDisplay').innerText = "0";
+        const visor = document.getElementById('voterCountDisplay');
+        if(visor) visor.innerText = "0";
 
         alert("Sistema reiniciado. Voltando ao início.");
-        window.GO('login'); 
+        window.GO('login'); // Volta para a tela de inserir Gmail
     }
 };
 
@@ -185,15 +188,14 @@ window.PROXIMO_PASSO = () => {
 
         // VERIFICAÇÃO DE ACESSO LIBERADO
         let credito = localStorage.getItem('urna_creditos');
-        let temAcesso = (credito === "ILIMITADO" || credito === "USO_UNICO");
+       let temAcesso = (credito === "ILIMITADO" || credito === "USO_UNICO");
 
-        // SÓ TRAVA SE: Não tiver acesso E tiver 10 ou mais eleitores
-        if(!temAcesso && window._totalEleitores >= 10) {
-            alert("Limite de teste atingido (10 eleitores). Insira seu cupom.");
-            window.MOUNT_PAYMENT();
-            window.GO('pay');
-            return; 
-        }
+if(!temAcesso && window._totalEleitores >= 10) {
+    alert("Limite de teste atingido (10 eleitores).");
+    window.MOUNT_PAYMENT();
+    window.GO('pay');
+    return; 
+}
 
         // Se tem acesso (cupom inserido), a votação segue sem mais interrupções
         alert("Voto Confirmado!"); 
@@ -360,7 +362,7 @@ window.K = async () => {
     let emailUsuario = localStorage.getItem('urna_user_email');
     
     if (!emailUsuario) {
-        alert("Erro: Usuário não identificado. Faça login novamente.");
+        alert("Erro: Faça login novamente.");
         window.GO('login');
         return;
     }
@@ -368,15 +370,15 @@ window.K = async () => {
     const cuponsGratis = ["gratis01", "gratis02", "gratis03"];
     const mestre = "orion001";
 
-    // 1. Cupom Mestre (Ilimitado)
+    // 1. Cupom Mestre (Sempre Ilimitado)
     if (cupomDigitado === mestre) {
-        localStorage.setItem('urna_creditos', "ILIMITADO");
+        localStorage.setItem('urna_creditos', "ILIMITADO"); 
         alert("Acesso Mestre Ativado!");
         window._idx = 0; window.RUN(); window.GO('urna');
         return;
     }
 
-    // 2. Cupons Únicos (Vínculo com Gmail)
+    // 2. Cupons Únicos (Restritos a UMA eleição por Gmail)
     if (cuponsGratis.includes(cupomDigitado)) {
         let chaveUso = 'usado_' + cupomDigitado + '_' + emailUsuario;
 
@@ -385,16 +387,13 @@ window.K = async () => {
             return;
         }
 
-        // LIBERA ESTA ELEIÇÃO
+        // LIBERAÇÃO TEMPORÁRIA: Definimos como 'USO_UNICO'
         localStorage.setItem('urna_creditos', "USO_UNICO");
-        // BLOQUEIA O CUPOM PARA ESTE GMAIL PARA SEMPRE
+        // BLOQUEIO PERMANENTE: Registra que este Gmail já gastou este código
         localStorage.setItem(chaveUso, 'true'); 
         
-        alert("Cupom validado para: " + emailUsuario);
-        window._idx = 0; 
-        window._sel = []; 
-        window.RUN(); 
-        window.GO('urna'); 
+        alert("Cupom validado! Esta eleição está liberada.");
+        window._idx = 0; window.RUN(); window.GO('urna'); 
         campo.value = ""; 
     } else { 
         alert("Cupom inválido!"); 
