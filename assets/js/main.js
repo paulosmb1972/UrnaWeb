@@ -195,19 +195,14 @@ let credito = localStorage.getItem('urna_creditos');
 let temAcesso = (credito === "ILIMITADO" || credito === "USO_UNICO_ATIVO");
 
 // ==================== TRAVA ATUALIZADA PIX / DOIS PLANOS ====================
-// (Substitua a sua verificação antiga de limite de 10 votos por este bloco)
+// Verifica se chegou a 10 ou mais eleitores e se a eleição NÃO está desbloqueada por token/cupom
+let creditoValido = localStorage.getItem('urna_creditos');
+let temAcessoIlimitado = (creditoValido === "ILIMITADO" || creditoValido === "USO_UNICO_ATIVO" || window.eleicaoDesbloqueada);
 
-// Verifica se chegou a 10 ou mais eleitores e se a eleição NÃO está desbloqueada por token
-if (typeof voterCount !== 'undefined' && voterCount >= 10 && !window.eleicaoDesbloqueada) {
-    
-    // Altera dinamicamente o texto do cabeçalho da tela de pagamentos para incluir o PIX
-    const titPay = document.getElementById("H_PAY_TIT");
-    const txtPay = document.getElementById("H_PAY_TXT");
-    
-    if (titPay) titPay.innerHTML = "🔒 Limite Atingido — Escolha como Ativar";
-    if (txtPay) txtPay.innerHTML = "Pague via PIX (Liberação Manual) ou use o Mercado Pago / PayPal abaixo.";
-
-    // Manda o usuário para a tela de pagamento do sistema
+if (window._totalEleitores >= 10 && !temAcessoIlimitado) {
+    // Monta a tela de pagamentos com o PIX injetado
+    window.MOUNT_PAYMENT();
+    // Manda o usuário para a tela de pagamento
     window.GO('pay'); 
     return; 
 }
@@ -432,10 +427,24 @@ window.MOUNT_PAYMENT = () => {
             
             <div style="display: flex; flex-direction: column; gap: 20px; align-items: center;">
                 
+                <div style="background: #1a1a1a; padding: 20px; border-radius: 10px; width: 300px; border: 2px solid #1fa997; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                    <h3 style="margin: 0; color: #1fa997;"><i class="fa-solid fa-pix"></i> Pague via PIX</h3>
+                    <p style="font-size: 11px; margin: 5px 0; color: #aaa;">Chave Celular:</p>
+                    <div style="background:#222; color:#fff; padding:8px; font-size:18px; font-weight:bold; border-radius:5px; margin:10px 0; border: 1px solid #1fa997; user-select:all;">
+                        81999491651
+                    </div>
+                    <p style="font-size: 11px; margin-bottom: 15px; color: #ccc;">Escolha o plano (R$ 30 ou R$ 500) e envie o comprovante.</p>
+                    <a href="https://wa.me/5581999491651?text=Olá Paulo, fiz o Pix para liberar meu acesso no UrnaWeb. Segue o comprovante." 
+                       target="_blank"
+                       style="background: #25d366; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: block; font-weight: bold; text-transform: uppercase; font-size: 12px;">
+                       <i class="fa-brands fa-whatsapp"></i> Enviar Comprovante
+                    </a>
+                </div>
+
                 <div style="background: #333; padding: 20px; border-radius: 10px; width: 300px; border: 1px solid #444; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
                     <h3 style="margin: 0;">Eleição Única</h3>
                     <p style="font-size: 28px; color: #28a745; font-weight: bold; margin: 10px 0;">R$ 30,00</p>
-                    <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=paulosmb1972@gmail.com&item_name=Eleicao_Individual_UrnaWeb&amount=30.00&currency_code=BRL" 
+                    <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=paulosmb1972@gmail.com&item_name=Eleicao_Individual_UrnaWeb&amount=30.00&currency_code=BRL" 
                        style="background: #0070ba; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
                        Pagar com PayPal
                     </a>
@@ -444,7 +453,7 @@ window.MOUNT_PAYMENT = () => {
                 <div style="background: #333; padding: 20px; border-radius: 10px; width: 300px; border: 1px solid #ffc107; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
                     <h3 style="margin: 0;">Pacote 20 Eleições</h3>
                     <p style="font-size: 28px; color: #28a745; font-weight: bold; margin: 10px 0;">R$ 500,00</p>
-                    <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=paulosmb1972@gmail.com&item_name=Pacote_20_Eleicoes_UrnaWeb&amount=500.00&currency_code=BRL" 
+                    <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=paulosmb1972@gmail.com&item_name=Pacote_20_Eleicoes_UrnaWeb&amount=500.00&currency_code=BRL" 
                        style="background: #0070ba; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
                        Pagar com PayPal
                     </a>
@@ -453,13 +462,13 @@ window.MOUNT_PAYMENT = () => {
                 <hr style="width: 80%; border: 0; border-top: 1px solid #444; margin: 20px 0;">
 
                 <div style="background: #222; padding: 20px; border-radius: 10px; width: 300px; border: 2px dashed #ffc107;">
-                    <p style="margin-bottom: 15px; font-weight: bold;">Possui um cupom?</p>
-                    <input id="cup" type="text" placeholder="Digite aqui (ex: orion001)" 
-                           style="width: 100%; padding: 12px; border-radius: 5px; border: 1px solid #555; background: #000; color: #fff; text-align: center; box-sizing: border-box; margin-bottom: 15px; font-size: 16px;">
+                    <p style="margin-bottom: 15px; font-weight: bold;">Possui um cupom ou código Pix?</p>
+                    <input id="cup" type="text" placeholder="Digite aqui seu código" 
+                           style="width: 100%; padding: 12px; border-radius: 5px; border: 1px solid #555; background: #000; color: #fff; text-align: center; box-sizing: border-box; margin-bottom: 15px; font-size: 16px; text-transform: uppercase;">
                     
-                    <button onclick="window.K()" 
+                    <button onclick="window.VALIDAR_TOKEN_MANUAL()" 
                             style="width: 100%; background: #ffc107; color: #000; padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; text-transform: uppercase;">
-                        Validar Cupom
+                        Validar Código
                     </button>
                 </div>
 
@@ -534,29 +543,25 @@ window.VALIDAR_TOKEN_MANUAL = function() {
     
     const tokenDigitado = campoCupom.value.trim().toUpperCase();
     
-    if (tokensAvulsos.includes(tokenDigitado)) {
+    if (tokensAvulsos.includes(tokenDigitado) || tokensPacote20.includes(tokenDigitado)) {
         window.eleicaoDesbloqueada = true;
-        alert("Sucesso! Plano Avulso Ativado. Urna liberada para esta eleição.");
-        window.GO('setupCargo'); // Libera o usuário para a tela de configuração
-        return;
-    } 
-    
-    if (tokensPacote20.includes(tokenDigitado)) {
-        window.eleicaoDesbloqueada = true;
-        alert("Sucesso! Crédito do Pacote Ativado. Esta eleição está liberada.");
-        window.GO('setupCargo'); // Libera o usuário para a tela de configuração
+        localStorage.setItem('inf_credito_manual', 'true'); // Salva um estado opcional
+        alert("Sucesso! Código ativado. Urna liberada.");
+        
+        // Retorna o usuário diretamente para a tela da urna para continuar votando
+        window._idx = 0;
+        window._sel = [];
+        window.RUN();
+        window.GO('urna');
         return;
     }
     
-    // Se não for um token manual, tenta rodar a função 'K' nativa do seu sistema (se houver)
     if (typeof window.K === 'function') {
         window.K();
     } else {
         alert("Código inválido. Verifique o texto ou fale com o suporte.");
     }
 };
-// ===============================================================================
-
 
 
 
