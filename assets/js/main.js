@@ -187,31 +187,28 @@ window.PROXIMO_PASSO = () => {
         window.RUN(); 
     } else { 
         window._totalEleitores++;
-if(document.getElementById('voterCountDisplay')) {
-    document.getElementById('voterCountDisplay').innerText = window._totalEleitores;
-}
+        if(document.getElementById('voterCountDisplay')) {
+            document.getElementById('voterCountDisplay').innerText = window._totalEleitores;
+        }
 
-let credito = localStorage.getItem('urna_creditos');
-let temAcesso = (credito === "ILIMITADO" || credito === "USO_UNICO_ATIVO");
+        // ==================== TRAVA ATUALIZADA PIX / DOIS PLANOS ====================
+        let credito = localStorage.getItem('urna_creditos');
+        let temAcesso = (credito === "ILIMITADO" || credito === "USO_UNICO_ATIVO" || window.eleicaoDesbloqueada === true);
 
-// ==================== TRAVA ATUALIZADA PIX / DOIS PLANOS ====================
-// Verifica se chegou a 10 ou mais eleitores e se a eleição NÃO está desbloqueada por token/cupom
-let creditoValido = localStorage.getItem('urna_creditos');
-let temAcessoIlimitado = (creditoValido === "ILIMITADO" || creditoValido === "USO_UNICO_ATIVO" || window.eleicaoDesbloqueada);
+        // Se bateu 10 ou mais eleitores e NÃO tem acesso liberado, bloqueia na hora!
+        if (window._totalEleitores >= 10 && !temAcesso) {
+            // Renderiza o PIX e o PayPal dinamicamente através do script
+            window.MOUNT_PAYMENT();
+            // Direciona para a tela de pagamentos
+            window.GO('pay'); 
+            return; 
+        }
+        // ============================================================================
 
-if (window._totalEleitores >= 10 && !temAcessoIlimitado) {
-    // Monta a tela de pagamentos com o PIX injetado
-    window.MOUNT_PAYMENT();
-    // Manda o usuário para a tela de pagamento
-    window.GO('pay'); 
-    return; 
-}
-// ============================================================================
-
-// Se passou (tem acesso ou < 10 eleitores), continua
-alert("Voto Confirmado!"); 
-window._idx = 0; 
-window.RUN();
+        // Se passou da trava (tem acesso pago ou ainda está abaixo de 10 eleitores), continua
+        alert("Voto Confirmado!"); 
+        window._idx = 0; 
+        window.RUN();
     }
 };
 
