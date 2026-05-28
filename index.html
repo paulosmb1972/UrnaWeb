@@ -122,7 +122,8 @@
     <script src="assets/js/main.js"></script>
 
     <script>
-// ==================== BLOCO DE SEGURANÇA: PIX E PLANOS (URNAWEB) ====================
+<script>
+// ==================== BLOCO DE SEGURANÇA INTEGRADO: PIX E DOIS PLANOS ====================
 
 // Senhas para 1 eleição avulsa (R$ 30,00)
 const tokensAvulsos = ["LIBERAR30", "URNA30WEB", "CARUARUPIX", "IGREJA30"];
@@ -180,7 +181,7 @@ function exibirTelaBloqueioPagamento() {
                     <p style="font-size:1.6rem; font-weight:bold; margin:10px 0; color:#ffcc00;">R$ 30,00</p>
                     <p style="font-size:0.85rem; margin-bottom:10px;">Ideal para 1 única eleição eclesiástica ou escolar.</p>
                 </div>
-                <a href="https://wa.me/5581999491651?text=Olá Paulo, fiz o Pix de R$30 para liberar 1 eleição avulsa." target="_blank" style="display:block; background:#25d366; color:white; text-decoration:none; padding:10px; border-radius:5px; font-weight:bold; font-size:0.9rem; text-transform:uppercase;">
+                <a href="https://wa.me/5581999491651?text=Olá Paulo, fiz o Pix de R$30 para liberar 1 eleição avulsa no UrnaWeb." target="_blank" style="display:block; background:#25d366; color:white; text-decoration:none; padding:10px; border-radius:5px; font-weight:bold; font-size:0.9rem; text-transform:uppercase;">
                     Pagar R$ 30 via PIX
                 </a>
             </div>
@@ -192,7 +193,7 @@ function exibirTelaBloqueioPagamento() {
                     <p style="font-size:1.6rem; font-weight:bold; margin:10px 0; color:#ffcc00;">R$ 500,00</p>
                     <p style="font-size:0.85rem; margin-bottom:10px;">Economia! Dá direito a realizar até <strong>20 eleições</strong> distintas.</p>
                 </div>
-                <a href="https://wa.me/5581999491651?text=Olá Paulo, quero o pacote de R$500 para até 20 eleições. Enviarei o Pix." target="_blank" style="display:block; background:#25d366; color:white; text-decoration:none; padding:10px; border-radius:5px; font-weight:bold; font-size:0.9rem; text-transform:uppercase;">
+                <a href="https://wa.me/5581999491651?text=Olá Paulo, quero o pacote de R$500 para até 20 eleições no UrnaWeb. Enviarei o Pix." target="_blank" style="display:block; background:#25d366; color:white; text-decoration:none; padding:10px; border-radius:5px; font-weight:bold; font-size:0.9rem; text-transform:uppercase;">
                     Comprar Pacote via PIX
                 </a>
             </div>
@@ -219,9 +220,30 @@ function exibirTelaBloqueioPagamento() {
     document.body.appendChild(containerBloqueio);
 }
 
+// INTERCEPTADOR AUTOMÁTICO DE VOTOS (Roda em background monitorando o contador da tela)
+function iniciarMonitoramentoVotos() {
+    const alvoContador = document.getElementById("voterCountDisplay");
+    if (!alvoContador) {
+        setTimeout(iniciarMonitoramentoVotos, 500);
+        return;
+    }
+
+    const observador = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            const contagemAtual = parseInt(alvoContador.innerText) || 0;
+            // Se bater 10 ou mais votos e não estiver pago, bloqueia na hora antes do próximo voto
+            if (contagemAtual >= 10 && !eleicaoDesbloqueada) {
+                exibirTelaBloqueioPagamento();
+            }
+        });
+    });
+
+    observador.observe(alvoContador, { childList: true, characterData: true, subtree: true });
+}
+iniciarMonitoramentoVotos();
+
 // ==================== FIM DO BLOCO DE SEGURANÇA ====================
 
-        
         // ADICIONE ESTA LINHA PARA INICIALIZAR O EMAILJS
         (function() {
             if (window._cfg && window._cfg.k) {
@@ -229,16 +251,6 @@ function exibirTelaBloqueioPagamento() {
             }
         })();
 
-        function initSystem() {
-            if (typeof window.GO === 'function' && typeof window.TR === 'function') {
-                window.TR('pt');
-                window.GO('login');
-            } else {
-                setTimeout(initSystem, 300);
-            }
-        }
-        window.onload = initSystem;
-   
         // Função de inicialização forçada
         function initSystem() {
             console.log("Checando funções...");
@@ -253,7 +265,7 @@ function exibirTelaBloqueioPagamento() {
         }
         window.onload = initSystem;
     </script>
-</body>
+        </body>
 </html>
 
 
