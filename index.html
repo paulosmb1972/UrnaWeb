@@ -122,6 +122,106 @@
     <script src="assets/js/main.js"></script>
 
     <script>
+// ==================== BLOCO DE SEGURANÇA: PIX E PLANOS (URNAWEB) ====================
+
+// Senhas para 1 eleição avulsa (R$ 30,00)
+const tokensAvulsos = ["LIBERAR30", "URNA30WEB", "CARUARUPIX", "IGREJA30"];
+
+// Senhas para o Pacote de 20 Eleições (R$ 500,00)
+const tokensPacote20 = ["PACOTE20X", "ESCOLA500", "CONCILIO20", "PREMIUM500"];
+
+// Controla se a urna foi desbloqueada nesta sessão
+let eleicaoDesbloqueada = false;
+
+// Função que valida o código digitado pelo usuário
+window.verificarToken = function() {
+    const tokenDigitado = document.getElementById("input-token").value.trim().toUpperCase();
+    
+    if (tokensAvulsos.includes(tokenDigitado)) {
+        eleicaoDesbloqueada = true;
+        removerTelaBloqueio();
+        alert("Sucesso! Plano Avulso Ativado. Urna liberada para esta eleição.");
+        return;
+    } 
+    
+    if (tokensPacote20.includes(tokenDigitado)) {
+        eleicaoDesbloqueada = true;
+        removerTelaBloqueio();
+        alert("Sucesso! Crédito do Pacote Ativado. Esta eleição está liberada.");
+        return;
+    }
+    
+    alert("Código inválido. Verifique o texto ou entre em contato com o suporte.");
+}
+
+function removerTelaBloqueio() {
+    const telaBloqueio = document.getElementById("tela-bloqueio-pagamento");
+    if (telaBloqueio) { telaBloqueio.remove(); }
+}
+
+// Cria a interface visual que cobre a urna após o 10º eleitor
+function exibirTelaBloqueioPagamento() {
+    if (document.getElementById("tela-bloqueio-pagamento")) return;
+
+    const containerBloqueio = document.createElement('div');
+    containerBloqueio.id = "tela-bloqueio-pagamento";
+    containerBloqueio.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.96); color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:99999; font-family:sans-serif; padding:20px; text-align:center; box-sizing:border-box; overflow-y:auto;";
+    
+    containerBloqueio.innerHTML = `
+        <h2 style="color:#ffcc00; margin:10px 0; font-size:1.8rem;">Limite Gratuito Atingido (Máx. 10 Eleitores)</h2>
+        <p style="font-size:1.1rem; max-width:600px; margin-bottom:20px; color:#ddd;">Para liberar o uso ilimitado, escolha um dos planos de pagamento abaixo:</p>
+        
+        <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:15px; width:100%; max-width:950px; margin-bottom:25px;">
+            
+            <!-- PLANO 1: AVULSO R$ 30 -->
+            <div style="background:#167a6d; padding:15px; border-radius:10px; flex:1; min-width:260px; box-shadow:0 4px 15px rgba(0,0,0,0.5); display:flex; flex-direction:column; justify-content:space-between;">
+                <div>
+                    <h3 style="margin:0 0 5px 0; font-size:1.2rem; color:#fff;">Plano Avulso</h3>
+                    <p style="font-size:1.6rem; font-weight:bold; margin:10px 0; color:#ffcc00;">R$ 30,00</p>
+                    <p style="font-size:0.85rem; margin-bottom:10px;">Ideal para 1 única eleição eclesiástica ou escolar.</p>
+                </div>
+                <a href="https://wa.me/5581999491651?text=Olá Paulo, fiz o Pix de R$30 para liberar 1 eleição avulsa." target="_blank" style="display:block; background:#25d366; color:white; text-decoration:none; padding:10px; border-radius:5px; font-weight:bold; font-size:0.9rem; text-transform:uppercase;">
+                    Pagar R$ 30 via PIX
+                </a>
+            </div>
+
+            <!-- PLANO 2: PACOTE R$ 500 -->
+            <div style="background:#7a164c; padding:15px; border-radius:10px; flex:1; min-width:260px; box-shadow:0 4px 15px rgba(0,0,0,0.5); display:flex; flex-direction:column; justify-content:space-between;">
+                <div>
+                    <h3 style="margin:0 0 5px 0; font-size:1.2rem; color:#fff;">Pacote Escolar/Concílio</h3>
+                    <p style="font-size:1.6rem; font-weight:bold; margin:10px 0; color:#ffcc00;">R$ 500,00</p>
+                    <p style="font-size:0.85rem; margin-bottom:10px;">Economia! Dá direito a realizar até <strong>20 eleições</strong> distintas.</p>
+                </div>
+                <a href="https://wa.me/5581999491651?text=Olá Paulo, quero o pacote de R$500 para até 20 eleições. Enviarei o Pix." target="_blank" style="display:block; background:#25d366; color:white; text-decoration:none; padding:10px; border-radius:5px; font-weight:bold; font-size:0.9rem; text-transform:uppercase;">
+                    Comprar Pacote via PIX
+                </a>
+            </div>
+
+            <!-- CHAVE PIX DE REFERÊNCIA -->
+            <div style="background:#222; border:1px solid #444; padding:15px; border-radius:10px; flex:1; min-width:260px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                <span style="font-size:0.85rem; color:#aaa;">Chave PIX Celular para os dois planos:</span>
+                <strong style="font-size:1.4rem; color:#fff; margin:8px 0; background:#444; padding:5px 10px; border-radius:5px; letter-spacing:1px; user-select:all;">81999491651</strong>
+                <span style="font-size:0.75rem; color:#888;">Após fazer o PIX, toque no plano desejado para enviar o comprovante.</span>
+            </div>
+
+        </div>
+
+        <!-- ÁREA DO CÓDIGO -->
+        <div style="background:#111; border:2px solid #ffcc00; padding:15px; border-radius:10px; width:100%; max-width:450px; box-shadow:0 4px 10px rgba(0,0,0,0.4);">
+            <h4 style="margin:0 0 8px 0; color:#ffcc00; font-size:1rem;">Já tem o código de liberação?</h4>
+            <div style="display:flex; gap:10px;">
+                <input type="text" id="input-token" placeholder="INSIRA SEU CÓDIGO AQUI" style="flex:1; padding:10px; border-radius:5px; border:none; font-size:1rem; text-align:center; font-weight:bold; text-transform:uppercase; color:#333;">
+                <button onclick="window.verificarToken()" style="background:#ffcc00; color:#111; border:none; padding:0 20px; font-weight:bold; border-radius:5px; cursor:pointer; font-size:0.9rem; text-transform:uppercase;">Liberar</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(containerBloqueio);
+}
+
+// ==================== FIM DO BLOCO DE SEGURANÇA ====================
+
+        
         // ADICIONE ESTA LINHA PARA INICIALIZAR O EMAILJS
         (function() {
             if (window._cfg && window._cfg.k) {
