@@ -194,13 +194,24 @@ if(document.getElementById('voterCountDisplay')) {
 let credito = localStorage.getItem('urna_creditos');
 let temAcesso = (credito === "ILIMITADO" || credito === "USO_UNICO_ATIVO");
 
-// TRAVA: Se não tem acesso E tentou o 11º voto (ou mais)
-if(!temAcesso && window._totalEleitores >= 10) {
-    alert("Limite de teste atingido (10 eleitores). Insira seu cupom para continuar.");
-    window.MOUNT_PAYMENT();
-    window.GO('pay');
+// ==================== TRAVA ATUALIZADA PIX / DOIS PLANOS ====================
+// (Substitua a sua verificação antiga de limite de 10 votos por este bloco)
+
+// Verifica se chegou a 10 ou mais eleitores e se a eleição NÃO está desbloqueada por token
+if (typeof voterCount !== 'undefined' && voterCount >= 10 && !window.eleicaoDesbloqueada) {
+    
+    // Altera dinamicamente o texto do cabeçalho da tela de pagamentos para incluir o PIX
+    const titPay = document.getElementById("H_PAY_TIT");
+    const txtPay = document.getElementById("H_PAY_TXT");
+    
+    if (titPay) titPay.innerHTML = "🔒 Limite Atingido — Escolha como Ativar";
+    if (txtPay) txtPay.innerHTML = "Pague via PIX (Liberação Manual) ou use o Mercado Pago / PayPal abaixo.";
+
+    // Manda o usuário para a tela de pagamento do sistema
+    window.GO('pay'); 
     return; 
 }
+// ============================================================================
 
 // Se passou (tem acesso ou < 10 eleitores), continua
 alert("Voto Confirmado!"); 
@@ -510,6 +521,41 @@ window.RESET_GERAL = () => {
         window.GO('setup'); 
     }
 };
+
+// ==================== SISTEMA DE TOKENS E VALIDAÇÃO MANUAIS ====================
+window.eleicaoDesbloqueada = false;
+
+const tokensAvulsos = ["LIBERAR30", "URNA30WEB", "CARUARUPIX", "IGREJA30"];
+const tokensPacote20 = ["PACOTE20X", "ESCOLA500", "CONCILIO20", "PREMIUM500"];
+
+window.VALIDAR_TOKEN_MANUAL = function() {
+    const campoCupom = document.getElementById("cup");
+    if (!campoCupom) return;
+    
+    const tokenDigitado = campoCupom.value.trim().toUpperCase();
+    
+    if (tokensAvulsos.includes(tokenDigitado)) {
+        window.eleicaoDesbloqueada = true;
+        alert("Sucesso! Plano Avulso Ativado. Urna liberada para esta eleição.");
+        window.GO('setupCargo'); // Libera o usuário para a tela de configuração
+        return;
+    } 
+    
+    if (tokensPacote20.includes(tokenDigitado)) {
+        window.eleicaoDesbloqueada = true;
+        alert("Sucesso! Crédito do Pacote Ativado. Esta eleição está liberada.");
+        window.GO('setupCargo'); // Libera o usuário para a tela de configuração
+        return;
+    }
+    
+    // Se não for um token manual, tenta rodar a função 'K' nativa do seu sistema (se houver)
+    if (typeof window.K === 'function') {
+        window.K();
+    } else {
+        alert("Código inválido. Verifique o texto ou fale com o suporte.");
+    }
+};
+// ===============================================================================
 
 
 
