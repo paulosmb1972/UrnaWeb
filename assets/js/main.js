@@ -533,76 +533,7 @@ window.MOUNT_PAYMENT = () => {
         </div>
     `;
 
-    if (typeof window.TR === 'function') {
-        window.TR(window._idioma || 'pt');
-    }
-};
-
-    // Seleciona os textos baseados no idioma selecionado (padrão 'pt' se falhar)
-    const lang = textosPay[window._idioma || 'pt'] || textosPay.pt;
-
-    telaPay.innerHTML = `
-        <div style="padding: 20px; text-align: center; color: #fff; background: #1a1a1a; min-height: 100vh; font-family: Arial, sans-serif;">
-            <h2 style="color: #ffc107; margin-bottom: 10px;">${lang.titulo}</h2>
-            <p style="margin-bottom: 30px;">${lang.sub}</p>
-            
-            <div style="display: flex; flex-direction: column; gap: 20px; align-items: center;">
-                
-                <!-- CARTÃO PIX CONFIGURADO (DINÂMICO) -->
-                <div style="background: #1a1a1a; padding: 20px; border-radius: 10px; width: 300px; border: 2px solid #1fa997; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-                    <h3 style="margin: 0; color: #1fa997;"><i class="fa-solid fa-pix"></i> ${lang.pixTit}</h3>
-                    <p style="font-size: 11px; margin: 5px 0; color: #aaa;">${lang.pixSub}</p>
-                    <div style="background:#222; color:#fff; padding:8px; font-size:18px; font-weight:bold; border-radius:5px; margin:10px 0; border: 1px solid #1fa997; user-select:all;">
-                        81999491651
-                    </div>
-                    <p style="font-size: 11px; margin-bottom: 15px; color: #ccc;">${lang.pixDesc}</p>
-                    <a href="https://wa.me/5581999491651?text=Olá Paulo, fiz o Pix para liberar meu acesso no UrnaWeb. Segue o comprovante." 
-                       target="_blank"
-                       style="background: #25d366; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: block; font-weight: bold; text-transform: uppercase; font-size: 12px;">
-                       <i class="fa-brands fa-whatsapp"></i> ${lang.pixBtn}
-                    </a>
-                </div>
-
-                <div style="background: #333; padding: 20px; border-radius: 10px; width: 300px; border: 1px solid #444; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-                    <h3 style="margin: 0;">${lang.pl1Tit}</h3>
-                    <p style="font-size: 28px; color: #28a745; font-weight: bold; margin: 10px 0;">R$ 30,00</p>
-                    <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=paulosmb1972@gmail.com&item_name=Eleicao_Individual_UrnaWeb&amount=30.00&currency_code=BRL" 
-                       style="background: #0070ba; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-                       ${lang.paypalBtn}
-                    </a>
-                </div>
-
-                <div style="background: #333; padding: 20px; border-radius: 10px; width: 300px; border: 1px solid #ffc107; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-                    <h3 style="margin: 0;">${lang.pl2Tit}</h3>
-                    <p style="font-size: 28px; color: #28a745; font-weight: bold; margin: 10px 0;">R$ 500,00</p>
-                    <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=paulosmb1972@gmail.com&item_name=Pacote_20_Eleicoes_UrnaWeb&amount=500.00&currency_code=BRL" 
-                       style="background: #0070ba; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-                       ${lang.paypalBtn}
-                    </a>
-                </div>
-
-                <hr style="width: 80%; border: 0; border-top: 1px solid #444; margin: 20px 0;">
-
-                <div style="background: #222; padding: 20px; border-radius: 10px; width: 300px; border: 2px dashed #ffc107;">
-                    <p style="margin-bottom: 15px; font-weight: bold;">${lang.cupTxt}</p>
-                    <input id="cup" type="text" placeholder="${lang.cupPlh}" 
-                           style="width: 100%; padding: 12px; border-radius: 5px; border: 1px solid #555; background: #000; color: #fff; text-align: center; box-sizing: border-box; margin-bottom: 15px; font-size: 16px; text-transform: uppercase;">
-                    
-                    <button onclick="window.VALIDAR_TOKEN_MANUAL()" 
-                            style="width: 100%; background: #ffc107; color: #000; padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; text-transform: uppercase;">
-                        ${lang.cupBtn}
-                    </button>
-                </div>
-
-                <button onclick="window.GO('login')" style="background: none; border: 1px solid #fff; color: #fff; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 20px;">
-                    ${lang.voltar}
-                </button>
-            </div>
-        </div>
-    `;
-};
-
-window.BIP = () => {
+    window.BIP = () => {
     try {
         const context = new (window.AudioContext || window.webkitAudioContext)();
         const oscillator = context.createOscillator();
