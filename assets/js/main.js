@@ -417,54 +417,63 @@ window.MOUNT_PAYMENT = () => {
     const telaPay = document.getElementById('pay');
     if(!telaPay) return;
 
-    // DICIONÁRIO DE TRADUÇÃO DA TELA DE PAGAMENTO
-    const textosPay = {
-        pt: {
-            titulo: "Limite de Teste Atingido",
-            sub: "Para liberar mais votos e salvar seus resultados, escolha um plano ou insira um cupom:",
-            pixTit: "Pague via PIX",
-            pixSub: "Chave Celular:",
-            pixDesc: "Escolha o plano (R$ 30 ou R$ 500) e envie o comprovante.",
-            pixBtn: "Enviar Comprovante",
-            pl1Tit: "Eleição Única",
-            pl2Tit: "Pacote 20 Eleições",
-            paypalBtn: "Pagar com PayPal",
-            cupTxt: "Possui um cupom ou código Pix?",
-            cupPlh: "Digite aqui seu código",
-            cupBtn: "Validar Código",
-            voltar: "Voltar ao Início"
-        },
-        en: {
-            titulo: "Test Limit Reached",
-            sub: "To release more votes and save your results, choose a plan or enter a coupon:",
-            pixTit: "Pay via PIX (Brazil Only)",
-            pixSub: "Mobile Key:",
-            pixDesc: "Choose a plan (R$ 30 or R$ 500) and send the receipt.",
-            pixBtn: "Send Receipt via WhatsApp",
-            pl1Tit: "Single Election",
-            pl2Tit: "20 Elections Pack",
-            paypalBtn: "Pay with PayPal",
-            cupTxt: "Have a coupon or Pix code?",
-            cupPlh: "Enter your code here",
-            cupBtn: "Validate Code",
-            voltar: "Back to Start"
-        },
-        es: {
-            titulo: "Límite de Prueba Alcanzado",
-            sub: "Para liberar más votos y guardar sus resultados, elija un plan o ingrese un cupón:",
-            pixTit: "Pagar vía PIX (Brasil)",
-            pixSub: "Clave Celular:",
-            pixDesc: "Elija un plan (R$ 30 o R$ 500) y envíe el comprobante.",
-            pixBtn: "Enviar Comprobante",
-            pl1Tit: "Elección Única",
-            pl2Tit: "Paquete 20 Elecciones",
-            paypalBtn: "Pagar con PayPal",
-            cupTxt: "¿Tiene un cupón o código Pix?",
-            cupPlh: "Ingrese su código aquí",
-            cupBtn: "Validar Código",
-            voltar: "Volver al Inicio"
-        }
-    };
+    // Reconstrói a tela mantendo as tags e IDs originais para o i18n.js traduzir
+    telaPay.innerHTML = `
+        <h2 id="P1">Pagamento</h2>
+        <div class="info-box">
+            <b id="H_PAY_TIT">Opções de Contribuição</b>
+            <span id="H_PAY_TXT">Escolha entre pagamento nacional ou internacional.</span>
+        </div>
+        
+        <!-- CARD PIX (ESTRUTURA FIXA QUE SE ADAPTA AO IDIOMA) -->
+        <div class="pay-card" style="border: 2px solid #1fa997; background: rgba(31, 169, 151, 0.05); margin-bottom: 15px;">
+            <h3 style="color:#1fa997; margin:0 0 5px 0;"><i class="fa-solid fa-pix"></i> Pague via PIX (Brasil)</h3>
+            <span style="font-size:11px; color:#aaa; display:block;">Chave Celular:</span>
+            <div style="background:#222; color:#fff; padding:8px; font-size:18px; font-weight:bold; border-radius:5px; margin:8px 0; border: 1px solid #1fa997; user-select:all; text-align:center;">
+                81999491651
+            </div>
+            <a href="https://wa.me/5581999491651?text=Olá Paulo, fiz o Pix para liberar meu acesso no UrnaWeb. Segue o comprovante." 
+               target="_blank" 
+               style="background:#25d366; color:white; text-decoration:none; padding:10px; border-radius:5px; font-weight:bold; display:block; font-size:12px; text-transform:uppercase; text-align:center;">
+                <i class="fa-brands fa-whatsapp"></i> Enviar Comprovante
+            </a>
+        </div>
+        
+        <!-- CARD 1: INDIVIDUAL (R$ 30) -->
+        <div class="pay-card">
+            <h3 id="PL1">Taxa Administrativa</h3>
+            <span style="font-size:28px; color:var(--accent); font-weight:bold; display:block; margin:5px 0;">R$ 30,00</span>
+            <div style="display:flex; gap:5px; margin-top:10px;">
+                <button onclick="window.open('https://mpago.la/2maEAFx')" id="B1" style="flex:1;">Mercado Pago</button>
+                <button onclick="window.open('https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=paulosmb1972@gmail.com&item_name=Eleicao_Individual_UrnaWeb&amount=30.00&currency_code=BRL')" style="flex:1; background:#003087; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">PayPal</button>
+            </div>
+        </div>
+
+        <!-- CARD 2: PACOTE 20 (R$ 500) -->
+        <div class="pay-card">
+            <h3 id="PL2">Cota de Serviço</h3>
+            <span style="font-size:28px; color:var(--success); font-weight:bold; display:block; margin:5px 0;">R$ 500,00</span>
+            <div style="display:flex; gap:5px; margin-top:10px;">
+                <button onclick="window.open('https://mpago.la/1VakcdN')" id="B2" style="flex:1;">Mercado Pago</button>
+                <button onclick="window.open('https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=paulosmb1972@gmail.com&item_name=Pacote_20_Eleicoes_UrnaWeb&amount=500.00&currency_code=BRL')" style="flex:1; background:#003087; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">PayPal</button>
+            </div>
+        </div>
+
+        <!-- VALIDADOR DE CUPOM / TOKEN MANUAL -->
+        <div class="pay-card" style="border: 2px solid var(--accent);">
+            <p id="L_CUP" style="margin:0 0 8px 0; font-size:13px;">Possui um cupom ou código Pix?</p>
+            <input id="cup" type="text" placeholder="..." style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #555; background: #000; color: #fff; text-align: center; box-sizing: border-box; margin-bottom: 10px; font-size: 16px; text-transform: uppercase;">
+            <button onclick="window.VALIDAR_TOKEN_MANUAL()" id="P2" style="background:var(--accent); color:#000; width:100%; padding:10px; border:none; border-radius:5px; font-weight:bold; cursor:pointer; text-transform:uppercase;">Validar Código</button>
+        </div>
+        
+        <button onclick="window.GO('login')" id="B_VOLTAR" style="background:none; border:1px solid #fff; color:#fff; padding:10px; width:100%; border-radius:5px; cursor:pointer; margin-top:10px;">Voltar</button>
+    `;
+
+    // FORÇA O ACIONAMENTO DA TRADUÇÃO NATIVA IMEDIATAMENTE APÓS DESENHAR A TELA
+    if (typeof window.TR === 'function') {
+        window.TR(window._idioma || 'pt');
+    }
+};
 
     // Seleciona os textos baseados no idioma selecionado (padrão 'pt' se falhar)
     const lang = textosPay[window._idioma || 'pt'] || textosPay.pt;
