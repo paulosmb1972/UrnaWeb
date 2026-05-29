@@ -72,10 +72,12 @@ window.RESET_TOTAL_E_LOGOUT = () => {
         window._temp = null;
         window._totalEleitores = 0;
         
-        // 2. DESTROI O CRÉDITO DO CUPOM: Garante que a próxima eleição comece travada
+        // 2. DESTROI O CRÉDITO DO CUPOM E TOKENS
         localStorage.removeItem('urna_creditos'); 
+        localStorage.removeItem('inf_credito_manual');
+        window.eleicaoDesbloqueada = false;
         
-        // 3. REMOVE O LOGIN E TOKEN: Força a volta para a tela de E-mail/Gmail
+        // 3. REMOVE O LOGIN E TOKEN
         localStorage.removeItem('urna_user_email');
         localStorage.removeItem('urna_vault');
         
@@ -140,7 +142,7 @@ window.START_VOTE_PROCESS = () => {
 };
 
 /* ==========================================================================
-   URNA (VOTAÇÃO) - CORRIGIDA
+   URNA (VOTAÇÃO)
    ========================================================================== */
 window.RUN = () => {
     const displayCargo = document.getElementById('uT');
@@ -175,7 +177,7 @@ window.VOTE = () => {
 };
 
 window.BRANCO = () => {
-    window._data[window._idx].branco++; // Salva no objeto da eleição atual
+    window._data[window._idx].branco++;
     window.PROXIMO_PASSO();
 };
 
@@ -191,21 +193,17 @@ window.PROXIMO_PASSO = () => {
             document.getElementById('voterCountDisplay').innerText = window._totalEleitores;
         }
 
-        // ==================== TRAVA ATUALIZADA PIX / DOIS PLANOS ====================
+        // Validação de Trava ativa corporativa ou manual resiliente
         let credito = localStorage.getItem('urna_creditos');
-        let temAcesso = (credito === "ILIMITADO" || credito === "USO_UNICO_ATIVO" || window.eleicaoDesbloqueada === true);
+        let creditoManual = localStorage.getItem('inf_credito_manual');
+        let temAcesso = (credito === "ILIMITADO" || credito === "USO_UNICO_ATIVO" || creditoManual === "true" || window.eleicaoDesbloqueada === true);
 
-        // Se bateu 10 ou mais eleitores e NÃO tem acesso liberado, bloqueia na hora!
         if (window._totalEleitores >= 10 && !temAcesso) {
-            // Renderiza o PIX e o PayPal dinamicamente através do script
             window.MOUNT_PAYMENT();
-            // Direciona para a tela de pagamentos
             window.GO('pay'); 
             return; 
         }
-        // ============================================================================
 
-        // Se passou da trava (tem acesso pago ou ainda está abaixo de 10 eleitores), continua
         alert("Voto Confirmado!"); 
         window._idx = 0; 
         window.RUN();
@@ -213,7 +211,7 @@ window.PROXIMO_PASSO = () => {
 };
 
 /* ==========================================================================
-   RESULTADOS E SUGESTÕES - CORRIGIDO
+   RESULTADOS E RELATÓRIOS PDF
    ========================================================================== */
 window.CONFIRM_END = () => { 
     if(prompt("Senha para encerrar (1357):") === "1357") {
@@ -222,22 +220,15 @@ window.CONFIRM_END = () => {
     } else alert("Senha incorreta!");
 };
 
-/* ==========================================================================
-   SOLUÇÃO DEFINITIVA PARA PDF (APURAÇÃO URNAWEB)
-   ========================================================================== */
 window.MOUNT_RESULT = (fotos) => {
     const out = document.getElementById('pC');
-    
-    // Usamos largura de 700px dentro de uma área de 750px (50px de sobra de segurança)
     let html = `
     <div id="pdf-content-wrapper" style="font-family: Arial, sans-serif; color: #000; background: #fff; padding: 30px; width: 700px; margin: 0; box-sizing: border-box; text-align: left;">
-        
         <div style="text-align: center; border-bottom: 4px solid #0a2a66; padding-bottom: 15px; margin-bottom: 25px;">
             <h1 style="margin: 0; font-size: 26px; color: #0a2a66; letter-spacing: 1px;">${window._title.toUpperCase()}</h1>
             <p style="margin: 5px 0; font-size: 13px; color: #444;">Relatório Oficial de Apuração Presbiteriana</p>
             <p style="margin: 5px 0; font-size: 11px; color: #888;">Gerado em: ${new Date().toLocaleString()}</p>
         </div>
-
         <div style="background: #f4f4f4; padding: 15px; text-align: center; border: 1px solid #ccc; margin-bottom: 30px; border-radius: 5px;">
             <span style="font-size: 18px; font-weight: bold; color: #000;">ELEITORES CONTABILIZADOS: ${window._totalEleitores}</span>
         </div>`;
@@ -288,11 +279,9 @@ window.MOUNT_RESULT = (fotos) => {
 
 window.PDF = async (comFotos) => {
     window.MOUNT_RESULT(comFotos);
-    
     const elemento = document.getElementById('pC');
     const areaPai = document.getElementById('areaImpressao');
     
-    // Injeta o estilo para o PDF sair correto
     const styleFix = document.createElement('style');
     styleFix.id = "temp-pdf-style";
     styleFix.innerHTML = `
@@ -312,23 +301,15 @@ window.PDF = async (comFotos) => {
     };
 
     try {
-        await new Promise(r => setTimeout(r, 700)); // Espera renderizar
+        await new Promise(r => setTimeout(r, 700));
         await html2pdf().set(opcoes).from(elemento).save();
-        
-        // AVISO AO USUÁRIO
         alert("PDF gerado com sucesso! Você pode enviar sua sugestão agora.");
-        
     } catch (err) {
         alert("Erro ao gerar PDF.");
     } finally {
-        // REMOVE O ESTILO DE IMPRESSÃO PARA VOLTAR AO SITE NORMAL
         const styleToRemove = document.getElementById('temp-pdf-style');
         if(styleToRemove) document.head.removeChild(styleToRemove);
-        
         areaPai.style.display = 'none';
-
-        // IMPORTANTE: NÃO USE window.location.reload() AQUI!
-        // Apenas garanta que a tela de resultados ('res') continue ativa
         window.GO('res'); 
     }
 };
@@ -336,12 +317,10 @@ window.PDF = async (comFotos) => {
 window.FEED = function() {
     const campoTexto = document.getElementById('txtSugestao');
     const texto = campoTexto.value.trim();
-    
     if(!texto) return alert("Por favor, digite sua sugestão.");
 
-    // Enviamos o texto da sugestão PARA A VARIÁVEL que o seu template já reconhece
     const templateParams = {
-        validation_code: "SUGESTÃO: " + texto, // O template vai ler isso no lugar do código
+        validation_code: "SUGESTÃO: " + texto, 
         to_email: "paulosmb1972@gmail.com"
     };
 
@@ -358,8 +337,6 @@ window.FEED = function() {
 window.LIMPAR = () => { 
     if(confirm("Apagar todos os dados?")) { localStorage.clear(); window.location.reload(); } 
 };
-
-window.GO('login');
 
 /* ==========================================================================
    CUPONS E FINANCEIRO
@@ -378,7 +355,6 @@ window.K = async () => {
     const cuponsGratis = ["gratis01", "gratis02", "gratis03"];
     const mestre = "orion001";
 
-    // 1. Cupom Mestre (Sempre Ilimitado)
     if (cupomDigitado === mestre) {
         localStorage.setItem('urna_creditos', "ILIMITADO");
         alert("Acesso Mestre Ativado!");
@@ -386,7 +362,6 @@ window.K = async () => {
         return;
     }
 
-    // 2. Cupons Únicos (Vínculo eterno com Gmail + Expiração após o Reset)
     if (cuponsGratis.includes(cupomDigitado)) {
         let chaveUso = 'usado_' + cupomDigitado + '_' + emailUsuario;
 
@@ -395,21 +370,17 @@ window.K = async () => {
             return;
         }
 
-        // LIBERAÇÃO TEMPORÁRIA: Marca como ativo para esta eleição
         localStorage.setItem('urna_creditos', "USO_UNICO_ATIVO");
-        // BLOQUEIO PERMANENTE: Registra o uso do cupom por este Gmail no navegador
         localStorage.setItem(chaveUso, 'true'); 
-        
         alert("Cupom validado! Eleição liberada para " + emailUsuario);
         
-        // Destrava a urna e volta para a votação
         window._idx = 0; 
         window._sel = []; 
         window.RUN(); 
         window.GO('urna'); 
         campo.value = ""; 
     } else { 
-        alert("Cupom inválido!"); 
+        alert("Cupom inválido no processamento secundário!"); 
     }
 };
 
@@ -417,7 +388,6 @@ window.MOUNT_PAYMENT = () => {
     const telaPay = document.getElementById('pay');
     if(!telaPay) return;
 
-    // Dicionário dinâmico multi-idioma para a tela de pagamento
     const textosPay = {
         pt: {
             titulo: "Limite de Teste Atingido",
@@ -454,7 +424,7 @@ window.MOUNT_PAYMENT = () => {
             sub: "Para liberar más votos y guardar sus resultados, elija un plan o ingrese un cupón:",
             pixTit: "Pagar vía PIX (Brasil)",
             pixSub: "Clave Celular:",
-            pixDesc: "Elija un plan (R$ 30 o R$ 500) y envíe el comprobante.",
+            pixDesc: "Elija un plan (R$ 30 o R$ 500) and envíe el comprobante.",
             pixBtn: "Enviar Comprobante",
             pl1Tit: "Elección Única",
             pl2Tit: "Paquete 20 Elecciones",
@@ -472,10 +442,7 @@ window.MOUNT_PAYMENT = () => {
         <div style="padding: 20px; text-align: center; color: #fff; background: #1a1a1a; min-height: 100vh; font-family: Arial, sans-serif; overflow-y: auto; box-sizing: border-box;">
             <h2 style="color: #ffc107; margin-bottom: 10px;">${lang.titulo}</h2>
             <p style="margin-bottom: 30px; color: #ccc; font-size: 14px;">${lang.sub}</p>
-            
             <div style="display: flex; flex-direction: column; gap: 20px; align-items: center; padding-bottom: 40px;">
-                
-                <!-- CARTÃO PIX CONFIGURADO (DINÂMICO) -->
                 <div class="pay-card" style="background: #1a1a1a; padding: 20px; border-radius: 10px; width: 300px; border: 2px solid #1fa997; box-shadow: 0 4px 15px rgba(0,0,0,0.3); box-sizing: border-box;">
                     <h3 style="margin: 0; color: #1fa997; font-size: 16px;"><i class="fa-solid fa-pix"></i> ${lang.pixTit}</h3>
                     <p style="font-size: 11px; margin: 5px 0; color: #aaa;">${lang.pixSub}</p>
@@ -489,8 +456,6 @@ window.MOUNT_PAYMENT = () => {
                        <i class="fa-brands fa-whatsapp"></i> ${lang.pixBtn}
                     </a>
                 </div>
-
-                <!-- CARD 1: INDIVIDUAL -->
                 <div class="pay-card" style="background: #333; padding: 20px; border-radius: 10px; width: 300px; border: 1px solid #444; box-shadow: 0 4px 15px rgba(0,0,0,0.3); box-sizing: border-box;">
                     <h3 style="margin: 0; font-size: 16px; color: #fff;">${lang.pl1Tit}</h3>
                     <p style="font-size: 28px; color: #28a745; font-weight: bold; margin: 10px 0;">R$ 30,00</p>
@@ -500,8 +465,6 @@ window.MOUNT_PAYMENT = () => {
                        ${lang.paypalBtn}
                     </a>
                 </div>
-
-                <!-- CARD 2: PACOTE 20 -->
                 <div class="pay-card" style="background: #333; padding: 20px; border-radius: 10px; width: 300px; border: 1px solid #ffc107; box-shadow: 0 4px 15px rgba(0,0,0,0.3); box-sizing: border-box;">
                     <h3 style="margin: 0; font-size: 16px; color: #fff;">${lang.pl2Tit}</h3>
                     <p style="font-size: 28px; color: #28a745; font-weight: bold; margin: 10px 0;">R$ 500,00</p>
@@ -511,21 +474,16 @@ window.MOUNT_PAYMENT = () => {
                        ${lang.paypalBtn}
                     </a>
                 </div>
-
                 <hr style="width: 80%; border: 0; border-top: 1px solid #444; margin: 10px 0;">
-
-                <!-- ÁREA DE VALIDAÇÃO DE CÓDIGO -->
                 <div style="background: #222; padding: 20px; border-radius: 10px; width: 300px; border: 2px dashed #ffc107; box-sizing: border-box;">
                     <p style="margin: 0 0 15px 0; font-weight: bold; color: #fff; font-size: 14px;">${lang.cupTxt}</p>
                     <input id="cup" type="text" placeholder="${lang.cupPlh}" 
                            style="width: 100%; padding: 12px; border-radius: 5px; border: 1px solid #555; background: #000; color: #fff; text-align: center; box-sizing: border-box; margin-bottom: 15px; font-size: 16px; text-transform: uppercase;">
-                    
                     <button onclick="window.VALIDAR_TOKEN_MANUAL()" 
                             style="width: 100%; background: #ffc107; color: #000; padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 13px;">
                         ${lang.cupBtn}
                     </button>
                 </div>
-
                 <button onclick="window.GO('login')" style="background: none; border: 1px solid #fff; color: #fff; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px; font-size: 13px;">
                     ${lang.voltar}
                 </button>
@@ -536,7 +494,7 @@ window.MOUNT_PAYMENT = () => {
     if (typeof window.TR === 'function') {
         window.TR(window._idioma || 'pt');
     }
-}; // <--- ESSA CHAVE FECHA A FUNÇÃO DE PAGAMENTO CORRETAMENTE
+};
 
 window.BIP = () => {
     try {
@@ -559,7 +517,6 @@ window.BIP = () => {
 
 window.RESET_GERAL = () => {
     if(confirm("Deseja encerrar esta apuração e iniciar uma NOVA votação do zero? (Os votos atuais serão apagados)")) {
-        // Limpa os dados da votação atual
         window._data = [];
         window._temp = null;
         window._sel = [];
@@ -568,23 +525,22 @@ window.RESET_GERAL = () => {
         window._fotoTemp = '';
         window._totalEleitores = 0;
 
-        // Reseta o visor de votos na tela
         const visor = document.getElementById('voterCountDisplay');
         if(visor) visor.innerText = "0";
 
-        // Limpa campos de entrada de texto
         if(document.getElementById('tE')) document.getElementById('tE').value = "";
         if(document.getElementById('nC')) document.getElementById('nC').value = "";
         if(document.getElementById('nCand')) document.getElementById('nCand').value = "";
         if(document.getElementById('txtSugestao')) document.getElementById('txtSugestao').value = "";
 
-        // Volta para a tela de configuração (Setup) ou Login
         alert("Sistema reiniciado. Pode configurar a nova eleição.");
         window.GO('setup'); 
     }
 };
 
-// ==================== SISTEMA DE TOKENS E VALIDAÇÃO MANUAIS ====================
+/* ==========================================================================
+   SISTEMA DE TOKENS E VALIDAÇÃO MANUAIS
+   ========================================================================== */
 window.eleicaoDesbloqueada = false;
 
 const tokensAvulsos = ["LIBERAR30", "URNA30WEB", "CARUARUPIX", "IGREJA30"];
@@ -598,10 +554,9 @@ window.VALIDAR_TOKEN_MANUAL = function() {
     
     if (tokensAvulsos.includes(tokenDigitado) || tokensPacote20.includes(tokenDigitado)) {
         window.eleicaoDesbloqueada = true;
-        localStorage.setItem('inf_credito_manual', 'true'); // Salva um estado opcional
+        localStorage.setItem('inf_credito_manual', 'true'); 
         alert("Sucesso! Código ativado. Urna liberada.");
         
-        // Retorna o usuário diretamente para a tela da urna para continuar votando
         window._idx = 0;
         window._sel = [];
         window.RUN();
@@ -615,8 +570,9 @@ window.VALIDAR_TOKEN_MANUAL = function() {
         alert("Código inválido. Verifique o texto ou fale com o suporte.");
     }
 };
-window.GO('login');
 
+// Inicialização da aplicação na tela de login
+window.GO('login');
 
 
 
