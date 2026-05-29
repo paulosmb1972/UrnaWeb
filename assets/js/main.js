@@ -607,20 +607,15 @@ window.BIP = () => {
         const context = new (window.AudioContext || window.webkitAudioContext)();
         const oscillator = context.createOscillator();
         const gainNode = context.createGain();
-
         oscillator.type = "sine";
-        // Frequência de 440Hz (Lá) para um som mais clássico de urna
         oscillator.frequency.setValueAtTime(440, context.currentTime); 
-        
         oscillator.connect(gainNode);
         gainNode.connect(context.destination);
-
         gainNode.gain.setValueAtTime(0, context.currentTime);
         gainNode.gain.linearRampToValueAtTime(0.5, context.currentTime + 0.01);
         gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.5);
-
         oscillator.start(context.currentTime);
-        oscillator.stop(context.currentTime + 0.5); // Duração estendida para meio segundo
+        oscillator.stop(context.currentTime + 0.5);
     } catch(e) { 
         console.log("Áudio aguardando interação do usuário."); 
     }
