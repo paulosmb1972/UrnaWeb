@@ -533,7 +533,12 @@ window.MOUNT_PAYMENT = () => {
         </div>
     `;
 
-    window.BIP = () => {
+    if (typeof window.TR === 'function') {
+        window.TR(window._idioma || 'pt');
+    }
+}; // <--- ESSA CHAVE FECHA A FUNÇÃO DE PAGAMENTO CORRETAMENTE
+
+window.BIP = () => {
     try {
         const context = new (window.AudioContext || window.webkitAudioContext)();
         const oscillator = context.createOscillator();
@@ -610,6 +615,7 @@ window.VALIDAR_TOKEN_MANUAL = function() {
         alert("Código inválido. Verifique o texto ou fale com o suporte.");
     }
 };
+window.GO('login');
 
 
 
