@@ -2706,12 +2706,14 @@ def listar_janelas_visiveis():
 def _bitblt_regiao_desktop(min_x, min_y, width, height):
     """Captura direta do desktop via BitBlt na regiao (min_x, min_y, width, height).
     Metodo que FUNCIONA para janelas do Profit (nao depende de PrintWindow por hwnd).
-    Funciona em qualquer monitor pois usa coordenadas globais do desktop virtual."""
+    Funciona em qualquer monitor pois usa coordenadas globais do desktop virtual —
+    por isso usa GetDC(0) (DC do virtual screen inteiro), e NAO
+    GetWindowDC(GetDesktopWindow()), que em alguns setups so cobre o monitor
+    PRINCIPAL e faz a captura sair preta/cortada em qualquer monitor secundario."""
     try:
         if width <= 10 or height <= 10:
             return None
-        hdesktop = win32gui.GetDesktopWindow()
-        hdc = win32gui.GetWindowDC(hdesktop)
+        hdc = win32gui.GetDC(0)
         mdc = win32ui.CreateDCFromHandle(hdc)
         sdc = mdc.CreateCompatibleDC()
         bmp = win32ui.CreateBitmap()
@@ -2723,7 +2725,7 @@ def _bitblt_regiao_desktop(min_x, min_y, width, height):
         img = Image.frombuffer("RGB", (bi["bmWidth"], bi["bmHeight"]), bits, "raw", "BGRX", 0, 1)
         try:
             win32gui.DeleteObject(bmp.GetHandle())
-            sdc.DeleteDC(); mdc.DeleteDC(); win32gui.ReleaseDC(hdesktop, hdc)
+            sdc.DeleteDC(); mdc.DeleteDC(); win32gui.ReleaseDC(0, hdc)
         except Exception: pass
         return img
     except Exception:
@@ -2923,30 +2925,38 @@ def _capturar_regiao_tela_direta(left, top, width, height):
     """
     Captura pixels diretamente da tela do desktop usando BitBlt de alta performance.
     Ignora restrições de PrintWindow ou aceleração de GPU do Profit.
+
+    Usa GetDC(0) (device context do virtual screen INTEIRO) em vez de
+    GetWindowDC(GetDesktopWindow()): em alguns Windows/drivers esse segundo
+    metodo so cobre o monitor PRINCIPAL, entao qualquer coordenada de janela
+    no monitor secundario (ou a esquerda/acima do principal, com X/Y
+    negativos) cai fora da area coberta e a captura sai preta ou pega
+    sempre o monitor principal — o sintoma de "so captura a tela do
+    notebook" mesmo com a janela aberta no monitor externo.
     """
     try:
         if width <= 10 or height <= 10:
             return None
-        hdesktop = win32gui.GetDesktopWindow()
-        hdcScreen = win32gui.GetWindowDC(hdesktop)
-        hDC = win32ui.CreateDCFromHandle(hdcScreen)
+        hDC_tela = win32gui.GetDC(0)
+        hDC = win32ui.CreateDCFromHandle(hDC_tela)
         saveDC = hDC.CreateCompatibleDC()
-        
+
         bitmap = win32ui.CreateBitmap()
         bitmap.CreateCompatibleBitmap(hDC, width, height)
         saveDC.SelectObject(bitmap)
-        
-        # Copia da tela nas coordenadas exatas
+
+        # Copia da tela nas coordenadas exatas (globais do virtual screen,
+        # podem ser negativas se o monitor estiver a esquerda/acima do principal)
         saveDC.BitBlt((0, 0), (width, height), hDC, (left, top), 0x00CC0020) # SRCCOPY
-        
+
         signedints = bitmap.GetBitmapBits(True)
         img = Image.frombuffer("RGB", (width, height), signedints, "raw", "BGRX", 0, 1)
-        
+
         # Limpeza
         win32gui.DeleteObject(bitmap.GetHandle())
         saveDC.DeleteDC()
         hDC.DeleteDC()
-        win32gui.ReleaseDC(hdesktop, hdcScreen)
+        win32gui.ReleaseDC(0, hDC_tela)
         return img
     except Exception:
         return None
@@ -2974,8 +2984,7 @@ def _printwindow_regiao(hwnd, w, h, nome_amigavel, titulo_ou_classe):
     ou totalmente coberta por outra. Usado so como fallback: em janelas com
     grafico acelerado por GPU costuma devolver frame preto (ver _imagem_esta_em_branco)."""
     try:
-        hdesktop = win32gui.GetDesktopWindow()
-        hdcScreen = win32gui.GetWindowDC(hdesktop)
+        hdcScreen = win32gui.GetDC(0)
         hDC = win32ui.CreateDCFromHandle(hdcScreen)
         saveDC = hDC.CreateCompatibleDC()
         bitmap = win32ui.CreateBitmap()
@@ -2993,7 +3002,7 @@ def _printwindow_regiao(hwnd, w, h, nome_amigavel, titulo_ou_classe):
         win32gui.DeleteObject(bitmap.GetHandle())
         saveDC.DeleteDC()
         hDC.DeleteDC()
-        win32gui.ReleaseDC(hdesktop, hdcScreen)
+        win32gui.ReleaseDC(0, hdcScreen)
         if img is not None and not _imagem_esta_em_branco(img):
             return img, f"{nome_amigavel} capturado via PrintWindow (fallback): '{titulo_ou_classe}' ({w}x{h}px)"
     except Exception:
@@ -3595,6 +3604,14 @@ CRITICO — VALIDE A ARITMETICA ANTES DE FECHAR O JSON:
    em formato americano, sem separador de milhar: 5127.50.
 6. Se um campo estiver ilegivel ou sobreposto, devolva 0.0 em vez de adivinhar. Zero e tratado como
    "nao lido"; um numero errado contamina toda a analise.
+7. As 4 medias moveis (mm9, mm20, mm50, mm200) sao 4 LINHAS SEPARADAS na legenda do grafico
+   (geralmente empilhadas verticalmente no canto superior esquerdo, junto de varios outros
+   indicadores). NAO pare de procurar depois de achar a primeira: percorra a legenda inteira,
+   linha por linha, ate encontrar as 4 — "Média Móvel A [9]", "Média Móvel A [20]",
+   "Média Móvel A [50]" e "Média Móvel A [200]" — cada uma com seu proprio valor numerico ao
+   lado. Encontrar so a [9] e devolver 0.0 para as outras tres SEM procurar e um erro comum:
+   elas estao la, so mais abaixo na lista. So use 0.0 para uma das quatro se, apos revisar a
+   legenda inteira, aquela linha especifica realmente nao aparecer.
 
 {
   "ativo": "", "timeframe": "",
