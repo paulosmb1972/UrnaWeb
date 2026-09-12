@@ -33,20 +33,33 @@
 # H. Volume: valor financeiro lido no campo de contratos e descartado.
 # I. Abertura fora do intervalo minima-maxima e descartada na validacao.
 # =============================================================================
+# NOVOS INDICADORES — VWAP Bands e Volume Profile (aba Liquidez)
+# J. VWAP Bands (1sigma/2sigma): desvio-padrao volume-ponderado calculado
+#    sobre hist_leituras, ancorado na VWAP real da tela. Ver calcular_vwap_bands.
+# K. Volume Profile (POC/HVN/LVN): perfil de volume por faixa de preco,
+#    construido a partir dos candles do timeframe operacional (hist_candles).
+#    Ver calcular_volume_profile. Cap de hist_candles subiu de 12 para 60
+#    candles (5h) para dar amostra suficiente ao perfil.
+# L. Os dois painéis são apenas informativos nesta revisão — não entram no
+#    score/gatekeeper para não alterar a calibração já validada nos replays.
+# =============================================================================
 import streamlit as st
 import pandas as pd
 import csv
 import json
 import re
 import os
+import hashlib
 import time
 import base64
 import requests
 import threading
 import ctypes
+import logging
 import xml.etree.ElementTree as ET
 from io import BytesIO
 from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Tuple
 from PIL import Image
 import pygetwindow as gw
 import win32gui
@@ -56,6 +69,79 @@ import pythoncom
 import win32com.client
 from streamlit_autorefresh import st_autorefresh
 import yfinance as yf
+
+# =============================================================================
+# LOGGING DE AUDITORIA — decisoes do gatekeeper
+# Log estruturado, paralelo ao CSV (log_armadilhas_evitadas.csv). O CSV serve
+# para analise tabular (Excel/pandas); o logger serve para auditoria linha a
+# linha com timestamp de milissegundos e nivel de severidade, util para
+# depurar um dia de pregao especifico direto no arquivo de texto.
+# =============================================================================
+# =============================================================================
+# VERSAO DO MOTOR — AUTOMATICA, carimbada em toda leitura do CSV (campo
+# "VersaoMotor" no dict `registro`, dentro de executar_analise).
+#
+# Antes dependia de alguem lembrar de editar uma string manualmente a cada
+# mudanca relevante — o que falha na primeira vez que alguem esquece. Agora
+# a versao e derivada do HASH do proprio conteudo do arquivo (SHA-256, 8
+# primeiros caracteres) + a data de modificacao do arquivo: qualquer mudanca
+# real no codigo — mesmo uma virgula — muda o hash sozinha, sem exigir
+# nenhuma disciplina manual. Calculado uma unica vez por processo (cache de
+# recurso do Streamlit), nao a cada rerun.
+#
+# VERSAO_MOTOR_APELIDO continua existindo, mas so como ROTULO HUMANO —
+# opcional, de leitura, sem nenhum papel na identificacao real da versao.
+# Se ficar desatualizado nao quebra nada: quem decide se duas linhas do CSV
+# vieram do mesmo codigo é o hash, nunca o apelido.
+# =============================================================================
+VERSAO_MOTOR_APELIDO = "atr-vwapbands-lvn-flowmap"
+
+
+# BUG CORRIGIDO — @st.cache_resource aqui derrotava o proprio proposito da
+# versao automatica. O Streamlit invalida um cache_resource quando o CODIGO-
+# FONTE DAQUELA FUNCAO especifica muda — mas esta funcao em si nunca muda
+# entre edicoes (so o resto do arquivo muda). Resultado pratico: uma vez que
+# o processo do servidor calculava o hash pela primeira vez, ficava servindo
+# esse mesmo hash para sempre, mesmo depois de o arquivo no disco ser
+# substituido por uma versao nova — sem reiniciar o processo inteiro (nao so
+# o autoreload do Streamlit), "VersaoMotor" continuava mostrando a versao
+# antiga. Isso explica leituras da MESMA sessao com VersaoMotor indo e
+# voltando entre hashes diferentes (varios processos/reinicios parciais
+# coexistindo) — comportamento reportado pelo usuario como "as telas ficam
+# invariaveis". Ler e hashear o arquivo custa poucos milissegundos — nao
+# precisa de cache; sem ele, o valor e sempre fiel ao codigo que esta rodando
+# de fato neste exato momento.
+def _calcular_versao_motor_automatica() -> str:
+    try:
+        caminho = os.path.abspath(__file__)
+        with open(caminho, "rb") as f:
+            conteudo = f.read()
+        _hash = hashlib.sha256(conteudo).hexdigest()[:8]
+        _mtime = datetime.fromtimestamp(os.path.getmtime(caminho)).strftime("%Y-%m-%d")
+        return f"{_mtime}-{_hash}"
+    except Exception:
+        # Sem acesso ao proprio arquivo (empacotado, ambiente restrito etc.)
+        # — fallback fixo, mas nunca quebra o app por causa disso.
+        return "versao-desconhecida"
+
+
+VERSAO_MOTOR = _calcular_versao_motor_automatica()
+
+LOG_GATEKEEPER_PATH = "gatekeeper_audit.log"
+logger_gatekeeper = logging.getLogger("autopro.gatekeeper")
+if not logger_gatekeeper.handlers:
+    try:
+        _handler_gk = logging.FileHandler(LOG_GATEKEEPER_PATH, encoding="utf-8")
+        _handler_gk.setFormatter(logging.Formatter(
+            "%(asctime)s.%(msecs)03d | %(levelname)s | %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S"))
+        logger_gatekeeper.addHandler(_handler_gk)
+        logger_gatekeeper.setLevel(logging.INFO)
+        logger_gatekeeper.propagate = False
+    except Exception:
+        # Sem permissao de escrita no diretorio, por exemplo: o app continua
+        # rodando sem log em arquivo, apenas sem o rastro em disco.
+        pass
 
 # =========================
 # CONFIGURACOES
@@ -125,6 +211,9 @@ INTERVALO_REFRESH_REPOUSO_MS = 60000
 MIN_PRE_AQUECIMENTO_JANELA = 3
 
 INTERVALO_ANALISE_SEGUNDOS = 300
+# Ciclo separado do de mercado real — so roda em modo replay, com o toggle
+# "Analisar automaticamente durante o replay" ligado (ver AUTO-AVANCO NO REPLAY).
+INTERVALO_AUTO_REPLAY_MS = 8000
 INTERVALO_MACRO_SEGUNDOS = 300
 
 # ---- AMOSTRAGEM: CICLO FIXO DE 5 MINUTOS ----
@@ -141,6 +230,17 @@ FIM_MANHA_MIN = 11 * 60
 # ("score 1/4" em 35 delas) e houve acerto de alvo com score baixo. Os filtros
 # de setup (reversao, pullback, absorcao) fazem a selecao melhor que o score.
 SCORE_MINIMO_ABSOLUTO = 3
+# =============================================================================
+# ESCAPE DE VIES NEUTRO PERSISTENTE (item 4): quando o veredito fica
+# neutro/indefinido por muitos ciclos seguidos (consolidacao prolongada), o
+# score minimo flexibiliza temporariamente para evitar estagnacao
+# operacional — nunca abaixo do piso absoluto de flexibilizacao, e sempre
+# registrado no contexto (campo "escape_neutro_ativo") para auditoria.
+LIMIAR_CICLOS_NEUTROS_ESCAPE = 6      # ~30 min a 5 min/ciclo
+AJUSTE_ESCAPE_NEUTRO = 1              # pontos de flexibilizacao no score minimo
+SCORE_MINIMO_ABSOLUTO_FLEX = 2        # piso absoluto mesmo com escape ativo
+# =============================================================================
+
 # 2. Fluxo: saldo de agressao exigido, ou vies de fluxo direcional alinhado.
 #    Fluxo neutro/indefinido deixa de ser aceito.
 # Piso reduzido de 65 para 58: no replay de 26/08 o mercado rodou em 60% e o
@@ -185,6 +285,82 @@ def limite_veto_mm9(amplitude_dia=0.0):
         return LIMITE_DIST_MM9_VETO
     return round(max(LIMITE_DIST_MM9_VETO,
                      min(LIMITE_DIST_MM9_VETO_MAX, amp * FRACAO_AMPLITUDE_VETO_MM9)), 2)
+
+
+# =============================================================================
+# ATR (Average True Range) INTRADIARIO — tolerancia dinamica para o veto de
+# MM9 esticada. Antes o veto usava so a amplitude acumulada do dia
+# (limite_veto_mm9 acima); o ATR mede a volatilidade REAL candle a candle
+# (True Range), o que reage mais rapido a uma aceleracao direcional forte do
+# que a amplitude do dia inteiro. limite_veto_mm9_atr() e a nova fonte
+# primaria do limite; limite_veto_mm9() vira fallback para quando ainda nao
+# ha candles suficientes (abertura do pregao).
+# =============================================================================
+ATR_PERIODO_PADRAO = 14
+ATR_MULTIPLO_VETO_MM9 = 2.5   # distancia da MM9 so veta acima de N x ATR
+
+
+def calcular_atr_intradiario(hist: Optional[List[Dict[str, Any]]] = None,
+                              periodo: int = ATR_PERIODO_PADRAO) -> Dict[str, Any]:
+    """ATR intradiario sobre os candles do timeframe operacional (hist_candles).
+
+    True Range de cada candle = max(maxima-minima, |maxima-fechamento_anterior|,
+    |minima-fechamento_anterior|). ATR = media simples dos ultimos `periodo`
+    True Ranges disponiveis. Com poucos candles (inicio do pregao), calcula
+    com a amostra que houver e sinaliza "valido: False" so quando nao ha
+    nem 2 candles — condicao em que nenhum ATR e calculavel.
+    """
+    try:
+        hist = hist if hist is not None else st.session_state.get("hist_candles", [])
+        vazio: Dict[str, Any] = {"valido": False, "atr": 0.0, "amostra": 0}
+        candles = [c for c in (hist or []) if num(c.get("maxima", 0)) > 0 and num(c.get("minima", 0)) > 0]
+        if len(candles) < 2:
+            return vazio
+        # hist_candles vem do mais recente para o mais antigo (insert(0,...));
+        # inverte para calcular o True Range na ordem cronologica correta.
+        candles = list(reversed(candles))
+
+        true_ranges: List[float] = []
+        fech_ant: Optional[float] = None
+        for c in candles:
+            maxima, minima = num(c.get("maxima", 0)), num(c.get("minima", 0))
+            if fech_ant and fech_ant > 0:
+                tr = max(maxima - minima, abs(maxima - fech_ant), abs(minima - fech_ant))
+            else:
+                tr = maxima - minima
+            true_ranges.append(tr)
+            fech_ant = num(c.get("fechamento", 0)) or maxima
+
+        amostra_tr = true_ranges[-periodo:]
+        if not amostra_tr:
+            return vazio
+        atr = round(sum(amostra_tr) / len(amostra_tr), 2)
+        return {"valido": atr > 0, "atr": atr, "amostra": len(amostra_tr)}
+    except Exception:
+        # Rigor de excecao: ATR indisponivel nunca pode travar o ciclo — quem
+        # chama sempre tem o fallback de amplitude do dia (limite_veto_mm9).
+        return {"valido": False, "atr": 0.0, "amostra": 0}
+
+
+def limite_veto_mm9_atr(atr: float, amplitude_dia: float = 0.0) -> float:
+    """Tolerancia DINAMICA de distancia da MM9 baseada no ATR do dia.
+
+    Susbtitui o criterio antigo (fixo em pontos) pelo multiplo do ATR atual:
+    o afastamento so veta a entrada se ultrapassar ATR_MULTIPLO_VETO_MM9 x
+    ATR. Em momentos de forte aceleracao direcional (ATR alto), a mesma
+    distancia em pontos que travaria num dia parado deixa de vetar uma
+    entrada legitima. Sem ATR calculavel ainda (inicio do pregao, poucos
+    candles), cai para o criterio anterior baseado na amplitude do dia —
+    nunca fica sem piso de seguranca.
+    """
+    try:
+        if atr and num(atr) > 0:
+            limite = num(atr) * ATR_MULTIPLO_VETO_MM9
+            return round(max(LIMITE_DIST_MM9_VETO, min(LIMITE_DIST_MM9_VETO_MAX, limite)), 2)
+    except Exception:
+        pass
+    return limite_veto_mm9(amplitude_dia)
+
 # Leituras na mesma direcao exigidas para confirmar o momentum.
 MIN_LEITURAS_CONFIRMA_MOMENTUM = 2
 # Fracao do ciclo abaixo da qual a leitura e considerada fora de ciclo
@@ -192,9 +368,18 @@ MIN_LEITURAS_CONFIRMA_MOMENTUM = 2
 FRACAO_CICLO_LEITURA_VALIDA = 0.6
 # Piso de conviccao para o veredito apontar um lado.
 PISO_CONVICCAO_DIRECAO = 30
-# Teto de conviccao exibida quando NAO ha gatilho armado. Impede que uma leitura
-# em ESPERA apareca com 100% e seja lida como ordem de execucao.
-TETO_CONVICCAO_SEM_GATILHO = 60
+# BUG CORRIGIDO — TETO_CONVICCAO_SEM_GATILHO (era 60): a intencao era impedir
+# que uma leitura em ESPERA aparecesse como "EXECUTAR 90%". Mas essa protecao
+# JA e garantida pelo "and executavel" em toda a logica de rotulo/cor (ver
+# avaliar_conviccao e reavaliar_execucao) — o gatilho so vira "EXECUTAR" com
+# executavel=True, independente do valor de conviccao. O teto era redundante
+# para essa protecao e tinha um efeito colateral serio: qualquer leitura com
+# confluencia real >= 60% (podendo ser 75%, 90%, 100%) e sem gatilho armado
+# ficava achatada em exatamente 60%, sempre o mesmo numero — e essa e a
+# grande maioria das leituras de qualquer sessao (a maior parte do tempo o
+# gatilho esta em ESPERA). Resultado relatado pelo usuario: "percentual de
+# conviccao fica invariavel" — nao era leitura congelada, era o teto escondendo
+# a variacao real. Removido; a conviccao exibida agora e sempre a bruta.
 
 # =============================================================================
 # AGENDA MACRO — horarios de Brasilia em que sai indicador de peso.
@@ -281,7 +466,7 @@ FONTES_MACRO_WEB = {
     "PTAX":  ["bcb", "fmp", "investing"],
     "DXY":   ["fred", "fmp", "tradingeconomics", "investing"],
     "VIX":   ["fred", "fmp", "investing"],
-    "EWZ":   ["fmp", "investing", "tradingeconomics"],
+    "EWZ":   ["fmp", "stooq", "investing", "tradingeconomics"],
     "PMI":   ["tradingeconomics", "fred", "investing"],
 }
 
@@ -524,9 +709,10 @@ def vies_macro_consolidado(macro=None):
     # o macro entra como neutro em vez de empurrar a direcao com valor velho.
     _indisp = list((macro or {}).get("macro_indisponiveis", []) or [])
     _indisp_ess = list((macro or {}).get("macro_indisponiveis_essenciais", []) or [])
-    # Falta de PMI (mensal) NAO invalida o macro: DXY, VIX, EWZ e PTAX bastam.
+    # Falta de PMI (mensal) e do EWZ NAO invalida o macro: DXY, VIX e PTAX
+    # ja bastam para opinar (EWZ entra como bonus quando disponivel).
     _sem_essenciais = bool(_indisp_ess) or not any(
-        num((macro or {}).get(k)) > 0 for k in ("DXY", "VIX", "EWZ", "PTAX"))
+        num((macro or {}).get(k)) > 0 for k in ("DXY", "VIX", "PTAX"))
     if _sem_essenciais or (macro or {}).get("disponivel") is False:
         return {"vies": "neutro", "forca": "neutro", "pontos": 0,
                 "fatores": ["macro indisponivel para a data — sem peso na decisao"],
@@ -901,6 +1087,8 @@ defaults = {
     "historico_alertas": [],
     "hist_leituras": [],
     "hist_candles": [],
+    "falhas_tt_consecutivas": 0,
+    "ultimo_erro_ciclo": None,
     "hist_assinatura_book": [],
     "ultimo_sinal_armado": {},
     "hist_fluxo": [],
@@ -1039,12 +1227,13 @@ def dia_util_anterior(data_ref=None):
 
 
 def _data_referencia_leitura(dados_tela=None):
-    """Data do pregao que esta sendo analisado — no replay, a data do replay."""
+    """Data do pregao que esta sendo analisado.
+
+    Em REPLAY a data CONFIGURADA na aba 1 tem prioridade absoluta: o eixo do
+    grafico mostra o dia anterior a esquerda do separador e a leitura de tela
+    confundia os dois (replay de 31/08 virava 28/08, e o "anterior" virava 27/08).
+    """
     d = dados_tela or {}
-    for chave in ("data_replay", "data"):
-        v = str(d.get(chave, "") or "")[:10]
-        if re.match(r"^\d{4}-\d{2}-\d{2}$", v):
-            return v
     try:
         if st.session_state.get("modo_replay"):
             v = str(st.session_state.get("replay_data", "") or "")[:10]
@@ -1052,6 +1241,10 @@ def _data_referencia_leitura(dados_tela=None):
                 return v
     except Exception:
         pass
+    for chave in ("data_replay", "data"):
+        v = str(d.get(chave, "") or "")[:10]
+        if re.match(r"^\d{4}-\d{2}-\d{2}$", v):
+            return v
     return datetime.now().strftime("%Y-%m-%d")
 
 
@@ -1110,6 +1303,60 @@ def _range_do_historico_csv(data_alvo, ativo=""):
         return {}
 
 
+ARQ_REF_MANUAL = "referencia_manual.json"
+
+
+def _carregar_ref_manual():
+    try:
+        if os.path.exists(ARQ_REF_MANUAL):
+            with open(ARQ_REF_MANUAL, "r", encoding="utf-8") as f:
+                d = json.load(f)
+            if isinstance(d, dict):
+                return d
+    except Exception:
+        pass
+    return {}
+
+
+def salvar_referencia_manual(chave, maxima, minima, ajuste=0.0, vwap=0.0, data_ref=""):
+    """Grava a referencia informada a mao para um pregao especifico."""
+    mapa = _carregar_ref_manual()
+    mapa[str(chave)] = {"maxima": round(num(maxima), 2), "minima": round(num(minima), 2),
+                        "ajuste": round(num(ajuste), 2), "vwap": round(num(vwap), 2),
+                        "data": str(data_ref)[:10],
+                        "gravado": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+    if len(mapa) > 40:
+        for k in sorted(mapa.keys())[:-40]:
+            mapa.pop(k, None)
+    try:
+        with open(ARQ_REF_MANUAL, "w", encoding="utf-8") as f:
+            json.dump(mapa, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+    return mapa[str(chave)]
+
+
+def limpar_referencia_manual(chave):
+    mapa = _carregar_ref_manual()
+    if str(chave) in mapa:
+        mapa.pop(str(chave), None)
+        try:
+            with open(ARQ_REF_MANUAL, "w", encoding="utf-8") as f:
+                json.dump(mapa, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+        return True
+    return False
+
+
+def referencia_manual_do_pregao(dados_tela=None):
+    """Referencia informada a mao para o pregao em analise, se houver."""
+    try:
+        return _carregar_ref_manual().get(chave_pregao_analisado(dados_tela)) or {}
+    except Exception:
+        return {}
+
+
 def referencia_pregao_anterior(dados_tela=None):
     """Maxima, minima e ajuste do DIA UTIL ANTERIOR ao pregao analisado.
 
@@ -1121,6 +1368,19 @@ def referencia_pregao_anterior(dados_tela=None):
     data_ant = dia_util_anterior(data_hoje)
     ativo = ativo_canonico(d.get("ativo", "")) or ""
     _p_ref = num(d.get("preco_atual", 0))
+
+    # -1. REFERENCIA MANUAL — precede tudo. Digitada uma vez, vale para o
+    #     pregao inteiro ate ser apagada ou a configuracao mudar.
+    try:
+        _man = _carregar_ref_manual().get(f"{ativo or 'ATIVO'}::{data_hoje}") or {}
+        _mxm, _mnm = num(_man.get("maxima", 0)), num(_man.get("minima", 0))
+        if _mxm > _mnm > 0:
+            return {"maxima": round(_mxm, 2), "minima": round(_mnm, 2),
+                    "ajuste": num(_man.get("ajuste", 0)), "vwap": num(_man.get("vwap", 0)),
+                    "data": str(_man.get("data", "") or data_ant)[:10],
+                    "fonte": "manual"}
+    except Exception:
+        pass
 
     def _coerente(mx, mn):
         """Referencia plausivel: ordenada, com amplitude util e na escala do preco."""
@@ -1135,8 +1395,8 @@ def referencia_pregao_anterior(dados_tela=None):
     # 0. LEITURA DE TELA — o Profit exibe o ajuste anterior e as linhas de
     #    maxima/minima do pregao passado. E a fonte mais fiel e a unica que
     #    acompanha a data do replay sem depender de historico gravado.
-    _mx_t = num(d.get("maxima_anterior", 0))
-    _mn_t = num(d.get("minima_anterior", 0))
+    _mx_t = num(d.get("maxima_anterior", 0)) or num(d.get("superdom_maxima", 0))
+    _mn_t = num(d.get("minima_anterior", 0)) or num(d.get("superdom_minima", 0))
     _aj_t = num(d.get("ajuste_anterior", 0))
     _dt_t = str(d.get("data_pregao_anterior", "") or "")[:10]
     if not re.match(r"^\d{4}-\d{2}-\d{2}$", _dt_t):
@@ -1772,6 +2032,28 @@ def tradingeconomics_indicador(slug):
             "data": datetime.now().strftime("%Y-%m-%d")} if v else None
 
 
+# ------------------------------------------------------------------- STOOQ
+def stooq_cotacao(ticker):
+    """Cotacao via Stooq — CSV publico, sem chave e sem limite de uso
+    conhecido. Fallback para tickers dos EUA quando FMP (chave paga, falha
+    sem ela) e Investing (raspagem instavel) nao respondem — era exatamente
+    o caso do EWZ, que ficava 'indisponivel' na maioria das coletas."""
+    txt = _http_texto(f"https://stooq.com/q/l/?s={str(ticker).lower()}.us&f=sd2t2ohlcv&h&e=csv")
+    if not txt:
+        return None
+    linhas = [l for l in txt.strip().splitlines() if l.strip()]
+    if len(linhas) < 2:
+        return None
+    campos = linhas[1].split(",")
+    if len(campos) < 7:
+        return None
+    fechamento = num(campos[6])
+    if fechamento <= 0:
+        return None
+    return {"valor": fechamento, "fonte": "Stooq",
+            "data": campos[1] if len(campos) > 1 and campos[1] else datetime.now().strftime("%Y-%m-%d")}
+
+
 # ---------------------------------------------------------------- INVESTING
 def investing_indice(slug):
     """Le a cotacao na pagina do Investing.com (raspagem leve)."""
@@ -1832,6 +2114,9 @@ def coletar_indicador_web(nome, data_ref=None, usar_cache=True):
                 r = tradingeconomics_indicador(slug) if slug else None
                 if r is None and nome == "PMI":
                     r = tradingeconomics_indicador("services-pmi")
+            elif fonte == "stooq":
+                ticker = {"EWZ": "EWZ", "DXY": "USDX"}.get(nome)
+                r = stooq_cotacao(ticker) if ticker else None
             elif fonte == "investing":
                 slug = {"DXY": "usdollar", "VIX": "volatility-s-p-500",
                         "EWZ": "ishares-msci-brazil-index"}.get(nome)
@@ -1875,10 +2160,13 @@ def coletar_macro_web(data_ref=None):
             r = fred_ultimo(serie, data_ref)
             if r:
                 saida[chave] = r["valor"]
-    # Disponibilidade do macro NAO depende do PMI. Com DXY, VIX, EWZ e PTAX
-    # presentes ja e possivel calcular vies; exigir o PMI mensal deixava o
-    # macro neutro em 100% das leituras.
-    ESSENCIAIS_MACRO = ("DXY", "VIX", "EWZ", "PTAX")
+    # Disponibilidade do macro NAO depende do PMI nem do EWZ. Exigir os 4
+    # (DXY, VIX, EWZ, PTAX) deixava o macro neutro em 98,5% das leituras,
+    # porque o EWZ sozinho falhava na maioria das coletas (fonte paga/instavel)
+    # e travava os outros 3 indicadores, que chegavam normalmente. EWZ
+    # continua sendo coletado e pontuando quando disponivel — so deixou de
+    # ser um requisito para os demais valerem.
+    ESSENCIAIS_MACRO = ("DXY", "VIX", "PTAX")
     _faltam_essenciais = [k for k in ESSENCIAIS_MACRO if saida.get(k) is None]
     saida["indisponiveis_essenciais"] = _faltam_essenciais
     saida["completo"] = not _faltam_essenciais
@@ -1969,6 +2257,7 @@ PADROES_SONOROS = {
     "reversao":        [(1600, 120), (900, 120), (1600, 120), (900, 300)],  # sirene dupla
     "alerta_maximo":   [(2000, 100), (1500, 100), (2000, 100), (1500, 100), (2000, 400)],
     "aviso":           [(1000, 500)],
+    "neutro":          [(700, 200), (700, 200)],   # dois bipes graves e curtos
 }
 
 
@@ -2796,7 +3085,8 @@ def capturar_times_trades():
         "times", "trades", "t&t", "t & t", "tape", "time", "sales",
         "negocios", "negócios", "negociacao", "negociação",
         "ordem original", "compradora", "vendedora", "agressor",
-        "4 times", "5 times", "hora comprad", "book de negoc"
+        "4 times", "5 times", "hora comprad", "book de negoc",
+        "fluxo de negoc", "ordens executadas", "execuc", "tempo e vendas",
     ]
     img, msg = _capturar_por_palavras_forcado(palavras, "Times & Trades")
     if img is not None:
@@ -3134,6 +3424,9 @@ CRITICO — VALIDE A ARITMETICA ANTES DE FECHAR O JSON:
   "hora_replay": "hora EXATA do replay no formato HH:MM:SS. Leia no CABECALHO da janela do grafico, ao lado da data (ex: '28/07/2026 09:00:31' -> '09:00:31'), ou no painel Replay onde aparece o cronometro (ex: '09:00:31'). Se so houver HH:MM, retorne HH:MM:00. Este campo e CRITICO: leia com atencao maxima.",
   "preco_atual": 0.0, "abertura": 0.0, "maxima": 0.0, "minima": 0.0,
   "vwap": 0.0, "ajuste": 0.0, "ptax": 0.0,
+  "superdom_maxima": "MAXIMA do dia exibida no painel SuperDOM, se visivel. 0.0 se nao houver.",
+  "superdom_minima": "MINIMA do dia exibida no painel SuperDOM, se visivel. 0.0 se nao houver.",
+  "superdom_vwap": "VWAP exibida no painel SuperDOM, se visivel. 0.0 se nao houver.",
   "ajuste_anterior": "valor do AJUSTE DO PREGAO ANTERIOR. Procure o rotulo 'Prior Cote Ajuste', 'Ajuste Anterior' ou a linha horizontal rotulada 'Ajuste' no grafico. 0.0 se nao houver.",
   "maxima_anterior": "MAXIMA do pregao ANTERIOR (nao a de hoje). Leia a linha horizontal rotulada 'Maximo'/'Maxima' ou o topo dos candles do dia anterior visiveis a esquerda do separador de dias. 0.0 se nao conseguir.",
   "minima_anterior": "MINIMA do pregao ANTERIOR (nao a de hoje). Leia a linha rotulada 'Minimo'/'Minima' ou o fundo dos candles do dia anterior. 0.0 se nao conseguir.",
@@ -3168,6 +3461,15 @@ CRITICO — VALIDE A ARITMETICA ANTES DE FECHAR O JSON:
 # VALIDACAO
 # =========================
 def validar_leitura(dt):
+    # SuperDOM completa os campos que o grafico nao entregou.
+    try:
+        for _dest, _orig in (("maxima", "superdom_maxima"),
+                             ("minima", "superdom_minima"),
+                             ("vwap", "superdom_vwap")):
+            if num(dt.get(_dest, 0)) <= 0 and num(dt.get(_orig, 0)) > 0:
+                dt[_dest] = num(dt.get(_orig))
+    except Exception:
+        pass
     preco = num(dt.get("preco_atual"))
     maxima = num(dt.get("maxima"))
     minima = num(dt.get("minima"))
@@ -3498,6 +3800,407 @@ def calcular_ifr(dados_tela=None, hist=None):
 
     return {"valido": True, "ifr": ifr, "estado": estado,
             "divergencia": divergencia, "amostra": len(serie)}
+
+
+# =============================================================================
+# VWAP BANDS (1sigma / 2sigma) — desvio-padrao volume-ponderado
+# A VWAP da tela (SuperDOM) e um ponto so, sem dispersao. As bandas usam a
+# propria serie de leituras do dia (hist_leituras: preco + volume) para medir
+# o desvio-padrao em torno dela e dar profundidade estatistica ao nivel —
+# mesmo racional das Bandas de Bollinger acima, mas ancorado na VWAP.
+# =============================================================================
+VWAP_BANDS_AMOSTRA_MINIMA = 6
+
+
+def estimar_vwap_sessao(hist: Optional[List[Dict[str, Any]]] = None) -> float:
+    """VWAP de sessao estimada a partir do proprio historico de leituras do
+    app (hist_leituras: preco + volume) — usada como FALLBACK quando a IA
+    nao consegue ler o VWAP na tela (indicador oculto, sobreposto, ou fora
+    do layout naquele dia). Mesma matematica volume-ponderada ja usada
+    dentro de calcular_vwap_bands, exposta aqui separadamente para poder
+    alimentar dados_tela["vwap"] diretamente — nao so o calculo das bandas —
+    e assim destravar dist_v/margem_vwap/gatekeeper quando a leitura ao
+    vivo falhar.
+    """
+    try:
+        hist = hist if hist is not None else st.session_state.get("hist_leituras", [])
+        pontos = [(num(x.get("preco", 0)), num(x.get("volume", 0))) for x in (hist or [])
+                  if num(x.get("preco", 0)) > 0]
+        if len(pontos) < 2:
+            return 0.0
+        vol_total = sum(v for _, v in pontos)
+        if vol_total > 0:
+            return round(sum(p * v for p, v in pontos) / vol_total, 2)
+        return round(sum(p for p, _ in pontos) / len(pontos), 2)
+    except Exception:
+        return 0.0
+
+
+def calcular_vwap_bands(dados_tela, hist=None):
+    """VWAP de sessao com bandas de 1 e 2 desvios-padrao, ponderadas por volume.
+
+    Centro: VWAP exibida na tela quando disponivel (e a VWAP real do book);
+    na falta dela, a VWAP calculada pela propria serie. O desvio sempre vem
+    da dispersao volume-ponderada da serie do dia (mesma logica de um VWAP
+    com bandas de desvio-padrao em plataformas de order flow).
+    """
+    hist = hist if hist is not None else st.session_state.get("hist_leituras", [])
+    preco = num((dados_tela or {}).get("preco_atual", 0))
+    vwap_tela = num((dados_tela or {}).get("vwap", 0))
+    pontos = [(num(x.get("preco", 0)), num(x.get("volume", 0))) for x in (hist or [])
+              if num(x.get("preco", 0)) > 0]
+    vazio = {"valido": False, "vwap": 0.0, "superior_1": 0.0, "inferior_1": 0.0,
+             "superior_2": 0.0, "inferior_2": 0.0, "desvio": 0.0, "posicao": -1.0,
+             "estado": "indefinido", "amostra": len(pontos)}
+    if preco <= 0 or len(pontos) < VWAP_BANDS_AMOSTRA_MINIMA:
+        return vazio
+
+    vol_total = sum(v for _, v in pontos)
+    if vol_total > 0:
+        vwap_calc = sum(p * v for p, v in pontos) / vol_total
+        variancia = sum(v * (p - vwap_calc) ** 2 for p, v in pontos) / vol_total
+    else:
+        # Sem volume valido na serie: cai para media/desvio simples.
+        precos_only = [p for p, _ in pontos]
+        vwap_calc = sum(precos_only) / len(precos_only)
+        variancia = sum((p - vwap_calc) ** 2 for p in precos_only) / len(precos_only)
+
+    desvio = variancia ** 0.5
+    centro = vwap_tela if vwap_tela > 0 else round(vwap_calc, 2)
+    if desvio <= 0:
+        vazio["motivo"] = "série sem dispersão (desvio zero)"
+        return vazio
+
+    superior_1 = round(centro + desvio, 2)
+    inferior_1 = round(centro - desvio, 2)
+    superior_2 = round(centro + 2 * desvio, 2)
+    inferior_2 = round(centro - 2 * desvio, 2)
+
+    largura2 = superior_2 - inferior_2
+    posicao = -1.0
+    if largura2 > 0:
+        posicao = round(((preco - inferior_2) / largura2) * 100, 1)
+        posicao = max(-20.0, min(120.0, posicao))
+
+    if preco >= superior_2:
+        estado = "extensao_superior"
+    elif preco >= superior_1:
+        estado = "acima_banda1"
+    elif preco <= inferior_2:
+        estado = "extensao_inferior"
+    elif preco <= inferior_1:
+        estado = "abaixo_banda1"
+    else:
+        estado = "dentro"
+
+    return {"valido": True, "vwap": round(centro, 2),
+            "superior_1": superior_1, "inferior_1": inferior_1,
+            "superior_2": superior_2, "inferior_2": inferior_2,
+            "desvio": round(desvio, 2), "posicao": posicao, "estado": estado,
+            "amostra": len(pontos)}
+
+
+def render_vwap_bands(vwap_info, preco=0.0):
+    """Renderiza o painel de VWAP Bands na aba de Liquidez."""
+    st.markdown('<div class="section-title">📏 VWAP Bands (1σ / 2σ)</div>', unsafe_allow_html=True)
+    if not vwap_info or not vwap_info.get("valido"):
+        st.caption("VWAP bands indisponíveis — amostra insuficiente "
+                   f"({(vwap_info or {}).get('amostra', 0)}/{VWAP_BANDS_AMOSTRA_MINIMA} leituras).")
+        return
+    vcol1, vcol2, vcol3, vcol4, vcol5 = st.columns(5)
+    vcol1.metric("Banda -2σ", f"{vwap_info['inferior_2']:.2f}")
+    vcol2.metric("Banda -1σ", f"{vwap_info['inferior_1']:.2f}")
+    vcol3.metric("VWAP", f"{vwap_info['vwap']:.2f}")
+    vcol4.metric("Banda +1σ", f"{vwap_info['superior_1']:.2f}")
+    vcol5.metric("Banda +2σ", f"{vwap_info['superior_2']:.2f}")
+    _estado_txt = {
+        "extensao_superior": "🔴 Preço estendido acima de +2σ — exaustão compradora provável, favorece reversão/realização.",
+        "acima_banda1": "🟠 Preço entre +1σ e +2σ da VWAP — zona de atenção para venda contra o movimento.",
+        "extensao_inferior": "🟢 Preço estendido abaixo de -2σ — exaustão vendedora provável, favorece reversão/repique.",
+        "abaixo_banda1": "🟠 Preço entre -1σ e -2σ da VWAP — zona de atenção para compra contra o movimento.",
+        "dentro": "⚪ Preço dentro de ±1σ da VWAP — sem extremo estatístico no momento.",
+    }.get(vwap_info.get("estado", ""), "")
+    if _estado_txt:
+        st.caption(_estado_txt)
+
+
+# =============================================================================
+# VOLUME PROFILE — POC / HVN / LVN
+# O app nao tem acesso ao time & sales tick a tick, entao o perfil e montado
+# a partir dos candles do timeframe operacional (hist_candles: maxima, minima
+# e volume por candle), distribuindo o volume de cada candle proporcionalmente
+# aos bins de preco que ele cobre. Aproxima a distribuicao real de negocios
+# e e suficiente para localizar POC (preco de maior volume negociado), HVN
+# (nos de alto volume — tendem a segurar o preco) e LVN (nos de baixo volume
+# — o preco tende a atravessar rapido).
+# =============================================================================
+VOLUME_PROFILE_BINS = 20
+VOLUME_PROFILE_AMOSTRA_MINIMA = 3
+VOLUME_PROFILE_VALUE_AREA_PCT = 0.70   # area de valor em torno do POC
+VOLUME_PROFILE_HVN_PCT = 0.65          # bin >= 65% do volume do POC = HVN
+VOLUME_PROFILE_LVN_PCT = 0.20          # bin <= 20% do volume do POC = LVN
+# Distancia, em pontos, para considerar que a entrada esta "no" LVN — usada
+# tanto no bonus/penalidade de score quanto na trava do gatekeeper.
+TOLERANCIA_LVN_PONTOS = 3.0
+
+
+def calcular_volume_profile(dados_tela=None, hist=None, n_bins=VOLUME_PROFILE_BINS):
+    """Perfil de volume por faixa de preco, construido a partir dos candles
+    do timeframe operacional (hist_candles)."""
+    hist_c = hist if hist is not None else st.session_state.get("hist_candles", [])
+    candles = [c for c in (hist_c or [])
+               if num(c.get("maxima", 0)) > 0 and num(c.get("minima", 0)) > 0]
+    vazio = {"valido": False, "poc": 0.0, "hvn": [], "lvn": [], "bins": [],
+             "va_superior": 0.0, "va_inferior": 0.0, "amostra": len(candles)}
+    if len(candles) < VOLUME_PROFILE_AMOSTRA_MINIMA:
+        return vazio
+
+    maxima_geral = max(num(c.get("maxima", 0)) for c in candles)
+    minima_geral = min(num(c.get("minima", 0)) for c in candles)
+    amplitude = maxima_geral - minima_geral
+    if amplitude <= 0:
+        return vazio
+
+    largura_bin = amplitude / n_bins
+    bins = [{"preco_min": round(minima_geral + i * largura_bin, 2),
+             "preco_max": round(minima_geral + (i + 1) * largura_bin, 2),
+             "volume": 0.0} for i in range(n_bins)]
+
+    for c in candles:
+        cmax = num(c.get("maxima", 0)); cmin = num(c.get("minima", 0))
+        cvol = num(c.get("volume", 0))
+        faixa_candle = cmax - cmin
+        for b in bins:
+            sobreposicao = min(cmax, b["preco_max"]) - max(cmin, b["preco_min"])
+            if sobreposicao > 0:
+                fracao = (sobreposicao / faixa_candle) if faixa_candle > 0 else 1.0
+                b["volume"] += cvol * fracao
+
+    if all(b["volume"] <= 0 for b in bins):
+        return vazio
+
+    poc_bin = max(bins, key=lambda b: b["volume"])
+    poc = round((poc_bin["preco_min"] + poc_bin["preco_max"]) / 2, 2)
+    vol_poc = poc_bin["volume"]
+
+    hvn = [round((b["preco_min"] + b["preco_max"]) / 2, 2) for b in bins
+           if b is not poc_bin and b["volume"] >= VOLUME_PROFILE_HVN_PCT * vol_poc]
+    lvn = [round((b["preco_min"] + b["preco_max"]) / 2, 2) for b in bins
+           if 0 < b["volume"] <= VOLUME_PROFILE_LVN_PCT * vol_poc]
+
+    # Area de valor: expande a partir do POC ate acumular 70% do volume total.
+    vol_total = sum(b["volume"] for b in bins)
+    idx_poc = bins.index(poc_bin)
+    incluidos = {idx_poc}
+    acumulado = vol_poc
+    esquerda, direita = idx_poc - 1, idx_poc + 1
+    while acumulado < vol_total * VOLUME_PROFILE_VALUE_AREA_PCT and (esquerda >= 0 or direita < len(bins)):
+        vol_esq = bins[esquerda]["volume"] if esquerda >= 0 else -1.0
+        vol_dir = bins[direita]["volume"] if direita < len(bins) else -1.0
+        if vol_esq >= vol_dir and esquerda >= 0:
+            acumulado += vol_esq; incluidos.add(esquerda); esquerda -= 1
+        elif direita < len(bins):
+            acumulado += vol_dir; incluidos.add(direita); direita += 1
+        else:
+            break
+
+    va_inferior = round(min(bins[i]["preco_min"] for i in incluidos), 2)
+    va_superior = round(max(bins[i]["preco_max"] for i in incluidos), 2)
+
+    return {"valido": True, "poc": poc, "hvn": sorted(hvn), "lvn": sorted(lvn),
+            "bins": bins, "va_superior": va_superior, "va_inferior": va_inferior,
+            "amostra": len(candles)}
+
+
+def render_volume_profile(vp_info, preco=0.0):
+    """Renderiza o painel de Volume Profile (POC/HVN/LVN) na aba de Liquidez."""
+    st.markdown('<div class="section-title">📊 Volume Profile (POC · HVN · LVN)</div>', unsafe_allow_html=True)
+    if not vp_info or not vp_info.get("valido"):
+        st.caption("Volume Profile indisponível — amostra insuficiente "
+                   f"({(vp_info or {}).get('amostra', 0)}/{VOLUME_PROFILE_AMOSTRA_MINIMA} candles).")
+        return
+    pcol1, pcol2, pcol3 = st.columns(3)
+    pcol1.metric("POC", f"{vp_info['poc']:.2f}")
+    pcol2.metric("Área de valor (70%)", f"{vp_info['va_inferior']:.2f} – {vp_info['va_superior']:.2f}")
+    _dist_poc = (preco - vp_info["poc"]) if preco else 0.0
+    pcol3.metric("Distância do preço ao POC", f"{_dist_poc:+.2f}")
+
+    if vp_info.get("hvn"):
+        st.caption("🟩 HVN (alto volume — tende a segurar o preço): " +
+                   ", ".join(f"{v:.2f}" for v in vp_info["hvn"][:6]))
+    if vp_info.get("lvn"):
+        st.caption("🟥 LVN (baixo volume — o preço tende a atravessar rápido): " +
+                   ", ".join(f"{v:.2f}" for v in vp_info["lvn"][:6]))
+
+    try:
+        _df_vp = pd.DataFrame({
+            "preco": [round((b["preco_min"] + b["preco_max"]) / 2, 2) for b in vp_info["bins"]],
+            "volume": [b["volume"] for b in vp_info["bins"]],
+        }).set_index("preco").sort_index()
+        st.bar_chart(_df_vp, height=280)
+    except Exception:
+        pass
+
+
+# =============================================================================
+# REGRAS DE RISCO ATIVO — VWAP Bands e LVN
+# Estas duas funcoes sao a UNICA fonte de verdade das regras abaixo: tanto o
+# ajuste de score (em classificar_contexto) quanto o veto do gatekeeper (em
+# colunas_gatekeeper/_avaliar_travas) chamam as mesmas funcoes, com os mesmos
+# criterios. Isso evita a divergencia classica de "painel diz uma coisa, log
+# grava outra" que ja apareceu antes neste codigo (ver nota do bug de
+# conviccao dupla na aba de confluencia).
+# =============================================================================
+
+# Penalidade/bonus de score ao tocar/romper as bandas de VWAP.
+VWAP_BANDA_PENALIDADE_EXTREMO = 3   # preco alem de 2 sigma, CONTRA a operacao
+VWAP_BANDA_PENALIDADE_MEIO = 1      # preco entre 1 e 2 sigma, CONTRA a operacao
+VWAP_BANDA_BONUS_EXTREMO = 2        # preco alem de 2 sigma, A FAVOR (reversao)
+VWAP_BANDA_BONUS_MEIO = 1           # preco entre 1 e 2 sigma, A FAVOR
+
+
+def avaliar_risco_vwap_banda(preco: float, acao: str, vwap_bands: Optional[Dict[str, Any]],
+                              ancora_entrada: bool = False) -> Dict[str, Any]:
+    """Converte a posicao do preco nas VWAP Bands (1sigma/2sigma) em regra
+    ATIVA de score e gatekeeper — deixam de ser apenas informativas.
+
+    Racional: romper +2sigma/-2sigma da VWAP e um evento estatisticamente raro
+    (~95% dos precos ficam dentro de 2 desvios-padrao). Perseguir a operacao
+    NA DIRECAO do rompimento sem uma ancora de reversao (pullback, reversao no
+    extremo ou absorcao ja confirmados em outro modulo) e comprar/vender no
+    topo/fundo estatistico do dia. Operar NA DIRECAO CONTRARIA ao rompimento
+    (ou seja, apostar na reversao) e reforcado.
+
+    Args:
+        preco: preco atual de negociacao.
+        acao: "compra" ou "venda" — direcao pretendida da entrada.
+        vwap_bands: saida de calcular_vwap_bands().
+        ancora_entrada: True quando ha pullback/reversao/absorcao confirmados
+            (mesmo criterio de AncoraEntrada usado no restante do gatekeeper).
+
+    Returns:
+        dict com:
+            ajuste_score (int): soma diretamente ao score (positivo ou negativo).
+            bloqueia (bool): True quando o gatekeeper deve vetar a entrada.
+            motivo (str): motivo legivel para log/CSV quando bloqueia=True.
+            estado (str): estado bruto devolvido por calcular_vwap_bands.
+    """
+    vazio: Dict[str, Any] = {"ajuste_score": 0, "bloqueia": False, "motivo": "", "estado": "indefinido"}
+    try:
+        if not vwap_bands or not vwap_bands.get("valido") or acao not in ("compra", "venda"):
+            return vazio
+        estado = str(vwap_bands.get("estado", "indefinido"))
+        resultado = dict(vazio)
+        resultado["estado"] = estado
+
+        if acao == "compra":
+            if estado == "extensao_superior":
+                resultado["ajuste_score"] = -VWAP_BANDA_PENALIDADE_EXTREMO
+                if not ancora_entrada:
+                    resultado["bloqueia"] = True
+                    resultado["motivo"] = (
+                        f"Compra além de +2σ da VWAP ({num(vwap_bands.get('superior_2')):.2f}) "
+                        "sem âncora de reversão — exaustão estatística")
+            elif estado == "acima_banda1":
+                resultado["ajuste_score"] = -VWAP_BANDA_PENALIDADE_MEIO
+            elif estado == "extensao_inferior":
+                resultado["ajuste_score"] = VWAP_BANDA_BONUS_EXTREMO
+            elif estado == "abaixo_banda1":
+                resultado["ajuste_score"] = VWAP_BANDA_BONUS_MEIO
+        else:  # venda
+            if estado == "extensao_inferior":
+                resultado["ajuste_score"] = -VWAP_BANDA_PENALIDADE_EXTREMO
+                if not ancora_entrada:
+                    resultado["bloqueia"] = True
+                    resultado["motivo"] = (
+                        f"Venda além de -2σ da VWAP ({num(vwap_bands.get('inferior_2')):.2f}) "
+                        "sem âncora de reversão — exaustão estatística")
+            elif estado == "abaixo_banda1":
+                resultado["ajuste_score"] = -VWAP_BANDA_PENALIDADE_MEIO
+            elif estado == "extensao_superior":
+                resultado["ajuste_score"] = VWAP_BANDA_BONUS_EXTREMO
+            elif estado == "acima_banda1":
+                resultado["ajuste_score"] = VWAP_BANDA_BONUS_MEIO
+        return resultado
+    except Exception:
+        # Rigor de excecao: qualquer falha de leitura devolve o resultado
+        # neutro — nunca deixa a regra nova derrubar o loop de analise.
+        return vazio
+
+
+# Penalidade de score quando a entrada persegue/rompe em direcao a um LVN
+# COM suporte de fluxo agressivo (atenuada: o fluxo pode sustentar a travessia).
+LVN_PENALIDADE_COM_FLUXO = 1
+# Penalidade quando persegue/rompe em direcao a um LVN SEM suporte de fluxo
+# agressivo (vácuo de liquidez puro) — soma-se ao veto do gatekeeper.
+LVN_PENALIDADE_SEM_FLUXO = 3
+
+
+def avaliar_risco_lvn(preco: float, acao: str, pos_range: float,
+                       rompimento_dispara: bool, rompimento_direcao: str,
+                       saldo_agressao_pct: float, vp_info: Optional[Dict[str, Any]],
+                       tolerancia: float = TOLERANCIA_LVN_PONTOS) -> Dict[str, Any]:
+    """Regra ativa de LVN (Low Volume Node): barreira de invalidacao/penalizacao
+    quando a entrada ROMPE ou PERSEGUE o preco em direcao a uma zona de baixo
+    volume negociado, sem fluxo agressivo correspondente sustentando o
+    movimento.
+
+    Um LVN isolado nao veta nada — e normal o preco cruzar zonas de baixo
+    volume no meio do range, sem que isso signifique risco. O que caracteriza
+    risco real, e por isso vira regra ativa, e a COMBINACAO de tres fatores:
+      1. Gatilho direcional: a entrada esta perseguindo a ponta do range
+         (mesmo criterio ja usado na trava de falso rompimento) OU o
+         rompimento de candle disparou na mesma direcao da entrada.
+      2. O preco de entrada cai dentro da tolerancia de um LVN mapeado.
+      3. O fluxo agressivo (Times & Trades / agentes) NAO confirma a mesma
+         direcao — ou seja, o preco esta indo para um vacuo de liquidez SEM
+         a agressao real que justificaria atravessa-lo.
+
+    Quando o fluxo agressivo confirma a direcao (saldo de agressao alinhado),
+    a trava vira apenas penalidade leve no score — o fluxo pode legitimamente
+    sustentar a travessia do LVN. Sem essa confirmacao, o gatekeeper bloqueia.
+
+    Returns:
+        dict com ajuste_score (int, negativo), bloqueia (bool), motivo (str)
+        e nivel_lvn (float | None) — o nivel de LVN mais proximo encontrado.
+    """
+    vazio: Dict[str, Any] = {"ajuste_score": 0, "bloqueia": False, "motivo": "", "nivel_lvn": None}
+    try:
+        if not vp_info or not vp_info.get("valido") or acao not in ("compra", "venda"):
+            return vazio
+        lvns = vp_info.get("lvn") or []
+        if not lvns:
+            return vazio
+
+        persegue = ((acao == "compra" and num(pos_range) >= PONTA_RANGE_COMPRA) or
+                    (acao == "venda" and 0.0 <= num(pos_range) <= PONTA_RANGE_VENDA))
+        rompendo_a_favor = bool(rompimento_dispara) and (str(rompimento_direcao) == acao)
+        if not (persegue or rompendo_a_favor):
+            return vazio
+
+        nivel_lvn = None
+        for nivel in lvns:
+            if abs(num(preco) - num(nivel)) <= tolerancia:
+                nivel_lvn = num(nivel)
+                break
+        if nivel_lvn is None:
+            return vazio
+
+        fluxo_suporta = ((acao == "compra" and num(saldo_agressao_pct) >= SALDO_AGRESSAO_MINIMO) or
+                          (acao == "venda" and num(saldo_agressao_pct) <= (100.0 - SALDO_AGRESSAO_MINIMO)))
+
+        gatilho_txt = "Rompimento" if rompendo_a_favor else "Perseguição de preço"
+        if fluxo_suporta:
+            return {"ajuste_score": -LVN_PENALIDADE_COM_FLUXO, "bloqueia": False,
+                    "motivo": (f"{gatilho_txt} de {acao} em direção ao LVN {nivel_lvn:.2f} "
+                               "com fluxo agressivo a favor — atenção, sem bloqueio"),
+                    "nivel_lvn": nivel_lvn}
+        return {"ajuste_score": -LVN_PENALIDADE_SEM_FLUXO, "bloqueia": True,
+                "motivo": (f"{gatilho_txt} de {acao} em direção ao LVN {nivel_lvn:.2f} "
+                           "sem suporte agressivo de fluxo — vácuo de liquidez negociada"),
+                "nivel_lvn": nivel_lvn}
+    except Exception:
+        return vazio
 
 
 # =============================================================================
@@ -3850,6 +4553,37 @@ def ajuste_score_horario(minutos):
         return 1
     # 10:00–12:00 e 14:00–16:00 — melhor janela, sem penalidade
     return 0
+
+
+# =============================================================================
+# DINAMICA DE VOLATILIDADE NA ABERTURA (09:00-09:45) — peso adaptativo
+# ajuste_score_horario() acima ja ENDURECE o LIMIAR (score_min +2) nessa
+# janela. Esta funcao complementa com uma penalidade DIRETA no score
+# calculado — nao so exige mais, tambem pesa menos a favor — decaindo
+# linearmente de 2 pontos no minuto exato da abertura ate 0 as 09:45. Mitiga
+# falsos rompimentos medidos no inicio do pregao mesmo quando a confluencia
+# pontual (score bruto) parece alta.
+# =============================================================================
+JANELA_ABERTURA_INICIO_MIN = 9 * 60        # 09:00
+JANELA_ABERTURA_FIM_MIN = 9 * 60 + 45      # 09:45
+JANELA_ABERTURA_PENALIDADE_SCORE_MAX = 2   # penalidade maxima, no minuto exato da abertura
+
+
+def calcular_penalidade_abertura(minutos: Optional[int]) -> int:
+    """Peso adaptativo de volatilidade na abertura: penalidade DIRETA no
+    score (nao no limiar), decrescente linearmente de 2 (09:00) a 0 (09:45).
+    """
+    try:
+        if minutos is None:
+            return 0
+        if not (JANELA_ABERTURA_INICIO_MIN <= minutos < JANELA_ABERTURA_FIM_MIN):
+            return 0
+        _decorridos = minutos - JANELA_ABERTURA_INICIO_MIN
+        _janela = JANELA_ABERTURA_FIM_MIN - JANELA_ABERTURA_INICIO_MIN
+        _fracao_restante = 1.0 - (_decorridos / _janela)
+        return int(round(JANELA_ABERTURA_PENALIDADE_SCORE_MAX * _fracao_restante))
+    except Exception:
+        return 0
 
 
 def estrategia_por_horario(hora_str, regime, vies_anterior):
@@ -4398,7 +5132,10 @@ def registrar_candle(dados_tela, timeframe_min=TIMEFRAME_CANDLE_MIN):
             "leituras": 1, "encerrado": False,
         })
 
-    st.session_state["hist_candles"] = hist[:12]
+    # CORRECAO: cap subiu de 12 para 60 candles (5 horas em timeframe de 5 min).
+    # 12 candles (1h) era curto demais para o Volume Profile — POC/HVN/LVN
+    # precisam da distribuicao de volume da sessao inteira, nao so da ultima hora.
+    st.session_state["hist_candles"] = hist[:60]
     return st.session_state["hist_candles"]
 
 
@@ -4607,17 +5344,19 @@ def avaliar_lotes_institucionais(agentes_info, preco, limite=1000):
 
 def prever_movimento(dados_tela, momentum_info, zonas_info, rompimento=None,
                      velocidade_real=None, velocidade_valida=None, fluxo=None, lotes=None,
+                     ifr_info=None,
                      timeframe_min=TIMEFRAME_CANDLE_MIN):
-    """Projeta a tendencia dos proximos 5 e 10 minutos.
+    """Projeta a tendência dos próximos 5 e 10 minutos.
 
-    Em vez de descrever o passado, mede velocidade, aceleracao, espaco livre ate a
-    proxima zona forte e rompimento de candle para estimar onde o preco deve estar.
+    Agora com IFR/RSI dinâmico: peso do IFR escala com proximidade dos extremos
+    e divergências são convertidas em pontos de probabilidade diretamente.
     """
     preco = num(dados_tela.get("preco_atual", 0))
     r = {"direcao_prevista": "indefinido", "prob_alta_5": 50, "prob_baixa_5": 50,
          "prob_alta_10": 50, "prob_baixa_10": 50, "projecao_5": preco, "projecao_10": preco,
          "velocidade_pts_min": 0.0, "velocidade_valida": False, "aceleracao": 0.0, "confianca": 0,
-         "fatores": [], "espaco_alta": 0.0, "espaco_baixa": 0.0}
+         "fatores": [], "espaco_alta": 0.0, "espaco_baixa": 0.0,
+         "ifr": None, "ifr_estado": "", "ifr_divergencia": ""}
     if preco <= 0:
         return r
 
@@ -4639,6 +5378,7 @@ def prever_movimento(dados_tela, momentum_info, zonas_info, rompimento=None,
     r["velocidade_valida"] = vel_valida
     r["aceleracao"] = aceleracao
 
+    # ---------- ZONAS ----------
     espaco_alta, espaco_baixa = 99.0, 99.0
     for z in ((zonas_info or {}).get("zonas", []) or []):
         if int(z.get("forca", 0) or 0) < 24:
@@ -4653,21 +5393,23 @@ def prever_movimento(dados_tela, momentum_info, zonas_info, rompimento=None,
     r["espaco_alta"] = round(espaco_alta, 2) if espaco_alta < 99 else 0.0
     r["espaco_baixa"] = round(espaco_baixa, 2) if espaco_baixa < 99 else 0.0
 
+    # ---------- IFR / RSI ----------
+    _ifr = ifr_info or {"valido": False, "ifr": 50.0, "estado": "indefinido", "divergencia": "", "amostra": 0}
+    r["ifr"] = _ifr.get("ifr")
+    r["ifr_estado"] = _ifr.get("estado", "")
+    r["ifr_divergencia"] = _ifr.get("divergencia", "")
+
     pa, pb, fatores = 0, 0, []
 
-    # Velocidade e um dado ATRASADO: peso reduzido de 22 para 12.
-    # Continuacao de movimento medida no proprio preco nao antecipa nada.
-    # Previsao medida: 85% de coincidencia com o passado contra 37% de acerto no
-    # futuro. Peso do preco cai de 12 para 8; o fluxo passa a dominar.
+    # Velocidade
     if velocidade > 0.15:
         pa += 8; fatores.append(f"Velocidade de alta {velocidade:+.2f} pts/min")
     elif velocidade < -0.15:
         pb += 8; fatores.append(f"Velocidade de baixa {velocidade:+.2f} pts/min")
 
-    # ---- FLUXO: os unicos fatores realmente antecipativos ----
+    # FLUXO
     _fx = fluxo or {}
     if _fx.get("valido"):
-        # ABSORCAO: 77,8% de acerto medido contra 42,9% sem ela. Peso maximo.
         _abs_top = str(_fx.get("absorcao", ""))
         if _abs_top == "venda_absorvendo_compra":
             pb += 34
@@ -4686,7 +5428,6 @@ def prever_movimento(dados_tela, momentum_info, zonas_info, rompimento=None,
         elif _tend == "vendedora_crescente":
             pb += 24; fatores.append(f"Agressão vendedora crescendo ({_dagr:+.0f} p.p.)")
 
-        # Absorcao e exaustao de fluxo apontam para a REVERSAO — peso alto.
         _abs = str(_fx.get("absorcao", ""))
         if _abs == "venda_absorvendo_compra":
             pb += 26; fatores.append("Absorção: compra agredindo sem o preço subir")
@@ -4701,25 +5442,26 @@ def prever_movimento(dados_tela, momentum_info, zonas_info, rompimento=None,
     else:
         fatores.append("Sem leitura de fluxo — previsão apenas por preço (atrasada)")
 
-    # ---- GRANDES LOTES: onde o dinheiro institucional está posicionado ----
+    # Grandes lotes
     _lt = lotes or {}
     if _lt.get("vies") == "compra" and _lt.get("forca", 0) >= 25:
         pa += 18; fatores.append(_lt.get("resumo", "Grandes lotes sustentando a compra"))
     elif _lt.get("vies") == "venda" and _lt.get("forca", 0) >= 25:
         pb += 18; fatores.append(_lt.get("resumo", "Grandes lotes travando a alta"))
 
+    # Aceleração
     if aceleracao > 0.5:
         pa += 12; fatores.append("Movimento acelerando para cima")
     elif aceleracao < -0.5:
         pb += 12; fatores.append("Movimento acelerando para baixo")
 
+    # Médias
     if inc9 > 0 and inc20 > 0:
         pa += 8; fatores.append("MM9 e MM20 inclinadas para cima")
     elif inc9 < 0 and inc20 < 0:
         pb += 8; fatores.append("MM9 e MM20 inclinadas para baixo")
 
-    # Espaco livre so vale como fator na direcao em que o preco esta indo.
-    # Zona proxima acima nao e sinal de queda: num rompimento ela e alvo, nao barreira.
+    # Espaço livre
     if espaco_alta < 99 and espaco_baixa < 99:
         _sobe = velocidade > 0.05
         _desce = velocidade < -0.05
@@ -4728,8 +5470,7 @@ def prever_movimento(dados_tela, momentum_info, zonas_info, rompimento=None,
         elif espaco_baixa > espaco_alta * 1.5 and not _sobe:
             pb += 14; fatores.append(f"Espaço livre de {espaco_baixa:.1f} pts abaixo até a próxima zona")
 
-    # Extremo do range: continuacao quando ha velocidade, exaustao apenas quando
-    # a velocidade foi REALMENTE medida e esta perto de zero.
+    # Extremos do range
     _max_dia = num(dados_tela.get("maxima", 0))
     _min_dia = num(dados_tela.get("minima", 0))
     _rompendo_topo = _max_dia > 0 and preco >= _max_dia - 0.5
@@ -4747,6 +5488,7 @@ def prever_movimento(dados_tela, momentum_info, zonas_info, rompimento=None,
     if not vel_valida:
         fatores.append("Sem histórico suficiente para medir velocidade")
 
+    # Rompimento de candle
     rp = rompimento or {}
     if rp.get("dispara") and rp.get("direcao") == "venda":
         pb += 26; fatores.append("Rompimento da mínima do candle anterior confirmado")
@@ -4757,6 +5499,32 @@ def prever_movimento(dados_tela, momentum_info, zonas_info, rompimento=None,
     elif rp.get("direcao") == "compra_pendente":
         pa += 8; fatores.append(f"Stop de compra armado em {num(rp.get('nivel_stop_compra', 0)):.2f}")
 
+    # IFR/RSI dinâmico
+    if _ifr.get("valido") and _ifr.get("amostra", 0) >= 10:
+        ifr_val = float(_ifr.get("ifr", 50.0))
+        peso_ifr = 0.0
+        if ifr_val >= IFR_SOBRECOMPRA:
+            peso_ifr = min(18, (ifr_val - IFR_SOBRECOMPRA) / (100.0 - IFR_SOBRECOMPRA) * 18)
+            pb += peso_ifr
+            fatores.append(f"IFR sobrecompra {ifr_val:.1f} → pressão vendedora")
+        elif ifr_val <= IFR_SOBREVENDA:
+            peso_ifr = min(18, (IFR_SOBREVENDA - ifr_val) / IFR_SOBREVENDA * 18)
+            pa += peso_ifr
+            fatores.append(f"IFR sobrevenda {ifr_val:.1f} → pressão compradora")
+
+        div = str(_ifr.get("divergencia", ""))
+        if div == "baixista":
+            pb += 22; fatores.append("Divergência baixista (preço topo + IFR caindo)")
+            if aceleracao < -0.3:
+                pb += 10; fatores.append("Aceleração negativa confirma divergência baixista")
+        elif div == "altista":
+            pa += 22; fatores.append("Divergência altista (preço fundo + IFR subindo)")
+            if aceleracao > 0.3:
+                pa += 10; fatores.append("Aceleração positiva confirma divergência altista")
+        elif div:
+            fatores.append(f"Divergência neutra ({div}) — sem peso atribuído")
+
+    # Normalização dos percentuais
     total = pa + pb
     if total <= 0:
         return r
@@ -4766,6 +5534,7 @@ def prever_movimento(dados_tela, momentum_info, zonas_info, rompimento=None,
     r["prob_alta_10"] = p10; r["prob_baixa_10"] = 100 - p10
     r["prob_alta_5"] = p5;   r["prob_baixa_5"] = 100 - p5
 
+    # Projeções de preço com clamp nas zonas
     proj5 = preco + velocidade * 5
     proj10 = preco + velocidade * 10
     if velocidade > 0 and espaco_alta < 99:
@@ -4775,6 +5544,7 @@ def prever_movimento(dados_tela, momentum_info, zonas_info, rompimento=None,
     r["projecao_5"] = round(proj5, 2)
     r["projecao_10"] = round(proj10, 2)
 
+    # Direção prevista e confiança
     if p10 >= 62:
         r["direcao_prevista"] = "compra"
     elif p10 <= 38:
@@ -4783,8 +5553,29 @@ def prever_movimento(dados_tela, momentum_info, zonas_info, rompimento=None,
     r["fatores"] = fatores[:5]
     return r
 
-
 def classificar_contexto(dados_tela, fechamento_ant=None, ignorar_macro=False):
+
+    # BUG CORRIGIDO (item 5 — NameError momentum_info): este bloco calculava
+    # "indicadores_disponiveis"/"peso_total_indicadores" referenciando
+    # `momentum_info` e `contexto`, NENHUM dos dois definido neste escopo —
+    # `mom` (o resultado real de calcular_momentum) so existe mais adiante
+    # nesta funcao, e nao ha variavel local `contexto` aqui (o retorno desta
+    # funcao e um dict literal, nao uma variavel `contexto` acumulada).
+    # Ou seja: TODA leitura executava um NameError aqui, silenciosamente
+    # engolido por algum try/except mais externo, e o veredito congelava no
+    # resultado anterior — exatamente a falha reportada. Confirmado tambem
+    # que o valor computado (peso_total_indicadores) nunca era lido em
+    # nenhum outro lugar do arquivo — codigo morto que so existia para
+    # quebrar o ciclo. Removido em vez de remendado.
+    #
+    # O calculo do IFR abaixo NAO fazia parte do codigo morto — e usado de
+    # verdade mais adiante (prever_movimento) — por isso foi mantido aqui,
+    # so que sem a referencia quebrada a `momentum_info`/`contexto`.
+    try:
+        _ifr_val = calcular_ifr(dados_tela=dados_tela, hist=st.session_state.get("hist_leituras"))
+    except Exception:
+        _ifr_val = {"valido": False, "ifr": 50.0, "estado": "indefinido", "divergencia": "", "amostra": 0}
+
     preco = num(dados_tela.get("preco_atual"))
     vwap = num(dados_tela.get("vwap"))
     ajuste = num(dados_tela.get("ajuste"))
@@ -5064,10 +5855,18 @@ def classificar_contexto(dados_tela, fechamento_ant=None, ignorar_macro=False):
 
     previsao = prever_movimento(dados_tela, mom, zonas_pf, rompimento,
                                 velocidade_real=vel_real, velocidade_valida=vel_valida_ctx,
-                                fluxo=fluxo_info, lotes=lotes_info)
+                                fluxo=fluxo_info, lotes=lotes_info, ifr_info=_ifr_val)
     integridade_book = validar_integridade_book(st.session_state.get("ultimos_agentes", {}), preco)
 
     score = calcular_score(preco, vwap, ajuste, mm9, mm20, mm50, mm200, regime, acao)
+
+    # Volume Profile (POC/HVN/LVN): calculado uma unica vez aqui e reaproveitado
+    # no dict do contexto e no gatekeeper (colunas_gatekeeper), para nao
+    # recalcular o perfil tres vezes na mesma leitura.
+    try:
+        _vp_ctx = calcular_volume_profile(dados_tela, st.session_state.get("hist_candles"))
+    except Exception:
+        _vp_ctx = {"valido": False, "poc": 0.0, "hvn": [], "lvn": []}
 
     # Bônus/penalizações
     # Momentum alinhado com a direcao vale mais que qualquer media isolada
@@ -5083,6 +5882,59 @@ def classificar_contexto(dados_tela, fechamento_ant=None, ignorar_macro=False):
         score = min(7, score + 1)
     elif (_mm in ("alta_forte","alta") and acao == "venda") or (_mm in ("baixa_forte","baixa") and acao == "compra"):
         score = max(0, score - 2)   # operando contra o momentum
+
+    # Volume Profile: POC como nivel de convergencia extra (preco do lado
+    # "certo" do maior volume negociado reforca a direcao); LVN como barreira
+    # de invalidacao — ver avaliar_risco_lvn (fonte unica dessa regra, tambem
+    # usada pelo gatekeeper em colunas_gatekeeper). O bloqueio em si acontece
+    # so no gatekeeper; aqui so o ajuste de score e aplicado.
+    if _vp_ctx.get("valido"):
+        _poc_ctx = num(_vp_ctx.get("poc", 0))
+        if _poc_ctx > 0:
+            if (acao == "compra" and preco > _poc_ctx) or (acao == "venda" and preco < _poc_ctx):
+                score = min(7, score + 1)
+        _risco_lvn_ctx = avaliar_risco_lvn(
+            preco=preco, acao=acao, pos_range=_pr_range,
+            rompimento_dispara=bool(rompimento.get("dispara")),
+            rompimento_direcao=str(rompimento.get("direcao", "espera")),
+            saldo_agressao_pct=num(fluxo_info.get("agressao_pct", 50.0)),
+            vp_info=_vp_ctx)
+        if _risco_lvn_ctx.get("ajuste_score"):
+            score = max(0, min(7, score + _risco_lvn_ctx["ajuste_score"]))
+    else:
+        _risco_lvn_ctx = {"ajuste_score": 0, "bloqueia": False, "motivo": "", "nivel_lvn": None}
+
+    # VWAP Bands (1σ/2σ): passam a ser regra ativa de score — ver
+    # avaliar_risco_vwap_banda (fonte unica, tambem usada pelo gatekeeper).
+    # ancora_entrada=False aqui de proposito: o ajuste de SCORE nao depende de
+    # ancora (so o BLOQUEIO depende, e esse e reavaliado com a ancora real
+    # dentro de colunas_gatekeeper, apos reversao/pullback/absorcao saberem
+    # seu valor definitivo).
+    try:
+        _vwap_bands_ctx = calcular_vwap_bands(dados_tela, st.session_state.get("hist_leituras"))
+    except Exception:
+        _vwap_bands_ctx = {"valido": False}
+    _risco_vwap_ctx = avaliar_risco_vwap_banda(preco, acao, _vwap_bands_ctx, ancora_entrada=False)
+    if _risco_vwap_ctx.get("ajuste_score"):
+        score = max(0, min(7, score + _risco_vwap_ctx["ajuste_score"]))
+
+    # Flow Map dinamico (liquidez passiva no tempo): sinal NOVO e ainda sem
+    # acerto historico medido (ver TABELA_INDICADORES — indicador sem amostra
+    # nao ganha peso pleno). Por isso entra como ajuste BOUNDED (no maximo
+    # +-1), nunca como veto: confirma ou contradiz a direcao pretendida
+    # conforme o viés dinâmico acumulado (adicoes menos remocoes por lado nos
+    # ultimos ciclos), sem forca para travar a entrada sozinho.
+    try:
+        _flow_dyn_ctx = atualizar_flow_map_dinamico(
+            st.session_state.get("ultimos_agentes", {}), preco)
+    except Exception:
+        _flow_dyn_ctx = {"valido": False, "vies_dinamico": "indefinido"}
+    if _flow_dyn_ctx.get("valido"):
+        _vies_dyn = _flow_dyn_ctx.get("vies_dinamico", "indefinido")
+        if (_vies_dyn == "compradora" and acao == "compra") or (_vies_dyn == "vendedora" and acao == "venda"):
+            score = min(7, score + 1)
+        elif (_vies_dyn == "compradora" and acao == "venda") or (_vies_dyn == "vendedora" and acao == "compra"):
+            score = max(0, score - 1)
 
     # PMI dos EUA: peso macro na direcao do dolar
     # PMI veio vazio em 100% das 608 leituras medidas: sem dado, sem peso.
@@ -5167,17 +6019,22 @@ def classificar_contexto(dados_tela, fechamento_ant=None, ignorar_macro=False):
         _faixas = {"valido": False, "faixa_atual": "indefinida", "acao_permitida": "",
                    "verde": (0.0, 0.0), "amarela": (0.0, 0.0), "vermelha": (0.0, 0.0),
                    "resumo": "", "amplitude_ant": 0.0, "distancia_faixa": 0.0}
+    # Fonte manual e a mais confiavel de todas: foi o operador quem digitou.
     _fx_confiavel = str(_faixas.get("fonte_referencia", "")) in (
-        "tela_pregao_anterior", "tela_pregao_anterior (memoria)",
+        "manual", "tela_pregao_anterior", "tela_pregao_anterior (memoria)",
         "range_acumulado", "historico", "fechamento", "pregao_anterior_historico")
+    _faixa_sinal = ""
     if _faixas.get("valido") and _fx_confiavel and acao in ("compra", "venda"):
         _fx_acao = str(_faixas.get("acao_permitida", ""))
         if _fx_acao == acao:
-            score = min(7, score + 2)      # entrada na faixa da propria direcao
+            score = min(7, score + 3)      # entrada na faixa da propria direcao
+            _faixa_sinal = "favor"
         elif _faixas.get("faixa_atual") == "amarela":
             score = max(0, score - 1)      # zona de indecisao
+            _faixa_sinal = "amarela"
         elif _fx_acao and _fx_acao not in (acao, "ambas"):
-            score = max(0, score - 2)      # comprando na vermelha ou vendendo na verde
+            score = max(0, score - 3)      # comprando na vermelha ou vendendo na verde
+            _faixa_sinal = "contra"
 
     # ---- BOLLINGER / IFR / SCALP ----
     # Volatilidade e oscilacao entram como CONFIRMACAO do setup de borda, nunca
@@ -5288,7 +6145,14 @@ def classificar_contexto(dados_tela, fechamento_ant=None, ignorar_macro=False):
     _mm9_esticada_veto = False
     # Inicializado sempre: com locals() o valor saia 0 no log em 19 de 35 linhas.
     _amp_veto_ini = num((st.session_state.get("ultimo_range_dia") or {}).get("amplitude", 0))
-    _lim_veto_mm9 = limite_veto_mm9(_amp_veto_ini)
+    # ATR do dia (True Range candle a candle) como fonte PRIMARIA da tolerancia
+    # dinamica — cai para a amplitude do dia (limite_veto_mm9) so quando ainda
+    # nao ha candles suficientes para calcular o ATR (ver limite_veto_mm9_atr).
+    try:
+        _atr_ini = calcular_atr_intradiario(st.session_state.get("hist_candles"))
+    except Exception:
+        _atr_ini = {"valido": False, "atr": 0.0}
+    _lim_veto_mm9 = limite_veto_mm9_atr(_atr_ini.get("atr", 0.0), _amp_veto_ini)
     if _dist_mm9 >= LIMITE_DIST_MM9_ENTRADA:
         if (acao == "compra" and preco > mm9) or (acao == "venda" and preco < mm9):
             entrada_tardia = True
@@ -5297,9 +6161,16 @@ def classificar_contexto(dados_tela, fechamento_ant=None, ignorar_macro=False):
             # limitada a 2. Antes tirava 3 pontos de uma vez e derrubava o setup.
             _excesso = _dist_mm9 - LIMITE_DIST_MM9_ENTRADA
             score = max(0, score - min(2, 1 + int(_excesso // 2.0)))
-            # Veto proporcional a amplitude do dia, nao mais fixo em 9 pts.
+            # Veto agora dinamico por ATR (nao mais fixo em pontos nem so pela
+            # amplitude do dia): so veta se o afastamento ultrapassar
+            # ATR_MULTIPLO_VETO_MM9 x ATR atual. Em forte aceleracao direcional
+            # (ATR alto) a mesma distancia em pontos deixa de travar a entrada.
             _amp_veto = num((st.session_state.get("ultimo_range_dia") or {}).get("amplitude", 0))
-            _lim_veto_mm9 = limite_veto_mm9(_amp_veto)
+            try:
+                _atr_veto = calcular_atr_intradiario(st.session_state.get("hist_candles"))
+            except Exception:
+                _atr_veto = {"valido": False, "atr": 0.0}
+            _lim_veto_mm9 = limite_veto_mm9_atr(_atr_veto.get("atr", 0.0), _amp_veto)
             _mm9_esticada_veto = _dist_mm9 >= _lim_veto_mm9
 
     # Score mínimo FLEXÍVEL: base da estratégia - 2, ajustado pelo horário, mínimo 1
@@ -5316,6 +6187,23 @@ def classificar_contexto(dados_tela, fechamento_ant=None, ignorar_macro=False):
     # no replay; exigir o mesmo score de uma entrada comum travava o setup bom.
     if reversao_extremo and (pullback_favoravel or _absorcao_now):
         score_min = max(2, score_min - 1)
+
+    # Dinamica de volatilidade na abertura (09:00-09:45): penalidade DIRETA no
+    # score, alem do endurecimento do limiar ja feito por ajuste_score_horario.
+    score = max(0, score - calcular_penalidade_abertura(_min_h))
+
+    # Escape de vies neutro persistente (item 4 — ver bloco de constantes e
+    # _registrar_ciclo_para_escape_neutro): flexibiliza temporariamente o
+    # score minimo quando o veredito fica neutro/indefinido por N ciclos
+    # seguidos, para evitar estagnacao operacional em consolidacao prolongada.
+    # Nunca abaixo de SCORE_MINIMO_ABSOLUTO_FLEX — e uma flexibilizacao
+    # limitada e totalmente auditavel (fica registrada no contexto), nao uma
+    # suspensao do criterio de qualidade.
+    _streak_neutro = int(st.session_state.get("streak_ciclos_neutros", 0))
+    _escape_neutro_ativo = _streak_neutro >= LIMIAR_CICLOS_NEUTROS_ESCAPE
+    if _escape_neutro_ativo:
+        score_min = max(SCORE_MINIMO_ABSOLUTO_FLEX, score_min - AJUSTE_ESCAPE_NEUTRO)
+
     score = max(score, 1)
 
     niveis_prov = calcular_fibonacci(preco, acao if acao in ["compra", "venda"] else "compra", est_auto,
@@ -5759,6 +6647,7 @@ def classificar_contexto(dados_tela, fechamento_ant=None, ignorar_macro=False):
         "faixa_minima_ant": _faixas.get("minima_ant", 0.0),
         "faixa_ajuste_ant": _faixas.get("ajuste_ant", 0.0),
         "faixa_ordenada": bool(_faixas.get("ordenadas")),
+        "faixa_sinal": _faixa_sinal,
         "limite_veto_mm9": _lim_veto_mm9,
         "ifr_motivo": _ifr.get("motivo", ""),
         "tendencia_sobrepoe_fluxo": bool(locals().get("_tendencia_manda", False)),
@@ -5805,6 +6694,17 @@ def classificar_contexto(dados_tela, fechamento_ant=None, ignorar_macro=False):
         "rompimento_stop_venda": rompimento.get("nivel_stop_venda", 0),
         "rompimento_stop_compra": rompimento.get("nivel_stop_compra", 0),
         "volume_projetado": rompimento.get("volume_projetado", 0),
+        "volume_profile": _vp_ctx,
+        "volume_profile_poc": _vp_ctx.get("poc", 0.0) if _vp_ctx.get("valido") else 0.0,
+        "volume_profile_lvn": _vp_ctx.get("lvn", []) if _vp_ctx.get("valido") else [],
+        "volume_profile_hvn": _vp_ctx.get("hvn", []) if _vp_ctx.get("valido") else [],
+        "atr_dia": num(_atr_ini.get("atr", 0.0)) if isinstance(_atr_ini, dict) else 0.0,
+        "limite_veto_mm9_usado": _lim_veto_mm9,
+        "mm9_esticada_veto": _mm9_esticada_veto,
+        "risco_lvn": _risco_lvn_ctx,
+        "vwap_bands": _vwap_bands_ctx,
+        "risco_vwap_banda_estado": _risco_vwap_ctx.get("estado", "indefinido"),
+        "flow_map_dinamico": _flow_dyn_ctx,
         "lotes_institucionais": lotes_info,
         "lotes_vies": lotes_info.get("vies", ""),
         "lotes_forca": lotes_info.get("forca", 0),
@@ -6481,6 +7381,34 @@ Responda apenas em JSON valido:
 # =========================
 # EXECUCAO
 # =========================
+def _contexto_fallback_seguro(dados_tela: Dict[str, Any],
+                               ultimo_contexto: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Contexto minimo e seguro para quando classificar_contexto lanca uma
+    excecao (ex.: erro de escopo tipo NameError). Em vez de repetir cegamente
+    a ultima decisao valida — que pode ja estar desatualizada e apontar uma
+    direcao que nao existe mais — forca ACAO NEUTRA/AGUARDAR com score 0: a
+    postura mais conservadora possivel diante de uma falha interna nao
+    diagnosticada. Herda os demais campos do ultimo contexto valido (quando
+    houver) so para nao quebrar leitores de campos nao-diretivos (regime,
+    momentum etc.) — nenhum desses campos herdados chega a autorizar entrada,
+    porque acao_objetiva/score ficam travados em neutro/zero.
+    """
+    base: Dict[str, Any] = dict(ultimo_contexto or {})
+    base.update({
+        "acao_objetiva": "aguardar",
+        "acao_pretendida": "aguardar",
+        "acao_final": "aguardar",
+        "score": 0,
+        "score_minimo_usado": SCORE_MINIMO_ABSOLUTO,
+        "vies": "indisponível — erro interno na análise (fallback de segurança)",
+        "estrategia": "Aguardar — falha interna na classificação desta leitura",
+        "erro_fallback": True,
+        "execucao_liberada": "nao",
+        "preco_atual": num((dados_tela or {}).get("preco_atual", 0)),
+    })
+    return base
+
+
 def executar_analise():
     ignorar_macro = st.session_state.modo_replay and not st.session_state.usar_macro_no_replay
     img, msg = capturar_janela()
@@ -6530,6 +7458,35 @@ def executar_analise():
         with open(DADOS_TELA_JSON,"w",encoding="utf-8") as f: json.dump(dados_tela,f,ensure_ascii=False,indent=2)
     except Exception: pass
 
+    # Fallback de VWAP (item pedido pelo usuario apos achar VWAP=0 em 74
+    # leituras seguidas): a IA le o VWAP da tela a cada ciclo, mas quando o
+    # indicador some/fica ilegivel isso zera dist_v silenciosamente e
+    # neutraliza o filtro margem_vwap dos 3 perfis de agressividade — sem
+    # avisar ninguem. Cadeia de fallback, na ordem:
+    #   1) vwap lido diretamente da tela pela IA (jah tentado acima);
+    #   2) superdom_vwap — painel alternativo, tambem lido pela IA;
+    #   3) VWAP estimada a partir do proprio historico de leituras do app.
+    # "vwap_origem" fica gravado no CSV (campo VwapOrigem) para auditoria —
+    # dá pra saber, retroativamente, se o VWAP de uma leitura veio da tela
+    # ou foi estimado.
+    try:
+        if num(dados_tela.get("vwap", 0)) <= 0:
+            _vwap_super = num(dados_tela.get("superdom_vwap", 0))
+            if _vwap_super > 0:
+                dados_tela["vwap"] = _vwap_super
+                dados_tela["vwap_origem"] = "superdom"
+            else:
+                _vwap_est = estimar_vwap_sessao(st.session_state.get("hist_leituras"))
+                if _vwap_est > 0:
+                    dados_tela["vwap"] = _vwap_est
+                    dados_tela["vwap_origem"] = "estimado_sessao"
+                else:
+                    dados_tela["vwap_origem"] = "indisponivel"
+        else:
+            dados_tela["vwap_origem"] = "tela"
+    except Exception:
+        dados_tela["vwap_origem"] = "erro_fallback"
+
     preco = num(dados_tela.get("preco_atual")); vwap = num(dados_tela.get("vwap"))
     ajuste = num(dados_tela.get("ajuste")); mm9 = num(dados_tela.get("mm9"))
     mm20 = num(dados_tela.get("mm20")); mm50 = num(dados_tela.get("mm50"))
@@ -6541,6 +7498,14 @@ def executar_analise():
     img_tt2, msg_tt_exec = capturar_times_trades()
     img_livro, msg_livro_exec = capturar_livro_ofertas()
     img_agentes, msg_agentes_exec = capturar_agentes()
+
+    # (3) INVESTIGACAO T&T: rastreia falhas consecutivas para virar um aviso
+    # visivel na aba Geral em vez de silenciosamente cair no proxy toda vez.
+    if img_tt2 is None:
+        st.session_state["falhas_tt_consecutivas"] = int(
+            st.session_state.get("falhas_tt_consecutivas", 0)) + 1
+    else:
+        st.session_state["falhas_tt_consecutivas"] = 0
 
     # Guarda logs no session_state para exibicao no diagnóstico
     st.session_state["log_captura_SuperDom"] = msg_sd_exec
@@ -6592,7 +7557,25 @@ def executar_analise():
     dados_tela["pressao_vendedora"] = fluxo.get("pressao_vendedora",0)
 
     fech_ant = None if ignorar_macro else ler_fechamento_anterior()
-    contexto = classificar_contexto(dados_tela, fech_ant, ignorar_macro)
+    try:
+        contexto = classificar_contexto(dados_tela, fech_ant, ignorar_macro)
+        st.session_state["ultimo_erro_analise"] = ""
+    except Exception as _e_ctx:
+        # Item 5 — protecao contra erro de escopo (ex.: NameError) travando o
+        # ciclo. Em vez de deixar a excecao propagar (o que congelava o
+        # veredito no resultado anterior de forma silenciosa), registra o
+        # alerta e monta um contexto de fallback SEGURO: forca ACAO NEUTRA
+        # (aguardar) em vez de repetir cegamente a ultima decisao valida, que
+        # pode ja estar desatualizada. A thread de execucao nunca para.
+        try:
+            logger_gatekeeper.error(
+                "Falha ao classificar contexto (%s): %s — usando fallback seguro (aguardar)",
+                type(_e_ctx).__name__, _e_ctx)
+        except Exception:
+            pass
+        st.session_state["ultimo_erro_analise"] = f"{type(_e_ctx).__name__}: {_e_ctx}"
+        contexto = _contexto_fallback_seguro(dados_tela, st.session_state.get("ultimo_contexto"))
+    st.session_state["ultimo_contexto"] = contexto
     ia = analisar_com_ia(img, dados_tela, contexto, fech_ant, ignorar_macro)
     st.session_state['ultima_auditoria_ia'] = ia.get("auditoria_completa", "")
 
@@ -6644,6 +7627,54 @@ def executar_analise():
     contexto["engine_status"] = _avaliacao_engine["status"]
     contexto["engine_motivo"] = _avaliacao_engine["motivo"]
 
+    # ---- Parametros de perfil que existiam no dict ESTRATEGIAS mas nunca
+    # eram lidos em lugar nenhum do codigo (achado ao investigar por que
+    # Conservador/Media/Alta davam resultado identico): exige_vwap,
+    # exige_mm200, permite_pullback, bloqueia_contra_tendencia. Implementados
+    # agora, cada um com um criterio objetivo e auditavel:
+    #   exige_vwap    -> operar so do lado certo do VWAP (compra acima,
+    #                     venda abaixo) — confluencia direcional, distinta de
+    #                     margem_vwap (que so mede distancia, nao lado).
+    #   exige_mm200   -> filtro de tendencia de longo prazo classico: compra
+    #                     so acima da MM200, venda so abaixo.
+    #   permite_pullback -> quando False, nao arma em regime de pullback
+    #                     (pullback_up/pullback_down) mesmo com
+    #                     pullback_favoravel=True — perfil so opera tendencia
+    #                     pura ou reversao no extremo.
+    #   bloqueia_contra_tendencia -> nao arma contra o regime dominante,
+    #                     EXCETO quando ja e uma reversao no extremo validada
+    #                     (reversao_extremo) — reversao por definicao vai
+    #                     contra o movimento imediato.
+    _regime_ctx = str(contexto.get("regime", ""))
+    _pullback_ctx = bool(contexto.get("pullback_favoravel", False))
+    _reversao_ctx = bool(contexto.get("reversao_extremo", False))
+
+    _ok_exige_vwap = True
+    if pe.get("exige_vwap") and vwap > 0 and acao in ("compra", "venda"):
+        _ok_exige_vwap = (preco >= vwap) if acao == "compra" else (preco <= vwap)
+
+    _ok_exige_mm200 = True
+    if pe.get("exige_mm200") and mm200 > 0 and acao in ("compra", "venda"):
+        _ok_exige_mm200 = (preco >= mm200) if acao == "compra" else (preco <= mm200)
+
+    _ok_permite_pullback = True
+    if not pe.get("permite_pullback", True):
+        if _regime_ctx in ("pullback_up", "pullback_down") and _pullback_ctx:
+            _ok_permite_pullback = False
+
+    _ok_bloqueia_contra_tendencia = True
+    if pe.get("bloqueia_contra_tendencia") and not _reversao_ctx:
+        _contra = ((acao == "venda" and _regime_ctx in ("trend_up", "pullback_up")) or
+                   (acao == "compra" and _regime_ctx in ("trend_down", "pullback_down")))
+        if _contra:
+            _ok_bloqueia_contra_tendencia = False
+
+    contexto["perfil_filtros"] = {
+        "exige_vwap": _ok_exige_vwap, "exige_mm200": _ok_exige_mm200,
+        "permite_pullback": _ok_permite_pullback,
+        "bloqueia_contra_tendencia": _ok_bloqueia_contra_tendencia,
+    }
+
     req_ok = (
         acao in ["compra","venda"]
         and dist_v <= pe["margem_vwap"]
@@ -6653,6 +7684,10 @@ def executar_analise():
         and contexto.get("volume_ok", True)
         and contexto["score"] >= contexto["score_minimo_usado"]
         and _avaliacao_engine["status"] == "APROVADO"
+        and _ok_exige_vwap
+        and _ok_exige_mm200
+        and _ok_permite_pullback
+        and _ok_bloqueia_contra_tendencia
     )
     rr_baixo = rr < pe["rr_minimo"] and rr > 0
 
@@ -6677,6 +7712,17 @@ def executar_analise():
                         and _avaliacao_engine["status"] in ("APROVADO", "ESPERA"))
     # Rompimento acertou 2 de 10: deixa de liberar entrada por conta propria.
     _libera_rompimento = False
+    # (1) Tendencia pura sem pullback, liberada pela conviccao ponderada —
+    # ver liberar_tendencia_forte_sem_pullback(). Reaproveita o flag setado
+    # la dentro; so precisa reconfirmar que as travas basicas seguem ok aqui
+    # (podem ter mudado entre a classificacao e a montagem do gatilho).
+    _libera_tendencia_forte = (
+        bool(contexto.get("liberado_por_tendencia_forte"))
+        and acao in ("compra", "venda")
+        and not contexto.get("conflito", False)
+        and contexto.get("volume_ok", True)
+        and _avaliacao_engine["status"] in ("APROVADO", "ESPERA")
+    )
     # ---- ANTI-OVERTRADING: um sinal por lado por candle ----
     _hc_now = st.session_state.get("hist_candles", [])
     _candle_atual = _hc_now[0].get("inicio", "") if _hc_now else ""
@@ -6692,10 +7738,21 @@ def executar_analise():
         req_ok = False
         contexto["motivo_bloqueio_repeticao"] = "Sinal já armado neste candle para o mesmo lado."
 
-    if not req_ok and (_libera_momentum or _libera_rompimento):
+    # As liberacoes por momentum/rompimento/tendencia forte tambem precisam
+    # respeitar os filtros de perfil (exige_vwap/exige_mm200/permite_pullback/
+    # bloqueia_contra_tendencia) — senao um perfil Conservador perderia toda a
+    # disciplina que acabou de ganhar so por causa de um atalho de momentum.
+    _perfil_ok = (_ok_exige_vwap and _ok_exige_mm200
+                  and _ok_permite_pullback and _ok_bloqueia_contra_tendencia)
+    if not req_ok and _perfil_ok and (_libera_momentum or _libera_rompimento or _libera_tendencia_forte):
         req_ok = True
-        contexto["motivo_liberacao"] = ("Liberado por rompimento do candle anterior" if _libera_rompimento
-                                        else f"Liberado por momentum {_mom_ctx} alinhado (score {contexto['score']}/{contexto['score_minimo_usado']})")
+        if _libera_tendencia_forte:
+            contexto["motivo_liberacao"] = (
+                f"Liberado por tendência {contexto.get('regime')} pura com convicção "
+                f"ponderada {int(num(contexto.get('conviccao_ponderada', 0)))}%")
+        else:
+            contexto["motivo_liberacao"] = ("Liberado por rompimento do candle anterior" if _libera_rompimento
+                                            else f"Liberado por momentum {_mom_ctx} alinhado (score {contexto['score']}/{contexto['score_minimo_usado']})")
 
     if contexto.get("score_saturado") and acao in ("compra", "venda"):
         sg = "ESPERA"
@@ -6775,7 +7832,23 @@ def executar_analise():
                       f"Sugestão: {_vsug}. Confira antes de executar.")
         disparar_alarme(_audio_txt, tipo="aviso")
     elif _vconv >= 55 and _vdir in ("compra", "venda"):
-        _audio_txt = f"Sem gatilho. Indicação de {_vdir}, convicção {_vconv} por cento."
+        # BUG CORRIGIDO: este ramo montava _audio_txt mas nunca chamava
+        # disparar_alarme — o alarme de "indicação sem gatilho armado" nunca
+        # tocava, mesmo com convicção alta. Relatado pelo usuario como "o
+        # alarme sonoro para comprar/vender sumiu".
+        _audio_txt = f"Sem gatilho ainda. Indicação de {_vdir}, convicção {_vconv} por cento."
+        disparar_alarme(_audio_txt, tipo="aviso")
+    elif _vdir in ("compra", "venda", "neutro", "indefinida", "aguardar"):
+        # Alarme de "voltou a neutro" — item que tambem tinha sumido (nunca
+        # existiu, na verdade: nao havia NENHUM disparo para vies neutro).
+        # So dispara na TRANSICAO (neutro depois de compra/venda), nao a cada
+        # ciclo neutro — senao vira ruido constante numa consolidacao longa.
+        _dir_ant_falada = st.session_state.get("ultima_direcao_falada", "")
+        if _dir_ant_falada in ("compra", "venda") and _vdir not in ("compra", "venda"):
+            _audio_txt = "Atenção. Viés voltou a neutro — sem direção definida no momento."
+            disparar_alarme(_audio_txt, tipo="neutro")
+
+    st.session_state["ultima_direcao_falada"] = _vdir if _vdir in ("compra", "venda") else "neutro"
 
     contexto["audio_divergente"] = _audio_divergente
     contexto["audio_texto"] = _audio_txt
@@ -6810,6 +7883,22 @@ def executar_analise():
         "DataEvento": evento,
         "DataRegistro": (evento if st.session_state.modo_replay else datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
         "HoraReplayOrigem": str(dados_tela.get("hora_replay_origem", "manual")),
+        "VersaoMotor": VERSAO_MOTOR,
+        "VersaoMotorApelido": VERSAO_MOTOR_APELIDO,
+        "VwapOrigem": dados_tela.get("vwap_origem", ""),
+        "PerfilExigeVWAPOk": "sim" if _ok_exige_vwap else "nao",
+        "PerfilExigeMM200Ok": "sim" if _ok_exige_mm200 else "nao",
+        "PerfilPermitePullbackOk": "sim" if _ok_permite_pullback else "nao",
+        "PerfilBloqueiaContraTendenciaOk": "sim" if _ok_bloqueia_contra_tendencia else "nao",
+        "ErroFallback": "sim" if contexto.get("erro_fallback") else "nao",
+        "LVNBloqueia": _gk.get("LVNBloqueia", "nao"),
+        "LVNMotivo": _gk.get("LVNMotivo", ""),
+        "VWAPBandaBloqueia": _gk.get("VWAPBandaBloqueia", "nao"),
+        "VWAPBandaMotivo": _gk.get("VWAPBandaMotivo", ""),
+        "AtrDia": num(contexto.get("atr_dia", 0.0)),
+        "LimiteVetoMM9Atr": num(contexto.get("limite_veto_mm9_usado", 0.0)),
+        "EscapeNeutroAtivo": "sim" if contexto.get("escape_neutro_ativo") else "nao",
+        "StreakCiclosNeutros": int(contexto.get("streak_ciclos_neutros", 0)),
         "MudancaBrusca": "sim" if _mudou else "nao",
         "DescMudancaBrusca": str(_desc_mud)[:200],
         "DataAnaliseReal": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -6942,6 +8031,7 @@ def executar_analise():
         "FaixaMinimaAnt": contexto.get("faixa_minima_ant", 0.0),
         "FaixaAjusteAnt": contexto.get("faixa_ajuste_ant", 0.0),
         "FaixaOrdenada": "sim" if contexto.get("faixa_ordenada") else "nao",
+        "FaixaSinal": contexto.get("faixa_sinal", ""),
         "LimiteVetoMM9": contexto.get("limite_veto_mm9", 0.0),
         "IFRMotivo": contexto.get("ifr_motivo", ""),
         "TendenciaSobrepoeFluxo": "sim" if contexto.get("tendencia_sobrepoe_fluxo") else "nao",
@@ -7233,6 +8323,245 @@ def render_book_profundidade(ag, preco_atual=0.0, max_niveis=6):
     return esc
 
 
+# =============================================================================
+# FLOW MAP DE LIQUIDEZ PASSIVA
+# Reaproveita a MESMA leitura de book (capturar_livro_ofertas / capturar_agentes
+# -> agentes_info) ja normalizada por montar_escada_book (preco, qtde, agente,
+# distancia). Aqui o objetivo nao e listar a escada linha a linha, e sim mapear
+# ONDE a liquidez passiva se concentra: paredes de oferta/demanda (niveis com
+# quantidade bem acima da media do lado) e o desequilibrio bid x ask.
+# =============================================================================
+FLOW_MAP_NIVEIS = 10
+# Nivel com qtde >= 2x a media do proprio lado conta como "parede" (liquidez
+# passiva relevante, provavel defesa institucional).
+FLOW_MAP_FATOR_PAREDE = 2.0
+# Desequilibrio bid x ask acima disso ja classifica o lado como dominante.
+FLOW_MAP_LIMIAR_VIES_PCT = 15.0
+
+
+def calcular_flow_map_liquidez(ag, preco_atual=0.0, max_niveis=FLOW_MAP_NIVEIS):
+    """Mapa de liquidez passiva: paredes de compra/venda no book e o
+    desequilibrio entre os dois lados. Fonte: agentes_info (mesma leitura do
+    book usada na Profundidade do book), via montar_escada_book."""
+    esc = montar_escada_book(ag, preco_atual, max_niveis)
+    asks, bids = esc["asks"], esc["bids"]
+    vazio = {"valido": False, "paredes_venda": [], "paredes_compra": [],
+             "qtd_total_venda": 0, "qtd_total_compra": 0, "desequilibrio_pct": 0.0,
+             "vies": "indefinido", "parede_venda_proxima": None,
+             "parede_compra_proxima": None, "tem_nomes": esc["tem_nomes"]}
+    if not asks and not bids:
+        return vazio
+
+    qtd_total_venda = sum(n["qtde"] for n in asks)
+    qtd_total_compra = sum(n["qtde"] for n in bids)
+    media_venda = (qtd_total_venda / len(asks)) if asks else 0.0
+    media_compra = (qtd_total_compra / len(bids)) if bids else 0.0
+
+    paredes_venda = sorted(
+        [n for n in asks if media_venda > 0 and n["qtde"] >= FLOW_MAP_FATOR_PAREDE * media_venda],
+        key=lambda n: n["preco"])
+    paredes_compra = sorted(
+        [n for n in bids if media_compra > 0 and n["qtde"] >= FLOW_MAP_FATOR_PAREDE * media_compra],
+        key=lambda n: -n["preco"])
+
+    qtd_total = qtd_total_venda + qtd_total_compra
+    desequilibrio_pct = round(((qtd_total_compra - qtd_total_venda) / qtd_total) * 100, 1) if qtd_total > 0 else 0.0
+    if desequilibrio_pct >= FLOW_MAP_LIMIAR_VIES_PCT:
+        vies = "compradora"
+    elif desequilibrio_pct <= -FLOW_MAP_LIMIAR_VIES_PCT:
+        vies = "vendedora"
+    else:
+        vies = "equilibrada"
+
+    parede_venda_proxima = paredes_venda[0] if paredes_venda else (asks[0] if asks else None)
+    parede_compra_proxima = paredes_compra[0] if paredes_compra else (bids[0] if bids else None)
+
+    return {"valido": True, "paredes_venda": paredes_venda, "paredes_compra": paredes_compra,
+            "qtd_total_venda": qtd_total_venda, "qtd_total_compra": qtd_total_compra,
+            "desequilibrio_pct": desequilibrio_pct, "vies": vies,
+            "parede_venda_proxima": parede_venda_proxima,
+            "parede_compra_proxima": parede_compra_proxima, "tem_nomes": esc["tem_nomes"]}
+
+
+def render_flow_map_liquidez(flow_info, preco_atual=0.0):
+    """Renderiza o Flow Map de liquidez passiva na aba de Liquidez."""
+    st.markdown('<div class="section-title">🗺️ Flow Map de liquidez passiva</div>', unsafe_allow_html=True)
+    if not flow_info or not flow_info.get("valido"):
+        st.caption("Flow map indisponível — sem leitura de book nesta sessão ainda.")
+        return
+    fcol1, fcol2, fcol3 = st.columns(3)
+    fcol1.metric("Liquidez à venda (ask)", f"{int(flow_info['qtd_total_venda']):,}".replace(",", "."))
+    fcol2.metric("Liquidez à compra (bid)", f"{int(flow_info['qtd_total_compra']):,}".replace(",", "."))
+    fcol3.metric("Desequilíbrio passivo", f"{flow_info['desequilibrio_pct']:+.1f}%")
+
+    _vies_txt = {
+        "compradora": "🟢 Liquidez passiva pende para o lado COMPRADOR — mais defesa embaixo do preço.",
+        "vendedora": "🔴 Liquidez passiva pende para o lado VENDEDOR — mais oferta acima do preço.",
+        "equilibrada": "⚪ Liquidez passiva equilibrada entre os dois lados.",
+    }.get(flow_info.get("vies", ""), "")
+    if _vies_txt:
+        st.caption(_vies_txt)
+
+    pv = flow_info.get("parede_venda_proxima")
+    pc = flow_info.get("parede_compra_proxima")
+    if pv:
+        st.caption(f"🧱 Parede de venda mais próxima: {int(pv['qtde']):,} @ {pv['preco']:.2f} "
+                   f"({pv['agente']}) — {pv['dist']:+.1f} pts".replace(",", "."))
+    if pc:
+        st.caption(f"🧱 Parede de compra mais próxima: {int(pc['qtde']):,} @ {pc['preco']:.2f} "
+                   f"({pc['agente']}) — {pc['dist']:+.1f} pts".replace(",", "."))
+
+    _linhas = []
+    for n in flow_info.get("paredes_venda", []):
+        _linhas.append({"lado": "venda", "preço": n["preco"], "qtde": int(n["qtde"]), "agente": n["agente"]})
+    for n in flow_info.get("paredes_compra", []):
+        _linhas.append({"lado": "compra", "preço": n["preco"], "qtde": int(n["qtde"]), "agente": n["agente"]})
+    if _linhas:
+        st.dataframe(pd.DataFrame(_linhas).sort_values("preço", ascending=False),
+                     use_container_width=True, hide_index=True)
+
+
+# =============================================================================
+# FLOW MAP DINAMICO — evolucao temporal da liquidez passiva
+# O Flow Map estatico acima (calcular_flow_map_liquidez) fotografa o book em
+# UM instante. Este modulo compara o snapshot atual contra o snapshot do
+# ciclo anterior (cada ciclo = uma leitura, a cada 5 min ou manual) e
+# classifica, por nivel de preco, o que mudou: nivel novo (ADICIONADO), nivel
+# que perdeu quantidade (REDUZIDO) e nivel que sumiu (REMOVIDO).
+#
+# LIMITACAO DE DADOS (documentada de proposito): sem time & sales tick a tick
+# o app nao tem como distinguir CANCELAMENTO de EXECUCAO quando um nivel
+# perde volume — as duas coisas aparecem como "reduzido". Por isso este
+# modulo mede FLUXO PASSIVO LIQUIDO (adicoes menos remocoes/reducoes por
+# lado), nao fluxo agressivo — o fluxo agressivo real ja e medido a parte em
+# calcular_pressao_fluxo, a partir do Times & Trades.
+#
+# MEMORIA: guarda so o snapshot anterior (1 book) + um historico curto de
+# deltas agregados (FLOW_MAP_HISTORICO_CICLOS entradas, ~1h a cada 5 min).
+# Nao acumula a escada completa ciclo a ciclo — isso cresceria sem limite e
+# geraria latencia/memoria crescente no loop principal.
+# =============================================================================
+FLOW_MAP_HISTORICO_CICLOS = 12          # ~1h de historico a cada 5 min
+FLOW_MAP_TOLERANCIA_PROXIMIDADE = 5.0   # pts — parede "perto do preco atual"
+
+
+def _snapshot_book_por_nivel(ag: Dict[str, Any], max_niveis: int) -> Dict[float, Dict[str, Any]]:
+    """Reduz a leitura atual do book a {preco: {qtde, lado}} — chave compacta
+    para comparar ciclo a ciclo sem guardar a escada inteira no historico."""
+    esc = montar_escada_book(ag, 0.0, max_niveis)
+    snap: Dict[float, Dict[str, Any]] = {}
+    for n in esc.get("asks", []):
+        snap[round(n["preco"], 2)] = {"qtde": num(n["qtde"]), "lado": "ask"}
+    for n in esc.get("bids", []):
+        snap[round(n["preco"], 2)] = {"qtde": num(n["qtde"]), "lado": "bid"}
+    return snap
+
+
+def _flow_map_dinamico_vazio() -> Dict[str, Any]:
+    return {"valido": False, "eventos": [], "delta_bid_ciclo": 0.0, "delta_ask_ciclo": 0.0,
+            "tendencia_bid_acumulada": 0.0, "tendencia_ask_acumulada": 0.0,
+            "vies_dinamico": "indefinido", "paredes_sumidas_proximas": [], "ciclos_no_historico": 0}
+
+
+def atualizar_flow_map_dinamico(ag: Dict[str, Any], preco_atual: float = 0.0,
+                                 max_niveis: int = FLOW_MAP_NIVEIS) -> Dict[str, Any]:
+    """Evolui o Flow Map estatico para um modelo temporal de liquidez passiva.
+
+    Efeitos colaterais (por design — precisa persistir entre ciclos):
+        st.session_state["flow_map_snapshot_anterior"]: book do ultimo ciclo.
+        st.session_state["flow_map_hist_deltas"]: ultimos N deltas agregados.
+
+    Returns:
+        dict com eventos por nivel, deltas do ciclo, tendencia acumulada e
+        vies dinamico (compradora/vendedora/equilibrada).
+    """
+    try:
+        snap_atual = _snapshot_book_por_nivel(ag, max_niveis)
+    except Exception:
+        return _flow_map_dinamico_vazio()
+
+    if not snap_atual:
+        return _flow_map_dinamico_vazio()
+
+    snap_anterior: Dict[float, Dict[str, Any]] = st.session_state.get("flow_map_snapshot_anterior") or {}
+    eventos: List[Dict[str, Any]] = []
+
+    for nivel, info in snap_atual.items():
+        prev = snap_anterior.get(nivel)
+        if prev is None:
+            eventos.append({"preco": nivel, "lado": info["lado"], "tipo": "adicionado", "delta": info["qtde"]})
+        else:
+            delta = info["qtde"] - num(prev.get("qtde", 0))
+            if delta > 0:
+                eventos.append({"preco": nivel, "lado": info["lado"], "tipo": "reforçado", "delta": delta})
+            elif delta < 0:
+                eventos.append({"preco": nivel, "lado": info["lado"], "tipo": "reduzido", "delta": delta})
+    for nivel, prev in snap_anterior.items():
+        if nivel not in snap_atual:
+            eventos.append({"preco": nivel, "lado": prev.get("lado", ""), "tipo": "removido",
+                            "delta": -num(prev.get("qtde", 0))})
+
+    delta_bid = round(sum(e["delta"] for e in eventos if e["lado"] == "bid"), 1)
+    delta_ask = round(sum(e["delta"] for e in eventos if e["lado"] == "ask"), 1)
+
+    hist_deltas = st.session_state.get("flow_map_hist_deltas", [])
+    if not isinstance(hist_deltas, list):
+        hist_deltas = []
+    hist_deltas.insert(0, {"delta_bid": delta_bid, "delta_ask": delta_ask,
+                            "hora": datetime.now().strftime("%H:%M:%S")})
+    # Cap explicito de memoria: nunca guarda mais que FLOW_MAP_HISTORICO_CICLOS
+    # ciclos — evita crescimento ilimitado de sessao ao longo do pregao.
+    hist_deltas = hist_deltas[:FLOW_MAP_HISTORICO_CICLOS]
+    st.session_state["flow_map_hist_deltas"] = hist_deltas
+
+    tendencia_bid = round(sum(h.get("delta_bid", 0.0) for h in hist_deltas), 1)
+    tendencia_ask = round(sum(h.get("delta_ask", 0.0) for h in hist_deltas), 1)
+    if tendencia_bid - tendencia_ask > 0:
+        vies_dinamico = "compradora"
+    elif tendencia_ask - tendencia_bid > 0:
+        vies_dinamico = "vendedora"
+    else:
+        vies_dinamico = "equilibrada"
+
+    # Paredes que sumiram perto do preco atual entre um ciclo e outro — indicio
+    # classico de liquidez passiva puxada (spoofing/absorcao rapida).
+    paredes_sumidas = [e for e in eventos
+                       if e["tipo"] == "removido"
+                       and preco_atual > 0
+                       and abs(e["preco"] - preco_atual) <= FLOW_MAP_TOLERANCIA_PROXIMIDADE
+                       and abs(e["delta"]) >= 1]
+
+    # Persiste o snapshot atual como referencia do proximo ciclo.
+    st.session_state["flow_map_snapshot_anterior"] = snap_atual
+
+    return {"valido": True, "eventos": eventos[:30], "delta_bid_ciclo": delta_bid,
+            "delta_ask_ciclo": delta_ask, "tendencia_bid_acumulada": tendencia_bid,
+            "tendencia_ask_acumulada": tendencia_ask, "vies_dinamico": vies_dinamico,
+            "paredes_sumidas_proximas": paredes_sumidas, "ciclos_no_historico": len(hist_deltas)}
+
+
+def render_flow_map_dinamico(flow_dyn: Dict[str, Any], preco_atual: float = 0.0) -> None:
+    """Renderiza o Flow Map dinâmico (evolução temporal da liquidez passiva)."""
+    st.markdown('<div class="section-title">🌊 Flow Map dinâmico — fluxo de liquidez passiva</div>',
+                unsafe_allow_html=True)
+    if not flow_dyn or not flow_dyn.get("valido"):
+        st.caption("Flow map dinâmico ainda sem histórico suficiente (precisa de 2+ ciclos de leitura).")
+        return
+    dcol1, dcol2, dcol3 = st.columns(3)
+    dcol1.metric("Δ liquidez bid (ciclo)", f"{flow_dyn['delta_bid_ciclo']:+,.0f}".replace(",", "."))
+    dcol2.metric("Δ liquidez ask (ciclo)", f"{flow_dyn['delta_ask_ciclo']:+,.0f}".replace(",", "."))
+    dcol3.metric("Viés dinâmico acumulado", str(flow_dyn.get("vies_dinamico", "indefinido")).upper())
+    st.caption(f"Acumulado dos últimos {flow_dyn.get('ciclos_no_historico', 0)} ciclos — "
+               f"bid {flow_dyn['tendencia_bid_acumulada']:+,.0f} · "
+               f"ask {flow_dyn['tendencia_ask_acumulada']:+,.0f}".replace(",", "."))
+    if flow_dyn.get("paredes_sumidas_proximas"):
+        st.warning("🚨 Liquidez passiva sumiu perto do preço desde o último ciclo — possível "
+                   "puxada de oferta/demanda (spoofing ou absorção rápida):")
+        for e in flow_dyn["paredes_sumidas_proximas"][:5]:
+            st.caption(f"• {str(e['lado']).upper()} @ {e['preco']:.2f} — "
+                       f"{int(abs(e['delta'])):,} contratos removidos".replace(",", "."))
+
+
 # ---------------------------------------------------------------------------
 # MOTOR DE CONVICCAO PONDERADA
 # Pesos medidos sobre 119 operacoes fechadas (base 69,7% de acerto medio).
@@ -7257,31 +8586,37 @@ TABELA_INDICADORES = [
 
 
     # ---- penalidades medidas ----
-    ("score_saturado_7",      "Score 7 — exaustão do movimento",     -40,   0.0,  6),
-    ("janela_9h",             "Janela 09h–10h",                      -35,  20.0, 10),
-    ("meio_do_range",         "Operando o meio do gráfico",          -25,  36.4, 11),
-    ("momentum_alta_forte",   "Momentum forte CONTRA a entrada",     -22,  37.5, 16),
     ("momentum_alinhado",     "Momentum forte a favor da entrada",   +14,  70.0, 16),
     ("momentum_confirmado",   "Direção confirmada em 2+ leituras",   +10,  75.0, 20),
 
-    ("rompimento_seco",       "Rompimento seco de candle",           -18,  46.3, 41),
-    ("rr_esticado",           "Alvo esticado (RR 1.4–1.7)",          -12,  53.3, 15),
-
-
-    ("regime_trend_puro",     "Tendência esticada sem pullback",      -8,  60.9, 92),
-    ("confianca_maxima",      "Confiança 90% (euforia)",              -6,  66.7, 42),
-    # ---- volatilidade e oscilacao (pesos iniciais, a calibrar com o log) ----
-    ("bollinger_borda_favor", "Toque na banda de Bollinger a favor",  +16,  0.0,  0),
-    ("bollinger_estreita",    "Bandas estreitas (consolidação)",       +8,  0.0,  0),
-    ("ifr_divergencia",       "Divergência de IFR",                   +14,  0.0,  0),
-    ("ifr_extremo_favor",     "IFR em extremo a favor da entrada",     +10,  0.0,  0),
-    ("scalp_vwap_primeiro",   "1º toque do dia na VWAP",              +12,  0.0,  0),
-    ("scalp_ajuste_primeiro", "1º toque do dia no Ajuste",            +12,  0.0,  0),
-    ("volume_fraco_repique",  "Volume fraco na referência",            +6,  0.0,  0),
-    ("bollinger_borda_contra", "Toque na banda CONTRA a entrada",     -16,  0.0,  0),
-    ("ifr_extremo_contra",    "IFR em extremo contra a entrada",      -12,  0.0,  0),
-    ("volume_rompimento",     "Volume de rompimento agressivo",       -14,  0.0,  0),
 ]
+# ---- REMOVIDOS A PEDIDO (17/09) — abaixo da linha de base, atrapalhavam ----
+# score_saturado_7      0.0%  (n=6)   -40  — pior indicador da tabela, 0 acerto
+# janela_9h             20.0% (n=10)  -35  — quase sempre errava mesmo punindo
+# meio_do_range         36.4% (n=11)  -25
+# momentum_alta_forte   37.5% (n=16)  -22
+# rompimento_seco       46.3% (n=41)  -18
+# Todos tinham amostra real (nao eram os "sem evidencia" do lote anterior),
+# mas o proprio numero de acerto ja mostrava sinal fraco/ruidoso — retirados
+# por pedido explicito, e nao por falta de dado como os anteriores.
+# regime_trend_puro REMOVIDO: penalizava (-8) uma condicao que acertou 60,9%
+# em 92 operacoes — acima da linha de base do sistema. Era o unico indicador
+# da tabela cujo SINAL contradizia o proprio desempenho medido: tirava pontos
+# de leituras que venciam mais do que a media. Com ele fora, tendencia sem
+# pullback deixa de ser punida e passa a ser apenas ausencia de bonus.
+# ---- INDICADORES REMOVIDOS (sem eficiência medida) ----
+# rr_esticado (53.3% em 15 amostras — mal acima de coinflip, edge nao
+# justifica o peso -12) e os 8 indicadores com 0.0% / 0 amostras
+# (faixa_a_favor, faixa_amarela, faixa_contra, bollinger_borda_favor,
+# ifr_divergencia, scalp_vwap_primeiro, bollinger_borda_contra,
+# volume_rompimento) foram retirados: eram pesos hipoteticos "a calibrar
+# com o log" que nunca chegaram a ter uma operacao medida. Com amostra=0
+# a formula de peso proporcional (peso * amostra/AMOSTRA_MINIMA_PESO_CHEIO)
+# ja zerava a contribuicao deles no calculo — ficavam apenas poluindo o
+# ranking com pesos de ate ±20 que pareciam ativos sem nunca terem sido
+# validados. Se algum deles for medido no futuro com amostra real, basta
+# devolver a linha na tabela com o acerto/amostra observados.
+
 # Operacoes necessarias para um indicador valer o peso integral. Abaixo disso
 # o peso e atenuado proporcionalmente — evidencia fraca pesa pouco.
 AMOSTRA_MINIMA_PESO_CHEIO = 15
@@ -7314,9 +8649,8 @@ def _detectar_indicadores(ctx_res, dados_tela):
 
     p = set()
     if rev: p.add("reversao_extremo_sim")
-    else:   p.add("meio_do_range")
     if pull_reg: p.add("regime_pullback")
-    elif regime.startswith("trend"): p.add("regime_trend_puro")
+    # 'trend puro' deixou de ser penalidade: apenas nao soma o bonus de pullback.
     if pull_flx: p.add("pullback_favoravel")
     if zmorta: p.add("zona_morta")
     else:      p.add("fora_zona_morta")
@@ -7337,21 +8671,15 @@ def _detectar_indicadores(ctx_res, dados_tela):
                (momentum in ("baixa_forte", "baixa") and _dir_ctx == "compra"))
     _a_favor = ((momentum in ("alta_forte", "alta") and _dir_ctx == "compra") or
                 (momentum in ("baixa_forte", "baixa") and _dir_ctx == "venda"))
-    if _forte and (_contra or _dist9_ctx >= LIMITE_DIST_MM9_ENTRADA):
-        p.add("momentum_alta_forte")
-    elif _forte and _a_favor:
+    if _forte and _a_favor:
         p.add("momentum_alinhado")
     if _mom_st.get("momentum_confirmado") and _a_favor:
         p.add("momentum_confirmado")
-    if romp: p.add("rompimento_seco")
-    else:    p.add("sem_rompimento_seco")
-    if score == 7: p.add("score_saturado_7")
-    elif score in (4, 5): p.add("score_ideal")
-    if hora == 9: p.add("janela_9h")
-    elif hora == 13: p.add("horario_13h")
-    else: p.add("horario_bom")
+    if not romp: p.add("sem_rompimento_seco")
+    if score in (4, 5): p.add("score_ideal")
+    if hora == 13: p.add("horario_13h")
+    elif hora != 9: p.add("horario_bom")
     if rr and rr <= 1.2: p.add("rr_curto")
-    elif 1.4 < rr <= 1.7: p.add("rr_esticado")
     if conf >= 90: p.add("confianca_maxima")
     elif conf >= 70: p.add("confianca_media")
     elif conf < 35: p.add("confianca_baixa")
@@ -7362,61 +8690,71 @@ def otimizar_indicadores_fracos(presentes, ctx_res):
     """Os indicadores de baixo acerto nao sao descartados: passam a valer
     somente quando a condicao que os resgata esta presente."""
     ajustes = []
-    # 1) Rompimento seco: 46% isolado, mas util quando nasce num extremo.
-    if "rompimento_seco" in presentes and "reversao_extremo_sim" in presentes:
-        presentes.discard("rompimento_seco")
-        presentes.add("sem_rompimento_seco")
-        ajustes.append("Rompimento aceito: nasceu no extremo do range.")
-    # 2) Tendencia esticada: so vale se houver pullback confirmado no fluxo.
+    # Tendencia esticada: so vale se houver pullback confirmado no fluxo.
     if "regime_trend_puro" in presentes and "pullback_favoravel" in presentes:
         presentes.discard("regime_trend_puro")
         presentes.add("regime_pullback")
         ajustes.append("Tendência revalidada: entrada no pullback, não na ponta.")
-    # 3) Score 7 e exaustao: rebaixa para a faixa ideal em vez de vetar cego.
-    if "score_saturado_7" in presentes and "reversao_extremo_sim" in presentes:
-        presentes.discard("score_saturado_7")
-        presentes.add("score_ideal")
-        ajustes.append("Score 7 rebaixado: leitura de exaustão a favor da reversão.")
-    # 4) Momentum alta_forte: perdoa quando ha absorcao a favor e volume real.
-    if "momentum_alta_forte" in presentes and "sem_absorcao_contra" in presentes \
-            and num(ctx_res.get("volume_candle_lido", 0)) >= VOLUME_IDEAL:
-        presentes.discard("momentum_alta_forte")
-        ajustes.append("Momentum forte aceito: volume real e sem absorção contrária.")
-    # 5) Meio do range: exige pullback para nao virar liquidificador.
-    if "meio_do_range" in presentes and "pullback_favoravel" in presentes:
-        presentes.discard("meio_do_range")
-        ajustes.append("Meio do range liberado: pullback dá referência de defesa.")
-    # 6) Janela das 9h: -35 zerava qualquer leitura correta da abertura. A
-    #    penalidade cai quando existe ancora — as mesmas duas condicoes que a
-    #    propria janela ja exige para armar.
-    if "janela_9h" in presentes and ("reversao_extremo_sim" in presentes
-                                     or "pullback_favoravel" in presentes):
-        presentes.discard("janela_9h")
-        ajustes.append("Janela 09h liberada: entrada ancorada em pullback/reversão.")
-    # 7) Momentum a favor e penalidade de momentum nunca coexistem.
-    if "momentum_alinhado" in presentes:
-        presentes.discard("momentum_alta_forte")
+    # As demais regras de resgate (rompimento seco, score 7, momentum forte
+    # contra, meio do range, janela 9h) foram removidas junto com os
+    # indicadores que elas resgatavam — ver nota acima de TABELA_INDICADORES.
     return presentes, ajustes
 
 
 def avaliar_conviccao(ctx_res, dados_tela):
     """Soma ponderada dos indicadores -> conviccao 0-100 e sugestao unificada."""
+    # BUG CORRIGIDO — leitura invalida mostrando conviccao alta sem direcao.
+    # Print do usuario: "score 0/0, preco 0.00, Sem direcao definida — nada a
+    # fazer" ao lado de "CONVICCAO PONDERADA 89%". Causa: esta funcao rodava
+    # incondicionalmente mesmo sobre o dict minimo devolvido quando
+    # validar_leitura() reprova a leitura (regime="inconsistente") — e varios
+    # dos indicadores que ela pondera leem coisas persistidas em
+    # st.session_state (ex.: ultimo_momentum) que ainda guardam o valor da
+    # ULTIMA LEITURA BOA, nao desta leitura invalida. Resultado: uma leitura
+    # sem preco valido podia "herdar" convicção de um instante anterior,
+    # deixando o painel com numeros que nao mudam e nao batem com o resto da
+    # tela — exatamente o que foi relatado como "telas ficam invariaveis".
+    # Corte direto na raiz: leitura invalida nunca calcula conviccao nenhuma.
+    if (str(ctx_res.get("regime", "")) == "inconsistente"
+            or not ctx_res.get("validacao", {"consistente": True}).get("consistente", True)):
+        ctx_res["conviccao_ponderada"] = 0
+        ctx_res["conviccao_bruta_ponderada"] = 0
+        ctx_res["execucao_liberada"] = "nao"
+        ctx_res["motivo_nao_executavel"] = "Leitura inválida — sem dados suficientes para calcular convicção."
+        ctx_res["indicadores_indisponiveis"] = []
+        ctx_res["indices_favor"] = []
+        ctx_res["indices_contra"] = []
+        ctx_res["ajustes_otimizacao"] = []
+        ctx_res["sugestao_acao"] = "FORA"
+        ctx_res["sugestao_cor"] = "#8892a4"
+        ctx_res["sugestao_texto"] = "Leitura inválida (preço ou dados inconsistentes) — nada a calcular."
+        return ctx_res
+
     presentes = _detectar_indicadores(ctx_res, dados_tela)
     presentes, ajustes = otimizar_indicadores_fracos(presentes, ctx_res)
 
     favor, contra, soma = [], [], 0
+    indisponiveis = []
     for chave in presentes:
         t = _MAPA_IND.get(chave)
         if not t:
             continue
         _, rotulo, peso, acerto, amostra = t
+        # ---- SEM DADOS = INDISPONIVEL ----
+        # Indicador sem amostra medida nao entra na ponderacao de forma alguma:
+        # e listado a parte como "indisponivel" para o operador saber que ele
+        # existe mas ainda nao tem evidencia para opinar.
+        if amostra <= 0 or acerto <= 0.0:
+            indisponiveis.append({"rotulo": rotulo, "peso_previsto": peso,
+                                  "motivo": "sem amostra medida"})
+            continue
         # ---- PESO PROPORCIONAL A AMOSTRA ----
-        # Indicador com amostra pequena (ou zero, como Bollinger/IFR/Scalp
-        # recem-criados) nao pode empurrar a conviccao com peso cheio: o peso
-        # cresce junto com a evidencia, ate 15 operacoes.
+        # Amostra pequena pesa pouco: o peso cresce junto com a evidencia.
         if amostra < AMOSTRA_MINIMA_PESO_CHEIO:
-            peso = int(round(peso * (max(0, amostra) / float(AMOSTRA_MINIMA_PESO_CHEIO))))
+            peso = int(round(peso * (amostra / float(AMOSTRA_MINIMA_PESO_CHEIO))))
             if peso == 0:
+                indisponiveis.append({"rotulo": rotulo, "peso_previsto": peso,
+                                      "motivo": f"amostra insuficiente (n={amostra})"})
                 continue
         soma += peso
         item = {"rotulo": rotulo, "peso": peso, "acerto": acerto, "amostra": amostra}
@@ -7451,10 +8789,11 @@ def avaliar_conviccao(ctx_res, dados_tela):
         _motivos_exec.append("gatekeeper bloqueou")
     _txt_exec = ", ".join(_motivos_exec) or "sem confirmação"
 
-    # Sem gatilho armado a conviccao exibida e limitada: 100% deixa de existir
-    # em leitura que o motor nao liberou.
-    if not executavel:
-        conviccao = int(min(conviccao, TETO_CONVICCAO_SEM_GATILHO))
+    # Conviccao exibida deixou de ter teto quando sem gatilho armado (ver
+    # nota no bloco de constantes, onde TETO_CONVICCAO_SEM_GATILHO foi
+    # removido) — o "and executavel" abaixo ja garante que o rotulo nunca
+    # vira "EXECUTAR" sem gatilho, entao o numero pode continuar refletindo
+    # a confluencia real, mesmo alta, mesmo sem execucao liberada.
 
     if direcao not in ("compra", "venda"):
         acao, cor, texto = "FORA", "#8892a4", "Sem direção definida — nada a fazer."
@@ -7487,6 +8826,7 @@ def avaliar_conviccao(ctx_res, dados_tela):
     ctx_res["conviccao_bruta_ponderada"] = int(max(0, min(100, CONVICCAO_BASE + soma)))
     ctx_res["execucao_liberada"] = "sim" if executavel else "nao"
     ctx_res["motivo_nao_executavel"] = "" if executavel else _txt_exec
+    ctx_res["indicadores_indisponiveis"] = indisponiveis
     ctx_res["indices_favor"] = favor
     ctx_res["indices_contra"] = contra
     ctx_res["ajustes_otimizacao"] = ajustes
@@ -7538,12 +8878,12 @@ def reavaliar_execucao(contexto, status_gatilho=None, gatekeeper_permitido=None)
         motivos.append("gatekeeper bloqueou")
     txt = ", ".join(motivos) or "sem confirmação"
 
-    # A conviccao volta a partir do valor BRUTO: o teto de 60% sem gatilho nao
-    # pode ser aplicado duas vezes, senao a leitura armada herda o corte.
+    # Conviccao sempre a partir do valor BRUTO (nunca com teto — ver nota em
+    # TETO_CONVICCAO_SEM_GATILHO, removido: o "and executavel" abaixo ja
+    # impede o rotulo "EXECUTAR" sem gatilho armado, entao o numero pode
+    # refletir a confluencia real mesmo quando a execucao nao esta liberada).
     conv = int(num(contexto.get("conviccao_bruta_ponderada",
                                 contexto.get("conviccao_ponderada", 0))))
-    if not executavel:
-        conv = int(min(conv, TETO_CONVICCAO_SEM_GATILHO))
 
     if direcao not in ("compra", "venda"):
         acao, cor, texto = "FORA", "#8892a4", "Sem direção definida — nada a fazer."
@@ -7790,6 +9130,7 @@ COLUNAS_LOG_BLOQUEIO = [
     "VolumeFinanceiro", "VolumeCandle",
     "Acao", "PosRange", "DistanciaMM9", "AncoraEntrada",
     "SaldoAgressaoPct", "ViesFluxo", "FluxoLido", "DistanciaOfertante",
+    "VolumeProfilePOC", "VolumeProfileLVN", "LVNBloqueia", "VWAPBandaBloqueia",
 ]
 
 
@@ -7887,6 +9228,10 @@ def registrar_bloqueio(gatilho, motivo, nome_arquivo="log_armadilhas_evitadas.cs
         "ViesFluxo": g.get("ViesFluxo", ""),
         "FluxoLido": g.get("FluxoLido", ""),
         "DistanciaOfertante": g.get("DistanciaOfertante", 0),
+        "VolumeProfilePOC": g.get("VolumeProfilePOC", 0),
+        "VolumeProfileLVN": ", ".join(f"{num(v):.2f}" for v in (g.get("VolumeProfileLVN") or [])),
+        "LVNBloqueia": "sim" if g.get("LVNBloqueia") else "nao",
+        "VWAPBandaBloqueia": "sim" if g.get("VWAPBandaBloqueia") else "nao",
     }
     existe = os.path.isfile(nome_arquivo)
     try:
@@ -7947,14 +9292,64 @@ def colunas_gatekeeper(contexto, dados_tela, preco):
         "Regime": ctx.get("regime", ""),
         "VolumeFinanceiro": ctx.get("volume_financeiro", 0),
         "VolumeCandle": ctx.get("volume_atual", 0),
+        "VolumeProfilePOC": num(ctx.get("volume_profile_poc", 0)),
+        "VolumeProfileLVN": list(ctx.get("volume_profile_lvn", []) or []),
     }
+
+    # ---- Reavaliacao das regras ativas COM a acao/ancora finais deste
+    # gatekeeper (podem diferir levemente da acao_pretendida usada dentro de
+    # classificar_contexto). avaliar_risco_lvn/avaliar_risco_vwap_banda sao a
+    # UNICA fonte de verdade dessas duas regras — chamadas aqui com os dados
+    # definitivos da leitura.
+    try:
+        _risco_lvn_gk = avaliar_risco_lvn(
+            preco=_preco_g, acao=_acao_ctx, pos_range=num(ctx.get("pos_range", -1)),
+            rompimento_dispara=bool(ctx.get("rompimento_dispara")),
+            rompimento_direcao=str(ctx.get("rompimento_direcao", "espera")),
+            saldo_agressao_pct=num(ctx.get("saldo_agressao_pct", ctx.get("agressao_pct_leitura", 50.0))),
+            vp_info=ctx.get("volume_profile"))
+    except Exception:
+        _risco_lvn_gk = {"bloqueia": False, "motivo": ""}
+    try:
+        _risco_vwap_gk = avaliar_risco_vwap_banda(
+            _preco_g, _acao_ctx, ctx.get("vwap_bands"), ancora_entrada=(_ancora_ctx == "sim"))
+    except Exception:
+        _risco_vwap_gk = {"bloqueia": False, "motivo": ""}
+
+    g["LVNBloqueia"] = bool(_risco_lvn_gk.get("bloqueia", False))
+    g["LVNMotivo"] = str(_risco_lvn_gk.get("motivo", ""))
+    g["VWAPBandaBloqueia"] = bool(_risco_vwap_gk.get("bloqueia", False))
+    g["VWAPBandaMotivo"] = str(_risco_vwap_gk.get("motivo", ""))
+
     permitido, status = validar_sinal_entrada(g)
+    try:
+        logger_gatekeeper.info(
+            "Ativo=%s Acao=%s Preco=%.2f Score=%s PosRange=%.1f AncoraEntrada=%s "
+            "LVNBloqueia=%s VWAPBandaBloqueia=%s Permitido=%s Status=%s",
+            g.get("Ativo", ""), _acao_ctx, _preco_g, g.get("Score", 0),
+            g.get("PosRange", -1), _ancora_ctx, g["LVNBloqueia"], g["VWAPBandaBloqueia"],
+            permitido, status)
+    except Exception:
+        # Log de auditoria nunca pode derrubar a decisao do gatekeeper.
+        pass
     return {
         "MotivoBloqueioSimulado": g.get("MotivoBloqueioSimulado", ""),
         "GatekeeperModo": "sombra" if MODO_SOMBRA_GATEKEEPER else "ativo",
         "GatekeeperStatus": status,
         "GatekeeperPermitido": "sim" if permitido else "nao",
+        # Melhoria de instrumentacao: veredito das regras ativas em TODA
+        # leitura, nao so quando bloqueiam de fato. Antes so entrava no CSV
+        # (via registrar_bloqueio) quando o gatekeeper barrava — nao dava pra
+        # medir "quantas vezes a regra teria disparado" em leituras que
+        # passaram. Com isso em toda linha, da pra validar retroativamente
+        # se o ATR/LVN/VWAP Bands teriam evitado um dia ruim, sem esperar
+        # trades fecharem.
+        "LVNBloqueia": "sim" if g.get("LVNBloqueia") else "nao",
+        "LVNMotivo": g.get("LVNMotivo", ""),
+        "VWAPBandaBloqueia": "sim" if g.get("VWAPBandaBloqueia") else "nao",
+        "VWAPBandaMotivo": g.get("VWAPBandaMotivo", ""),
     }
+
 
 
 # ---- GUARDA DE VOLUME: envelopa classificar_contexto ----
@@ -7997,6 +9392,105 @@ def _chave_leitura(dados_tela, ignorar_macro):
     ])
 
 
+def _registrar_ciclo_para_escape_neutro(ctx_res: Dict[str, Any], dados_tela: Dict[str, Any],
+                                         ignorar_macro: bool) -> None:
+    """Atualiza o contador de ciclos consecutivos em vies neutro/indefinido,
+    usado por classificar_contexto (score_min) para o escape de consolidacao
+    prolongada. So conta ciclos NOVOS — usa a mesma chave de deduplicacao de
+    _chave_leitura para nao contar de novo o mesmo instante em reruns do
+    Streamlit (auto-refresh, troca de aba etc.)."""
+    try:
+        if not isinstance(ctx_res, dict):
+            return
+        _chave = _chave_leitura(dados_tela, ignorar_macro)
+        if st.session_state.get("streak_ultima_chave") == _chave:
+            return
+        st.session_state["streak_ultima_chave"] = _chave
+
+        _acao = str(ctx_res.get("acao_objetiva", "")).strip().lower()
+        _vies_txt = str(ctx_res.get("vies", "")).strip().lower()
+        _neutro = (_acao in ("", "espera", "aguardar") and
+                   (not _vies_txt or "neutro" in _vies_txt or "indefin" in _vies_txt
+                    or "espera" in _vies_txt))
+        _streak = int(st.session_state.get("streak_ciclos_neutros", 0))
+        st.session_state["streak_ciclos_neutros"] = (_streak + 1) if _neutro else 0
+    except Exception:
+        # Contador de escape nunca pode travar o ciclo de analise.
+        pass
+
+
+# ---- (1) CAMINHO ALTERNATIVO DE ARMADA: tendencia pura sem pullback/rompimento ----
+# 78 de 81 leituras com conviccao ponderada >=60% ficaram em ESPERA so por
+# falta de um candle de rompimento — a maioria delas em trend_up/trend_down
+# puro, sem pullback e sem reversao no extremo do range (que sao os dois
+# unicos "passe-livre" que ja existiam). A convicao ponderada (soma dos
+# indicadores pelo ACERTO HISTORICO medido de cada um) e uma leitura mais
+# confiavel do que o score bruto isolado; acima do limiar abaixo, ela passa
+# a valer como passe-livre proprio para tendencia pura — sem exigir
+# rompimento nem score bruto folgado. As travas de seguranca (conflito,
+# exaustao nas pontas, volume, grandes lotes contra) continuam de pe.
+LIMIAR_CONVICCAO_TENDENCIA_FORTE = 75
+
+
+def liberar_tendencia_forte_sem_pullback(ctx_res, dados_tela):
+    if not isinstance(ctx_res, dict):
+        return ctx_res
+    if str(ctx_res.get("acao_objetiva", "")) != "espera":
+        return ctx_res  # ja tem direcao definida por outro caminho — nao mexe
+
+    regime = str(ctx_res.get("regime", ""))
+    if regime not in ("trend_up", "trend_down"):
+        return ctx_res  # este caminho e SO para tendencia pura, sem pullback
+
+    conv = num(ctx_res.get("conviccao_ponderada", 0))
+    if conv < LIMIAR_CONVICCAO_TENDENCIA_FORTE:
+        return ctx_res
+
+    direcao = "compra" if regime == "trend_up" else "venda"
+
+    # travas de seguranca — as mesmas que qualquer outro caminho de armada respeita
+    if ctx_res.get("conflito") or ctx_res.get("exaustao_topo") or ctx_res.get("exaustao_fundo"):
+        return ctx_res
+    if not ctx_res.get("volume_ok", True):
+        return ctx_res
+    _lv = str(ctx_res.get("lotes_vies", ""))
+    if _lv and _lv != direcao and num(ctx_res.get("lotes_forca", 0)) >= 30:
+        return ctx_res  # grandes lotes institucionais contra ainda barram
+
+    # Item 3 — Validacao cruzada de agressao (T&T) x intencionalidade de lote
+    # das grandes mesas (book): este e o unico caminho que "ignora" o gatilho
+    # de espera manual (libera direcao sem pullback/rompimento confirmado).
+    # Por isso so pode disparar quando os dois sinais apontam 100% para a
+    # MESMA direcao da liberacao — divergencia entre agressao e grandes
+    # players e motivo suficiente para manter a espera manual, mesmo com
+    # conviccao ponderada alta.
+    _saldo_agr = num(ctx_res.get("agressao_pct_leitura", ctx_res.get("saldo_agressao_pct", 50.0)))
+    if _saldo_agr >= SALDO_AGRESSAO_MINIMO:
+        _dir_agressao = "compra"
+    elif _saldo_agr <= (100.0 - SALDO_AGRESSAO_MINIMO):
+        _dir_agressao = "venda"
+    else:
+        _dir_agressao = "indefinido"
+    _dir_lotes = _lv if _lv in ("compra", "venda") else "indefinido"
+    if _dir_agressao == "indefinido" or _dir_lotes == "indefinido":
+        # Sem os dois sinais definidos nao ha como confirmar alinhamento de
+        # 100% — mantem em espera manual (mais conservador).
+        return ctx_res
+    if _dir_agressao != direcao or _dir_lotes != direcao:
+        return ctx_res  # agressao e lotes precisam apontar 100% para a mesma direcao
+
+    ctx_res["acao_objetiva"] = direcao
+    ctx_res["acao_pretendida"] = direcao
+    ctx_res["vies"] = f"tendência pura liberada por convicção ponderada ({int(conv)}%)"
+    ctx_res["falta_para_gatilho"] = [
+        f for f in (ctx_res.get("falta_para_gatilho") or [])
+        if "sem reversão, pullback" not in f]
+    ctx_res["liberado_por_tendencia_forte"] = True
+    ctx_res["liberacao_confirmada_agressao_lotes"] = True
+    return ctx_res
+
+
+
 def classificar_contexto(dados_tela, fechamento_ant=None, ignorar_macro=False):
     # FONTE UNICA DE VERDADE: painel, fala e CSV chamavam esta funcao
     # separadamente e podiam mostrar decisoes diferentes para o MESMO instante
@@ -8014,6 +9508,10 @@ def classificar_contexto(dados_tela, fechamento_ant=None, ignorar_macro=False):
         pass
     try:
         ctx_res = avaliar_conviccao(ctx_res, dados_tela)
+    except Exception:
+        pass
+    try:
+        ctx_res = liberar_tendencia_forte_sem_pullback(ctx_res, dados_tela)
     except Exception:
         pass
     if isinstance(ctx_res, dict):
@@ -8127,6 +9625,69 @@ def validar_leitura(dt):
     return _validar_leitura_v2(dt)
 
 
+# =============================================================================
+# J) LEITURA ESTRUTURALMENTE VAZIA — causa raiz do "sistema so mostra COMPRA"
+#
+# Sintoma reportado: mercado caindo forte na tela e o painel insistindo em
+# COMPRA, com percentual que nunca muda.
+#
+# Diagnostico no CSV do replay de 10/09: em TODAS as leituras, os campos
+# estruturais vinham ZERADOS — maxima=0, minima=0, mm9=0, mm20=0, mm50=0,
+# mm200=0, vwap=0, volume=0 — e o preco vinha congelado no mesmo valor
+# (5151,54 repetido em 7 leituras seguidas) ou zerado. Ou seja: a extracao da
+# tela nao estava entregando NADA de preco/estrutura.
+#
+# A validacao antiga so reprovava preco <= 0. Com um preco (ainda que velho) e
+# todo o resto zerado, a leitura passava como VALIDA. Consequencia em cascata:
+#   - setups tecnicos, gatilho e book ficavam todos neutros (sem dado nenhum);
+#   - o MACRO (DXY/EWZ/VIX/PMI/PTAX) e a unica fonte que NAO vem da tela, vem
+#     de API web — entao ele sobrava como UNICA fonte votante no veredito;
+#   - macro intradiario quase nao muda, e estava fixo em "compra moderado";
+#   - resultado: veredito COMPRA, sempre, com percentual invariavel, contra
+#     uma queda evidente no grafico.
+#
+# Nao e um indicador com defeito a ser excluido: e ausencia total de dado
+# sendo tratada como leitura boa. A correcao e reprovar a leitura quando nao
+# ha estrutura de preco nenhuma — assim o sistema diz "nao consegui ler a
+# tela" em vez de inventar uma direcao a partir do macro sozinho.
+# =============================================================================
+# Quantas vezes o mesmo preco pode repetir antes de ser considerado congelado.
+LIMITE_REPETICOES_PRECO_CONGELADO = 4
+_validar_leitura_v3 = validar_leitura
+
+
+def validar_leitura(dt):
+    res = _validar_leitura_v3(dt)
+    if not isinstance(dt, dict) or not isinstance(res, dict):
+        return res
+    try:
+        _preco = num(dt.get("preco_atual", 0))
+        # 1) Estrutura de preco ausente: tem preco, mas NADA mais foi lido.
+        _campos_estruturais = [num(dt.get(k, 0)) for k in
+                               ("maxima", "minima", "mm9", "mm20", "mm50", "mm200", "vwap")]
+        if _preco > 0 and not any(v > 0 for v in _campos_estruturais):
+            res["consistente"] = False
+            res.setdefault("erros", []).append("leitura_sem_estrutura_de_preco")
+            return res
+
+        # 2) Preco congelado: mesmo valor repetido leitura apos leitura indica
+        #    captura travada (janela sobreposta/minimizada), nao mercado parado.
+        if _preco > 0:
+            _ant = st.session_state.get("_preco_ultima_leitura")
+            _rep = int(st.session_state.get("_repeticoes_preco", 0))
+            _rep = (_rep + 1) if (_ant is not None and abs(num(_ant) - _preco) < 0.005) else 0
+            st.session_state["_preco_ultima_leitura"] = _preco
+            st.session_state["_repeticoes_preco"] = _rep
+            if _rep >= LIMITE_REPETICOES_PRECO_CONGELADO:
+                res["consistente"] = False
+                res.setdefault("erros", []).append(
+                    "preco_congelado_%dx_em_%.2f" % (_rep + 1, _preco))
+    except Exception:
+        # Guarda de validacao nunca pode derrubar o ciclo de analise.
+        pass
+    return res
+
+
 # ---- H) Volume financeiro caindo no campo de contratos ----
 _aplicar_guarda_volume_v1 = aplicar_guarda_volume
 
@@ -8184,6 +9745,27 @@ def processar_conviction(v, contexto=None, contexto_fluxo=None):
 
 def consolidar_veredito(contexto, mudanca_desc="", mudanca_ativa=False, contexto_fluxo=None):
     v = _consolidar_veredito_v1(contexto, mudanca_desc, mudanca_ativa)
+    # MACRO NAO VOTA SOZINHO. O macro (DXY/EWZ/VIX/PMI/PTAX) vem de API web, e
+    # nao da tela — entao ele continua "funcionando" mesmo quando a leitura de
+    # preco falha por completo. Nessa situacao ele sobrava como unica fonte e
+    # ditava a direcao do veredito: era isso que produzia COMPRA fixa contra
+    # uma queda evidente no grafico, com percentual invariavel (macro
+    # intradiario quase nao muda). Macro e CONTEXTO de fundo, nao gatilho: sem
+    # nenhuma fonte de preco/fluxo confirmando, o veredito fica sem direcao.
+    try:
+        _ctx_v = contexto or {}
+        _leitura_ok = bool((_ctx_v.get("validacao") or {}).get("consistente", True))
+        _fontes_preco = int(num(v.get("fontes", 0)))
+        if (not _leitura_ok) or _fontes_preco <= 0:
+            v["direcao"] = "indefinida"
+            v["convicao"] = 0
+            v["conviccao"] = 0
+            v["acao_sugerida"] = "aguardar"
+            v["resumo"] = ("Sem leitura de preço/fluxo válida nesta análise — "
+                           "macro sozinho não define direção.")
+            return processar_conviction(v, contexto=contexto, contexto_fluxo=contexto_fluxo)
+    except Exception:
+        pass
     try:
         conv = float(v.get("conviccao", 0) or 0)
         conv_pond = float(v.get("conviccao_ponderada", conv) or conv)
@@ -8226,6 +9808,41 @@ def _avaliar_travas(gatilho):
         # entrada estirada nem contra o movimento: momentum nao bloqueia.
         return None
     return motivo
+
+
+# ---- Volume Profile: veta entrada ROMPENDO/PERSEGUINDO em direcao a um LVN
+#      sem suporte agressivo de fluxo (vacuo de liquidez negociada) ----
+# A regra em si (quando bloqueia, com qual motivo) vive em avaliar_risco_lvn —
+# aqui so lemos o veredito ja calculado em colunas_gatekeeper, para nao
+# duplicar a logica em dois lugares (fonte unica de verdade).
+_avaliar_travas_v2 = _avaliar_travas
+
+
+def _avaliar_travas(gatilho):
+    motivo = _avaliar_travas_v2(gatilho)
+    if motivo:
+        return motivo
+    g = gatilho or {}
+    if g.get("LVNBloqueia"):
+        return str(g.get("LVNMotivo") or "Bloqueio por LVN sem suporte de fluxo")
+    return None
+
+
+# ---- VWAP Bands (1sigma/2sigma): veta entrada perseguindo alem de +-2sigma
+#      da VWAP sem ancora de reversao (exaustao estatistica) ----
+# Mesmo principio de fonte unica: a regra vive em avaliar_risco_vwap_banda,
+# ja avaliada com a ancora definitiva dentro de colunas_gatekeeper.
+_avaliar_travas_v3 = _avaliar_travas
+
+
+def _avaliar_travas(gatilho):
+    motivo = _avaliar_travas_v3(gatilho)
+    if motivo:
+        return motivo
+    g = gatilho or {}
+    if g.get("VWAPBandaBloqueia"):
+        return str(g.get("VWAPBandaMotivo") or "Bloqueio por extensão além de 2σ da VWAP")
+    return None
 
 
 # ---- E) Em ESPERA a geometria e referencia do vies ----
@@ -8293,7 +9910,14 @@ def classificar_contexto(dados_tela, fechamento_ant=None, ignorar_macro=False):
             st.session_state["direcao_referencia_atual"] = _ref
         except Exception:
             pass
+        # Item 4 — escape de vies neutro persistente: conta este ciclo (se for
+        # novo) para o mecanismo de flexibilizacao temporaria do score minimo
+        # usado dentro de classificar_contexto na proxima leitura.
+        _registrar_ciclo_para_escape_neutro(ctx_res, dados_tela, ignorar_macro)
+        ctx_res["streak_ciclos_neutros"] = int(st.session_state.get("streak_ciclos_neutros", 0))
+        ctx_res["escape_neutro_ativo"] = ctx_res["streak_ciclos_neutros"] >= LIMIAR_CICLOS_NEUTROS_ESCAPE
     return ctx_res
+
 
 
 # ---- PAINEL DE COMANDO (topo da pagina) ----
@@ -8428,15 +10052,11 @@ badge_map = {
 }
 badge_cls, badge_txt = badge_map.get(sg_atual, ("badge-aguardando","⚪"))
 
-col_h1, col_h2, col_h3 = st.columns([3,1,1])
-with col_h1:
-    st.markdown("# 🤖 AutoPro — Radar Institucional")
-    st.markdown(f'<span class="status-badge {badge_cls}">{badge_txt}</span>', unsafe_allow_html=True)
-with col_h2:
-    mac_h = ler_dados_macro()
-    st.markdown(f'<div class="metric-card"><div class="label">DXY</div><div class="value blue">{mac_h.get("DXY","N/A")}</div></div>', unsafe_allow_html=True)
-with col_h3:
-    st.markdown(f'<div class="metric-card"><div class="label">PTAX Bacen</div><div class="value gold">{mac_h.get("PTAX","N/A")}</div></div>', unsafe_allow_html=True)
+# Topo enxuto: DXY e PTAX sairam do cabecalho — os dois vivem na aba
+# Macroeconomicos, onde aparecem com fonte, horario e disponibilidade.
+st.markdown("# 🤖 AutoPro — Radar Institucional")
+st.markdown(f'<span class="status-badge {badge_cls}">{badge_txt}</span>',
+            unsafe_allow_html=True)
 
 
 # =============================================================================
@@ -8493,6 +10113,7 @@ if st.session_state.get("analise_automatica") and CHAVE_OPENROUTER and (
         try:
             executar_analise()
             st.session_state.ultimo_ciclo_analise = time.time()
+            st.session_state["ultimo_erro_ciclo"] = None
             if _disp_glob and _chave_glob:
                 registrar_disparo_anuncio(_chave_glob)
             if _lig_glob:
@@ -8500,1048 +10121,603 @@ if st.session_state.get("analise_automatica") and CHAVE_OPENROUTER and (
         except Exception as _e_glob:
             st.session_state["ultimo_erro_ciclo"] = str(_e_glob)
 
+# ---- AUTO-AVANCO NO REPLAY ----
+# analise_automatica so dispara dentro da janela operacional de VERDADE
+# (estado_janela_operacional usa o relogio real, nao o do replay) — ou seja,
+# em replay ele nunca disparava sozinho. O usuario tinha que clicar
+# "Executar análise agora" a cada instante manualmente; se clicasse uma unica
+# vez, o veredito ficava congelado naquele resultado pelo resto da sessao —
+# foi exatamente o que aconteceu no replay de 03/09 (compra parada em 12%
+# o dia inteiro: nada mais rodou depois do primeiro clique). Este ciclo roda
+# em paralelo, ignora o horario real e SO liga com o toggle explicito do
+# usuario em "Analisar automaticamente durante o replay".
+if st.session_state.get("modo_replay") and st.session_state.get("avancar_replay_auto"):
+    st_autorefresh(interval=INTERVALO_AUTO_REPLAY_MS, key="refresh_auto_replay")
+    _dec_replay = time.time() - num(st.session_state.get("ultimo_ciclo_analise", 0))
+    if CHAVE_OPENROUTER and _dec_replay >= (INTERVALO_AUTO_REPLAY_MS / 1000.0):
+        st.session_state["origem_ciclo_atual"] = "replay_auto"
+        with st.spinner("Replay: analisando o próximo instante..."):
+            try:
+                executar_analise()
+                st.session_state.ultimo_ciclo_analise = time.time()
+                st.session_state["ultimo_erro_ciclo"] = None
+            except Exception as _e_replay:
+                st.session_state["ultimo_erro_ciclo"] = str(_e_replay)
+
 
 # =========================
 # ABAS PRINCIPAIS
 # =========================
-aba1, aba2, aba3, aba4 = st.tabs([
-    "🤖 Radar Institucional", "📈 Sinal Mini Dólar 9h",
-    "📅 Calendário + Notícias", "🎯 Decisão Rápida"])
+
+# =============================================================================
+# VEREDITOS POR ABA — MACRO / LIQUIDEZ / CONFLUENCIA
+# Reaproveitam as funcoes de calculo ja existentes (nada e recalculado do
+# zero): cada aba de indicadores devolve o MESMO formato de veredito
+# {vies, forca, convicao, fatores, resumo} para ficar consistente na tela.
+# =============================================================================
+
+def veredito_macro_aba():
+    """Aba 2 — usa 1:1 a leitura de vies_macro_consolidado (DXY/EWZ/VIX/PMI/PTAX).
+    Dado essencial ausente => NEUTRO explicito, nunca herda valor velho."""
+    macro = ler_dados_macro()
+    v = vies_macro_consolidado(macro)
+    convicao = min(100, abs(int(v.get("pontos", 0))) * 20)
+    return {
+        "vies": v.get("vies", "neutro"),
+        "forca": v.get("forca", "neutro"),
+        "convicao": convicao,
+        "fatores": v.get("fatores", []),
+        "resumo": v.get("resumo", ""),
+        "indisponivel": v.get("indisponivel", False),
+        "parcial": v.get("parcial", False),
+    }, macro
 
 
-# ============================================================
-# ABA 1 — RADAR INSTITUCIONAL
-# ============================================================
-with aba1:
+def veredito_liquidez_aba(agentes_info=None, dados_tela=None, contexto=None):
+    """Aba 3 — funde agressao, desequilibrio de book, absorcao, tendencia de
+    fluxo, lotes institucionais e rompimento por volume num veredito unico,
+    com o MESMO esquema de votos ponderados do motor de confluencia."""
+    ag = agentes_info if agentes_info is not None else st.session_state.get("ultimos_agentes") or {}
+    dt = dados_tela if dados_tela is not None else st.session_state.get("ultimos_dados_tela") or {}
+    ctx = contexto if contexto is not None else st.session_state.get("ultimo_contexto") or {}
+    preco = num(dt.get("preco_atual", 0))
+
+    integridade = validar_integridade_book(ag, preco)
+    fluxo = calcular_pressao_fluxo(ag, preco)
+    lotes = avaliar_lotes_institucionais(ag, preco)
+    dados_brutos = {"fluxo": fluxo, "lotes": lotes, "integridade": integridade}
+
+    if not integridade.get("valido", True):
+        return ({"vies": "neutro", "forca": "neutro", "convicao": 0,
+                 "fatores": [integridade.get("motivo", "book indisponível")],
+                 "resumo": "Liquidez descartada — " + str(integridade.get("motivo", "")),
+                 "indisponivel": True}, dados_brutos)
+
+    votos = {"compra": 0.0, "venda": 0.0}
+    fatores = []
+    contras = []
+
+    if fluxo.get("absorcao") == "compra_absorvendo_venda":
+        votos["compra"] += 3.0
+        fatores.append("Absorção compradora no fluxo (venda sendo absorvida)")
+    elif fluxo.get("absorcao") == "venda_absorvendo_compra":
+        votos["venda"] += 3.0
+        fatores.append("Absorção vendedora no fluxo (compra sendo absorvida)")
+
+    des = num(fluxo.get("desequilibrio", 0))
+    if abs(des) >= 20:
+        lado = "compra" if des > 0 else "venda"
+        votos[lado] += 1.0
+        fatores.append(f"Book desequilibrado para {lado} ({des:+.0f}%)")
+
+    if lotes.get("vies") in ("compra", "venda") and num(lotes.get("forca", 0)) >= 30:
+        votos[lotes["vies"]] += 1.5
+        fatores.append(f"Grandes lotes sustentando {lotes['vies']} — {lotes.get('resumo','')}")
+
+    tend = fluxo.get("tendencia", "neutro")
+    if tend == "compradora_crescente":
+        votos["compra"] += 1.0
+        fatores.append(f"Agressão compradora crescente (Δ{fluxo.get('delta_agressao',0):+.1f}p.p.)")
+    elif tend == "vendedora_crescente":
+        votos["venda"] += 1.0
+        fatores.append(f"Agressão vendedora crescente (Δ{fluxo.get('delta_agressao',0):+.1f}p.p.)")
+
+    try:
+        romp = gatilho_rompimento_candle(dt) if dt else {}
+    except Exception:
+        romp = {}
+    _pos_range = num(ctx.get("pos_range", 50))
+    _no_extremo = bool(ctx.get("reversao_extremo")) or _pos_range >= 80 or _pos_range <= 20
+    if romp.get("dispara") and romp.get("direcao") in ("compra", "venda"):
+        if _no_extremo:
+            votos[romp["direcao"]] += 1.0
+            fatores.append(f"Rompimento de candle com volume confirmado ({romp['direcao']})")
+        else:
+            contras.append("rompimento seco no meio do range (trava de falso rompimento)")
+
+    exf = fluxo.get("exaustao_fluxo", "")
+    if exf == "alta_perdendo_forca":
+        votos["venda"] += 0.5
+        contras.append("exaustão de fluxo na alta")
+    elif exf == "baixa_perdendo_forca":
+        votos["compra"] += 0.5
+        contras.append("exaustão de fluxo na baixa")
+
+    total = votos["compra"] + votos["venda"]
+    if total <= 0:
+        return ({"vies": "neutro", "forca": "neutro", "convicao": 0,
+                 "fatores": ["sem sinal de liquidez dominante nesta leitura"],
+                 "resumo": "Liquidez sem direção definida", "contras": contras},
+                dados_brutos)
+
+    direcao = "compra" if votos["compra"] > votos["venda"] else "venda"
+    dom = max(votos["compra"], votos["venda"])
+    convicao = int(min(100, round((dom / max(6.0, total)) * 100)))
+    if votos["compra"] > 0 and votos["venda"] > 0:
+        convicao = int(convicao * (1 - min(0.5, min(votos.values()) / dom)))
+    convicao = max(0, convicao - len(contras) * 10)
+    forca = "forte" if convicao >= 55 else ("moderado" if convicao >= 30 else "neutro")
+    vies = direcao if forca != "neutro" else "neutro"
+
+    return ({"vies": vies, "forca": forca, "convicao": convicao,
+             "fatores": fatores[:6], "contras": contras,
+             "resumo": f"Liquidez aponta {direcao} · convicção {convicao}%"},
+            dados_brutos)
 
 
-    # ------------------------------------------------------------------
-    # 1. DECISAO — primeira coisa da pagina
-    # ------------------------------------------------------------------
-    _ig_topo = st.session_state.modo_replay and not st.session_state.usar_macro_no_replay
-    _dt_topo = st.session_state.get("ultimos_dados_tela", {})
-    _pe_topo = ESTRATEGIAS[st.session_state.estrategia_operacional]
-    if _dt_topo:
-        _ctx_topo = classificar_contexto(
-            _dt_topo, ler_fechamento_anterior() if not _ig_topo else None, _ig_topo)
-        render_painel_comando(_ctx_topo, _dt_topo, _pe_topo)
+def veredito_confluencia_aba(veredito_liq=None, veredito_macro=None):
+    """Aba 4 — parte do motor ja calibrado (consolidar_veredito, que ja pondera
+    gatilho, previsao, absorcao/book basicos e os setups tecnicos de maior
+    acerto medido) e SOMA o voto do painel macro como fonte adicional. Nao
+    recalcula liquidez do zero (ja embutida no motor via contexto_fluxo);
+    a Aba 3 entra apenas como reforco textual no detalhamento."""
+    base = dict(st.session_state.get("ultimo_veredito") or {})
+    if not base:
+        return {"vies": "neutro", "forca": "neutro", "convicao": 0,
+                "fatores": ["Sem leitura ainda — execute uma análise."],
+                "resumo": "Aguardando primeira leitura."}
+
+    macro_v = veredito_macro or {}
+    votos = {"compra": 0.0, "venda": 0.0}
+    _dir_base = base.get("direcao")
+    if _dir_base in ("compra", "venda"):
+        votos[_dir_base] = (num(base.get("convicao", 0)) / 100.0) * 6.0
+
+    _mv, _mf = macro_v.get("vies"), macro_v.get("forca")
+    if _mv in ("compra", "venda"):
+        votos[_mv] += 1.5 if _mf == "forte" else 0.75
+
+    total = votos["compra"] + votos["venda"]
+    detalhe = list(base.get("detalhe", []))
+    if _mv in ("compra", "venda"):
+        detalhe.append(f"Macro {_mf} para {_mv}")
+    if veredito_liq and veredito_liq.get("vies") in ("compra", "venda"):
+        detalhe.append(f"Liquidez {veredito_liq.get('forca')} para {veredito_liq.get('vies')} "
+                        f"({veredito_liq.get('convicao', 0)}%)")
+
+    if total <= 0:
+        direcao, convicao = base.get("direcao", "indefinida"), int(num(base.get("convicao", 0)))
     else:
-        st.markdown('<div class="hero neutro"><div class="acao" style="color:#8892a4">'
-                    'AGUARDANDO LEITURA</div><div class="sub">Clique em Executar Análise '
-                    'para gerar a primeira decisão.</div></div>', unsafe_allow_html=True)
-
-    st.markdown('<div class="section-title">⚡ Ação e profundidade do book</div>', unsafe_allow_html=True)
-    # --- Botão de execução com RESUMO PREVISIONAL + AÇÃO DOS AGENTES ---
-    st.markdown("")
-    col_btn, col_resumo, col_agentes = st.columns([1, 2, 2])
-    with col_btn:
-        rodar = st.button("▶️ Executar Análise", width='stretch')
-    with col_resumo:
-        if st.session_state.ultimos_dados_tela:
-            _ig = st.session_state.modo_replay and not st.session_state.usar_macro_no_replay
-            _ctx = classificar_contexto(st.session_state.ultimos_dados_tela, ler_fechamento_anterior() if not _ig else None, _ig)
-            _a = _ctx.get("acao_pretendida", _ctx["acao_objetiva"])
-            _est = _ctx["estrategia"]
-            _pr = num(st.session_state.ultimos_dados_tela.get("preco_atual", 0))
-            _hr = st.session_state.ultimos_dados_tela.get("hora_replay","") or datetime.now().strftime("%H:%M")
-            _pad = _ctx.get("padrao_candle","")
-            _pe = ESTRATEGIAS[_est]
-            _sc = _ctx["score"]; _scm = _ctx["score_minimo_usado"]; _lim = _ctx["limiar"]
-            _falta_lst = _ctx.get("falta_para_gatilho", [])
-            _armado = (not _falta_lst) and _a in ["compra","venda"]
-
-            def _fmt_alvo_stop(_dir, _preco, _pe):
-                _n = calcular_alvo_dinamico(
-                    _preco, _dir, _est,
-                    dados_tela=st.session_state.ultimos_dados_tela,
-                    agentes_info=st.session_state.get("ultimos_agentes", {}),
-                    fechamento_ant=ler_fechamento_anterior() if not _ig else None,
-                )
-                return round(_n["alvo"], 2), round(_n["stop"], 2)
-
-            _base_alvo_txt = _ctx.get("base_alvo", "fixo")
-            _base_stop_txt = _ctx.get("base_stop", "fixo")
-
-            # Detalhe do raciocínio: fica recolhido para não competir com a decisão.
-            with st.expander("🔍 Por que esta decisão — leitura completa", expanded=False):
-                # ---- INDICAÇÃO UNIFICADA (topo) ----
-                _vd = st.session_state.get("ultimo_veredito", {}) or {}
-                if _vd.get("direcao") and _vd.get("direcao") != "indefinida":
-                    _vdir = _vd["direcao"]
-                    _vcor = "#00e676" if _vdir == "compra" else "#ff5252"
-                    _vconv = int(_vd.get("convicao", 0))
-                    _vacao = str(_vd.get("acao_sugerida", "aguardar")).upper()
-                    if _vconv < 30:
-                        _vcor = "#ffd740"
-                    _vdet = "<br>".join([f"• {d}" for d in (_vd.get("detalhe") or [])])
-                    _vcon = ""
-                    if _vd.get("contras"):
-                        _vcon = ('<br><span style="color:#ff9800">⚠️ Contra: '
-                                 + ", ".join(_vd["contras"]) + "</span>")
-                    st.markdown(f'''<div style="background:linear-gradient(135deg,#0a1628,#050b14);border:3px solid {_vcor};border-radius:12px;padding:14px 18px;font-size:13px;line-height:1.75;margin-bottom:10px;">
-    🧭 <b style="color:{_vcor};font-size:17px">INDICAÇÃO UNIFICADA — {_vacao}</b><br>
-    <b>{_vd.get("fontes",0)} de 5 leituras</b> apontam <b style="color:{_vcor}">{_vdir.upper()}</b> · convicção <b>{_vconv}%</b>
-    <div style="background:#0e1117;border-radius:8px;height:9px;margin:7px 0;overflow:hidden;">
-    <div style="background:{_vcor};height:9px;width:{_vconv}%;"></div></div>
-    <span style="color:#8892a4;font-size:12px">{_vdet}</span>{_vcon}
-    </div>''', unsafe_allow_html=True)
-
-                # ---- JANELA DE ABERTURA ----
-                _ab = _ctx.get("abertura_info", {}) or {}
-                if _ab.get("resumo"):
-                    _obs = _ab.get("em_observacao")
-                    _cor_ab = "#ffd740" if _obs else "#40c4ff"
-                    _icone = "🕐" if _obs else "✅"
-                    _titulo = "OBSERVANDO A ABERTURA — SEM GATILHO" if _obs else "ABERTURA CONCLUÍDA"
-                    _gp = num(_ab.get("gap_pts", 0))
-                    _linha_gap = ""
-                    if _ab.get("fech_anterior"):
-                        _linha_gap = (f'<br>Fechamento anterior <b>{num(_ab.get("fech_anterior")):.2f}</b> → '
-                                      f'abertura <b>{num(_ab.get("abertura")):.2f}</b> ({_gp:+.1f} pts)')
-                    st.markdown(f'''<div style="background:linear-gradient(135deg,#1a1400,#0f0c00);border:2px solid {_cor_ab};border-radius:10px;padding:12px 16px;font-size:13px;line-height:1.7;margin-bottom:8px;">
-    {_icone} <b style="color:{_cor_ab};font-size:15px">{_titulo}</b><br>
-    {_ab.get("resumo","")}{_linha_gap}{("<br>🏦 " + _ctx.get("lotes_institucionais", {}).get("resumo", "")) if _ctx.get("lotes_institucionais", {}).get("resumo") else ""}
-    </div>''', unsafe_allow_html=True)
-
-                # ---- ROBO PREDITIVO ----
-                _prev = _ctx.get("previsao", {}) or {}
-                _rmp = _ctx.get("rompimento_candle", {}) or {}
-                if _prev:
-                    _pa5 = int(_prev.get("prob_alta_5", 50)); _pa10 = int(_prev.get("prob_alta_10", 50))
-                    _dirp = _prev.get("direcao_prevista", "indefinido")
-                    _corp = "#00e676" if _dirp == "compra" else ("#ff5252" if _dirp == "venda" else "#ffd740")
-                    _txtp = "ALTA" if _dirp == "compra" else ("BAIXA" if _dirp == "venda" else "INDEFINIDA")
-                    _fat = "<br>".join([f"• {f}" for f in (_prev.get("fatores") or [])[:4]]) or "• Sem fatores dominantes"
-                    _rmp_html = ""
-                    if _rmp.get("dispara"):
-                        _rmp_html = f'<br>⚡ <b style="color:#ffd740">ROMPIMENTO CONFIRMADO</b> — {_rmp.get("motivo","")}'
-                    elif _rmp.get("direcao") in ("venda_pendente", "compra_pendente"):
-                        _rmp_html = f'<br>🎯 {_rmp.get("motivo","")}'
-                    _velocidade_aviso = "" if _prev.get("velocidade_valida") else ' <span style="color:#ffd740">(sem histórico)</span>'
-                    st.markdown(f'''<div style="background:linear-gradient(135deg,#0d1b2a,#0a1420);border:2px solid {_corp};border-radius:10px;padding:12px 16px;font-size:13px;line-height:1.7;margin-bottom:8px;">
-    🤖 <b style="color:{_corp};font-size:15px">PREVISÃO — TENDÊNCIA DE {_txtp}</b> · confiança <b>{_prev.get("confianca",0)}%</b><br>
-    Em <b>5 min</b>: alta <b style="color:#00e676">{_pa5}%</b> · baixa <b style="color:#ff5252">{100-_pa5}%</b> · projeção <b>{num(_prev.get("projecao_5",0)):.2f}</b><br>
-    Em <b>10 min</b>: alta <b style="color:#00e676">{_pa10}%</b> · baixa <b style="color:#ff5252">{100-_pa10}%</b> · projeção <b>{num(_prev.get("projecao_10",0)):.2f}</b><br>
-    Velocidade <b>{num(_prev.get("velocidade_pts_min",0)):+.2f} pts/min</b>{_velocidade_aviso} · espaço livre acima <b>{num(_prev.get("espaco_alta",0)):.1f}</b> / abaixo <b>{num(_prev.get("espaco_baixa",0)):.1f}</b> pts{_rmp_html}<br>
-    <span style="color:#8892a4">{_fat}</span>
-    </div>''', unsafe_allow_html=True)
-
-            if _armado and _a == "compra" and _pr > 0:
-                _al, _stp = _fmt_alvo_stop("compra", _pr, _pe)
-                _extra = f" · Padrão: <b>{_pad}</b>" if _pad and _pad != "nenhum" else ""
-                _extra += f'<br>🎯 Alvo em <b>{_base_alvo_txt}</b> · 🛑 Stop em <b>{_base_stop_txt}</b>'
-                if _ctx.get("gestao_posicao"):
-                    _extra += f'<br>📐 <b>{_ctx["gestao_posicao"]}</b>'
-                _est_esp = _ctx.get("estrategia_especial_nome","Nenhuma")
-                if _est_esp and _est_esp != "Nenhuma":
-                    _extra += f' · ⭐ <b style="color:#ffd740">{_est_esp}</b>'
-                st.markdown(f'''<div style="background:linear-gradient(135deg,#003300,#001a00);border:2px solid #00e676;border-radius:10px;padding:12px 16px;font-size:13px;line-height:1.7;">
-🟢 <b style="color:#00e676;font-size:15px">GATILHO ARMADO — COMPRAR</b> às <b>{_hr}</b><br>
-Preço: <b>{_pr:.2f}</b> · Alvo: <b style="color:#00e676">{_al:.2f}</b> (+{_pe["amp_fibo"]*1.61:.1f} pts) · Stop: <b style="color:#ff5252">{_stp:.2f}</b> (-{_pe["stop_pts"]} pts) · Score <b>{_sc}/{_scm}</b> · Limiar <b>{_lim}%</b>{_extra}
-</div>''', unsafe_allow_html=True)
-            elif _armado and _a == "venda" and _pr > 0:
-                _al, _stp = _fmt_alvo_stop("venda", _pr, _pe)
-                _extra = f" · Padrão: <b>{_pad}</b>" if _pad and _pad != "nenhum" else ""
-                _extra += f'<br>🎯 Alvo em <b>{_base_alvo_txt}</b> · 🛑 Stop em <b>{_base_stop_txt}</b>'
-                if _ctx.get("gestao_posicao"):
-                    _extra += f'<br>📐 <b>{_ctx["gestao_posicao"]}</b>'
-                _est_esp = _ctx.get("estrategia_especial_nome","Nenhuma")
-                if _est_esp and _est_esp != "Nenhuma":
-                    _extra += f' · ⭐ <b style="color:#ffd740">{_est_esp}</b>'
-                st.markdown(f'''<div style="background:linear-gradient(135deg,#330000,#1a0000);border:2px solid #ff5252;border-radius:10px;padding:12px 16px;font-size:13px;line-height:1.7;">
-🔴 <b style="color:#ff5252;font-size:15px">GATILHO ARMADO — VENDER</b> às <b>{_hr}</b><br>
-Preço: <b>{_pr:.2f}</b> · Alvo: <b style="color:#00e676">{_al:.2f}</b> (-{_pe["amp_fibo"]*1.61:.1f} pts) · Stop: <b style="color:#ff5252">{_stp:.2f}</b> (+{_pe["stop_pts"]} pts) · Score <b>{_sc}/{_scm}</b> · Limiar <b>{_lim}%</b>{_extra}
-</div>''', unsafe_allow_html=True)
-            elif _a in ["compra","venda"] and _pr > 0:
-                # Aguardando: mostra o que falta e a projeção pretendida
-                _al, _stp = _fmt_alvo_stop(_a, _pr, _pe)
-                _dir_txt = "COMPRAR" if _a == "compra" else "VENDER"
-                _cor_dir = "#00e676" if _a == "compra" else "#ff5252"
-                _faltas_html = "<br>".join([f"⏳ {f}" for f in _falta_lst[:3]])
-                _extra = f"<br>Padrão detectado: <b>{_pad}</b>" if _pad and _pad != "nenhum" else ""
-                _est_esp = _ctx.get("estrategia_especial_nome","Nenhuma")
-                if _est_esp and _est_esp != "Nenhuma":
-                    _extra += f'<br>⭐ <b style="color:#ffd740">{_est_esp}</b>'
-                st.markdown(f'''<div style="background:linear-gradient(135deg,#332200,#1a1100);border:2px solid #ffd740;border-radius:10px;padding:12px 16px;font-size:13px;line-height:1.7;">
-🟡 <b style="color:#ffd740;font-size:15px">AGUARDAR</b> — pretensão: <b style="color:{_cor_dir}">{_dir_txt}</b> às <b>{_hr}</b><br>
-Se armar em <b>{_pr:.2f}</b> → Alvo: <b style="color:#00e676">{_al:.2f}</b> · Stop: <b style="color:#ff5252">{_stp:.2f}</b> · Score <b>{_sc}/{_scm}</b>{_extra}<br>
-<b>Condições pendentes:</b><br>{_faltas_html}
-</div>''', unsafe_allow_html=True)
-            else:
-                _mot = _ctx.get("motivo_objetivo","Sem confluência técnica no momento.")
-                st.markdown(f'''<div style="background:#1a1f2e;border:1px solid #2d3561;border-radius:10px;padding:12px 16px;font-size:13px;">
-⚪ <b style="color:#8892a4">ESPERAR</b> — {_mot} · Preço: <b>{_pr:.2f}</b> · Hora: <b>{_hr}</b>
-</div>''', unsafe_allow_html=True)
-        else:
-            st.info("Clique em ▶️ Executar Análise para gerar o resumo previsional.")
-
-    with col_agentes:
-        render_book_profundidade(
-            st.session_state.get("ultimos_agentes", {}),
-            num(st.session_state.get("ultimos_dados_tela", {}).get("preco_atual", 0)),
-            max_niveis=6)
-        st.markdown("")
-        _ag = st.session_state.get("ultimos_agentes", {})
-        if _ag:
-            # Ofertantes de compra e venda (lista de dicts {agente, preco, qtde})
-            _ofc = _ag.get("ofertantes_compra", []) or []
-            _ofv = _ag.get("ofertantes_venda", []) or []
-            _liq_forte = _ag.get("liquidez_forte", []) or []
-            _saldo = str(_ag.get("saldo_agentes", "neutro")).lower()
-            _pr_atual = num(st.session_state.ultimos_dados_tela.get("preco_atual", 0))
-
-            # Fallback 1: reaproveitar liquidez_forte separando por tipo
-            if not _ofc and not _ofv and _liq_forte:
-                for _l in _liq_forte:
-                    _t = str(_l.get("tipo","")).lower()
-                    _item = {"agente": _l.get("agente","?"), "preco": num(_l.get("preco",0)), "qtde": int(_l.get("qtde",0) or 0)}
-                    if _t == "compra": _ofc.append(_item)
-                    elif _t == "venda": _ofv.append(_item)
-
-            # Fallback 2: se ainda vazio, usar top_compradores/top_vendedores (só nomes)
-            _top_c = _ag.get("top_compradores", []) or []
-            _top_v = _ag.get("top_vendedores", []) or []
-            if not _ofc and _top_c:
-                _ofc = [{"agente": str(n), "preco": 0, "qtde": 0} for n in _top_c[:3]]
-            if not _ofv and _top_v:
-                _ofv = [{"agente": str(n), "preco": 0, "qtde": 0} for n in _top_v[:3]]
-
-            # Ordena por quantidade (maior primeiro) e pega top 3 de cada lado
-            _ofc = sorted(_ofc, key=lambda x: int(x.get("qtde",0) or 0), reverse=True)[:3]
-            _ofv = sorted(_ofv, key=lambda x: int(x.get("qtde",0) or 0), reverse=True)[:3]
-
-            def _limpar_agente(nome):
-                """Devolve "" quando nao ha nome real de corretora."""
-                if not nome: return ""
-                _n = str(nome).strip()
-                _bad = ["nao identificado", "não identificado", "n/a", "?", "unknown",
-                        "desconhecido", "-", "", "book", "agregado", "none", "null"]
-                if _n.lower() in _bad: return ""
-                return _n[:20]
-
-            # A IA informa se o painel lido tinha coluna de nomes de corretoras
-            _tem_nomes = bool(_ag.get("tem_nomes_agentes", False))
-            if not _tem_nomes:
-                _tem_nomes = any(_limpar_agente(o.get("agente","")) for o in (_ofc + _ofv))
-
-            def _fmt_ofertantes(lst, cor, fallback_nomes=None):
-                if not lst:
-                    return '<span style="color:#8892a4;font-style:italic;">sem ofertantes detectados</span>'
-                linhas = []
-                for _o in lst:
-                    _nm = _limpar_agente(_o.get("agente",""))
-                    _pr = num(_o.get("preco",0))
-                    _qt = int(_o.get("qtde",0) or 0)
-                    if not _nm and fallback_nomes:
-                        _i = min(len(linhas), len(fallback_nomes)-1)
-                        _nm = _limpar_agente(fallback_nomes[_i]) if _i < len(fallback_nomes) else ""
-                    _suf = f' · <span style="color:#c0c0c0">{_nm}</span>' if _nm else ''
-                    if _pr > 0 and _qt > 0:
-                        linhas.append(f'<span style="color:{cor}"><b>{_qt}</b></span> @ <b>{_pr:.2f}</b>{_suf}')
-                    elif _pr > 0:
-                        linhas.append(f'<b>{_pr:.2f}</b>{_suf}')
-                    elif _qt > 0:
-                        linhas.append(f'<span style="color:{cor}"><b>{_qt}</b></span>{_suf}')
-                    elif _nm:
-                        linhas.append(f'<span style="color:{cor}">●</span> <b>{_nm}</b>')
-                return "<br>".join(linhas) if linhas else '<span style="color:#8892a4;font-style:italic;">sem ofertantes detectados</span>'
-
-            _html_compra = _fmt_ofertantes(_ofc, "#00e676")
-            _html_venda = _fmt_ofertantes(_ofv, "#ff5252")
-
-            # Cor do saldo
-            _cor_saldo = "#00e676" if _saldo == "comprador" else ("#ff5252" if _saldo == "vendedor" else "#8892a4")
-            _emoji_saldo = "🟢" if _saldo == "comprador" else ("🔴" if _saldo == "vendedor" else "⚪")
-
-            # Recomendação com base na proximidade do preço às ofertas mais fortes
-            _reco = "Aguarde aproximação do preço às zonas de liquidez para avaliar rejeição."
-            if _pr_atual > 0 and (_ofc or _ofv):
-                _melhor_compra = _ofc[0] if _ofc else None
-                _melhor_venda = _ofv[0] if _ofv else None
-                if _melhor_compra and abs(_pr_atual - num(_melhor_compra.get("preco",0))) <= 3.0:
-                    _reco = f"🟢 Preço colado em oferta forte de COMPRA ({_melhor_compra.get('agente','?')} com {_melhor_compra.get('qtde',0)} @ {num(_melhor_compra.get('preco',0)):.2f}). Monitore rejeição para buscar compra."
-                elif _melhor_venda and abs(_pr_atual - num(_melhor_venda.get("preco",0))) <= 3.0:
-                    _reco = f"🔴 Preço colado em oferta forte de VENDA ({_melhor_venda.get('agente','?')} com {_melhor_venda.get('qtde',0)} @ {num(_melhor_venda.get('preco',0)):.2f}). Monitore rejeição para buscar venda."
-
-            # Card duplicado removido: a escada acima ja mostra preco x agente.
-            _reco_txt = ("✅ Fluxo validado na direção do gatilho."
-                         if st.session_state.get("ultimo_status_gatilho") == "ARMADO" else _reco)
-            st.markdown(f'<div style="background:#161b2b;border-left:3px solid #ffd740;'
-                        f'border-radius:8px;padding:9px 13px;font-size:13px;margin-top:8px;'
-                        f'color:#e8ecf3;">{_reco_txt}</div>', unsafe_allow_html=True)
-        else:
-            st.info("Os maiores ofertantes de liquidez aparecem aqui após a primeira análise.")
-
-    _intervalo_ciclo = intervalo_analise_atual()
-    st.session_state["intervalo_ciclo_atual"] = _intervalo_ciclo
-    _decorrido = agora - st.session_state.ultimo_ciclo_analise
-    st.session_state["segundos_proxima_analise"] = max(0, int(_intervalo_ciclo - _decorrido))
-    # TRAVA DURA: o rerun do Streamlit acontece a cada 5 s e nao autoriza
-    # analise. Somente duas origens disparam ciclo automatico:
-    #   1. o relogio de 300 s (sempre, em qualquer horario)
-    #   2. o disparo de 15 s apos o anuncio de um indicador da agenda
-    _ciclo_vencido = _decorrido >= _intervalo_ciclo
-
-    # ---- JANELA OPERACIONAL: 08:55 as 18:10 ----
-    # Ligar as 07h nao inicia o ciclo. O app faz UMA leitura de verificacao e
-    # dorme ate as 08:55; depois das 18:10 encerra sozinho.
-    _janela = estado_janela_operacional()
-    st.session_state["estado_janela"] = _janela
-    _na_janela = bool(_janela["dentro"])
-    _lig_pendente = (st.session_state.analise_automatica and not _na_janela
-                     and precisa_leitura_de_ligacao())
-
-    _disp_anuncio, _disp_chave, _disp_evento = (False, "", "")
-    if st.session_state.analise_automatica and _na_janela:
-        try:
-            _disp_anuncio, _disp_chave, _disp_evento = disparo_pos_anuncio()
-        except Exception:
-            _disp_anuncio, _disp_chave, _disp_evento = (False, "", "")
-
-    rodar_auto = st.session_state.analise_automatica and (
-        (_na_janela and (_ciclo_vencido or _disp_anuncio)) or _lig_pendente)
-    st.session_state["origem_ciclo_atual"] = (
-        "ligacao" if _lig_pendente else
-        "anuncio" if (_disp_anuncio and not _ciclo_vencido) else "ciclo_5min")
-
-    if not _na_janela:
-        # Em repouso o contador da proxima analise mostra a abertura da janela.
-        st.session_state["segundos_proxima_analise"] = int(
-            _janela["minutos_para_abrir"] * 60) if _janela["fase"] == "pre" else 0
-
-    if _disp_anuncio:
-        # A analise pos-anuncio precisa do dado fresco. A coleta respeita o cache
-        # por indicador, entao o custo e uma requisicao por indicador vencido.
-        try:
-            atualizar_macro_agendado(forcar=True)
-        except Exception:
-            pass
-        st.session_state["ultimo_disparo_anuncio"] = (
-            f"{datetime.now().strftime('%H:%M:%S')} — {_disp_evento}")
-
-    # A leitura MANUAL disparada no meio do ciclo de 300 s informa, mas nao
-    # reclassifica: foi uma leitura de 68 s que virou o regime no replay 14/08.
-    # A analise disparada pelo anuncio e legitima e ENTRA na serie de historico,
-    # mesmo caindo antes dos 300 s. So a leitura manual avulsa fica de fora.
-    # A leitura de LIGACAO e verificacao de sistema, nao leitura de mercado:
-    # informa o painel mas nao entra na serie de momentum.
-    st.session_state["leitura_fora_de_ciclo"] = bool(
-        _lig_pendente or (
-            rodar and not rodar_auto and not _disp_anuncio
-            and _decorrido < (FRACAO_CICLO_LEITURA_VALIDA * _intervalo_ciclo))
-    )
-
-    if rodar or rodar_auto:
-        if not CHAVE_OPENROUTER:
-            st.error("Defina a variável de ambiente OPENROUTER_API_KEY antes de executar o app.")
-        else:
-            with st.spinner("Analisando..."):
-                img, msg = executar_analise()
-            st.session_state.ultimo_ciclo_analise = agora
-            if _disp_anuncio and _disp_chave:
-                registrar_disparo_anuncio(_disp_chave)
-            if _lig_pendente:
-                registrar_leitura_de_ligacao()
-            # Em modo replay, avança automaticamente 10 minutos a cada análise
-            # Avanco cego de +10 min: so quando o usuario pedir E a tela nao tiver relogio legivel
-            _origem = str(st.session_state.get("ultimos_dados_tela", {}).get("hora_replay_origem", "manual"))
-            if (st.session_state.modo_replay
-                    and st.session_state.get("avancar_replay_auto", False)
-                    and _origem != "tela"
-                    and st.session_state.get("replay_hora")):
-                try:
-                    h, m = map(int, str(st.session_state.get("replay_hora","09:00")).strip().split(":"))
-                    total = h * 60 + m + 10
-                    if total >= 24*60: total -= 24*60
-                    _set_state("replay_hora", f"{total//60:02d}:{total%60:02d}")
-                    _set_state("replay_seq", st.session_state.get("replay_seq", 0) + 1)
-                except Exception:
-                    pass
-            if img is None:
-                st.error(msg)
-            else:
-                st.success(msg)
-                st.image(img, width=1100)
-
-
-    st.markdown('<div class="section-title">📊 Níveis operacionais e leitura completa</div>', unsafe_allow_html=True)
-    # --- Leitura atual ---
-    st.markdown('<div class="section-title">📊 Última Leitura Automática</div>', unsafe_allow_html=True)
-    if st.session_state.ultimos_dados_tela:
-        dt2 = st.session_state.ultimos_dados_tela
-        ignorar_m = st.session_state.modo_replay and not st.session_state.usar_macro_no_replay
-        ctx = classificar_contexto(dt2, ler_fechamento_anterior() if not ignorar_m else None, ignorar_m)
-
-        col_r1,col_r2,col_r3,col_r4,col_r5 = st.columns(5)
-        col_r1.markdown(f'<div class="metric-card"><div class="label">Regime</div><div class="value blue">{ctx["regime"]}</div></div>', unsafe_allow_html=True)
-        col_r2.markdown(f'<div class="metric-card"><div class="label">Ação Objetiva</div><div class="value {"green" if ctx["acao_objetiva"]=="compra" else "red" if ctx["acao_objetiva"]=="venda" else "gold"}">{ctx["acao_objetiva"].upper()}</div></div>', unsafe_allow_html=True)
-        col_r3.markdown(f'<div class="metric-card"><div class="label">Score</div><div class="value blue">{ctx["score"]}/{ctx["score_minimo_usado"]}</div></div>', unsafe_allow_html=True)
-        col_r4.markdown(f'<div class="metric-card"><div class="label">Estratégia Auto</div><div class="value gold">{ctx["estrategia"]}</div></div>', unsafe_allow_html=True)
-        
-        # Limiar de segurança
-        lim = ctx["limiar"]
-        lim_class = "green" if lim >= 70 else ("gold" if lim >= 40 else "red")
-        lim_txt = "FORTE" if lim >= 70 else ("MÉDIO" if lim >= 40 else "FRACO")
-        col_r5.markdown(f'<div class="metric-card"><div class="label">Limiar Segurança</div><div class="value {lim_class}">{lim}% {lim_txt}</div></div>', unsafe_allow_html=True)
-
-        st.markdown(f'<div class="regime-box">🎯 <b>Viés atual:</b> {ctx["vies"]} &nbsp;|&nbsp; <b>Motivo:</b> {ctx["motivo_objetivo"]}</div>', unsafe_allow_html=True)
-
-        # O que falta para o gatilho
-        _falta = ctx.get("falta_para_gatilho", [])
-        _prox  = ctx.get("condicao_mais_proxima", [])
-        if _falta:
-            st.markdown("**⚠️ O que falta para armar o gatilho:**")
-            for _it in _falta:
-                st.markdown(f'<div style="background:#2d1a00;border-left:3px solid #ffd740;border-radius:6px;padding:6px 12px;margin:3px 0;font-size:13px;color:#ffd740;">⏳ {_it}</div>', unsafe_allow_html=True)
-        if _prox:
-            for _it in _prox:
-                st.markdown(f'<div style="background:#001a2d;border-left:3px solid #40c4ff;border-radius:6px;padding:6px 12px;margin:3px 0;font-size:13px;color:#40c4ff;">📍 {_it}</div>', unsafe_allow_html=True)
-
-        # Pontos fortes Fibonacci próximos ao preço atual
-        _fib_p = ler_fechamento_anterior().get("fibonacci_diario", {})
-        _preco_p = num(st.session_state.ultimos_dados_tela.get("preco_atual", 0))
-        if _fib_p and _preco_p > 0:
-            _nf = {"38,2%": _fib_p.get("nivel_382",0), "50%": _fib_p.get("nivel_50",0), "61,8%": _fib_p.get("nivel_618",0)}
-            _pf = [(k,v) for k,v in _nf.items() if v and abs(_preco_p-v)<=5.0]
-            if _pf:
-                st.markdown("**⭐ Pontos fortes Fibonacci próximos ao preço atual:**")
-                for _k,_v in _pf:
-                    _d = round(_preco_p-_v, 2)
-                    _c = "#00e676" if _d>0 else "#ff5252"
-                    st.markdown(f'<div style="background:#0d2200;border-left:3px solid #00e676;border-radius:6px;padding:6px 12px;margin:3px 0;font-size:13px;"><span style="color:#00e676">⭐ Fib {_k}: {_v}</span> &nbsp;|&nbsp; dist: <span style="color:{_c}">{_d:+.2f} pts</span></div>', unsafe_allow_html=True)
-
-        # Distâncias
-        dist_data = {
-            "VWAP": ctx["dist_vwap"], "Ajuste": ctx["dist_ajuste"],
-            "MM9": ctx["dist_mm9"], "MM20": ctx["dist_mm20"],
-            "MM50": ctx["dist_mm50"], "MM200": ctx["dist_mm200"],
-        }
-        col_d = st.columns(6)
-        for i,(k,v) in enumerate(dist_data.items()):
-            cor = "green" if v > 0 else "red"
-            col_d[i].markdown(f'<div class="metric-card"><div class="label">Dist. {k}</div><div class="value {cor}">{v:+.1f}</div></div>', unsafe_allow_html=True)
-
-        # ============ VARAL DE CONTRATOS ============
-        st.markdown('<div class="section-title">🧵 Varal de Contratos (Escalonamento de Posição)</div>', unsafe_allow_html=True)
-        col_var1, col_var2 = st.columns([1, 4])
-        with col_var1:
-            st.number_input("Contratos totais", key="varal_contratos_totais", min_value=1, max_value=50, step=1)
-            st.checkbox("Ativar varal", key="varal_ativo")
-        with col_var2:
-            if st.session_state.varal_ativo:
-                _fech_var = ler_fechamento_anterior() if not (st.session_state.modo_replay and not st.session_state.usar_macro_no_replay) else None
-                varal_info = calcular_varal_contratos_por_nivel(
-                    st.session_state.ultimos_dados_tela, ctx, _fech_var,
-                    contratos_totais=st.session_state.varal_contratos_totais
-                )
-                if varal_info["status"] == "armado":
-                    _dir = varal_info["direcao"]
-                    _cor_dir = "#00e676" if _dir == "COMPRA" else "#ff5252"
-                    _emoji = "🟢" if _dir == "COMPRA" else "🔴"
-                    st.markdown(f'''<div style="background:#1a1f2e;border-left:4px solid {_cor_dir};border-radius:6px;padding:8px 14px;margin-bottom:8px;font-size:13px;">
-{_emoji} <b style="color:{_cor_dir}">{_dir}</b> · <b>{varal_info["contratos_totais"]}</b> contratos escalonados · Preço médio potencial: <b>{varal_info["preco_medio_potencial"]:.2f}</b>
-</div>''', unsafe_allow_html=True)
-                    cols_v = st.columns(len(varal_info["niveis"]))
-                    for i, item in enumerate(varal_info["niveis"]):
-                        if "Stop" in item["tipo"]:
-                            cor_b, cor_v = "#ff5252", "red"
-                        elif "Imediata" in item["tipo"]:
-                            cor_b, cor_v = ("#00e676" if _dir == "COMPRA" else "#ff5252"), ("green" if _dir == "COMPRA" else "red")
-                        else:
-                            cor_b, cor_v = "#ffd740", "gold"
-                        cols_v[i].markdown(f'''<div class="metric-card" style="border: 1px solid {cor_b};">
-<div class="label">{item["nivel"]}</div>
-<div class="value {cor_v}">{item["preco"]:.2f}</div>
-<div style="font-size:11px; color:#8892a4; margin-top:4px;"><b>{item["contratos"]}</b> contratos<br><span style="font-size:10px;">{item["tipo"]}</span><br><span style="font-size:10px;color:#40c4ff;">📍 {item["referencia"]}</span></div>
-</div>''', unsafe_allow_html=True)
-                else:
-                    st.info(f"⏳ {varal_info['mensagem']}")
-            else:
-                st.caption("Varal de contratos desativado. Marque a checkbox ao lado para ativar o escalonamento.")
-    else:
-        st.info("Nenhuma leitura realizada ainda. Clique em **Executar Análise**.")
-
-
-    st.markdown('<div class="section-title">🗂️ Apoio, configurações e diagnóstico</div>', unsafe_allow_html=True)
-    with st.expander("🏅 Ranking histórico dos indicadores (base dos pesos)", expanded=False):
-        render_ranking_indicadores()
-
-    with st.expander("📁 Contexto do dia — viés anterior, Fibonacci e extremos", expanded=False):
-        # --- Viés do dia anterior ---
-        st.markdown('<div class="section-title">📌 Viés do Dia Anterior</div>', unsafe_allow_html=True)
-        fech = ler_fechamento_anterior()
-        vies_c = {"comprador":"🟢","vendedor":"🔴","neutro":"🟡","indefinido":"⚪"}.get(fech.get("vies","indefinido"),"⚪")
-        col_v1,col_v2,col_v3,col_v4,col_v5 = st.columns(5)
-        col_v1.markdown(f'<div class="metric-card"><div class="label">Viés</div><div class="value">{vies_c} {fech.get("vies","N/A").upper()}</div></div>', unsafe_allow_html=True)
-        col_v2.markdown(f'<div class="metric-card"><div class="label">Preço Fech.</div><div class="value blue">{fech.get("preco","N/A")}</div></div>', unsafe_allow_html=True)
-        col_v3.markdown(f'<div class="metric-card"><div class="label">Ajuste Ant.</div><div class="value blue">{fech.get("ajuste","N/A")}</div></div>', unsafe_allow_html=True)
-        col_v4.markdown(f'<div class="metric-card"><div class="label">VWAP Ant.</div><div class="value blue">{fech.get("vwap","N/A")}</div></div>', unsafe_allow_html=True)
-        col_v5.markdown(f'<div class="metric-card"><div class="label">Data Ref.</div><div class="value">{fech.get("data","N/A")}</div></div>', unsafe_allow_html=True)
-
-        # Fibonacci do dia anterior como zonas de segurança
-        fib_ant = fech.get("fibonacci_diario", {})
-        if fib_ant:
-            st.markdown('<div class="section-title">📐 Zonas Fibonacci do Dia Anterior (Suporte/Resistência)</div>', unsafe_allow_html=True)
-            st.caption(f"Amplitude: {fib_ant.get('amp','N/A')} pts | Máx: {fib_ant.get('nivel_0','N/A')} | Mín: {fib_ant.get('nivel_100','N/A')}")
-            cf1,cf2,cf3,cf4,cf5 = st.columns(5)
-            def fib_card(col, label, valor, forte=False):
-                cor = "gold" if forte else "blue"
-                col.markdown(f'<div class="metric-card"><div class="label">{"⭐ " if forte else ""}{label}</div><div class="value {cor}">{valor}</div></div>', unsafe_allow_html=True)
-            fib_card(cf1, "23.6%", fib_ant.get('nivel_236','N/A'))
-            fib_card(cf2, "38.2% 🎯", fib_ant.get('nivel_382','N/A'), forte=True)
-            fib_card(cf3, "50% 🎯", fib_ant.get('nivel_50','N/A'), forte=True)
-            fib_card(cf4, "61.8% 🎯", fib_ant.get('nivel_618','N/A'), forte=True)
-            fib_card(cf5, "78.6%", fib_ant.get('nivel_786','N/A'))
-            st.caption("🎯 = Zonas fortes de suporte/resistência. Gatilhos próximos dessas zonas têm maior confiabilidade.")
-        else:
-            st.info("ℹ️ Registre o fechamento do dia para gerar as zonas Fibonacci de amanhã.")
-
-        col_reg1, col_reg2 = st.columns([2,1])
-        with col_reg1:
-            st.checkbox("⏺️ Registrar fechamento automaticamente na próxima análise", key="registrar_fechamento_ativo")
-        with col_reg2:
-            if st.button("💾 Registrar fechamento agora"):
-                if st.session_state.ultimos_dados_tela:
-                    dt = st.session_state.ultimos_dados_tela
-                    m = ler_dados_macro()
-                    mx_usar = st.session_state.get("max_dia_manual",0.0) or num(dt.get("maxima"))
-                    mn_usar = st.session_state.get("min_dia_manual",0.0) or num(dt.get("minima"))
-                    d = salvar_fechamento_dia(num(dt.get("preco_atual")),num(dt.get("ajuste")),num(dt.get("vwap")),num(m.get("DXY")),num(m.get("EWZ")),num(m.get("VIX")),mx_usar,mn_usar)
-                    st.success(f"Registrado: viés={d['vies']} | preço={d['preco']} | 50%={d.get('fibonacci_diario',{}).get('nivel_50','N/A')}")
-                else:
-                    st.warning("Execute uma análise primeiro.")
-
-        st.markdown("**📐 Máxima e Mínima do dia anterior (corrigir manualmente se necessário):**")
-        col_mx, col_mn, col_fib = st.columns(3)
-        with col_mx:
-            st.number_input("Máxima do dia anterior", key="max_dia_manual", step=0.5,
-                            help="Se 0, usa a máxima capturada da tela automaticamente")
-        with col_mn:
-            st.number_input("Mínima do dia anterior", key="min_dia_manual", step=0.5,
-                            help="Se 0, usa a mínima capturada da tela automaticamente")
-        with col_fib:
-            if st.button("🔄 Recalcular Fibonacci agora"):
-                mx = st.session_state.get("max_dia_manual",0.0)
-                mn = st.session_state.get("min_dia_manual",0.0)
-                if mx > 0 and mn > 0 and mx > mn:
-                    fib_novo = calcular_fibonacci_diario(mx, mn)
-                    fech_atual = ler_fechamento_anterior()
-                    fech_atual["maxima_dia"] = mx
-                    fech_atual["minima_dia"] = mn
-                    fech_atual["fibonacci_diario"] = fib_novo
-                    try:
-                        with open(FECHAMENTO_JSON,"w",encoding="utf-8") as _f:
-                            json.dump(fech_atual,_f,ensure_ascii=False,indent=2)
-                        st.success(f"✅ 38,2%={fib_novo.get('nivel_382','?')} | 50%={fib_novo.get('nivel_50','?')} | 61,8%={fib_novo.get('nivel_618','?')}")
-                    except Exception as _e:
-                        st.error(f"Erro: {_e}")
-                else:
-                    st.warning("Informe máxima > mínima > 0")
-
-
-    # --- Configuracoes ---
-    with st.expander("⚙️ Configurações", expanded=False):
-        col_c1, col_c2, col_c3 = st.columns(3)
-        with col_c1:
-            st.checkbox("🔄 Análise automática a cada 5 min", key="analise_automatica")
-            try:
-                _jan_p = st.session_state.get("estado_janela") or estado_janela_operacional()
-                if _jan_p.get("dentro"):
-                    st.caption(
-                        f"🟢 Janela operacional {_jan_p['inicio']}–{_jan_p['fim']} — ativa")
-                else:
-                    st.caption(f"😴 {_jan_p.get('resumo', '')}")
-                _hlig = st.session_state.get("hora_leitura_ligacao", "")
-                if _hlig:
-                    st.caption(f"✅ Leitura de verificação às {_hlig}")
-            except Exception:
-                pass
-            try:
-                _prox_ev = proximo_evento_macro()
-                if _prox_ev.get("nome"):
-                    st.caption(
-                        f"📅 {_prox_ev['nome']} às {_prox_ev['hora']} "
-                        f"(em {_prox_ev['faltam']} min) — análise extra "
-                        f"{SEGUNDOS_APOS_ANUNCIO}s após o anúncio")
-                _ult_disp = st.session_state.get("ultimo_disparo_anuncio", "")
-                if _ult_disp:
-                    st.caption(f"⚡ Último disparo por anúncio: {_ult_disp}")
-                _rms = int(st.session_state.get("refresh_ms_atual", INTERVALO_REFRESH_APP_MS))
-                st.caption(
-                    f"🕒 Tela atualiza a cada {_rms // 1000}s · análise a cada "
-                    f"{INTERVALO_ANALISE_SEGUNDOS // 60} min"
-                    + (" · modo fino (anúncio próximo)"
-                       if _rms == INTERVALO_REFRESH_ANUNCIO_MS else ""))
-            except Exception:
-                pass
-            st.checkbox("⚡ Disparo automático", key="disparo_automatico")
-            st.checkbox("🔒 Bloquear gatilho repetido", key="bloquear_gatilho_repetido")
-            st.checkbox("🔔 Alertas sonoros", key="som_ativo")
-            st.checkbox("🚨 Alerta de mudança brusca de tendência", key="som_mudanca_brusca")
-        st.markdown("---")
-        if st.button("💾 Salvar e Aplicar Configurações", use_container_width=True):
-            st.success("Configurações atualizadas com sucesso!")
-            st.rerun()
-            with st.expander("🇺🇸 PMI dos EUA (Calendário Econômico)", expanded=False):
-                st.caption("Informe os valores do dia. Acima de 52 favorece alta do dólar; abaixo de 48 pressiona para baixo.")
-                _p1, _p2 = st.columns(2)
-                with _p1:
-                    st.number_input("PMI Serviços ISM", key="pmi_ism_servicos", step=0.1, format="%.1f")
-                    st.number_input("PMI Manufatura", key="pmi_manufatura", step=0.1, format="%.1f")
-                with _p2:
-                    st.number_input("PMI Serviços S&P", key="pmi_sp_servicos", step=0.1, format="%.1f")
-                    st.number_input("PMI Composto", key="pmi_composto", step=0.1, format="%.1f")
-                _pv = peso_pmi_eua(ler_dados_macro())
-                if _pv.get("pmi"):
-                    _cor_p = "#00e676" if _pv["peso"] > 0 else ("#ff5252" if _pv["peso"] < 0 else "#8892a4")
-                    st.markdown(f'<div style="background:#1a1f2e;border-left:3px solid {_cor_p};border-radius:6px;'
-                                f'padding:8px 12px;font-size:12px;">🇺🇸 <b style="color:{_cor_p}">{_pv["descricao"]}</b><br>'
-                                f'Peso no score: <b>{_pv["peso"]:+d}</b></div>', unsafe_allow_html=True)
-            _ct1, _ct2 = st.columns(2)
-            if _ct1.button("🔊 Testar som compra", use_container_width=True):
-                disparar_alarme("Gatilho armado. Compra.", tipo="gatilho_compra")
-            if _ct2.button("🔊 Testar som venda", use_container_width=True):
-                disparar_alarme("Gatilho armado. Venda.", tipo="gatilho_venda")
-            _ct3, _ct4 = st.columns(2)
-            if _ct3.button("🚨 Testar reversão", use_container_width=True):
-                disparar_alarme("Atencao. Mudanca brusca de tendencia.", tipo="reversao")
-            if _ct4.button("⚡ Testar alerta máximo", use_container_width=True):
-                disparar_alarme("Alerta maximo. Movimento brusco detectado.", tipo="alerta_maximo")
-
-        with col_c2:
-            st.checkbox("🎬 Modo Replay", key="modo_replay")
-            if st.session_state.modo_replay:
-                _dk = f"replay_data_w{st.session_state.get('replay_seq', 0)}"
-                _dval = st.text_input("Data replay (YYYY-MM-DD)", value=st.session_state.replay_data, key=_dk)
-                if _dval != st.session_state.replay_data:
-                    st.session_state.replay_data = _dval
-                # Chave dinâmica: ao avançar, a chave muda e o widget recarrega o novo valor
-                _rk = f"replay_hora_w{st.session_state.get('replay_seq', 0)}"
-                _hval = st.text_input("Hora replay (HH:MM)", value=st.session_state.replay_hora, key=_rk)
-                if _hval != st.session_state.replay_hora:
-                    st.session_state.replay_hora = _hval
-                st.checkbox("⏩ Avançar +10 min a cada análise (só se a tela não tiver relógio)",
-                            key="avancar_replay_auto")
-                _org = str(st.session_state.get("ultimos_dados_tela", {}).get("hora_replay_origem", ""))
-                _hr_real = str(st.session_state.get("ultimos_dados_tela", {}).get("hora_replay", ""))
-                if _org == "tela":
-                    st.success(f"🎯 Relógio lido da tela: **{st.session_state.replay_data} {_hr_real}**")
-                elif _org == "manual":
-                    st.warning(f"⚠️ Relógio não lido da tela — usando campo manual: **{st.session_state.replay_data} {st.session_state.replay_hora}**")
-                else:
-                    st.caption(f"⏱️ Timestamp previsto: **{st.session_state.replay_data} {st.session_state.replay_hora}**")
-                st.checkbox("📊 Usar dados macro no replay", key="usar_macro_no_replay")
-                if not st.session_state.usar_macro_no_replay:
-                    st.caption("💡 Replay sem macro: análise puramente técnica da tela.")
-
-        with col_c3:
-            st.selectbox("Estratégia base", ["Conservador","Agressividade Média","Agressividade Alta"], key="estrategia_operacional")
-            pe = ESTRATEGIAS[st.session_state.estrategia_operacional]
-            st.markdown(f"""
-<div style="background:{pe['cor']}22;border-left:3px solid {pe['cor']};border-radius:6px;padding:8px 12px;font-size:12px;margin-top:6px;">
-<b style="color:{pe['cor']}">{st.session_state.estrategia_operacional}</b><br>
-{pe['descricao']}<br>
-Score mín: {pe['score_minimo_base']}/7 | RR mín: {pe['rr_minimo']} | Margem VWAP: {pe['margem_vwap']} pts
-</div>""", unsafe_allow_html=True)
-
-        # COPIE A PARTIR DAQUI (Alinhado com o "with col_c3:")
-        st.markdown("---")
-        if st.button("💾 Salvar e Aplicar Configurações", use_container_width=True, key="btn_salvar_configs_unico"):
-            st.success("Configurações atualizadas!")
-            st.rerun()
-
-    # --- Diagnóstico ---
-    # Faixa de alerta de mudanca brusca
-    _mb = st.session_state.get("ultima_mudanca_brusca", "")
-    if _mb:
-        st.markdown(
-            f'<div style="background:linear-gradient(135deg,#3d1a00,#1f0d00);border:2px solid #ff9800;'
-            f'border-radius:10px;padding:12px 16px;font-size:14px;margin:8px 0;">'
-            f'🚨 <b style="color:#ff9800;font-size:15px">MUDANÇA BRUSCA DE TENDÊNCIA</b><br>'
-            f'<span style="color:#ffd9a0">{_mb}</span></div>',
-            unsafe_allow_html=True)
-
-    # Historico de alertas sonoros da sessao
-    _ha = st.session_state.get("historico_alertas", [])
-    if _ha:
-        with st.expander(f"🔔 Últimos alertas sonoros ({len(_ha)})", expanded=False):
-            _icones = {"gatilho_compra": "🟢", "gatilho_venda": "🔴",
-                       "reversao": "🔄", "alerta_maximo": "⚡", "aviso": "🔔"}
-            for _a in _ha[:10]:
-                _ic = _icones.get(_a.get("tipo", "aviso"), "🔔")
-                st.markdown(
-                    f'<div style="background:#1a1f2e;border-left:3px solid #40c4ff;border-radius:6px;'
-                    f'padding:6px 12px;margin:3px 0;font-size:12px;">'
-                    f'{_ic} <b>{_a.get("hora","")}</b> · {_a.get("texto","")}</div>',
-                    unsafe_allow_html=True)
-
-    # Card de momentum e PMI
-    _dtm = st.session_state.get("ultimos_dados_tela", {})
-    if _dtm:
-        _igm = st.session_state.modo_replay and not st.session_state.usar_macro_no_replay
-        _cm = classificar_contexto(_dtm, ler_fechamento_anterior() if not _igm else None, _igm)
-        _mo = _cm.get("momentum", "neutro")
-        _d1 = _cm.get("delta_preco", 0); _d3 = _cm.get("delta_3", 0)
-        _prg = _cm.get("pos_range", 50); _corr = _cm.get("corrigido_por_momentum", False)
-        _pmiv = _cm.get("pmi_valor"); _pmid = _cm.get("pmi_descricao", "")
-        _cores_m = {"alta_forte": "#00e676", "alta": "#66bb6a", "neutro": "#8892a4",
-                    "baixa": "#ef5350", "baixa_forte": "#ff5252"}
-        _cm_cor = _cores_m.get(_mo, "#8892a4")
-        _icone_m = {"alta_forte": "🚀", "alta": "📈", "neutro": "➖",
-                    "baixa": "📉", "baixa_forte": "⚠️"}.get(_mo, "➖")
-        _corr_html = '<br>🔄 <b style="color:#ffd740">Direção corrigida pelo momentum</b>' if _corr else ''
-        _pmi_html = f'<br>🇺🇸 {_pmid}' if _pmiv else ''
-        st.markdown(
-            f'<div style="background:linear-gradient(135deg,#0d1220,#1a1f2e);border:1px solid {_cm_cor};'
-            f'border-radius:8px;padding:10px 14px;font-size:12px;margin:8px 0;">'
-            f'{_icone_m} <b style="color:{_cm_cor}">Momentum: {_mo.upper()}</b> &nbsp;·&nbsp; '
-            f'Última leitura: <b>{_d1:+.1f} pts</b> &nbsp;·&nbsp; 3 leituras: <b>{_d3:+.1f} pts</b> &nbsp;·&nbsp; '
-            f'Posição no range do dia: <b>{_prg:.0f}%</b>{_corr_html}{_pmi_html}</div>',
-            unsafe_allow_html=True)
-
-    st.markdown('<div class="section-title">📋 Estado Atual</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="diag-box">{st.session_state.ultimo_diagnostico}</div>', unsafe_allow_html=True)
-
-    # Card do motor de decisão (AutoProTradingDecisionEngine)
-    _dt = st.session_state.get("ultimos_dados_tela", {})
-    if _dt:
-        _ig_m = st.session_state.modo_replay and not st.session_state.usar_macro_no_replay
-        _ctx_m = classificar_contexto(_dt, ler_fechamento_anterior() if not _ig_m else None, _ig_m)
-        _sc_orig = _ctx_m.get("score_original", 0)
-        _sc_pond = _ctx_m.get("score_ponderado", 0)
-        _dist_of = _ctx_m.get("distancia_maior_ofertante", 0)
-        _sag = _ctx_m.get("saldo_agressao_pct", 50)
-        _eng_st = _ctx_m.get("engine_status", "N/A")
-        _eng_mt = _ctx_m.get("engine_motivo", "")
-        _cor_eng = "#00e676" if _eng_st == "APROVADO" else "#ff5252"
-        _dif_score = _sc_orig - _sc_pond
-        _sinal = "−" if _dif_score > 0 else ("+" if _dif_score < 0 else "±0")
-        st.markdown(f'''<div style="background:linear-gradient(135deg,#0d1220,#1a1f2e);border:1px solid {_cor_eng};border-radius:8px;padding:10px 14px;font-size:12px;margin-top:8px;">
-🤖 <b style="color:{_cor_eng}">Motor de Decisão (AutoPro)</b> &nbsp;·&nbsp; Status: <b style="color:{_cor_eng}">{_eng_st}</b><br>
-Score bruto: <b>{_sc_orig}</b> → Score ponderado: <b>{_sc_pond}</b> ({_sinal}{abs(_dif_score)}) &nbsp;·&nbsp; Dist. maior ofertante: <b>{_dist_of:.2f} pts</b> &nbsp;·&nbsp; Saldo agressão: <b>{_sag:.1f}%</b><br>
-<span style="color:#8892a4;font-size:11px;">{_eng_mt}</span>
-</div>''', unsafe_allow_html=True)
-    st.caption(f"Última janela: {st.session_state.ultimo_titulo_capturado}")
-
-    if st.session_state.get("ultimo_erro_ia"):
-        st.warning(f"⚠️ Erro da IA: {st.session_state['ultimo_erro_ia']}")
-
-    # Diagnostico das capturas SuperDom/T&T/Livro
-    st.markdown('<div class="section-title">🔎 Capturas de Janelas Auxiliares</div>', unsafe_allow_html=True)
-    col_cap1, col_cap2, col_cap3, col_cap4, col_cap5 = st.columns(5)
-    _cor_ok = lambda ok: "#00e676" if ok else "#ff5252"
-    
-    # Recuperação segura dos logs do session_state (evita NameError)
-    _log_sd = st.session_state.get("log_captura_SuperDom", "Não executado")
-    _log_tt = st.session_state.get("log_captura_tt", "Não executado")
-    _log_lv = st.session_state.get("log_captura_livro", "Não executado")
-    _log_ag = st.session_state.get("log_captura_agentes", "Não executado")
-    _log_tt_oo = st.session_state.get("log_captura_tt_oo", "Não executado")
-
-    _ok_sd = "capturado" in _log_sd.lower()
-    _ok_tt = "capturado" in _log_tt.lower()
-    _ok_lv = "capturado" in _log_lv.lower()
-    _ok_ag = ("capturado" in _log_ag.lower()) or ("via t&t" in _log_ag.lower())
-    _origem_ag = st.session_state.get("origem_agentes", "")
-    _rotulo_ag = "Agentes (T&T Ordem Original)" if _origem_ag.startswith("tape") else "Agentes (Negociação)"
-    _ok_tt_oo = "capturado" in _log_tt_oo.lower() or "1ª janela" in _log_tt_oo.lower() or "(1ª" in _log_tt_oo.lower()
-
-    col_cap1.markdown(f'<div style="background:#1a1f2e;border-left:3px solid {_cor_ok(_ok_sd)};border-radius:6px;padding:8px 12px;font-size:12px;">{"🟢" if _ok_sd else "🔴"} <b>SuperDom</b><br>{_log_sd[:150]}</div>', unsafe_allow_html=True)
-    col_cap2.markdown(f'<div style="background:#1a1f2e;border-left:3px solid {_cor_ok(_ok_tt_oo)};border-radius:6px;padding:8px 12px;font-size:12px;">{"🟢" if _ok_tt_oo else "🔴"} <b>T&T Ordem Original</b><br>{_log_tt_oo[:150]}</div>', unsafe_allow_html=True)
-    col_cap3.markdown(f'<div style="background:#1a1f2e;border-left:3px solid {_cor_ok(_ok_tt)};border-radius:6px;padding:8px 12px;font-size:12px;">{"🟢" if _ok_tt else "🔴"} <b>T&T Negócios</b><br>{_log_tt[:150]}</div>', unsafe_allow_html=True)
-    col_cap4.markdown(f'<div style="background:#1a1f2e;border-left:3px solid {_cor_ok(_ok_lv)};border-radius:6px;padding:8px 12px;font-size:12px;">{"🟢" if _ok_lv else "🔴"} <b>Livro de Ofertas</b><br>{_log_lv[:150]}</div>', unsafe_allow_html=True)
-    col_cap5.markdown(f'<div style="background:#1a1f2e;border-left:3px solid {_cor_ok(_ok_ag)};border-radius:6px;padding:8px 12px;font-size:12px;">{"🟢" if _ok_ag else "🔴"} <b>{_rotulo_ag}</b><br>{_log_ag[:150]}</div>', unsafe_allow_html=True)
-    st.caption(f"Fonte usada para análise de fluxo: **{st.session_state.get('fonte_fluxo','—')}**")
-
-    # Alerta se a IA de agentes nao esta trazendo dados uteis
-    _ag_ult = st.session_state.get("ultimos_agentes", {})
-    if _ag_ult:
-        _ofc = _ag_ult.get("ofertantes_compra", []) or []
-        _ofv = _ag_ult.get("ofertantes_venda", []) or []
-        if not _ofc and not _ofv:
-            st.warning("⚠️ Nenhum ofertante identificado. Deixe visível o T&T na aba **Ordem Original** (colunas Compradora / Vendedora / Agressor) — é dela que os agentes são extraídos neste layout.")
-
-    # ============ TESTE DE CAPTURA DAS JANELAS ============
-    with st.expander("🖥️ Testar captura das janelas (Gráfico, SuperDom, T&T, Livro)", expanded=False):
-        st.caption("Método: BitBlt direto do desktop na região de cada janela — funciona em qualquer monitor, sem admin.")
-        colt1, colt2, colt3, colt4, colt5 = st.columns(5)
-        if colt1.button("📈 Gráfico"):
-            _im, _ms = capturar_janela()
-            if _im: st.image(_im, caption=f"Gráfico — {_ms}", width=700)
-            else: st.error(_ms)
-        if colt2.button("📊 SuperDom"):
-            _im, _ms = capturar_SuperDom()
-            if _im: st.image(_im, caption=f"SuperDom — {_ms}", width=700)
-            else: st.error(_ms)
-        if colt3.button("⏱️ Times & Trades"):
-            _im, _ms = capturar_times_trades()
-            if _im: st.image(_im, caption=f"T&T — {_ms}", width=700)
-            else: st.error(_ms)
-        if colt4.button("📚 Livro de Ofertas"):
-            _im, _ms = capturar_livro_ofertas()
-            if _im: st.image(_im, caption=f"Livro — {_ms}", width=700)
-            else: st.error(_ms)
-        if colt5.button("🎯 Tela completa Profit"):
-            _im, _ms = capturar_tela_completa_profit()
-            if _im: st.image(_im, caption=f"Tela completa — {_ms}", width=1000)
-            else: st.error(_ms)
-        colt6, colt7 = st.columns([1,1])
-        if colt6.button("👥 Testar Agentes (Negociação/Pressão)"):
-            _im, _ms = capturar_agentes()
-            if _im: st.image(_im, caption=f"Agentes — {_ms}", width=700)
-            else: st.error(_ms)
-        if colt7.button("📜 Testar T&T Ordem Original"):
-            _im, _ms = capturar_times_trades_ordem_original()
-            if _im: st.image(_im, caption=f"T&T Ordem Original — {_ms}", width=700)
-            else: st.error(_ms)
-
-        if st.button("🪟 Listar TODAS as janelas visíveis (sem filtro)"):
-            _todas_j = listar_todas_janelas_visiveis()
-            if not _todas_j:
-                st.error("Nenhuma janela visível detectada.")
-            else:
-                st.success(f"{len(_todas_j)} janelas visíveis detectadas:")
-                st.dataframe(pd.DataFrame(_todas_j), width="stretch")
-                st.caption("Copie os títulos das janelas do Profit e informe quais correspondem ao tape (Ordem Original), ao book e ao gráfico.")
-
-        if st.button("🔍 Diagnosticar TODAS as janelas do Profit (debug)"):
-            janelas_diag = diagnosticar_janelas_profit()
-            if not janelas_diag:
-                st.error("Nenhuma janela relacionada ao Profit encontrada no sistema.")
-            else:
-                st.success(f"Encontrei {len(janelas_diag)} janelas relacionadas:")
-                _linhas_diag = []
-                for j in janelas_diag:
-                    try:
-                        l, top, r, b = win32gui.GetWindowRect(j["hwnd"])
-                        _linhas_diag.append({
-                            "Título": j["titulo"][:70] or "(sem título)",
-                            "Classe": j["classe"][:30],
-                            "Left": l, "Top": top,
-                            "Largura": r-l, "Altura": b-top,
-                            "Área": j["area"], "hwnd": j["hwnd"],
-                        })
-                    except Exception:
-                        _linhas_diag.append({
-                            "Título": j["titulo"][:70] or "(sem título)",
-                            "Classe": j["classe"][:30],
-                            "Left": "?", "Top": "?", "Largura": "?", "Altura": "?",
-                            "Área": j["area"], "hwnd": j["hwnd"],
-                        })
-                df_diag = pd.DataFrame(_linhas_diag)
-                st.dataframe(df_diag, width='stretch', hide_index=True)
-
-    with st.expander("🔍 Retorno bruto da IA"):
-        st.text(st.session_state.get("ultimo_retorno_ia_bruto","") or "Nenhum retorno disponível.")
-
-    with st.expander("🕵️ Tabela de Auditoria (Dados Lidos)", expanded=True):
-        if st.session_state.get("ultimos_dados_tela"):
-            # Transforma os dados em formato vertical para não cortar colunas
-            dados_dict = st.session_state.ultimos_dados_tela
-            df_auditoria = pd.DataFrame(list(dados_dict.items()), columns=["Campo da Tela", "Valor Extraído"])
-            st.dataframe(df_auditoria, use_container_width=True, hide_index=True)
-            
-            # Mostra o parecer da IA
-            _auditoria_texto = st.session_state.get("ultima_auditoria_ia", "Nenhuma auditoria registrada.")
-            st.markdown(f"**Parecer da Auditoria (IA):**\n> {_auditoria_texto}")
-        else:
-            st.info("A tabela de auditoria aparecerá aqui após a primeira execução.")
-
-    mac2 = ler_dados_macro()
-    cols_mac = st.columns(9)
-    for i,(k,label) in enumerate([("DXY","DXY"),("EWZ","EWZ"),("USDBRL","USD/BRL"),("PTAX","PTAX"),
-                                    ("VIX","VIX"),("SPY","SPY"),("QQQ","QQQ"),("TLT","TLT"),("CL_OIL","Petróleo")]):
-        cols_mac[i].markdown(f'<div class="metric-card"><div class="label">{label}</div><div class="value blue">{mac2.get(k,"N/A")}</div></div>', unsafe_allow_html=True)
-    st.caption(f"Atualização macro: {mac2.get('timestamp','N/A')}")
-
-    # --- Histórico ---
-    st.markdown('<div class="section-title">📁 Histórico de Gatilhos</div>', unsafe_allow_html=True)
-    if st.session_state.historico_trades:
-        df_h = pd.DataFrame(st.session_state.historico_trades)
-        if "DataRegistro" in df_h.columns:
-            df_h["_ord"]=pd.to_datetime(df_h["DataRegistro"],errors="coerce")
-            df_h=df_h.sort_values("_ord",ascending=False).drop(columns=["_ord"])
-
-        col_f1,col_f2,col_f3,col_f4 = st.columns(4)
-        with col_f1: fs = st.selectbox("Status",["Todos","ARMADO","BLOQUEADO","ESPERA"])
-        with col_f2: ft = st.selectbox("Tipo",["Todos","COMPRA","VENDA","ESPERA"])
-        with col_f3:
-            ops_e=["Todos"]+(sorted(df_h["Estrategia"].dropna().unique().tolist()) if "Estrategia" in df_h.columns else [])
-            fe = st.selectbox("Estratégia",ops_e)
-        with col_f4:
-            ops_r=["Todos"]+(sorted(df_h["Regime"].dropna().unique().tolist()) if "Regime" in df_h.columns else [])
-            fr = st.selectbox("Regime",ops_r)
-
-        df_f2 = df_h.copy()
-        if fs!="Todos" and "StatusGatilho" in df_f2.columns: df_f2=df_f2[df_f2["StatusGatilho"]==fs]
-        if ft!="Todos" and "Tipo" in df_f2.columns: df_f2=df_f2[df_f2["Tipo"]==ft]
-        if fe!="Todos" and "Estrategia" in df_f2.columns: df_f2=df_f2[df_f2["Estrategia"]==fe]
-        if fr!="Todos" and "Regime" in df_f2.columns: df_f2=df_f2[df_f2["Regime"]==fr]
-
-        if "PTAX_Tela" in df_f2.columns:
-            df_f2["PTAX_Tela"] = pd.to_numeric(df_f2["PTAX_Tela"], errors="coerce")
-        
-        # Sanitiza colunas com tipos mistos (float + str) para evitar erro Arrow no Streamlit
-        _cols_str = ["PTAX_Bacen","PTAX_Tela","DXY","EWZ","VIX","SaldoAgressao","LiquidezCompra","LiquidezVenda",
-                     "OrdensEscondidas","StatusFluxo","ConfVisual","Noticias","Diag","Motivo",
-                     "TopCompradores","TopVendedores","MaiorOfertanteCompra","MaiorOfertanteVenda",
-                     "EstrategiaEspecialNome","EngineMotivo","PadraoCandle","SaldoAgentes"]
-        for _c in _cols_str:
-            if _c in df_f2.columns:
-                df_f2[_c] = df_f2[_c].astype(str)
-        st.dataframe(df_f2, width='stretch', height=320)
-
-        total=len(df_h)
-        arm=(df_h["StatusGatilho"]=="ARMADO").sum() if "StatusGatilho" in df_h.columns else 0
-        blo=(df_h["StatusGatilho"]=="BLOQUEADO").sum() if "StatusGatilho" in df_h.columns else 0
-        esp=(df_h["StatusGatilho"]=="ESPERA").sum() if "StatusGatilho" in df_h.columns else 0
-
-        cols_sum = st.columns(7)
-        for i,(lbl,val,cor) in enumerate([
-            ("Total",total,"blue"),("Armados",arm,"green"),("Bloqueados",blo,"red"),("Espera",esp,"gold"),
-            ("% Arm.",f"{arm/total*100:.1f}%" if total else "0%","green"),
-            ("% Blo.",f"{blo/total*100:.1f}%" if total else "0%","red"),
-            ("% Esp.",f"{esp/total*100:.1f}%" if total else "0%","gold"),
-        ]):
-            cols_sum[i].markdown(f'<div class="metric-card"><div class="label">{lbl}</div><div class="value {cor}">{val}</div></div>', unsafe_allow_html=True)
-
-        if "PctAcerto" in df_h.columns:
-            pa=pd.to_numeric(df_h["PctAcerto"],errors="coerce").fillna(0).mean()
-            pp=pd.to_numeric(df_h["PctPerda"],errors="coerce").fillna(0).mean()
-            col_a1,col_a2=st.columns(2)
-            col_a1.markdown(f'<div class="metric-card"><div class="label">% Médio Acerto</div><div class="value green">{pa:.1f}%</div></div>', unsafe_allow_html=True)
-            col_a2.markdown(f'<div class="metric-card"><div class="label">% Médio Perda</div><div class="value red">{pp:.1f}%</div></div>', unsafe_allow_html=True)
-
-        # === Painel de acurácia de direção ===
-        if "DirecaoCorreta" in df_h.columns and "Tipo" in df_h.columns:
-            df_dir = df_h[df_h["DirecaoCorreta"].isin(["sim","nao"])]
-            if not df_dir.empty:
-                st.markdown('<div class="section-title">🎯 Acurácia de Direção (Compra vs Venda)</div>', unsafe_allow_html=True)
-                def acc(sub):
-                    if len(sub)==0: return "N/A","gold"
-                    s=(sub["DirecaoCorreta"]=="sim").sum()
-                    p=s/len(sub)*100
-                    return f"{s}/{len(sub)} ({p:.0f}%)", "green" if p>=50 else "red"
-                cp,cc = acc(df_dir[df_dir["Tipo"]=="COMPRA"])
-                vp,vc = acc(df_dir[df_dir["Tipo"]=="VENDA"])
-                gp,gc = acc(df_dir)
-                ca1,ca2,ca3=st.columns(3)
-                ca1.markdown(f'<div class="metric-card"><div class="label">COMPRA — direção certa</div><div class="value {cc}">{cp}</div></div>',unsafe_allow_html=True)
-                ca2.markdown(f'<div class="metric-card"><div class="label">VENDA — direção certa</div><div class="value {vc}">{vp}</div></div>',unsafe_allow_html=True)
-                ca3.markdown(f'<div class="metric-card"><div class="label">Geral — direção certa</div><div class="value {gc}">{gp}</div></div>',unsafe_allow_html=True)
-                st.caption("Direção correta = movimento foi a favor do gatilho (independente de atingir o alvo de pontos)")
-    else:
-        st.info("Nenhum gatilho registrado ainda.")
-
-    if st.button("🗑️ Limpar Histórico"):
-        st.session_state.historico_trades = []
-        if os.path.exists(HISTORICO_CSV):
-            try: os.remove(HISTORICO_CSV)
-            except Exception: pass
-        st.rerun()
-
-    with st.expander("🔗 Fontes de dados externas"):
-        for n,u in FONTES_EXTERNAS.items():
-            st.markdown(f"- [{n}]({u})")
-
-    if st.button("🪟 Listar janelas visíveis"):
-        js = listar_janelas_visiveis()
-        for j in js: st.write("-", j)
-        if not js: st.warning("Nenhuma janela encontrada.")
-
-    if st.button("🔍 Testar captura SuperDom + T&T"):
-        c1, c2 = st.columns(2)
-        with c1:
-            img_sd_test, msg_sd_test = capturar_SuperDom()
-            if img_sd_test: st.success(msg_sd_test); st.image(img_sd_test, width=380)
-            else: st.warning(msg_sd_test)
-        with c2:
-            img_tt_test, msg_tt_test = capturar_times_trades()
-            if img_tt_test: st.success(msg_tt_test); st.image(img_tt_test, width=380)
-            else: st.warning(msg_tt_test)
-
-
-# ============================================================
-# ABA 2 — SINAL MINI DOLAR 9H
-# ============================================================
-with aba2:
-    st.markdown('<div class="section-title">📈 Sinal Mini Dólar — Preparação para Abertura 9h</div>', unsafe_allow_html=True)
-    st.caption("Análise macro e viés do dia anterior para orientar a direção no início do pregão.")
-
-    if st.button("🔄 Atualizar Sinal 9h"):
-        st.session_state.sinal_9h = gerar_sinal_abertura()
-
-    if not st.session_state.sinal_9h:
-        st.session_state.sinal_9h = gerar_sinal_abertura()
-
-    sinal = st.session_state.sinal_9h
-    direcao = sinal["direcao"]
-    emoji_dir = sinal["emoji"]
-
-    cor_dir = "#00e676" if "COMPRA" in direcao else ("#ff5252" if "VENDA" in direcao else "#ffd740")
+        direcao = "compra" if votos["compra"] >= votos["venda"] else "venda"
+        convicao = int(min(100, round((max(votos.values()) / max(6.0, total)) * 100)))
+
+    forca = "forte" if convicao >= 55 else ("moderado" if convicao >= 30 else "fraco")
+    saida = dict(base)
+    saida["vies"] = direcao if convicao > 0 else "neutro"
+    saida["forca"] = forca
+    saida["convicao"] = convicao
+    saida["fatores"] = detalhe[:8]
+    saida["contras"] = base.get("contras", [])
+    saida["resumo"] = (f"{len(detalhe)} fontes (setups + gatilho + book + macro) apontam "
+                        f"{direcao} · convicção {convicao}%")
+    return saida
+
+
+def _card_veredito(titulo, veredito, icone="🧭"):
+    """Card padrao de veredito COMPRA/VENDA/NEUTRO reaproveitado nas 3 abas."""
+    v = veredito or {}
+    vies = str(v.get("vies", "neutro")).lower()
+    cor = {"compra": "#00e676", "venda": "#ff5252"}.get(vies, "#ffd740" if vies == "neutro" else "#8892a4")
+    rotulo = {"compra": "COMPRA", "venda": "VENDA"}.get(vies, "NEUTRO")
+    forca = str(v.get("forca", "neutro")).upper()
+    convicao = int(num(v.get("convicao", 0)))
 
     st.markdown(f"""
-<div class="sinal-9h">
-<h3>{emoji_dir} Direção para abertura: {direcao}</h3>
-<p style="color:#8892a4;font-size:13px;margin:0">
-Baseado em DXY, EWZ, VIX e viés do fechamento anterior. Confirme com a tela do Profit ao vivo.
-</p>
+<div class="hero {vies if vies in ('compra','venda') else 'neutro'}">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:220px;">
+      <div class="acao" style="color:{cor}">{icone} {rotulo}</div>
+      <div class="sub">{titulo} · força <b>{forca}</b></div>
+      <div class="linha" style="color:#dfe5f0">{v.get("resumo","")}</div>
+    </div>
+    <div style="min-width:150px;text-align:right;">
+      <div style="font-size:11px;color:#8892a4;text-transform:uppercase;letter-spacing:1px;">Convicção</div>
+      <div style="font-size:38px;font-weight:800;color:{cor};line-height:1;">{convicao}%</div>
+      <div style="background:#0e1117;border-radius:5px;height:8px;margin-top:6px;overflow:hidden;">
+        <div style="background:{cor};height:8px;width:{convicao}%;"></div></div>
+    </div>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
-    st.markdown("**Fatores considerados:**")
-    for emoji, descricao, tipo in sinal["sinais"]:
-        cor = "limiar-ok" if tipo=="compra" else ("limiar-ruim" if tipo=="venda" else "limiar-medio")
-        st.markdown(f'<div style="padding:6px 0;">{emoji} <span class="{cor}">{descricao}</span></div>', unsafe_allow_html=True)
+    if v.get("indisponivel"):
+        st.warning("Fonte indisponível nesta leitura — veredito neutro por falta de dado, não por sinal contrário.")
 
-    st.markdown("---")
-    st.markdown("**Dados usados:**")
-    col_s1,col_s2,col_s3,col_s4 = st.columns(4)
-    col_s1.markdown(f'<div class="metric-card"><div class="label">DXY</div><div class="value blue">{sinal["dxy"]}</div></div>', unsafe_allow_html=True)
-    col_s2.markdown(f'<div class="metric-card"><div class="label">EWZ</div><div class="value blue">{sinal["ewz"]}</div></div>', unsafe_allow_html=True)
-    col_s3.markdown(f'<div class="metric-card"><div class="label">VIX</div><div class="value blue">{sinal["vix"]}</div></div>', unsafe_allow_html=True)
-    col_s4.markdown(f'<div class="metric-card"><div class="label">Viés anterior</div><div class="value gold">{sinal["vies"].upper()}</div></div>', unsafe_allow_html=True)
+    fatores = v.get("fatores") or []
+    contras = v.get("contras") or []
+    if fatores or contras:
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("**✅ Fatores considerados**")
+            for f in fatores:
+                st.markdown(f"- {f}")
+        with c2:
+            if contras:
+                st.markdown("**⚠️ Contra-indicadores**")
+                for c in contras:
+                    st.markdown(f"- {c}")
 
-    st.markdown("---")
-    st.markdown("""
-**Como usar este sinal:**
 
-- 🟢 **COMPRA** → buscar setup comprador nos primeiros candles, preferencialmente em pullback para VWAP ou MM9.
-- 🔴 **VENDA** → buscar setup vendedor, preferencialmente em rejeição de resistência ou perda da VWAP.
-- 🟡 **INDEFINIDO** → aguardar os primeiros 2-3 candles para identificar a direção do dia antes de operar.
+# =========================
+# ABAS PRINCIPAIS (NOVA ESTRUTURA — 4 ABAS)
+# =========================
+def botao_analisar(chave_widget):
+    """Botão de 'executar análise agora' reaproveitado em todas as abas —
+    cada chamada precisa de uma key única do Streamlit."""
+    if st.button("▶️ Executar análise agora", type="primary",
+                 use_container_width=True, key=f"btn_analisar_{chave_widget}"):
+        if not CHAVE_OPENROUTER:
+            st.error("Defina OPENROUTER_API_KEY antes de executar.")
+        else:
+            with st.spinner("Lendo a tela e recalculando os indicadores..."):
+                try:
+                    executar_analise()
+                    st.session_state.ultimo_ciclo_analise = time.time()
+                    st.session_state["ultimo_erro_ciclo"] = None
+                except Exception as _e_btn:
+                    st.session_state["ultimo_erro_ciclo"] = str(_e_btn)
+                    st.error(f"Não foi possível concluir a análise: {_e_btn}")
+            st.rerun()
 
-**Importante:** este sinal é um filtro de viés, não um gatilho automático. O gatilho acontece na Aba Radar Institucional com base na tela do Profit.
-""")
+
+aba_geral, aba_macro, aba_liquidez, aba_confluencia = st.tabs([
+    "⚙️ Geral", "🌎 Macroeconômicos", "💧 Liquidez", "🎯 Confluência"])
 
 
 # ============================================================
-# ABA 3 — CALENDARIO + NOTICIAS
+# ABA 1 — GERAL (configuração, operação, históricos)
 # ============================================================
-with aba3:
-    st.markdown('<div class="section-title">📅 Calendário Econômico + Notícias</div>', unsafe_allow_html=True)
+with aba_geral:
+    st.markdown('<div class="section-title">⚙️ Configuração e operação</div>', unsafe_allow_html=True)
 
-    mac3 = ler_dados_macro()
-    st.markdown("**Últimas notícias automáticas:**")
-    noticias_txt = mac3.get("noticias","Noticias indisponiveis.")
-    for linha in noticias_txt.split("\n"):
-        if linha.strip():
-            st.markdown(f"- {linha.strip()}")
+    col_cfg1, col_cfg2, col_cfg3 = st.columns(3)
+    with col_cfg1:
+        st.selectbox("Estratégia operacional", list(ESTRATEGIAS.keys()),
+                     key="estrategia_operacional")
+        st.toggle("Análise automática (ciclo de 5 min)", key="analise_automatica")
+    with col_cfg2:
+        st.toggle("Modo replay", key="modo_replay")
+        st.toggle("Usar macro no replay", key="usar_macro_no_replay",
+                  disabled=not st.session_state.modo_replay)
+        st.toggle("🔁 Analisar automaticamente durante o replay",
+                  key="avancar_replay_auto", disabled=not st.session_state.modo_replay,
+                  help="Sem isso, o veredito fica parado no valor da última vez que "
+                       "você clicou 'Executar análise agora' — foi o que aconteceu "
+                       "no replay de 03/09 (compra travada em 12%). Com o toggle "
+                       "ligado, o sistema volta a analisar sozinho a cada "
+                       f"{INTERVALO_AUTO_REPLAY_MS // 1000}s, acompanhando o "
+                       "relógio do replay do Profit.")
 
-    st.markdown("---")
-    st.markdown("**Calendários econômicos (abre em nova aba):**")
-    col_cal1, col_cal2, col_cal3 = st.columns(3)
-    with col_cal1:
-        st.markdown("🗓️ [TradingView](https://br.tradingview.com/economic-calendar/)")
-        st.markdown("🗓️ [Trading Economics](https://pt.tradingeconomics.com/calendar)")
-    with col_cal2:
-        st.markdown("🗓️ [MQL5](https://www.mql5.com/pt/economic-calendar)")
-        st.markdown("📰 [Notícias TradingView](https://br.tradingview.com/news/economic-category/all/)")
-    with col_cal3:
-        st.markdown("📰 [Trading Economics Stream](https://pt.tradingeconomics.com/stream)")
-        st.markdown("💱 [Moedas](https://pt.tradingeconomics.com/currencies)")
+    # ---- DATA E HORA DO REPLAY (entrada manual) ----
+    # A data digitada aqui manda em todo o sistema: define o pregao analisado,
+    # o dia util anterior das faixas e o carimbo do log.
+    if st.session_state.modo_replay:
+        st.markdown('<div class="section-title">🎬 Pregão do replay</div>',
+                    unsafe_allow_html=True)
+        _r1, _r2, _r3 = st.columns([1, 1, 2])
+        _d_atual = str(st.session_state.get("replay_data", "") or "")[:10]
+        try:
+            _d_val = datetime.strptime(_d_atual, "%Y-%m-%d").date()
+        except Exception:
+            _d_val = datetime.now().date()
+        _d_novo = _r1.date_input("Data do pregão", value=_d_val,
+                                 format="DD/MM/YYYY", key="replay_data_picker")
+        _h_novo = _r2.text_input("Hora inicial (HH:MM)",
+                                 value=str(st.session_state.get("replay_hora", "09:00"))[:5],
+                                 key="replay_hora_input")
+        _d_str = _d_novo.strftime("%Y-%m-%d") if hasattr(_d_novo, "strftime") else _d_atual
+        if _d_str != _d_atual:
+            st.session_state["replay_data"] = _d_str
+            invalidar_faixas_travadas()
+            st.session_state.pop("ref_pregao_anterior_tela", None)
+            st.rerun()
+        if re.match(r"^\d{1,2}:\d{2}$", str(_h_novo or "").strip()):
+            st.session_state["replay_hora"] = str(_h_novo).strip()
+        with _r3:
+            try:
+                _ant_cfg = dia_util_anterior(_d_str)
+                _ant_cfg_fmt = datetime.strptime(_ant_cfg, "%Y-%m-%d").strftime("%d/%m/%Y")
+                _hoje_cfg_fmt = datetime.strptime(_d_str, "%Y-%m-%d").strftime("%d/%m/%Y")
+                st.info(f"Analisando **{_hoje_cfg_fmt}** · faixas com referência "
+                        f"em **{_ant_cfg_fmt}**")
+            except Exception:
+                pass
+        st.caption("A data configurada aqui tem prioridade sobre o relógio lido "
+                   "da tela e define a referência das faixas de preço.")
+    with col_cfg3:
+        st.toggle("Som ativo", key="som_ativo")
+        st.toggle("Alarme de mudança brusca", key="som_mudanca_brusca")
 
-    st.markdown("---")
-    st.markdown("**Eventos importantes para o WDO:**")
+    if not CHAVE_OPENROUTER:
+        st.error("Variável de ambiente OPENROUTER_API_KEY não definida — a análise por IA não funciona sem ela.")
+    else:
+        st.success(f"OpenRouter configurado · modelo `{MODELO_OPENROUTER}`.")
+
+    _jan_geral = st.session_state.get("estado_janela") or {}
+    st.caption(f"{_jan_geral.get('resumo','')} · ciclo de análise a cada "
+               f"{INTERVALO_ANALISE_SEGUNDOS // 60} min · ativo canônico: "
+               f"**{ativo_canonico((st.session_state.get('ultimos_dados_tela') or {}).get('ativo','')) or '—'}**")
+
+    botao_analisar("geral")
+
+    st.markdown('<div class="section-title">📐 Referência do pregão anterior</div>', unsafe_allow_html=True)
+    _base_g = st.session_state.get("ultimos_dados_tela") or {}
+    _dia_g = _data_referencia_leitura(_base_g)
+    _ant_g = dia_util_anterior(_dia_g)
+    _chave_g = chave_pregao_analisado(_base_g)
+    _ja_g = referencia_manual_do_pregao(_base_g)
+    with st.expander("✏️ Informar máxima, mínima e ajuste manualmente",
+                      expanded=bool(not _ja_g)):
+        g1, g2 = st.columns(2)
+        _mx_g = g1.number_input("Máxima do pregão anterior", min_value=0.0, step=0.5,
+                                format="%.2f", value=float(num(_ja_g.get("maxima", 0))),
+                                key="geral_ref_maxima")
+        _mn_g = g2.number_input("Mínima do pregão anterior", min_value=0.0, step=0.5,
+                                format="%.2f", value=float(num(_ja_g.get("minima", 0))),
+                                key="geral_ref_minima")
+        g3, g4 = st.columns(2)
+        _aj_g = g3.number_input("Ajuste do pregão anterior", min_value=0.0, step=0.5,
+                                format="%.2f", value=float(num(_ja_g.get("ajuste", 0))),
+                                key="geral_ref_ajuste")
+        _vw_g = g4.number_input("VWAP do pregão anterior (opcional)", min_value=0.0, step=0.5,
+                                format="%.2f", value=float(num(_ja_g.get("vwap", 0))),
+                                key="geral_ref_vwap")
+        if st.button("💾 Aplicar referência", use_container_width=True, key="geral_btn_salvar_ref"):
+            if not (_mx_g > _mn_g > 0):
+                st.error("A máxima precisa ser maior que a mínima, e ambas maiores que zero.")
+            else:
+                salvar_referencia_manual(_chave_g, _mx_g, _mn_g, _aj_g, _vw_g, _ant_g)
+                invalidar_faixas_travadas()
+                st.success("Referência aplicada.")
+                st.rerun()
+
+    # ---- FAIXAS DE PRECO EM VIGOR ----
+    try:
+        _fx_g = calcular_faixas_operacionais(ler_fechamento_anterior(), _base_g)
+    except Exception:
+        _fx_g = {"valido": False}
+
+    if _fx_g.get("valido"):
+        _atual_g = str(_fx_g.get("faixa_atual", ""))
+        _linhas_g = ""
+        for _nm, _lab, _cor, _tag in (
+                ("verde", "COMPRA", "#00e676", "Zona de defesa compradora"),
+                ("amarela", "NEUTRA", "#ffd740", "Aguardar definição"),
+                ("vermelha", "VENDA", "#ff5252", "Zona de oferta vendedora")):
+            _ini, _fim = _fx_g.get(_nm, (0.0, 0.0))
+            _ativa = _atual_g == _nm
+            _borda = _cor if _ativa else "#232a45"
+            _tagtxt = "◀ PREÇO AQUI" if _ativa else _tag
+            _linhas_g += (
+                f'<div style="display:grid;grid-template-columns:14px 92px 1fr auto;'
+                f'gap:14px;align-items:center;padding:13px 16px;border-radius:12px;'
+                f'margin-bottom:9px;background:#12172655;border:{"2px" if _ativa else "1px"} '
+                f'solid {_borda};">'
+                f'<div style="width:13px;height:13px;border-radius:50%;background:{_cor}"></div>'
+                f'<div style="font-size:12px;font-weight:800;letter-spacing:.7px;'
+                f'color:{_cor}">{_lab}</div>'
+                f'<div style="font-size:16px;font-weight:700;color:#e8ecf3;'
+                f'font-variant-numeric:tabular-nums">{_ini:.2f} — {_fim:.2f}</div>'
+                f'<div style="font-size:10px;letter-spacing:1.3px;text-transform:uppercase;'
+                f'color:{"#e8ecf3" if _ativa else "#8892a4"};font-weight:700">{_tagtxt}</div>'
+                f'</div>')
+        st.markdown(_linhas_g, unsafe_allow_html=True)
+        _dref_g = str(_fx_g.get("data_referencia", ""))
+        try:
+            _dref_g_fmt = datetime.strptime(_dref_g, "%Y-%m-%d").strftime("%d/%m/%Y")
+        except Exception:
+            _dref_g_fmt = _dref_g or "—"
+        _rot_g = {"manual": "informado manualmente",
+                  "tela_pregao_anterior": "lido do gráfico",
+                  "tela_pregao_anterior (memoria)": "lido do gráfico",
+                  "range_acumulado": "pregão anterior",
+                  "historico": "pregão anterior (histórico)",
+                  "pregao_anterior_historico": "pregão anterior (histórico)",
+                  "fechamento": "fechamento anterior",
+                  }.get(str(_fx_g.get("fonte_referencia", "")),
+                        str(_fx_g.get("fonte_referencia", "")) or "—")
+        _aj_g_txt = (f"{num(_fx_g.get('ajuste_ant', 0)):.2f}"
+                     if num(_fx_g.get("ajuste_ant", 0)) > 0 else "não capturado")
+        st.caption(f"Referência **{_dref_g_fmt}** ({_rot_g}) · máxima "
+                   f"{num(_fx_g.get('maxima_ant', 0)):.2f} · mínima "
+                   f"{num(_fx_g.get('minima_ant', 0)):.2f} · ajuste {_aj_g_txt} · "
+                   f"amplitude {num(_fx_g.get('amplitude_ant', 0)):.1f} pts"
+                   + (" · faixas congeladas" if _fx_g.get("travada") else ""))
+    else:
+        st.info("As faixas aparecem depois de informar (ou capturar) a máxima e a "
+                "mínima do pregão anterior no formulário acima.")
+
+    # ---- DESEMPENHO ACUMULADO ----
+    st.markdown('<div class="section-title">📊 Desempenho acumulado</div>',
+                unsafe_allow_html=True)
+    try:
+        _dfp = pd.DataFrame(st.session_state.get("historico_trades", []) or [])
+        if _dfp.empty and os.path.exists(HISTORICO_CSV):
+            _dfp = pd.read_csv(HISTORICO_CSV, low_memory=False)
+    except Exception:
+        _dfp = pd.DataFrame()
+
+    if _dfp.empty:
+        st.info("Sem operações registradas ainda.")
+    else:
+        _st_col = "StatusEst" if "StatusEst" in _dfp.columns else None
+        _fechadas = _dfp[_dfp[_st_col].astype(str).str.contains(
+            "ACERTO|ERRO", case=False, na=False)] if _st_col else pd.DataFrame()
+        _n_fech = len(_fechadas)
+        _n_alvo = int(_fechadas[_st_col].astype(str).str.contains(
+            "ACERTO_ALVO", case=False, na=False).sum()) if _n_fech else 0
+        _n_parc = int(_fechadas[_st_col].astype(str).str.contains(
+            "ACERTO_PARCIAL", case=False, na=False).sum()) if _n_fech else 0
+        _n_erro = int(_fechadas[_st_col].astype(str).str.contains(
+            "ERRO", case=False, na=False).sum()) if _n_fech else 0
+        _pct_ac = (100.0 * (_n_alvo + _n_parc) / _n_fech) if _n_fech else 0.0
+        _pct_er = (100.0 * _n_erro / _n_fech) if _n_fech else 0.0
+
+        _p1, _p2, _p3, _p4 = st.columns(4)
+        _p1.metric("Operações fechadas", _n_fech)
+        _p2.metric("Acertos", f"{_pct_ac:.1f}%", f"{_n_alvo + _n_parc} de {_n_fech}"
+                   if _n_fech else None)
+        _p3.metric("Erros", f"{_pct_er:.1f}%", f"{_n_erro} de {_n_fech}"
+                   if _n_fech else None, delta_color="inverse")
+        _p4.metric("Alvo cheio / parcial", f"{_n_alvo} / {_n_parc}")
+
+        # ---- DIRECAO CORRETA x INCORRETA ----
+        if "DirecaoCorreta" in _dfp.columns:
+            _dir = _dfp[_dfp["DirecaoCorreta"].astype(str).str.lower().isin(
+                ["sim", "nao", "não"])]
+            _n_dir = len(_dir)
+            if _n_dir:
+                _n_ok = int(_dir["DirecaoCorreta"].astype(str).str.lower().eq("sim").sum())
+                _pct_dir = 100.0 * _n_ok / _n_dir
+                _d1, _d2, _d3 = st.columns(3)
+                _d1.metric("Direções avaliadas", _n_dir)
+                _d2.metric("Direção correta", f"{_pct_dir:.1f}%", f"{_n_ok} acertos")
+                _d3.metric("Direção incorreta", f"{100.0 - _pct_dir:.1f}%",
+                           f"{_n_dir - _n_ok} erros", delta_color="inverse")
+
+                # Quebra por tipo de operacao.
+                if "Tipo" in _dir.columns:
+                    _linhas_dir = []
+                    for _tp in ("COMPRA", "VENDA"):
+                        _sub = _dir[_dir["Tipo"].astype(str).str.upper() == _tp]
+                        if len(_sub):
+                            _ok = int(_sub["DirecaoCorreta"].astype(str).str.lower()
+                                      .eq("sim").sum())
+                            _linhas_dir.append({
+                                "Tipo": _tp, "Avaliadas": len(_sub), "Corretas": _ok,
+                                "Acerto": f"{100.0 * _ok / len(_sub):.1f}%"})
+                    if _linhas_dir:
+                        st.dataframe(pd.DataFrame(_linhas_dir),
+                                     use_container_width=True, hide_index=True)
+            else:
+                st.caption("Nenhuma direção avaliada ainda — o campo fica pendente "
+                           "até a operação fechar.")
+
+    st.markdown('<div class="section-title">🩺 Diagnóstico de captura</div>', unsafe_allow_html=True)
+    st.caption(st.session_state.get("ultimo_diagnostico", "Aguardando primeira análise..."))
+
+    _erro_ciclo = st.session_state.get("ultimo_erro_ciclo")
+    if _erro_ciclo:
+        st.error(f"🛑 A última tentativa de análise (automática ou manual) falhou e por "
+                 f"isso o veredito ficou parado no resultado anterior: {_erro_ciclo}")
+
+    _falhas_tt = int(st.session_state.get("falhas_tt_consecutivas", 0))
+    if _falhas_tt >= 3:
+        st.warning(
+            f"⚠️ Times & Trades não foi encontrado nas últimas {_falhas_tt} análises — "
+            "o fluxo está caindo no proxy (saldo de agentes do book), que é bem mais "
+            "fraco que a agressão real. Causas mais prováveis e o que checar:\n\n"
+            "1. **A janela não está aberta separadamente.** No Profit, a aba "
+            "Negócios/Times & Trades precisa estar destacada como sua própria janela "
+            "(arraste a aba para fora), não dentro de uma aba escondida do gráfico.\n"
+            "2. **O título da janela não bate com nenhuma palavra-chave buscada** "
+            "(times, trades, negócios, tape, ordem original, agressor...). Renomeie "
+            "ou verifique o título exato em '📊 Ver logs de captura de janelas' abaixo.\n"
+            "3. **A janela está minimizada ou fora da área capturável** (outro monitor, "
+            "atrás de outra janela). A captura é por região de tela (bitblt) — a janela "
+            "precisa estar visível e não sobreposta no momento da análise.\n"
+            "4. **Alternativa caso o Profit não exponha essa aba como janela separada:** "
+            "usar o SuperDOM/Livro de Ofertas como fonte principal de fluxo (já é o "
+            "fallback atual) e aceitar que a agressão fica proxy — ou migrar para uma "
+            "fonte de dados via API/DDE do Profit em vez de captura de tela, se "
+            "disponível no seu plano.")
+
+    with st.expander("Ver logs de captura de janelas"):
+        for _k in ("log_captura_SuperDom", "log_captura_tt", "log_captura_livro",
+                   "log_captura_agentes", "log_captura_tt_oo", "log_captura_todas"):
+            _v = st.session_state.get(_k)
+            if _v:
+                st.text(f"{_k}: {_v}")
+
+    st.markdown('<div class="section-title">📚 Históricos</div>', unsafe_allow_html=True)
+    hist_tabs = st.tabs(["Trades", "Bloqueios evitados", "Leituras recentes"])
+    with hist_tabs[0]:
+        _ht = st.session_state.get("historico_trades", [])
+        if _ht:
+            st.dataframe(pd.DataFrame(_ht), use_container_width=True, height=320)
+        else:
+            st.info("Nenhum trade registrado ainda.")
+    with hist_tabs[1]:
+        try:
+            if os.path.exists("log_armadilhas_evitadas.csv"):
+                st.dataframe(pd.read_csv("log_armadilhas_evitadas.csv"),
+                            use_container_width=True, height=320)
+            else:
+                st.info("Nenhum bloqueio registrado ainda.")
+        except Exception as _e_log:
+            st.warning(f"Não foi possível ler o log de bloqueios: {_e_log}")
+    with hist_tabs[2]:
+        _hl = st.session_state.get("hist_leituras", [])
+        if _hl:
+            st.dataframe(pd.DataFrame(_hl), use_container_width=True, height=320)
+        else:
+            st.info("Sem leituras na série ainda.")
+
+    with st.expander("📊 Ranking histórico completo de indicadores"):
+        render_ranking_indicadores()
+        _indisp_g = (st.session_state.get("ultimo_contexto") or {}).get(
+            "indicadores_indisponiveis") or []
+        if _indisp_g:
+            st.caption("Indicadores presentes na leitura mas SEM amostra medida — "
+                       "não entram na ponderação:")
+            st.dataframe(pd.DataFrame(_indisp_g), use_container_width=True,
+                         hide_index=True)
+
+
+# ============================================================
+# ABA 2 — MACROECONÔMICOS
+# ============================================================
+with aba_macro:
+    botao_analisar("macro")
+    _v_macro, _mac_bruto = veredito_macro_aba()
+    _card_veredito("Painel macroeconômico (DXY · EWZ · VIX · PMI · PTAX)", _v_macro, icone="🌎")
+
+    st.markdown('<div class="section-title">📟 Indicadores brutos</div>', unsafe_allow_html=True)
+    mcol1, mcol2, mcol3, mcol4, mcol5 = st.columns(5)
+    mcol1.metric("DXY", _mac_bruto.get("DXY", "N/A"))
+    mcol2.metric("EWZ", _mac_bruto.get("EWZ", "N/A"))
+    mcol3.metric("VIX", _mac_bruto.get("VIX", "N/A"))
+    mcol4.metric("PMI EUA", _mac_bruto.get("PMI", "N/A"))
+    mcol5.metric("PTAX", _mac_bruto.get("PTAX", "N/A"))
+    if _mac_bruto.get("indisponiveis"):
+        st.caption("Sem leitura de: " + ", ".join(str(x) for x in _mac_bruto["indisponiveis"]))
+
+    st.markdown('<div class="section-title">📈 Sinal de abertura (9h)</div>', unsafe_allow_html=True)
+    if st.button("🔄 Atualizar sinal de abertura"):
+        st.session_state.sinal_9h = gerar_sinal_abertura()
+    if not st.session_state.sinal_9h:
+        st.session_state.sinal_9h = gerar_sinal_abertura()
+    _sinal = st.session_state.sinal_9h
+    st.markdown(f"**{_sinal['emoji']} Direção sugerida para abertura: {_sinal['direcao']}**")
+    for emoji, descricao, _tipo in _sinal["sinais"]:
+        st.markdown(f"{emoji} {descricao}")
+
+    st.markdown('<div class="section-title">📅 Calendário e notícias</div>', unsafe_allow_html=True)
+    _noticias_txt = _mac_bruto.get("noticias", "Notícias indisponíveis.")
+    with st.expander("Últimas notícias automáticas"):
+        for linha in str(_noticias_txt).split("\n"):
+            if linha.strip():
+                st.markdown(f"- {linha.strip()}")
     st.markdown("""
 | Evento | Impacto esperado no WDO |
 |---|---|
@@ -9550,338 +10726,148 @@ with aba3:
 | **CPI EUA** | Inflação alta = dólar sobe (Fed mais duro). |
 | **Selic / Copom Brasil** | Alta na Selic = real se fortalece = dólar cai. |
 | **PTAX final (dias 1, 2, 3)** | Formação da taxa oficial. Alta volatilidade perto de 13h. |
-| **Vencimento de contratos** | Movimento técnico de ajuste. |
 | **PIB Brasil / EUA** | Dado forte do Brasil = pressão baixista no dólar. |
 """)
-
-    st.markdown("---")
-    if st.button("🔄 Atualizar notícias"):
-        with st.spinner("Buscando notícias..."):
+    if st.button("🔄 Atualizar dados macro agora"):
+        with st.spinner("Buscando indicadores macro..."):
             coletar_dados_macro()
         st.rerun()
 
-st.markdown(f'<div style="text-align:center;color:#2d3561;font-size:12px;margin-top:20px;">AutoPro Radar Institucional — Ciclo #{count} — {datetime.now().strftime("%H:%M:%S")}</div>', unsafe_allow_html=True)
 
 # ============================================================
-# ABA 4 — DECISAO RAPIDA
-# Uma tela, uma resposta: comprar, vender ou esperar; as faixas
-# do dia; a confianca; e um botao para analisar.
+# ABA 3 — LIQUIDEZ
 # ============================================================
-CSS_DECISAO_RAPIDA = """
-<style>
-  .dr-wrap { max-width: 900px; margin: 0 auto; }
-  .dr-card { border-radius: 22px; padding: 34px 30px; margin: 6px 0 18px 0;
-             border: 2px solid #232a45; position: relative; overflow: hidden;
-             background: linear-gradient(150deg, #141a2b 0%, #0c1018 100%);
-             box-shadow: 0 18px 48px rgba(0,0,0,.55); }
-  .dr-card::after { content:""; position:absolute; inset:0; pointer-events:none;
-                    background: radial-gradient(circle at 82% 12%, rgba(255,255,255,.05), transparent 55%); }
-  .dr-card.compra  { border-color:#00e676; box-shadow:0 18px 48px rgba(0,230,118,.16); }
-  .dr-card.venda   { border-color:#ff5252; box-shadow:0 18px 48px rgba(255,82,82,.16); }
-  .dr-card.espera  { border-color:#ffd740; box-shadow:0 18px 48px rgba(255,215,64,.14); }
-  .dr-eyebrow { font-size:11px; letter-spacing:3px; text-transform:uppercase;
-                color:#7d879b; font-weight:700; margin-bottom:10px; }
-  .dr-acao { font-size:56px; font-weight:900; letter-spacing:-1px; line-height:1;
-             margin:0 0 6px 0; }
-  .dr-acao.compra { color:#00e676; } .dr-acao.venda { color:#ff5252; }
-  .dr-acao.espera { color:#ffd740; }
-  .dr-sub { font-size:15px; color:#aab4c6; line-height:1.6; margin-top:12px; max-width:640px; }
-  .dr-preco { font-size:15px; color:#e8ecf3; font-weight:600; margin-top:16px; }
-  .dr-preco span { color:#7d879b; font-weight:500; }
+with aba_liquidez:
+    botao_analisar("liquidez")
+    _v_liq, _liq_bruto = veredito_liquidez_aba()
+    _card_veredito("Painel de liquidez (book · agressão · absorção · lotes)", _v_liq, icone="💧")
 
-  /* ---- medidor de confianca ---- */
-  .dr-conf-box { margin-top:24px; }
-  .dr-conf-top { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
-  .dr-conf-lab { font-size:11px; letter-spacing:2px; text-transform:uppercase; color:#7d879b; font-weight:700; }
-  .dr-conf-val { font-size:32px; font-weight:900; }
-  .dr-bar { height:12px; border-radius:99px; background:#1b2133; overflow:hidden; }
-  .dr-bar span { display:block; height:100%; border-radius:99px; transition:width .5s ease; }
+    _ag_liq = st.session_state.get("ultimos_agentes") or {}
+    _dt_liq = st.session_state.get("ultimos_dados_tela") or {}
+    _preco_liq = num(_dt_liq.get("preco_atual", 0))
 
-  /* ---- faixas ---- */
-  .dr-faixas { margin-top:6px; }
-  .dr-faixa { display:grid; grid-template-columns:16px 116px 1fr auto; gap:14px;
-              align-items:center; padding:15px 18px; border-radius:14px; margin-bottom:10px;
-              background:#12172642; border:1px solid #1f273f; }
-  .dr-faixa.ativa { border-width:2px; background:#161d3080; }
-  .dr-faixa.verde.ativa    { border-color:#00e676; }
-  .dr-faixa.amarela.ativa  { border-color:#ffd740; }
-  .dr-faixa.vermelha.ativa { border-color:#ff5252; }
-  .dr-dot { width:14px; height:14px; border-radius:50%; }
-  .dr-dot.verde{background:#00e676;} .dr-dot.amarela{background:#ffd740;}
-  .dr-dot.vermelha{background:#ff5252;}
-  .dr-faixa-nome { font-size:13px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; }
-  .dr-faixa-nome.verde{color:#00e676;} .dr-faixa-nome.amarela{color:#ffd740;}
-  .dr-faixa-nome.vermelha{color:#ff5252;}
-  .dr-faixa-val { font-size:17px; font-weight:700; color:#e8ecf3; font-variant-numeric:tabular-nums; }
-  .dr-faixa-tag { font-size:10px; letter-spacing:1.4px; text-transform:uppercase;
-                  color:#8892a4; font-weight:700; }
-  .dr-faixa.ativa .dr-faixa-tag { color:#e8ecf3; }
-  .dr-sec { font-size:11px; letter-spacing:2.5px; text-transform:uppercase; color:#7d879b;
-            font-weight:700; margin:26px 0 12px 0; }
-  .dr-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
-  .dr-chip { font-size:12px; padding:7px 14px; border-radius:99px; font-weight:600;
-             background:#161b2b; color:#aab4c6; border:1px solid #232a45; }
-  .dr-chip.ok  { color:#00e676; border-color:#00e67655; background:#04240f66; }
-  .dr-chip.bad { color:#ff5252; border-color:#ff525255; background:#2a070766; }
-  .dr-foot { font-size:12px; color:#6f7a90; margin-top:22px; text-align:center; }
-</style>
-"""
+    st.markdown('<div class="section-title">📟 Indicadores brutos</div>', unsafe_allow_html=True)
+    _fluxo_b = _liq_bruto.get("fluxo", {})
+    _lotes_b = _liq_bruto.get("lotes", {})
+    lcol1, lcol2, lcol3, lcol4 = st.columns(4)
+    lcol1.metric("Agressão compradora", f"{_fluxo_b.get('agressao_pct', 50):.1f}%")
+    lcol2.metric("Desequilíbrio de book", f"{_fluxo_b.get('desequilibrio', 0):+.1f}%")
+    lcol3.metric("Absorção", _fluxo_b.get("absorcao", "—") or "—")
+    lcol4.metric("Exaustão de fluxo", _fluxo_b.get("exaustao_fluxo", "—") or "—")
 
+    if _lotes_b.get("qtd_defesa") or _lotes_b.get("qtd_teto"):
+        st.caption(_lotes_b.get("resumo", ""))
 
-def _dr_cor_confianca(v):
-    if v >= 70:
-        return "#00e676", "linear-gradient(90deg,#00b85c,#00e676)"
-    if v >= 45:
-        return "#ffd740", "linear-gradient(90deg,#c9a300,#ffd740)"
-    return "#ff5252", "linear-gradient(90deg,#c62828,#ff5252)"
-
-
-with aba4:
-    st.markdown(CSS_DECISAO_RAPIDA, unsafe_allow_html=True)
-    st.markdown('<div class="dr-wrap">', unsafe_allow_html=True)
-
-    _ctx_dr = st.session_state.get("ultimo_contexto") or {}
-    _dt_dr = st.session_state.get("ultimos_dados_tela") or {}
-    # Sem contexto guardado (app recem-aberto), reclassifica a ultima leitura
-    # em vez de mostrar a tela vazia.
-    if not _ctx_dr and _dt_dr:
-        try:
-            _ig_dr = (st.session_state.modo_replay
-                      and not st.session_state.usar_macro_no_replay)
-            _ctx_dr = classificar_contexto(
-                _dt_dr, ler_fechamento_anterior() if not _ig_dr else None, _ig_dr) or {}
-        except Exception:
-            _ctx_dr = {}
-    _preco_dr = num(_dt_dr.get("preco_atual", 0))
-
-    _sug_dr = str(_ctx_dr.get("sugestao_acao", "")).upper()
-    _conv_dr = int(num(_ctx_dr.get("conviccao_ponderada", 0)))
-    _exec_dr = str(_ctx_dr.get("execucao_liberada", "nao")).lower() == "sim"
-    _motivo_dr = str(_ctx_dr.get("motivo_nao_executavel", ""))
-
-    if "COMPRA" in _sug_dr and _exec_dr:
-        _classe, _acao_txt = "compra", "COMPRAR"
-    elif "VENDA" in _sug_dr and _exec_dr:
-        _classe, _acao_txt = "venda", "VENDER"
-    elif "COMPRA" in _sug_dr:
-        _classe, _acao_txt = "espera", "AGUARDAR COMPRA"
-    elif "VENDA" in _sug_dr:
-        _classe, _acao_txt = "espera", "AGUARDAR VENDA"
-    elif _sug_dr:
-        _classe, _acao_txt = "espera", "NÃO OPERAR"
-    else:
-        _classe, _acao_txt = "espera", "SEM LEITURA"
-
-    _txt_dr = str(_ctx_dr.get("sugestao_texto", "")) or \
-        "Rode a análise para gerar a primeira leitura do pregão."
-    _cor_conf, _grad_conf = _dr_cor_confianca(_conv_dr)
-
-    _linha_preco = ""
-    if _preco_dr > 0:
-        _hr_dr = str(_dt_dr.get("hora_replay") or datetime.now().strftime("%H:%M"))
-        _linha_preco = (f'<div class="dr-preco">{_dt_dr.get("ativo", "WDO")} '
-                        f'<b>{_preco_dr:.2f}</b> <span>· leitura de {_hr_dr}</span></div>')
-
-    st.markdown(f"""
-<div class="dr-card {_classe}">
-  <div class="dr-eyebrow">Decisão do robô</div>
-  <div class="dr-acao {_classe}">{_acao_txt}</div>
-  <div class="dr-sub">{_txt_dr}</div>
-  {_linha_preco}
-  <div class="dr-conf-box">
-    <div class="dr-conf-top">
-      <span class="dr-conf-lab">Confiança</span>
-      <span class="dr-conf-val" style="color:{_cor_conf}">{_conv_dr}%</span>
-    </div>
-    <div class="dr-bar"><span style="width:{max(3, min(100, _conv_dr))}%;background:{_grad_conf}"></span></div>
-  </div>
-</div>""", unsafe_allow_html=True)
-
-    # ---------------- FAIXAS DE OPERACAO ----------------
-    st.markdown('<div class="dr-sec">Faixas de operação — referência do pregão anterior</div>',
-                unsafe_allow_html=True)
     try:
-        _fx_dr = calcular_faixas_operacionais(ler_fechamento_anterior(), _dt_dr)
-    except Exception:
-        _fx_dr = {"valido": False}
-
-    if _fx_dr.get("valido"):
-        _atual = str(_fx_dr.get("faixa_atual", ""))
-        _linhas_fx = ""
-        for _nome, _lab, _tag in (("verde", "Compra", "Zona de defesa compradora"),
-                                  ("amarela", "Neutra", "Aguardar definição"),
-                                  ("vermelha", "Venda", "Zona de oferta vendedora")):
-            _ini, _fim = _fx_dr.get(_nome, (0.0, 0.0))
-            _cls = f"dr-faixa {_nome}" + (" ativa" if _atual == _nome else "")
-            _tg = "◀ PREÇO AQUI" if _atual == _nome else _tag
-            _linhas_fx += (
-                f'<div class="{_cls}"><div class="dr-dot {_nome}"></div>'
-                f'<div class="dr-faixa-nome {_nome}">{_lab}</div>'
-                f'<div class="dr-faixa-val">{_ini:.2f} — {_fim:.2f}</div>'
-                f'<div class="dr-faixa-tag">{_tg}</div></div>')
-        st.markdown(f'<div class="dr-faixas">{_linhas_fx}</div>', unsafe_allow_html=True)
-        _dref = str(_fx_dr.get("data_referencia", ""))
-        try:
-            _dref_fmt = datetime.strptime(_dref, "%Y-%m-%d").strftime("%d/%m/%Y")
-        except Exception:
-            _dref_fmt = _dref or "—"
-        _aj_ant_txt = (f"{_fx_dr.get('ajuste_ant', 0):.2f}"
-                       if num(_fx_dr.get("ajuste_ant", 0)) > 0 else "não capturado")
-        _fonte_dr = str(_fx_dr.get("fonte_referencia", ""))
-        _rot_fonte = {
-            "tela_pregao_anterior": "lido do gráfico",
-            "tela_pregao_anterior (memoria)": "lido do gráfico",
-            "range_acumulado": "pregão anterior",
-            "historico": "pregão anterior (histórico)",
-            "fechamento": "fechamento anterior",
-            "pregao_anterior_historico": "pregão anterior (histórico)",
-            "pregao_anterior_registrado": "pregão anterior registrado",
-            "range_do_dia_corrente": "range do dia corrente",
-            "range_do_dia_corrente (escala trocada)": "range do dia corrente",
-            "estimada_pela_leitura_atual": "estimativa pela leitura atual",
-        }.get(_fonte_dr, _fonte_dr or "—")
-        if _fonte_dr.startswith("referencia_antiga_"):
-            _rot_fonte = f"referência antiga ({_fonte_dr.split('_')[-1]} do pregão anterior)"
-        st.caption(f"Referência **{_dref_fmt}** ({_rot_fonte}) · "
-                   f"máxima {_fx_dr.get('maxima_ant', 0):.2f} · "
-                   f"mínima {_fx_dr.get('minima_ant', 0):.2f} · "
-                   f"ajuste {_aj_ant_txt} · "
-                   f"amplitude {_fx_dr.get('amplitude_ant', 0):.1f} pts")
-        # Confere se a referencia e MESMO o dia util anterior ao pregao lido.
-        try:
-            _esperado_dr = dia_util_anterior(
-                _data_referencia_leitura(st.session_state.get("ultimos_dados_tela")))
-            if _dref and _dref != _esperado_dr:
-                _esp_fmt = datetime.strptime(_esperado_dr, "%Y-%m-%d").strftime("%d/%m/%Y")
-                st.warning(
-                    f"As faixas estão em **{_dref_fmt}**, mas o pregão anterior é "
-                    f"**{_esp_fmt}**. Deixe as linhas de máxima, mínima e o "
-                    f"*Prior Cote Ajuste* visíveis no gráfico e use "
-                    f"**Ler pregão anterior do gráfico** abaixo.")
-        except Exception:
-            pass
-    if not _fx_dr.get("valido"):
-        _dref2 = str(_fx_dr.get("data_referencia", "")) or "—"
-        st.caption(f"Sem dados do pregão de {_dref2}. As faixas aparecem depois "
-                   f"da primeira sessão registrada nessa data.")
-    else:
-        st.info("As faixas aparecem após o primeiro fechamento registrado.")
-
-    # ---------------- O QUE PESA AGORA ----------------
-    _chips = []
-    if _ctx_dr:
-        _sc = int(num(_ctx_dr.get("score", 0)))
-        _smin = int(num(_ctx_dr.get("score_minimo_usado", 0)))
-        _chips.append((f"Score {_sc}/{_smin}", _sc >= _smin))
-        _chips.append((f"Gatilho {_ctx_dr.get('status_gatilho', 'ESPERA')}",
-                       str(_ctx_dr.get("status_gatilho", "")) == "ARMADO"))
-        _chips.append((f"Regime {_ctx_dr.get('regime', '—')}", True))
-        if _ctx_dr.get("bollinger_estado"):
-            _chips.append((f"Bollinger {_ctx_dr['bollinger_estado']}", True))
-        if num(_ctx_dr.get("ifr", 0)) > 0:
-            _chips.append((f"IFR {num(_ctx_dr['ifr']):.0f}", True))
-        if _ctx_dr.get("macro_vies") and _ctx_dr.get("macro_vies") != "neutro":
-            _chips.append((f"Macro {_ctx_dr['macro_vies']}", True))
-    if _chips:
-        st.markdown('<div class="dr-sec">O que pesa nesta leitura</div>', unsafe_allow_html=True)
-        _html_chips = "".join(
-            f'<span class="dr-chip {"ok" if _o else "bad"}">{_t}</span>' for _t, _o in _chips)
-        st.markdown(f'<div class="dr-chips">{_html_chips}</div>', unsafe_allow_html=True)
-
-    if not _exec_dr and _motivo_dr:
-        st.markdown('<div class="dr-sec">Por que não enviar ordem</div>', unsafe_allow_html=True)
-        st.warning(_motivo_dr)
-
-    # ---------------- CICLO AUTOMATICO NESTA ABA ----------------
-    # O Streamlit volta para a primeira aba a cada rerun, e o ciclo vivia no
-    # bloco da aba 1: parado nesta tela, a leitura parecia congelada. Aqui a
-    # verificacao e propria. Se a aba 1 ja rodou neste rerun, o tempo decorrido
-    # zera e este bloco nao dispara de novo.
-    _int_dr = intervalo_analise_atual()
-    _dec_dr = time.time() - num(st.session_state.get("ultimo_ciclo_analise", 0))
-    _falta_dr = max(0, int(_int_dr - _dec_dr))
-    _jan_ativa_dr = bool((st.session_state.get("estado_janela") or {}).get("dentro", True))
-
-    # O ciclo global (antes das abas) ja cuidou da leitura automatica: aqui
-    # apenas exibimos o estado, sem disparar uma segunda analise.
-
-    _ult_leitura_dr = ""
-    try:
-        _ts_dr = num(st.session_state.get("ultimo_ciclo_analise", 0))
-        if _ts_dr > 0:
-            _ult_leitura_dr = datetime.fromtimestamp(_ts_dr).strftime("%H:%M:%S")
+        _vel, _vel_valida = calcular_velocidade_real(_dt_liq, st.session_state.get("ultimo_momentum") or {})
+        st.caption(f"Velocidade real: {_vel:.2f} pts/min" if _vel_valida else "Velocidade real: sem dado suficiente.")
     except Exception:
         pass
 
-    _c1_dr, _c2_dr, _c3_dr = st.columns(3)
-    _c1_dr.metric("Última leitura", _ult_leitura_dr or "—")
-    _c2_dr.metric("Próxima em", f"{_falta_dr // 60}:{_falta_dr % 60:02d}")
-    _c3_dr.metric("Automático",
-                  "ligado" if st.session_state.get("analise_automatica") else "desligado")
+    st.markdown('<div class="section-title">📊 Profundidade do book</div>', unsafe_allow_html=True)
+    try:
+        render_book_profundidade(_ag_liq, _preco_liq)
+    except Exception as _e_book:
+        st.info("Sem leitura de book nesta sessão ainda.")
 
-    # ---------------- LER O PREGAO ANTERIOR DO GRAFICO ----------------
-    _cb1_dr, _cb2_dr = st.columns([1, 1])
-    if _cb2_dr.button("📐  Ler pregão anterior do gráfico",
-                      use_container_width=True, key="btn_ler_pregao_ant"):
-        if not CHAVE_OPENROUTER:
-            st.error("Defina a variável de ambiente OPENROUTER_API_KEY antes de executar.")
-        else:
-            with st.spinner("Lendo máxima, mínima e ajuste do pregão anterior..."):
-                try:
-                    _img_pa, _msg_pa = capturar_janela()
-                    _lido_pa = extrair_dados_tela(_img_pa, st.session_state.modo_replay) if _img_pa else None
-                    if not _lido_pa:
-                        st.error(f"Não consegui ler o gráfico. {_msg_pa or ''}")
-                    else:
-                        _mxp = num(_lido_pa.get("maxima_anterior", 0))
-                        _mnp = num(_lido_pa.get("minima_anterior", 0))
-                        _ajp = num(_lido_pa.get("ajuste_anterior", 0))
-                        _dtp = str(_lido_pa.get("data_pregao_anterior", "") or "")[:10]
-                        _base_pa = st.session_state.get("ultimos_dados_tela") or _lido_pa
-                        _dia_pa = _data_referencia_leitura(_base_pa)
-                        if not re.match(r"^\d{4}-\d{2}-\d{2}$", _dtp):
-                            _dtp = dia_util_anterior(_dia_pa)
-                        if _mxp > _mnp > 0:
-                            _at_pa = ativo_canonico(_base_pa.get("ativo", "")) or "ATIVO"
-                            _cc = st.session_state.get("ref_pregao_anterior_tela")
-                            if not isinstance(_cc, dict):
-                                _cc = {}
-                            _cc[f"{_at_pa}::{_dia_pa}"] = {
-                                "maxima": round(_mxp, 2), "minima": round(_mnp, 2),
-                                "ajuste": round(_ajp, 2), "vwap": 0.0,
-                                "data": _dtp, "fonte": "tela_pregao_anterior"}
-                            st.session_state["ref_pregao_anterior_tela"] = _cc
-                            invalidar_faixas_travadas()
-                            st.success(
-                                f"Pregão anterior lido: {_dtp} · máxima {_mxp:.2f} · "
-                                f"mínima {_mnp:.2f} · ajuste {_ajp:.2f}")
-                            st.rerun()
-                        else:
-                            st.warning(
-                                "Não localizei máxima e mínima do pregão anterior no "
-                                "gráfico. Deixe as linhas de Máximo/Mínimo e o "
-                                "Prior Cote Ajuste visíveis e tente de novo.")
-                except Exception as _e_pa:
-                    st.error(f"Falha ao ler o pregão anterior: {_e_pa}")
+    # NOVO: Flow Map de liquidez passiva (paredes de compra/venda + desequilíbrio).
+    try:
+        _flow_map_liq = calcular_flow_map_liquidez(_ag_liq, _preco_liq)
+        render_flow_map_liquidez(_flow_map_liq, _preco_liq)
+    except Exception:
+        st.caption("Flow map indisponível nesta leitura.")
 
-    # ---------------- BOTAO DE ANALISE ----------------
-    st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("🔍  ANALISAR AGORA", use_container_width=True, type="primary",
-                 key="btn_analise_decisao_rapida"):
-        if not CHAVE_OPENROUTER:
-            st.error("Defina a variável de ambiente OPENROUTER_API_KEY antes de executar.")
-        else:
-            with st.spinner("Lendo a tela e consolidando a decisão..."):
-                try:
-                    executar_analise()
-                    st.session_state.ultimo_ciclo_analise = time.time()
-                except Exception as _e:
-                    st.error(f"Não foi possível concluir a análise: {_e}")
-            st.rerun()
+    # NOVO: Flow Map DINÂMICO (evolução temporal da liquidez passiva).
+    # Reaproveita o já calculado em classificar_contexto (mesmo objeto usado
+    # no ajuste de score) quando disponível na última leitura.
+    try:
+        _ctx_flow_liq = st.session_state.get("ultimo_contexto") or {}
+        _flow_dyn_liq = _ctx_flow_liq.get("flow_map_dinamico")
+        if not _flow_dyn_liq or not _flow_dyn_liq.get("valido"):
+            _flow_dyn_liq = atualizar_flow_map_dinamico(_ag_liq, _preco_liq)
+        render_flow_map_dinamico(_flow_dyn_liq, _preco_liq)
+    except Exception:
+        st.caption("Flow map dinâmico indisponível nesta leitura.")
 
-    _jan_dr = st.session_state.get("estado_janela") or {}
-    st.markdown(
-        f'<div class="dr-foot">{_jan_dr.get("resumo", "")} · '
-        f'análise automática a cada {INTERVALO_ANALISE_SEGUNDOS // 60} min</div>',
-        unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">🏷️ Liquidez nomeada</div>', unsafe_allow_html=True)
+    try:
+        render_liquidez_nomeada(_ag_liq, _fluxo_b, _preco_liq)
+    except Exception:
+        st.info("Sem agentes identificados nesta leitura ainda.")
+
+    # NOVO: VWAP Bands (1σ/2σ) e Volume Profile (POC/HVN/LVN).
+    try:
+        _vwap_bands_liq = calcular_vwap_bands(_dt_liq, st.session_state.get("hist_leituras"))
+        render_vwap_bands(_vwap_bands_liq, _preco_liq)
+    except Exception:
+        st.caption("VWAP bands indisponíveis nesta leitura.")
+
+    try:
+        # Reaproveita o Volume Profile já calculado em classificar_contexto (o
+        # mesmo usado no score e no gatekeeper) quando a leitura mais recente
+        # o tiver — evita mostrar um perfil ligeiramente diferente do que
+        # decidiu o score/gatekeeper daquela leitura.
+        _ctx_vp_liq = st.session_state.get("ultimo_contexto") or {}
+        _vol_profile_liq = _ctx_vp_liq.get("volume_profile")
+        if not _vol_profile_liq or not _vol_profile_liq.get("valido"):
+            _vol_profile_liq = calcular_volume_profile(_dt_liq, st.session_state.get("hist_candles"))
+        render_volume_profile(_vol_profile_liq, _preco_liq)
+    except Exception:
+        st.caption("Volume Profile indisponível nesta leitura.")
+
+
+# ============================================================
+# ABA 4 — CONFLUÊNCIA (veredito final)
+# ============================================================
+with aba_confluencia:
+    botao_analisar("confluencia")
+    _v_macro_c, _ = veredito_macro_aba()
+    _v_liq_c, _ = veredito_liquidez_aba()
+    _v_final = veredito_confluencia_aba(veredito_liq=_v_liq_c, veredito_macro=_v_macro_c)
+    _card_veredito("Veredito final — setups técnicos + gatilho + book + macro", _v_final, icone="🎯")
+
+    st.markdown('<div class="section-title">🧩 Contribuição por fonte</div>', unsafe_allow_html=True)
+    fcol1, fcol2, fcol3 = st.columns(3)
+    with fcol1:
+        st.markdown("**🌎 Macro**")
+        st.markdown(f"{_v_macro_c.get('vies','neutro').upper()} · {_v_macro_c.get('forca','—')}")
+    with fcol2:
+        st.markdown("**💧 Liquidez**")
+        st.markdown(f"{_v_liq_c.get('vies','neutro').upper()} · {_v_liq_c.get('forca','—')}")
+    with fcol3:
+        st.markdown("**📐 Setups técnicos (gatilho)**")
+        st.markdown(f"{st.session_state.get('ultimo_status_gatilho','AGUARDANDO')}")
+
+    st.markdown('<div class="section-title">🎛️ Painel de comando (alvo, stop, RR)</div>', unsafe_allow_html=True)
+    _dt_conf = st.session_state.get("ultimos_dados_tela", {})
+    _pe_conf = ESTRATEGIAS[st.session_state.estrategia_operacional]
+    # BUG CORRIGIDO: aqui chamava classificar_contexto(...) de novo, na marra.
+    # Essa chamada roda avaliar_conviccao() mas NUNCA passa por
+    # reavaliar_execucao() — essa segunda passada só acontece dentro de
+    # executar_analise(), depois que o gatilho (sg) e o gatekeeper já foram
+    # decididos. Resultado: o "sugestao_acao/texto" mostrado aqui vinha do
+    # cálculo cru e antigo (ex.: "AGUARDAR CONFIRMAÇÃO COMPRA" a 60%, baseado
+    # só na conviccao_ponderada), enquanto o card do veredito final acima usa
+    # st.session_state["ultimo_veredito"], que É pós-reconciliação (min entre
+    # a conviccao do veredito e a ponderada — no exemplo, 12%). Duas fontes
+    # diferentes na mesma tela pareciam dois resultados contraditórios.
+    # Correção: reaproveitar o MESMO contexto já totalmente processado
+    # (reavaliar_execucao incluída) que a leitura mais recente salvou.
+    _ctx_conf = st.session_state.get("ultimo_contexto")
+    if _dt_conf and _ctx_conf:
+        render_painel_comando(_ctx_conf, _dt_conf, _pe_conf)
+    elif _dt_conf:
+        st.info("Contexto da última leitura ainda não disponível — execute uma análise "
+                "para gerar o painel de comando.")
+    else:
+        st.markdown('<div class="hero neutro"><div class="acao" style="color:#8892a4">'
+                    'AGUARDANDO LEITURA</div><div class="sub">Execute uma análise na aba '
+                    'Geral para gerar a primeira decisão.</div></div>', unsafe_allow_html=True)
+
+    with st.expander("📊 Ranking histórico dos indicadores usados na confluência"):
+        render_ranking_indicadores()
+
+st.markdown(
+    f'<div style="text-align:center;color:#2d3561;font-size:12px;margin-top:20px;">'
+    f'AutoPro — 4 abas (Geral · Macro · Liquidez · Confluência) — Ciclo #{count} — '
+    f'{datetime.now().strftime("%H:%M:%S")}</div>', unsafe_allow_html=True)
