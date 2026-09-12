@@ -10386,8 +10386,8 @@ def botao_analisar(chave_widget):
             st.rerun()
 
 
-aba_geral, aba_macro, aba_liquidez, aba_confluencia = st.tabs([
-    "⚙️ Geral", "🌎 Macroeconômicos", "💧 Liquidez", "🎯 Confluência"])
+aba_geral, aba_macro, aba_liquidez, aba_candles, aba_confluencia = st.tabs([
+    "⚙️ Geral", "🌎 Macroeconômicos", "💧 Liquidez", "🕯️ Gráfico de Candles", "🎯 Confluência"])
 
 
 # ============================================================
@@ -10823,7 +10823,125 @@ with aba_liquidez:
 
 
 # ============================================================
-# ABA 4 — CONFLUÊNCIA (veredito final)
+# ABA 4 — GRÁFICO DE CANDLES (indicadores técnicos derivados do candle)
+# ============================================================
+with aba_candles:
+    botao_analisar("candles")
+    _ctx_c = st.session_state.get("ultimo_contexto") or {}
+    _dt_c = st.session_state.get("ultimos_dados_tela") or {}
+
+    if not _ctx_c or not _dt_c:
+        st.info("Execute uma análise para ver os indicadores do gráfico de candles.")
+    else:
+        st.markdown('<div class="section-title">📊 Médias móveis e momentum</div>', unsafe_allow_html=True)
+        mmcol1, mmcol2, mmcol3, mmcol4 = st.columns(4)
+        mmcol1.metric("MM9", f"{num(_dt_c.get('mm9', 0)):.2f}", f"{num(_ctx_c.get('dist_mm9', 0)):+.2f} pts")
+        mmcol2.metric("MM20", f"{num(_dt_c.get('mm20', 0)):.2f}", f"{num(_ctx_c.get('dist_mm20', 0)):+.2f} pts")
+        mmcol3.metric("MM50", f"{num(_dt_c.get('mm50', 0)):.2f}", f"{num(_ctx_c.get('dist_mm50', 0)):+.2f} pts")
+        mmcol4.metric("MM200", f"{num(_dt_c.get('mm200', 0)):.2f}", f"{num(_ctx_c.get('dist_mm200', 0)):+.2f} pts")
+
+        mocol1, mocol2, mocol3, mocol4 = st.columns(4)
+        mocol1.metric("Momentum", str(_ctx_c.get("momentum", "indefinido")).replace("_", " ").upper())
+        mocol2.metric("Delta preço", f"{num(_ctx_c.get('delta_preco', 0)):+.2f}")
+        mocol3.metric("Inclinação MM9", f"{num(_ctx_c.get('inclinacao_mm9', 0)):+.3f}")
+        mocol4.metric("Posição no range do dia", f"{num(_ctx_c.get('pos_range', 50)):.0f}%")
+
+        st.markdown('<div class="section-title">📉 Bandas de Bollinger</div>', unsafe_allow_html=True)
+        bcol1, bcol2, bcol3, bcol4 = st.columns(4)
+        bcol1.metric("Superior", f"{num(_ctx_c.get('bollinger_superior', 0)):.2f}")
+        bcol2.metric("Central", f"{num(_ctx_c.get('bollinger_central', 0)):.2f}")
+        bcol3.metric("Inferior", f"{num(_ctx_c.get('bollinger_inferior', 0)):.2f}")
+        bcol4.metric("Estado", str(_ctx_c.get("bollinger_estado", "indefinido")).replace("_", " ").title())
+        st.caption(f"Largura: {num(_ctx_c.get('bollinger_largura_pct', 0)):.2f}%"
+                   + (" · banda estreita (consolidação)" if _ctx_c.get("bollinger_estreita") else ""))
+
+        st.markdown('<div class="section-title">🌡️ IFR (RSI)</div>', unsafe_allow_html=True)
+        icol1, icol2, icol3 = st.columns(3)
+        icol1.metric("IFR", f"{num(_ctx_c.get('ifr', 50)):.1f}")
+        icol2.metric("Estado", str(_ctx_c.get("ifr_estado", "indefinido")).replace("_", " ").title())
+        icol3.metric("Divergência", str(_ctx_c.get("ifr_divergencia", "") or "nenhuma").title())
+        if _ctx_c.get("ifr_motivo"):
+            st.caption(_ctx_c["ifr_motivo"])
+
+        st.markdown('<div class="section-title">🕯️ Padrão e rompimento de candle</div>', unsafe_allow_html=True)
+        pcol1, pcol2, pcol3 = st.columns(3)
+        pcol1.metric("Padrão do último candle", str(_ctx_c.get("padrao_candle", "nenhum")).replace("_", " ").title())
+        pcol2.metric("Rompimento confirmado", "SIM" if _ctx_c.get("rompimento_dispara") else "não")
+        pcol3.metric("Direção do rompimento", str(_ctx_c.get("rompimento_direcao", "espera")).replace("_", " ").title())
+        if _ctx_c.get("rompimento_dispara"):
+            st.caption(f"Nível de rompimento {num(_ctx_c.get('rompimento_nivel', 0)):.2f} · "
+                       f"stop compra {num(_ctx_c.get('rompimento_stop_compra', 0)):.2f} · "
+                       f"stop venda {num(_ctx_c.get('rompimento_stop_venda', 0)):.2f}")
+
+        st.markdown('<div class="section-title">🤖 Robô preditivo (projeção 5/10 min)</div>', unsafe_allow_html=True)
+        _prev_c = _ctx_c.get("previsao") or {}
+        rcol1, rcol2, rcol3, rcol4 = st.columns(4)
+        rcol1.metric("Direção prevista", str(_prev_c.get("direcao_prevista", "indefinido")).title())
+        rcol2.metric("Prob. alta em 5min", f"{int(_prev_c.get('prob_alta_5', 50))}%")
+        rcol3.metric("Prob. alta em 10min", f"{int(_prev_c.get('prob_alta_10', 50))}%")
+        rcol4.metric("Confiança", f"{int(_prev_c.get('confianca', 0))}%")
+        rcol5, rcol6, rcol7 = st.columns(3)
+        rcol5.metric("Projeção 5min", f"{num(_prev_c.get('projecao_5', 0)):.2f}")
+        rcol6.metric("Projeção 10min", f"{num(_prev_c.get('projecao_10', 0)):.2f}")
+        _vel_txt_c = (f"{num(_prev_c.get('velocidade_pts_min', 0)):+.2f} pts/min"
+                      if _prev_c.get("velocidade_valida") else "sem histórico")
+        rcol7.metric("Velocidade real", _vel_txt_c)
+        _fatores_c = _prev_c.get("fatores") or []
+        if _fatores_c:
+            st.caption("Fatores considerados: " + " · ".join(str(f) for f in _fatores_c[:4]))
+
+        st.markdown('<div class="section-title">🕐 Janela de abertura</div>', unsafe_allow_html=True)
+        _ab_c = _ctx_c.get("abertura_info") or {}
+        if _ab_c.get("resumo"):
+            st.info(("🕐 " if _ab_c.get("em_observacao") else "✅ ") + _ab_c.get("resumo", ""))
+            if _ab_c.get("gap_pts"):
+                st.caption(f"Fechamento anterior {num(_ab_c.get('fech_anterior', 0)):.2f} → "
+                           f"abertura {num(_ab_c.get('abertura', 0)):.2f} "
+                           f"({num(_ab_c.get('gap_pts', 0)):+.1f} pts) · {_ab_c.get('tipo_abertura', '')}")
+            if _ab_c.get("leitura_antecipada"):
+                st.caption(f"📍 {_ab_c['leitura_antecipada']}")
+        else:
+            st.caption("Fora da janela de observação da abertura (ou sem leitura ainda).")
+
+        st.markdown('<div class="section-title">📍 Zonas técnicas e pontos fortes</div>', unsafe_allow_html=True)
+        zcol1, zcol2, zcol3 = st.columns(3)
+        zcol1.metric("Zona mais próxima", str(_ctx_c.get("zona_mais_proxima_lado", "—") or "—").title())
+        zcol2.metric("Distância", f"{num(_ctx_c.get('zona_mais_proxima_distancia', 0)):.2f} pts")
+        zcol3.metric("Força da zona", f"{num(_ctx_c.get('zona_mais_proxima_forca', 0)):.0f}")
+        _rot_zona_c = _ctx_c.get("zona_mais_proxima_rotulos") or []
+        if _rot_zona_c:
+            st.caption("Referências: " + ", ".join(str(r) for r in _rot_zona_c[:5]))
+
+        st.markdown('<div class="section-title">📐 Range do dia</div>', unsafe_allow_html=True)
+        rd1, rd2, rd3 = st.columns(3)
+        rd1.metric("Máxima", f"{num(_ctx_c.get('range_dia_maxima', 0)):.2f}")
+        rd2.metric("Mínima", f"{num(_ctx_c.get('range_dia_minima', 0)):.2f}")
+        rd3.metric("Amplitude", f"{num(_ctx_c.get('range_dia_amplitude', 0)):.1f} pts")
+
+        if _ctx_c.get("estrategia_especial_nome", "Nenhuma") != "Nenhuma" or _ctx_c.get("scalp_direcao"):
+            st.markdown('<div class="section-title">⭐ Setup especial e scalp</div>', unsafe_allow_html=True)
+            if _ctx_c.get("estrategia_especial_nome", "Nenhuma") != "Nenhuma":
+                st.markdown(f"**{_ctx_c.get('estrategia_especial_nome')}** — "
+                            f"{_ctx_c.get('estrategia_especial_desc', '')}")
+            if _ctx_c.get("scalp_direcao"):
+                st.caption(f"Scalp {_ctx_c.get('scalp_direcao')}: {_ctx_c.get('scalp_motivo', '')}")
+
+        _falta_c = _ctx_c.get("falta_para_gatilho") or []
+        _prox_c = _ctx_c.get("condicao_mais_proxima") or []
+        if _falta_c or _prox_c:
+            with st.expander("🔍 O que o gráfico está mostrando para o gatilho"):
+                if _prox_c:
+                    st.markdown("**A favor / já confirmado:**")
+                    for _p in _prox_c:
+                        st.markdown(f"- {_p}")
+                if _falta_c:
+                    st.markdown("**Falta para armar:**")
+                    for _f in _falta_c:
+                        st.markdown(f"- {_f}")
+
+
+# ============================================================
+# ABA 5 — CONFLUÊNCIA (veredito final)
 # ============================================================
 with aba_confluencia:
     botao_analisar("confluencia")
@@ -10875,5 +10993,5 @@ with aba_confluencia:
 
 st.markdown(
     f'<div style="text-align:center;color:#2d3561;font-size:12px;margin-top:20px;">'
-    f'AutoPro — 4 abas (Geral · Macro · Liquidez · Confluência) — Ciclo #{count} — '
+    f'AutoPro — 5 abas (Geral · Macro · Liquidez · Candles · Confluência) — Ciclo #{count} — '
     f'{datetime.now().strftime("%H:%M:%S")}</div>', unsafe_allow_html=True)
