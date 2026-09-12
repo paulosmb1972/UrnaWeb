@@ -2997,11 +2997,17 @@ def _capturar_por_palavras_forcado(palavras, nome_amigavel):
 
 def capturar_janela():
     """Captura o gráfico principal."""
-    palavras = ["1 dolar mini", "dolar mini", "wdofut", "wdo", "minuto", "gráfico", "grafico"]
+    palavras = ["1 dolar mini", "dolar mini", "wdofut", "wdo", "minuto", "gráfico", "grafico",
+                "replay", "wdov", "wdoz", "wdoq", "wdox", "wdoj", "wdon", "wdom"]
     img, msg = _capturar_por_palavras_forcado(palavras, "Gráfico")
-    if img is None:
-        # Se falhar pelas palavras específicas, tenta qualquer janela do Profit
-        img, msg = _capturar_por_palavras_forcado(["profit", "nelogica"], "Gráfico (Profit Geral)")
+    if img is None or "parece em branco/preta" in msg:
+        # Se falhar OU vier em branco/preta pelas palavras especificas, tenta
+        # qualquer janela do Profit antes de desistir ou aceitar a tela preta.
+        img2, msg2 = _capturar_por_palavras_forcado(["profit", "nelogica"], "Gráfico (Profit Geral)")
+        if img2 is not None and "parece em branco/preta" not in msg2:
+            img, msg = img2, msg2
+        elif img is None:
+            img, msg = img2, msg2
     st.session_state.ultimo_titulo_capturado = msg
     return img, msg
 
