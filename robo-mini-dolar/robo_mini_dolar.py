@@ -3013,11 +3013,28 @@ def capturar_janela():
 
 
 def capturar_SuperDom():
-    """Captura SuperDOM."""
-    palavras = ["superdom", "super dom", "dom", "boleta"]
+    """Captura SuperDOM. A ladder de execucao do simulador ('S Simulador
+    **numero...') e o MESMO tipo de painel (precos + qtde compra/venda) —
+    por isso 'simulador'/'sim ' entram nas palavras-chave, nao so 'dom'."""
+    palavras = ["superdom", "super dom", "dom", "boleta", "simulador", "sim ", "book de ofertas"]
     img, msg = _capturar_por_palavras_forcado(palavras, "SuperDOM")
     if img is not None:
         st.session_state["ultimo_titulo_superdom"] = msg
+        return img, msg
+
+    # Fallback: 3a janela WDOFUT/Simulador da esquerda p/ direita (mesmo
+    # criterio ja usado para Agentes) — cobre o caso do titulo ser so o ticker.
+    janelas_wdo = _janelas_wdofut_ordenadas()
+    if len(janelas_wdo) >= 3:
+        j = janelas_wdo[2]
+        l, top, w, h = j["l"], j["top"], j["r"] - j["l"], j["b"] - j["top"]
+        img = _bitblt_regiao_desktop(l, top, w, h)
+        if img is not None:
+            _msg = f"SuperDOM capturado (fallback 3ª janela WDOFUT/Simulador): '{j['titulo']}' ({w}x{h}px em {l},{top})"
+            st.session_state["ultimo_titulo_superdom"] = _msg
+            return img, _msg
+
+    st.session_state["ultimo_titulo_superdom"] = msg
     return img, msg
 
 
@@ -3117,11 +3134,28 @@ def capturar_times_trades():
 
 
 def capturar_livro_ofertas():
-    """Captura Livro de Ofertas."""
-    palavras = ["livro", "ofertas", "book", "order", "depth", "profundidade"]
+    """Captura Livro de Ofertas (inclui a variante 'Livro Visual', o mesmo book
+    em representacao grafica, e a aba agregada 'Saldo' de compra/venda)."""
+    palavras = ["livro", "ofertas", "book", "order", "depth", "profundidade",
+                "livro visual", "saldo"]
     img, msg = _capturar_por_palavras_forcado(palavras, "Livro de Ofertas")
     if img is not None:
         st.session_state["ultimo_titulo_livro"] = msg
+        return img, msg
+
+    # Fallback: ultima janela WDOFUT/Simulador da esquerda p/ direita ainda
+    # nao coberta pelos outros paineis (mesmo criterio ja usado no restante).
+    janelas_wdo = _janelas_wdofut_ordenadas()
+    if janelas_wdo:
+        j = janelas_wdo[-1]
+        l, top, w, h = j["l"], j["top"], j["r"] - j["l"], j["b"] - j["top"]
+        img = _bitblt_regiao_desktop(l, top, w, h)
+        if img is not None:
+            _msg = f"Livro de Ofertas capturado (fallback última janela WDOFUT): '{j['titulo']}' ({w}x{h}px em {l},{top})"
+            st.session_state["ultimo_titulo_livro"] = _msg
+            return img, _msg
+
+    st.session_state["ultimo_titulo_livro"] = msg
     return img, msg
 
 
@@ -3175,7 +3209,9 @@ def capturar_agentes():
         "hora agente", "5 negoc", "6 press", "7 descri",
         "6 agentes", "book agente",
         # abas que carregam a coluna de corretora por preco
-        "ofertas", "livro de ofertas", "book de ofertas", "ofertante"
+        "ofertas", "livro de ofertas", "book de ofertas", "ofertante",
+        # ranking de corretoras por volume negociado (% + Vol.Fin + Vol.Qtd + Média)
+        "volume at market", "vol. fin", "vol.fin", "vol. qtd"
     ]
     img, msg = _capturar_por_palavras_forcado(palavras, "Agentes")
     if img is not None:
@@ -7229,6 +7265,17 @@ TIPO A) BOOK DE AGENTES / NEGOCIACAO / OFERTAS — possui COLUNA COM NOMES DE CO
 TIPO B) SUPERDOM / PROFUNDIDADE / LIVRO AGREGADO — mostra APENAS colunas numericas
    (Qtde e Preco), SEM qualquer nome de corretora.
    -> preencha "agente" com exatamente "BOOK" e marque "tem_nomes_agentes": false
+
+TIPO A2) VOLUME AT MARKET / RANKING DE CORRETORAS POR VOLUME — tabela com colunas
+   Corretora, % (participacao), Vol.Fin (volume financeiro), Vol.Qtd (contratos) e
+   Media (preco medio), normalmente com um grafico de barras acima mostrando o saldo
+   liquido (positivo/negativo) de cada corretora no periodo.
+   -> NAO confunda a coluna "%" ou "Vol.Qtd" com preco: o preco de cada ofertante
+      aqui e o valor da coluna "Media". Corretora com saldo positivo (comprou mais
+      do que vendeu no periodo) entra em "ofertantes_compra"; saldo negativo entra
+      em "ofertantes_venda"; use o Vol.Qtd (ou o modulo do saldo da barra, se o
+      Vol.Qtd nao estiver visivel) como "qtde".
+   -> Marque "tem_nomes_agentes": true e "tipo_painel": "volume_at_market".
 
 TIPO C) TIMES & TRADES / ORDEM ORIGINAL / NEGOCIOS — tabela de execucoes com as colunas
    Data (ou Hora), Compradora, Valor (preco), Quantidade, Vendedora e Agressor.
