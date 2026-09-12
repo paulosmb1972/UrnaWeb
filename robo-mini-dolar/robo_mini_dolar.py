@@ -10932,6 +10932,62 @@ with aba_geral:
             if _v:
                 st.text(f"{_k}: {_v}")
 
+    # ============ TESTE DE CAPTURA DAS JANELAS (diagnostico visual) ============
+    # Sem isso ninguem via O QUE o robo realmente capturava — so os efeitos
+    # (dados 0.00, book congelado etc.), tendo que adivinhar a causa. Com o
+    # botao, da pra ver a IMAGEM exata que cada captura devolveu, incluindo
+    # se veio de outro monitor, se veio em branco/preta, e o titulo da
+    # janela escolhida — inclusive quando o monitor fica a esquerda/acima do
+    # principal (coordenada Left/Top NEGATIVA no diagnostico abaixo, o que e
+    # normal nesse caso, nao um erro).
+    with st.expander("🖥️ Testar captura das janelas (ver a imagem que o robô realmente pega)"):
+        try:
+            _awn = ctypes.c_int(-1)
+            ctypes.windll.shcore.GetProcessDpiAwareness(0, ctypes.byref(_awn))
+            _dpi_txt = {0: "Unaware (legado — risco em multi-monitor)",
+                        1: "System DPI Aware (nao acompanha por monitor)",
+                        2: "Per-Monitor DPI Aware (correto p/ multi-monitor)"}.get(_awn.value, str(_awn.value))
+        except Exception as _e_dpi:
+            _dpi_txt = f"não foi possível consultar ({_e_dpi})"
+        st.caption(f"DPI awareness do processo: **{_dpi_txt}**. Captura usa GetDC(0) "
+                   "(virtual screen inteiro) — funciona com coordenada negativa, caso "
+                   "do monitor à esquerda/acima do principal.")
+
+        colt1, colt2, colt3, colt4, colt5 = st.columns(5)
+        if colt1.button("📈 Gráfico", key="btn_teste_cap_grafico"):
+            _im, _ms = capturar_janela()
+            if _im is not None: st.image(_im, caption=f"Gráfico — {_ms}", width=700)
+            else: st.error(_ms)
+        if colt2.button("📊 SuperDom", key="btn_teste_cap_superdom"):
+            _im, _ms = capturar_SuperDom()
+            if _im is not None: st.image(_im, caption=f"SuperDom — {_ms}", width=700)
+            else: st.error(_ms)
+        if colt3.button("⏱️ Times & Trades", key="btn_teste_cap_tt"):
+            _im, _ms = capturar_times_trades()
+            if _im is not None: st.image(_im, caption=f"T&T — {_ms}", width=700)
+            else: st.error(_ms)
+        if colt4.button("📚 Livro de Ofertas", key="btn_teste_cap_livro"):
+            _im, _ms = capturar_livro_ofertas()
+            if _im is not None: st.image(_im, caption=f"Livro — {_ms}", width=700)
+            else: st.error(_ms)
+        if colt5.button("👥 Agentes", key="btn_teste_cap_agentes"):
+            _im, _ms = capturar_agentes()
+            if _im is not None: st.image(_im, caption=f"Agentes — {_ms}", width=700)
+            else: st.error(_ms)
+
+        if st.button("🔍 Listar TODAS as janelas visíveis, com coordenadas",
+                      key="btn_listar_janelas_coord"):
+            _todas_j = listar_todas_janelas_visiveis()
+            if not _todas_j:
+                st.error("Nenhuma janela visível detectada.")
+            else:
+                st.success(f"{len(_todas_j)} janelas visíveis. Left/Top NEGATIVO é "
+                           "normal para um monitor à esquerda/acima do principal — "
+                           "não é erro, é a coordenada real no desktop virtual.")
+                st.dataframe(
+                    pd.DataFrame([{k: v for k, v in j.items() if k != "hwnd"} for j in _todas_j]),
+                    use_container_width=True, hide_index=True)
+
     st.markdown('<div class="section-title">📚 Históricos</div>', unsafe_allow_html=True)
     hist_tabs = st.tabs(["Trades", "Bloqueios evitados", "Leituras recentes"])
     with hist_tabs[0]:
