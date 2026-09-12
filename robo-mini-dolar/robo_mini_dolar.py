@@ -10677,7 +10677,92 @@ def veredito_liquidez_aba(agentes_info=None, dados_tela=None, contexto=None):
             dados_brutos)
 
 
-def veredito_confluencia_aba(veredito_liq=None, veredito_macro=None):
+def veredito_candles_aba(dados_tela=None, contexto=None):
+    """Aba 'Gráfico de Candles' — funde momentum, Bollinger, IFR, padrão e
+    rompimento de candle, robô preditivo e tendência de abertura num
+    veredito SÓ TÉCNICO (sem macro/liquidez), com o mesmo esquema de votos
+    ponderados das abas Macro e Liquidez."""
+    dt = dados_tela if dados_tela is not None else st.session_state.get("ultimos_dados_tela") or {}
+    ctx = contexto if contexto is not None else st.session_state.get("ultimo_contexto") or {}
+    if not dt or not ctx:
+        return {"vies": "neutro", "forca": "neutro", "convicao": 0,
+                "fatores": ["Sem leitura ainda — execute uma análise."],
+                "resumo": "Aguardando primeira leitura."}
+
+    votos = {"compra": 0.0, "venda": 0.0}
+    fatores = []
+    contras = []
+
+    mm = str(ctx.get("momentum", "neutro"))
+    if mm in ("alta", "alta_forte"):
+        peso = 2.0 if mm == "alta_forte" else 1.0
+        votos["compra"] += peso
+        fatores.append(f"Momentum {mm.replace('_', ' ')}")
+    elif mm in ("baixa", "baixa_forte"):
+        peso = 2.0 if mm == "baixa_forte" else 1.0
+        votos["venda"] += peso
+        fatores.append(f"Momentum {mm.replace('_', ' ')}")
+
+    _acao_pad = str(ctx.get("acao_pretendida") or ctx.get("acao_objetiva") or "").lower()
+    if ctx.get("padrao_confirma") and _acao_pad in ("compra", "venda"):
+        votos[_acao_pad] += 1.5
+        fatores.append(f"Padrão de candle ({ctx.get('padrao_candle')}) confirma {_acao_pad}")
+    elif ctx.get("padrao_contradiz"):
+        contras.append(f"padrão de candle ({ctx.get('padrao_candle')}) contra a direção")
+
+    if ctx.get("rompimento_dispara") and ctx.get("rompimento_direcao") in ("compra", "venda"):
+        votos[ctx["rompimento_direcao"]] += 2.0
+        fatores.append(f"Rompimento de candle confirmado ({ctx['rompimento_direcao']})")
+
+    _boll_estado = ctx.get("bollinger_estado", "indefinido")
+    if _boll_estado == "sobrecompra":
+        votos["venda"] += 0.5
+        fatores.append("Bollinger em sobrecompra")
+    elif _boll_estado == "sobrevenda":
+        votos["compra"] += 0.5
+        fatores.append("Bollinger em sobrevenda")
+
+    _ifr_estado = ctx.get("ifr_estado", "indefinido")
+    if _ifr_estado == "sobrecompra":
+        votos["venda"] += 0.5
+        fatores.append(f"IFR em sobrecompra ({num(ctx.get('ifr', 50)):.0f})")
+    elif _ifr_estado == "sobrevenda":
+        votos["compra"] += 0.5
+        fatores.append(f"IFR em sobrevenda ({num(ctx.get('ifr', 50)):.0f})")
+
+    prev = ctx.get("previsao") or {}
+    _dir_prev = prev.get("direcao_prevista")
+    _conf_prev = num(prev.get("confianca", 0))
+    if _dir_prev in ("compra", "venda") and _conf_prev >= 40:
+        votos[_dir_prev] += (_conf_prev / 100.0) * 2.0
+        fatores.append(f"Robô preditivo aponta {_dir_prev} (confiança {int(_conf_prev)}%)")
+
+    _ab = ctx.get("abertura_info") or {}
+    if _ab.get("tendencia_formando") in ("compra", "venda") and not _ab.get("em_observacao"):
+        votos[_ab["tendencia_formando"]] += 0.5
+        fatores.append(f"Tendência de abertura: {_ab['tendencia_formando']}")
+
+    total = votos["compra"] + votos["venda"]
+    if total <= 0:
+        return {"vies": "neutro", "forca": "neutro", "convicao": 0,
+                "fatores": ["sem sinal técnico dominante nesta leitura"],
+                "resumo": "Gráfico de candles sem direção definida", "contras": contras}
+
+    direcao = "compra" if votos["compra"] > votos["venda"] else "venda"
+    dom = max(votos["compra"], votos["venda"])
+    convicao = int(min(100, round((dom / max(6.0, total)) * 100)))
+    if votos["compra"] > 0 and votos["venda"] > 0:
+        convicao = int(convicao * (1 - min(0.5, min(votos.values()) / dom)))
+    convicao = max(0, convicao - len(contras) * 10)
+    forca = "forte" if convicao >= 55 else ("moderado" if convicao >= 30 else "neutro")
+    vies = direcao if forca != "neutro" else "neutro"
+
+    return {"vies": vies, "forca": forca, "convicao": convicao,
+            "fatores": fatores[:6], "contras": contras,
+            "resumo": f"Gráfico de candles aponta {direcao} · convicção {convicao}%"}
+
+
+def veredito_confluencia_aba(veredito_liq=None, veredito_macro=None, veredito_candles=None):
     """Aba 4 — parte do motor ja calibrado (consolidar_veredito, que ja pondera
     gatilho, previsao, absorcao/book basicos e os setups tecnicos de maior
     acerto medido) e SOMA o voto do painel macro como fonte adicional. Nao
@@ -10706,6 +10791,9 @@ def veredito_confluencia_aba(veredito_liq=None, veredito_macro=None):
     if veredito_liq and veredito_liq.get("vies") in ("compra", "venda"):
         detalhe.append(f"Liquidez {veredito_liq.get('forca')} para {veredito_liq.get('vies')} "
                         f"({veredito_liq.get('convicao', 0)}%)")
+    if veredito_candles and veredito_candles.get("vies") in ("compra", "venda"):
+        detalhe.append(f"Gráfico de candles {veredito_candles.get('forca')} para "
+                        f"{veredito_candles.get('vies')} ({veredito_candles.get('convicao', 0)}%)")
 
     if total <= 0:
         direcao, convicao = base.get("direcao", "indefinida"), int(num(base.get("convicao", 0)))
@@ -10720,7 +10808,7 @@ def veredito_confluencia_aba(veredito_liq=None, veredito_macro=None):
     saida["convicao"] = convicao
     saida["fatores"] = detalhe[:8]
     saida["contras"] = base.get("contras", [])
-    saida["resumo"] = (f"{len(detalhe)} fontes (setups + gatilho + book + macro) apontam "
+    saida["resumo"] = (f"{len(detalhe)} fontes (setups + gatilho + book + macro + candles) apontam "
                         f"{direcao} · convicção {convicao}%")
     return saida
 
@@ -11328,6 +11416,9 @@ with aba_candles:
     botao_analisar("candles")
     _ctx_c = st.session_state.get("ultimo_contexto") or {}
     _dt_c = st.session_state.get("ultimos_dados_tela") or {}
+    _v_candles_top = veredito_candles_aba(_dt_c, _ctx_c)
+    _card_veredito("Painel técnico (momentum · Bollinger · IFR · candle · robô preditivo)",
+                   _v_candles_top, icone="🕯️")
 
     if not _ctx_c or not _dt_c:
         st.info("Execute uma análise para ver os indicadores do gráfico de candles.")
@@ -11444,22 +11535,42 @@ with aba_candles:
 # ============================================================
 with aba_confluencia:
     botao_analisar("confluencia")
+    _dt_conf_top = st.session_state.get("ultimos_dados_tela") or {}
+    _ctx_conf_top = st.session_state.get("ultimo_contexto") or {}
     _v_macro_c, _ = veredito_macro_aba()
     _v_liq_c, _ = veredito_liquidez_aba()
-    _v_final = veredito_confluencia_aba(veredito_liq=_v_liq_c, veredito_macro=_v_macro_c)
-    _card_veredito("Veredito final — setups técnicos + gatilho + book + macro", _v_final, icone="🎯")
+    _v_candles_c = veredito_candles_aba(_dt_conf_top, _ctx_conf_top)
+    _v_final = veredito_confluencia_aba(veredito_liq=_v_liq_c, veredito_macro=_v_macro_c,
+                                         veredito_candles=_v_candles_c)
+    _card_veredito("Veredito final — setups técnicos + gatilho + book + macro + candles",
+                   _v_final, icone="🎯")
 
     st.markdown('<div class="section-title">🧩 Contribuição por fonte</div>', unsafe_allow_html=True)
-    fcol1, fcol2, fcol3 = st.columns(3)
+    _cor_vies = {"compra": "#00e676", "venda": "#ff5252"}.get
+
+    def _linha_fonte(nome, icone, vies, forca, convicao):
+        _v = str(vies or "neutro")
+        _cor = _cor_vies(_v, "#8892a4")
+        st.markdown(f"**{icone} {nome}**")
+        st.markdown(f"<span style='color:{_cor};font-weight:700'>{_v.upper()}</span> · "
+                    f"{forca or '—'} · convicção <b>{int(num(convicao, 0))}%</b>",
+                    unsafe_allow_html=True)
+
+    fcol1, fcol2, fcol3, fcol4 = st.columns(4)
     with fcol1:
-        st.markdown("**🌎 Macro**")
-        st.markdown(f"{_v_macro_c.get('vies','neutro').upper()} · {_v_macro_c.get('forca','—')}")
+        _linha_fonte("Macro", "🌎", _v_macro_c.get("vies"), _v_macro_c.get("forca"),
+                     _v_macro_c.get("convicao", 0))
     with fcol2:
-        st.markdown("**💧 Liquidez**")
-        st.markdown(f"{_v_liq_c.get('vies','neutro').upper()} · {_v_liq_c.get('forca','—')}")
+        _linha_fonte("Liquidez", "💧", _v_liq_c.get("vies"), _v_liq_c.get("forca"),
+                     _v_liq_c.get("convicao", 0))
     with fcol3:
+        _linha_fonte("Candles", "🕯️", _v_candles_c.get("vies"), _v_candles_c.get("forca"),
+                     _v_candles_c.get("convicao", 0))
+    with fcol4:
         st.markdown("**📐 Setups técnicos (gatilho)**")
-        st.markdown(f"{st.session_state.get('ultimo_status_gatilho','AGUARDANDO')}")
+        _sg_conf = st.session_state.get("ultimo_status_gatilho", "AGUARDANDO")
+        _sg_conv = num((st.session_state.get("ultimo_veredito") or {}).get("convicao", 0))
+        st.markdown(f"{_sg_conf} · convicção **{int(_sg_conv)}%**")
 
     st.markdown('<div class="section-title">🎛️ Painel de comando (alvo, stop, RR)</div>', unsafe_allow_html=True)
     _dt_conf = st.session_state.get("ultimos_dados_tela", {})
