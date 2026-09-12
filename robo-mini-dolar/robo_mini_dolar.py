@@ -62,6 +62,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 from PIL import Image
 import pygetwindow as gw
+import win32api
 import win32gui
 import win32ui
 import winsound
@@ -1142,6 +1143,12 @@ if "historico_trades" not in st.session_state:
 defaults = {
     "estrategia_operacional": "Agressividade Média",
     "modo_replay": False,
+    "modo_captura_por_monitor": os.getenv("MODO_CAPTURA_POR_MONITOR", "nao").strip().lower() in (
+        "1", "sim", "true", "yes"),
+    "monitor_grafico_superdom": (
+        os.getenv("MONITOR_GRAFICO_SUPERDOM", "auxiliar").strip().lower()
+        if os.getenv("MONITOR_GRAFICO_SUPERDOM", "auxiliar").strip().lower() in ("notebook", "auxiliar")
+        else "auxiliar"),
     "usar_macro_no_replay": False,
     "replay_data": datetime.now().strftime("%Y-%m-%d"),
     "replay_hora": "09:00",
@@ -2744,6 +2751,107 @@ def _bitblt_regiao_desktop(min_x, min_y, width, height):
         return None
 
 
+def _listar_monitores():
+    """Lista os monitores fisicos conectados via EnumDisplayMonitors: cada um
+    com seu retangulo no desktop virtual (l, top, r, b — pode ter coordenada
+    NEGATIVA se o monitor estiver a esquerda/acima do principal) e se e o
+    monitor PRINCIPAL do Windows (o que tem a barra de tarefas, configurado
+    em Configuracoes > Sistema > Tela)."""
+    monitores = []
+    try:
+        for hmon, _hdc, _rect in win32api.EnumDisplayMonitors():
+            try:
+                info = win32api.GetMonitorInfo(hmon)
+                l, top, r, b = info["Monitor"]
+                monitores.append({
+                    "l": l, "top": top, "r": r, "b": b,
+                    "w": r - l, "h": b - top,
+                    "principal": bool(info.get("Flags", 0) & 1),  # MONITORINFOF_PRIMARY
+                })
+            except Exception:
+                continue
+    except Exception:
+        pass
+    # Principal primeiro, depois os demais da esquerda para a direita —
+    # deixa deterministico qual e "o outro monitor" quando ha mais de 2.
+    monitores.sort(key=lambda m: (not m["principal"], m["l"]))
+    return monitores
+
+
+# Em qual monitor fica a tela do NOTEBOOK: por padrao, o monitor PRINCIPAL do
+# Windows (convencao mais comum — o notebook e o monitor principal e o
+# externo e "estendido" ao lado). Se no seu setup for o contrario (o monitor
+# externo e que esta configurado como principal no Windows), defina a
+# variavel de ambiente MONITOR_NOTEBOOK=auxiliar.
+MONITOR_NOTEBOOK = os.getenv("MONITOR_NOTEBOOK", "principal").strip().lower()
+if MONITOR_NOTEBOOK not in ("principal", "auxiliar"):
+    MONITOR_NOTEBOOK = "principal"
+
+# Modo de captura por MONITOR INTEIRO (em vez de procurar cada janela por
+# palavra-chave). Desligado por padrao para nao mudar o comportamento de
+# quem ja usa o app com um unico monitor. Ligue com
+# MODO_CAPTURA_POR_MONITOR=sim quando o layout for fixo — um monitor com o
+# grafico/SuperDOM, o outro com Livro de Ofertas/T&T — ja que a busca por
+# titulo de janela e fragil quando varias janelas do Profit compartilham o
+# mesmo texto no titulo (ex.: o grafico e o SuperDOM podem ter titulos que
+# batem com a mesma palavra-chave "wdo", fazendo o app pegar a janela
+# errada). Qual monitor e qual painel fica definido em
+# MONITOR_GRAFICO_SUPERDOM ("notebook" ou "auxiliar" — o outro monitor
+# passa a ser usado para Livro de Ofertas / T&T / Agentes).
+MODO_CAPTURA_POR_MONITOR = os.getenv("MODO_CAPTURA_POR_MONITOR", "nao").strip().lower() in (
+    "1", "sim", "true", "yes")
+MONITOR_GRAFICO_SUPERDOM = os.getenv("MONITOR_GRAFICO_SUPERDOM", "auxiliar").strip().lower()
+if MONITOR_GRAFICO_SUPERDOM not in ("notebook", "auxiliar"):
+    MONITOR_GRAFICO_SUPERDOM = "auxiliar"
+MONITOR_LIVRO_TT = "notebook" if MONITOR_GRAFICO_SUPERDOM == "auxiliar" else "auxiliar"
+
+
+def _modo_captura_por_monitor_ativo():
+    """Le a config efetiva: toggle da interface (aba Geral) tem prioridade,
+    variavel de ambiente MODO_CAPTURA_POR_MONITOR e o padrao."""
+    return bool(st.session_state.get("modo_captura_por_monitor", MODO_CAPTURA_POR_MONITOR))
+
+
+def _monitor_grafico_superdom_atual():
+    v = st.session_state.get("monitor_grafico_superdom", MONITOR_GRAFICO_SUPERDOM)
+    return v if v in ("notebook", "auxiliar") else MONITOR_GRAFICO_SUPERDOM
+
+
+def _monitor_livro_tt_atual():
+    return "notebook" if _monitor_grafico_superdom_atual() == "auxiliar" else "auxiliar"
+
+
+def capturar_monitor(qual):
+    """Captura a tela FISICA INTEIRA de um monitor ('notebook' ou
+    'auxiliar'), em vez de tentar achar uma janela especifica por titulo.
+
+    Existe porque o casamento por titulo de janela e fragil quando varias
+    janelas do Profit compartilham o mesmo texto no titulo (ex: o grafico
+    e o book podem ter titulos que batem com a mesma palavra-chave "wdo") —
+    a captura por MONITOR e determinista: nao depende de qual janela esta
+    'na frente' nem de como o Profit rotulou cada aba, so da POSICAO FISICA
+    da tela onde o usuario organizou os paineis."""
+    monitores = _listar_monitores()
+    if not monitores:
+        return None, "Nenhum monitor detectado (EnumDisplayMonitors falhou)."
+
+    quer_principal = (qual == MONITOR_NOTEBOOK)
+    alvo = next((m for m in monitores if m["principal"] == quer_principal), None)
+    if alvo is None:
+        if len(monitores) == 1:
+            alvo = monitores[0]
+        else:
+            return None, f"Monitor '{qual}' não identificado entre os {len(monitores)} detectados."
+
+    img = _capturar_regiao_tela_direta(alvo["l"], alvo["top"], alvo["w"], alvo["h"])
+    if img is None:
+        return None, f"Falha ao capturar o monitor '{qual}' ({alvo['w']}x{alvo['h']}px em {alvo['l']},{alvo['top']})."
+    if _imagem_esta_em_branco(img):
+        return img, (f"Monitor '{qual}' capturado, mas a imagem parece em branco/preta "
+                      f"({alvo['w']}x{alvo['h']}px em {alvo['l']},{alvo['top']}).")
+    return img, f"Monitor '{qual}' capturado ({alvo['w']}x{alvo['h']}px em {alvo['l']},{alvo['top']})"
+
+
 def _encontrar_janelas_por_palavras(palavras, area_minima=2500):
     """Retorna lista de dicts {titulo, hwnd, l, top, r, b} para todas as janelas
     cujo titulo contem alguma palavra da lista."""
@@ -3154,6 +3262,10 @@ def _capturar_por_palavras_forcado(palavras, nome_amigavel, preferir_bitblt=True
 
 def capturar_janela():
     """Captura o gráfico principal."""
+    if _modo_captura_por_monitor_ativo():
+        img, msg = capturar_monitor(_monitor_grafico_superdom_atual())
+        st.session_state.ultimo_titulo_capturado = msg
+        return img, msg
     palavras = ["1 dolar mini", "dolar mini", "wdofut", "wdo", "minuto", "gráfico", "grafico",
                 "replay", "wdov", "wdoz", "wdoq", "wdox", "wdoj", "wdon", "wdom"]
     img, msg = _capturar_por_palavras_forcado(palavras, "Gráfico")
@@ -3173,6 +3285,11 @@ def capturar_SuperDom():
     """Captura SuperDOM. A ladder de execucao do simulador ('S Simulador
     **numero...') e o MESMO tipo de painel (precos + qtde compra/venda) —
     por isso 'simulador'/'sim ' entram nas palavras-chave, nao so 'dom'."""
+    if _modo_captura_por_monitor_ativo():
+        img, msg = capturar_monitor(_monitor_grafico_superdom_atual())
+        if img is not None:
+            st.session_state["ultimo_titulo_superdom"] = msg
+        return img, msg
     palavras = ["superdom", "super dom", "dom", "boleta", "simulador", "sim ", "book de ofertas"]
     img, msg = _capturar_por_palavras_forcado(palavras, "SuperDOM", preferir_bitblt=False)
     if img is not None:
@@ -3213,6 +3330,11 @@ def _janelas_wdofut_ordenadas():
 
 def capturar_times_trades_ordem_original():
     """Captura o Times & Trades na aba ORDEM ORIGINAL (1ª janela da esquerda)."""
+    if _modo_captura_por_monitor_ativo():
+        img, msg = capturar_monitor(_monitor_livro_tt_atual())
+        if img is not None:
+            st.session_state["ultimo_titulo_tt_oo"] = msg
+        return img, msg
     # 1ª tentativa: palavras específicas da aba Ordem Original
     palavras = ["ordem original", "compradora", "vendedora", "agressor", "hora comprad"]
     img, msg = _capturar_por_palavras_forcado(palavras, "T&T Ordem Original", preferir_bitblt=False)
@@ -3261,6 +3383,11 @@ def capturar_times_trades_ordem_original():
 def capturar_times_trades():
     """Captura Times & Trades. Testa múltiplas palavras-chave e, se falhar,
     tenta pegar a 2ª/3ª maior janela WDOFUT (quando o Profit reusa o título)."""
+    if _modo_captura_por_monitor_ativo():
+        img, msg = capturar_monitor(_monitor_livro_tt_atual())
+        if img is not None:
+            st.session_state["ultimo_titulo_tt"] = msg
+        return img, msg
     palavras = [
         "times", "trades", "t&t", "t & t", "tape", "time", "sales",
         "negocios", "negócios", "negociacao", "negociação",
@@ -3293,6 +3420,11 @@ def capturar_times_trades():
 def capturar_livro_ofertas():
     """Captura Livro de Ofertas (inclui a variante 'Livro Visual', o mesmo book
     em representacao grafica, e a aba agregada 'Saldo' de compra/venda)."""
+    if _modo_captura_por_monitor_ativo():
+        img, msg = capturar_monitor(_monitor_livro_tt_atual())
+        if img is not None:
+            st.session_state["ultimo_titulo_livro"] = msg
+        return img, msg
     palavras = ["livro", "ofertas", "book", "order", "depth", "profundidade",
                 "livro visual", "saldo"]
     img, msg = _capturar_por_palavras_forcado(palavras, "Livro de Ofertas", preferir_bitblt=False)
@@ -3359,6 +3491,11 @@ def capturar_todas_janelas_profit(max_janelas=6):
 def capturar_agentes():
     """Captura o painel de Agentes / Negociação / Pressão / Descrição.
     Se as palavras-chave falharem, tenta a 3ª maior janela WDOFUT (fallback)."""
+    if _modo_captura_por_monitor_ativo():
+        img, msg = capturar_monitor(_monitor_livro_tt_atual())
+        if img is not None:
+            st.session_state["ultimo_titulo_agentes"] = msg
+        return img, msg
     palavras = [
         "negociacao", "negociação", "pressao", "pressão",
         "descricao", "descrição", "agentes", "corretoras", "ranking",
@@ -10953,6 +11090,35 @@ with aba_geral:
                    "(virtual screen inteiro) — funciona com coordenada negativa, caso "
                    "do monitor à esquerda/acima do principal.")
 
+        st.markdown("**🖥️🖥️ Captura por monitor inteiro (layout fixo em 2 telas)**")
+        st.caption("Em vez de procurar cada painel por título de janela (frágil quando "
+                   "duas janelas do Profit têm texto parecido no título), captura a tela "
+                   "FÍSICA inteira de cada monitor e deixa a IA achar o que precisa "
+                   "dentro dela. Use quando o layout das janelas for sempre o mesmo.")
+        _monitores_det = _listar_monitores()
+        if _monitores_det:
+            st.dataframe(pd.DataFrame(_monitores_det), use_container_width=True, hide_index=True)
+        else:
+            st.warning("Não foi possível detectar os monitores (EnumDisplayMonitors falhou).")
+        colm1, colm2 = st.columns(2)
+        colm1.toggle("Ativar captura por monitor inteiro", key="modo_captura_por_monitor")
+        colm2.selectbox(
+            "Gráfico + SuperDOM ficam no monitor:",
+            options=["auxiliar", "notebook"],
+            key="monitor_grafico_superdom",
+            help="O outro monitor (o que você NÃO escolher aqui) passa a ser usado para "
+                 "Livro de Ofertas / T&T / Agentes.")
+        colmb1, colmb2 = st.columns(2)
+        if colmb1.button("🖥️ Capturar monitor NOTEBOOK", key="btn_teste_cap_monitor_notebook"):
+            _im, _ms = capturar_monitor("notebook")
+            if _im is not None: st.image(_im, caption=f"Monitor notebook — {_ms}", width=700)
+            else: st.error(_ms)
+        if colmb2.button("🖥️ Capturar monitor AUXILIAR", key="btn_teste_cap_monitor_auxiliar"):
+            _im, _ms = capturar_monitor("auxiliar")
+            if _im is not None: st.image(_im, caption=f"Monitor auxiliar — {_ms}", width=700)
+            else: st.error(_ms)
+
+        st.divider()
         colt1, colt2, colt3, colt4, colt5 = st.columns(5)
         if colt1.button("📈 Gráfico", key="btn_teste_cap_grafico"):
             _im, _ms = capturar_janela()
