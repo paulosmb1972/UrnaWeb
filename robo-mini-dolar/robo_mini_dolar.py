@@ -3596,14 +3596,44 @@ def imagem_para_b64(img, largura_max=1280, qualidade=72):
         return base64.b64encode(buf.getvalue()).decode()
 
 
+def _recorte_legenda_indicadores(img, fracao_largura=0.42):
+    """Recorta a faixa vertical esquerda do grafico, onde o Profit empilha a
+    legenda de indicadores (Pivot, Detector de Topos e Fundos, Media Movel E
+    e A, VWAP Band, VWAP D etc.). Enviada como imagem extra: nessa faixa o
+    texto e pequeno e denso (varias linhas com numeros colados), e some na
+    imagem inteira depois que ela e redimensionada para caber os candles —
+    e por isso mm20/mm50/mm200 vinham 0.0 mesmo com a mm9 (a primeira da
+    lista, mais perto do topo) sendo lida direito."""
+    try:
+        w, h = img.size
+        if w < 100 or h < 100:
+            return None
+        return img.crop((0, 0, max(1, int(w * fracao_largura)), h))
+    except Exception:
+        return None
+
+
 def extrair_dados_tela(img, modo_replay=False):
     # Grafico precisa de mais resolucao: os numeros das medias sao pequenos.
     b64 = imagem_para_b64(img, largura_max=1500, qualidade=78)
+
+    # Recorte em resolucao dedicada da faixa de indicadores (ver funcao acima)
+    # — a IA recebe as DUAS imagens juntas nesta mesma chamada.
+    _legenda_img = _recorte_legenda_indicadores(img)
+    _b64_legenda = (imagem_para_b64(_legenda_img, largura_max=900, qualidade=88)
+                     if _legenda_img is not None else None)
 
     prompt = """
 Extraia os dados objetivos visiveis na tela do Profit/Replay.
 Responda apenas em JSON valido. Nao use markdown. Se nao conseguir ler um campo use 0.0 ou string vazia.
 Para preco_atual use o fechamento marcado como F no topo. Nao invente valores.
+
+Voce recebe DUAS imagens (quando a segunda existir): a primeira e o grafico
+completo; a SEGUNDA e um recorte AMPLIADO, em resolucao maior, da mesma
+faixa esquerda de indicadores que aparece na primeira imagem (Pivot,
+Detector de Topos e Fundos, Media Movel E, VWAP Band, Media Movel A, VWAP D
+etc.) — use a segunda imagem de preferencia para ler mm9/mm20/mm50/mm200,
+ja que nela o texto fica maior e mais legivel do que na imagem completa.
 
 CRITICO — VALIDE A ARITMETICA ANTES DE FECHAR O JSON:
 1. "maxima" NUNCA pode ser menor que "minima". Se a leitura violar isso, releia os dois campos.
@@ -3654,6 +3684,8 @@ CRITICO — VALIDE A ARITMETICA ANTES DE FECHAR O JSON:
         {"type": "text", "text": prompt},
         {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}},
     ]
+    if _b64_legenda:
+        partes.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{_b64_legenda}"}})
 
     content = chamar_openrouter(partes, temperature=0.0, timeout=40)
     if not content:
