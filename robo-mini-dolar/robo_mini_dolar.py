@@ -150,6 +150,76 @@ CHAVE_OPENROUTER = os.getenv("OPENROUTER_API_KEY", "").strip()
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODELO_OPENROUTER = os.getenv("OPENROUTER_MODEL", "google/gemini-2.5-flash").strip()
 
+# =============================================================================
+# FONTE DE DADOS DE MERCADO — captura de tela nao e a UNICA fonte possivel
+# =============================================================================
+# Por padrao o app le tudo via captura de tela + IA de visao (funciona com
+# qualquer plataforma, mas depende da janela estar visivel/legivel e da IA
+# acertar a leitura). Quando uma fonte alternativa estiver configurada E
+# disponivel no momento, ela e tentada PRIMEIRO em obter_dados_mercado_externo();
+# a captura de tela nunca e removida — continua sendo o fallback automatico
+# quando a fonte alternativa nao responde.
+#
+# FONTE_DADOS_MERCADO=captura_tela (padrao) — nenhuma mudanca de comportamento.
+# FONTE_DADOS_MERCADO=profitdll — usa a ProfitDLL oficial da Nelogica (dados
+#   em tempo real via DLL, sem depender de screenshot). Exige (1) a DLL
+#   liberada pela sua corretora/Nelogica, apontada em PROFITDLL_PATH, e (2)
+#   completar as chamadas de login/callback da DLL em _profitdll_conectar()
+#   — a assinatura exata varia por versao entregue pela corretora, por isso
+#   fica como ponto de extensao em vez de uma integracao "adivinhada".
+FONTE_DADOS_MERCADO = os.getenv("FONTE_DADOS_MERCADO", "captura_tela").strip().lower()
+PROFITDLL_PATH = os.getenv("PROFITDLL_PATH", "").strip()
+_profitdll_estado = {"dll": None, "conectado": False, "erro": ""}
+
+
+def _profitdll_conectar():
+    """Carrega e conecta a ProfitDLL uma unica vez por sessao. So e chamada
+    quando FONTE_DADOS_MERCADO=profitdll; se a DLL nao estiver configurada,
+    devolve False sem lancar excecao — o app cai para captura de tela."""
+    if _profitdll_estado["conectado"]:
+        return True
+    if not PROFITDLL_PATH or not os.path.exists(PROFITDLL_PATH):
+        _profitdll_estado["erro"] = (
+            "FONTE_DADOS_MERCADO=profitdll mas PROFITDLL_PATH nao aponta para um "
+            "arquivo existente. Baixe a ProfitDLL com a Nelogica/sua corretora, "
+            "defina PROFITDLL_PATH e implemente o login em _profitdll_conectar(). "
+            "Ate la a leitura continua sendo feita por captura de tela.")
+        return False
+    try:
+        _profitdll_estado["dll"] = ctypes.WinDLL(PROFITDLL_PATH)
+        # TODO (integracao especifica da corretora/versao da DLL): chamar aqui
+        # a rotina de login e registrar os callbacks de cotacao/book/trade
+        # conforme o manual da ProfitDLL (ex.: DLLInitializeLogin,
+        # SetStateCallback, SetNewTradeCallback, SetOfferBookCallbackV2...).
+        # Sem isso a conexao "abre" mas nenhum dado chega — por isso o app
+        # so troca de fonte de verdade quando obter_dados_mercado_externo()
+        # comecar a devolver um dict preenchido (ver abaixo).
+        _profitdll_estado["conectado"] = True
+        _profitdll_estado["erro"] = ""
+        return True
+    except Exception as e:
+        _profitdll_estado["erro"] = f"Falha ao carregar ProfitDLL ({PROFITDLL_PATH}): {e}"
+        return False
+
+
+def obter_dados_mercado_externo(ativo=""):
+    """Ponto de extensao para uma fonte de dados que NAO seja captura de
+    tela. Devolve um dict no MESMO formato de extrair_dados_tela (preco_atual,
+    abertura, maxima, minima, mm9..mm200, volume, etc.) quando a fonte
+    alternativa estiver disponivel, ou None quando nao estiver — nesse caso
+    executar_analise() usa a captura de tela normalmente, sem quebrar nada."""
+    if FONTE_DADOS_MERCADO != "profitdll":
+        return None
+    if not _profitdll_conectar():
+        return None
+    # TODO: montar o dict a partir do ultimo snapshot de cotacao/book recebido
+    # via callback da ProfitDLL (guardado em _profitdll_estado ou em
+    # st.session_state pelo callback). Enquanto essa integracao nao estiver
+    # completa, devolve None de proposito — a captura de tela continua sendo
+    # a fonte real, e nao ha risco de o app operar com dados incompletos.
+    return None
+
+
 def validar_config_openrouter():
     if not CHAVE_OPENROUTER:
         raise RuntimeError("A variável de ambiente OPENROUTER_API_KEY não foi definida.")
@@ -2829,11 +2899,24 @@ def _capturar_por_palavras_background(palavras, nome_amigavel):
     return _capturar_janela_por_hwnd(j["hwnd"], nome_amigavel)
 
 
-# Adicione esta linha logo após os imports para garantir permissão de DPI no Windows
+# DPI awareness correta para multi-monitor: SetProcessDPIAware() (legado) so
+# declara "system DPI aware" — com dois monitores em escalas DIFERENTES
+# (ex: notebook a 150%, monitor externo a 100%) o Windows PASSA A VIRTUALIZAR
+# coordenadas/bitmap do processo no monitor "errado", e GetWindowRect/BitBlt
+# capturam a janela deslocada, cortada ou em preto conforme o monitor.
+# PER_MONITOR_AWARE_V2 (Windows 10 1703+) faz o processo receber coordenadas
+# fisicas reais em QUALQUER monitor, o que é o que BitBlt/GetWindowRect
+# precisam para capturar corretamente jenelas fora do monitor principal.
 try:
-    ctypes.windll.user32.SetProcessDPIAware()
+    ctypes.windll.user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))  # DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
 except Exception:
-    pass
+    try:
+        ctypes.windll.shcore.SetProcessDpiAwareness(2)  # PROCESS_PER_MONITOR_DPI_AWARE (Windows 8.1+)
+    except Exception:
+        try:
+            ctypes.windll.user32.SetProcessDPIAware()  # ultimo recurso (Vista+, sem suporte multi-monitor)
+        except Exception:
+            pass
 
 
 def _capturar_regiao_tela_direta(left, top, width, height):
@@ -2918,16 +3001,47 @@ def _printwindow_regiao(hwnd, w, h, nome_amigavel, titulo_ou_classe):
     return None, None
 
 
-def _capturar_por_palavras_forcado(palavras, nome_amigavel):
+def _capturar_regiao_hibrida(hwnd, l, top, w, h, nome_amigavel, preferir_bitblt=False):
+    """Mesma logica de PrintWindow/BitBlt com fallback do
+    _capturar_por_palavras_forcado, para os fallbacks POSICIONAIS (janela ja
+    localizada por ordem/tamanho, nao por palavra-chave). Sem isso esses
+    fallbacks so usavam BitBlt puro e voltavam a falhar em segundo plano ou
+    em outro monitor exatamente como o bug original da captura do grafico."""
+    if preferir_bitblt:
+        img = _capturar_regiao_tela_direta(l, top, w, h)
+        if img is not None and not _imagem_esta_em_branco(img):
+            return img
+        img_pw, _ = _printwindow_regiao(hwnd, w, h, nome_amigavel, "")
+        return img_pw if img_pw is not None else img
+    img_pw, _ = _printwindow_regiao(hwnd, w, h, nome_amigavel, "")
+    if img_pw is not None:
+        return img_pw
+    return _capturar_regiao_tela_direta(l, top, w, h)
+
+
+def _capturar_por_palavras_forcado(palavras, nome_amigavel, preferir_bitblt=True):
     """
     Busca a janela por palavras-chave em qualquer título ativo do Windows,
-    incluindo correspondências parciais e tolerância a abreviações do Profit,
-    e captura via BitBlt direto do desktop (o metodo que de fato funciona
-    com o grafico do Profit, que e renderizado por GPU). PrintWindow so entra
-    como fallback quando a janela esta minimizada/coberta e o BitBlt falha ou
-    devolve tela preta — tentar PrintWindow primeiro era o bug: ele "tem
-    sucesso" e devolve frame preto no grafico, entao o app nunca caia no
-    metodo que funciona.
+    incluindo correspondências parciais e tolerância a abreviações do Profit.
+
+    Dois métodos de captura, com ordem que depende de 'preferir_bitblt':
+    - BitBlt direto do desktop: único que funciona no gráfico (renderizado
+      por GPU — PrintWindow devolve tela preta nele mesmo "com sucesso").
+      Em compensação, só enxerga o que estiver REALMENTE visível na tela:
+      falha se a janela estiver minimizada, coberta por outra, ou fora dos
+      limites do monitor (coordenadas/DPI errados em multi-monitor).
+    - PrintWindow (PW_RENDERFULLCONTENT): pede à PRÓPRIA janela para se
+      redesenhar no nosso bitmap, então funciona em segundo plano, coberta
+      por outra janela, ou minimizada — sem depender de onde ela está na
+      tela. Só não serve para o gráfico (GPU).
+
+    preferir_bitblt=True (padrão, usado no gráfico): tenta BitBlt primeiro.
+    preferir_bitblt=False (paineis de tabela/texto — book, T&T, agentes,
+    SuperDOM): tenta PrintWindow primeiro, já que esses paineis não são
+    acelerados por GPU e isso resolve captura em segundo plano ou em
+    qualquer monitor sem depender da janela estar em primeiro plano.
+    Em ambos os casos o outro método entra como fallback se o preferido
+    falhar ou devolver imagem em branco/preta.
     """
     palavras_low = [p.lower() for p in palavras]
     candidatos = []
@@ -2975,19 +3089,41 @@ def _capturar_por_palavras_forcado(palavras, nome_amigavel):
     l, top, w, h = melhor["l"], melhor["top"], melhor["w"], melhor["h"]
     titulo_ou_classe = melhor["titulo"] or melhor["classe"]
 
-    # 1) BitBlt direto do desktop: funciona mesmo com o grafico acelerado por GPU,
-    # desde que a janela esteja visivel na tela (nao minimizada/nao coberta).
-    img_bitblt = _capturar_regiao_tela_direta(l, top, w, h)
-    if img_bitblt is not None and not _imagem_esta_em_branco(img_bitblt):
-        return img_bitblt, f"{nome_amigavel} capturado: '{titulo_ou_classe}' ({w}x{h}px)"
+    if preferir_bitblt:
+        # 1) BitBlt direto do desktop: funciona mesmo com o grafico acelerado
+        # por GPU, desde que a janela esteja visivel na tela (nao minimizada/
+        # nao coberta).
+        img_bitblt = _capturar_regiao_tela_direta(l, top, w, h)
+        if img_bitblt is not None and not _imagem_esta_em_branco(img_bitblt):
+            return img_bitblt, f"{nome_amigavel} capturado: '{titulo_ou_classe}' ({w}x{h}px)"
 
-    # 2) Fallback: PrintWindow (unico jeito de capturar janela minimizada/coberta).
+        # 2) Fallback: PrintWindow (unico jeito de capturar janela minimizada/
+        # coberta ou fora da area visivel do monitor).
+        img_pw, msg_pw = _printwindow_regiao(melhor["hwnd"], w, h, nome_amigavel, titulo_ou_classe)
+        if img_pw is not None:
+            return img_pw, msg_pw
+
+        # 3) Nenhum metodo deu uma imagem util: devolve o BitBlt mesmo que
+        # preto, com aviso, em vez de descartar a leitura por completo.
+        if img_bitblt is not None:
+            return img_bitblt, (f"{nome_amigavel} capturado, mas a imagem parece em branco/preta: "
+                                 f"'{titulo_ou_classe}' ({w}x{h}px). Verifique se a janela nao esta "
+                                 f"minimizada ou coberta por outra.")
+        return None, f"Falha total na captura de {nome_amigavel}."
+
+    # Paineis de tabela/texto (nao sao GPU): PrintWindow primeiro — funciona
+    # em segundo plano, coberto por outra janela, minimizado ou em qualquer
+    # monitor, sem depender de coordenada de tela nem de estar em primeiro
+    # plano no momento da leitura.
     img_pw, msg_pw = _printwindow_regiao(melhor["hwnd"], w, h, nome_amigavel, titulo_ou_classe)
     if img_pw is not None:
         return img_pw, msg_pw
 
-    # 3) Nenhum metodo deu uma imagem util: devolve o BitBlt mesmo que preto, com
-    # aviso, em vez de descartar a leitura por completo.
+    # Fallback: BitBlt (cobre o caso raro de PrintWindow falhar nesse painel).
+    img_bitblt = _capturar_regiao_tela_direta(l, top, w, h)
+    if img_bitblt is not None and not _imagem_esta_em_branco(img_bitblt):
+        return img_bitblt, (f"{nome_amigavel} capturado (via tela, PrintWindow falhou): "
+                             f"'{titulo_ou_classe}' ({w}x{h}px)")
     if img_bitblt is not None:
         return img_bitblt, (f"{nome_amigavel} capturado, mas a imagem parece em branco/preta: "
                              f"'{titulo_ou_classe}' ({w}x{h}px). Verifique se a janela nao esta "
@@ -3017,7 +3153,7 @@ def capturar_SuperDom():
     **numero...') e o MESMO tipo de painel (precos + qtde compra/venda) —
     por isso 'simulador'/'sim ' entram nas palavras-chave, nao so 'dom'."""
     palavras = ["superdom", "super dom", "dom", "boleta", "simulador", "sim ", "book de ofertas"]
-    img, msg = _capturar_por_palavras_forcado(palavras, "SuperDOM")
+    img, msg = _capturar_por_palavras_forcado(palavras, "SuperDOM", preferir_bitblt=False)
     if img is not None:
         st.session_state["ultimo_titulo_superdom"] = msg
         return img, msg
@@ -3028,7 +3164,7 @@ def capturar_SuperDom():
     if len(janelas_wdo) >= 3:
         j = janelas_wdo[2]
         l, top, w, h = j["l"], j["top"], j["r"] - j["l"], j["b"] - j["top"]
-        img = _bitblt_regiao_desktop(l, top, w, h)
+        img = _capturar_regiao_hibrida(j["hwnd"], l, top, w, h, "SuperDOM")
         if img is not None:
             _msg = f"SuperDOM capturado (fallback 3ª janela WDOFUT/Simulador): '{j['titulo']}' ({w}x{h}px em {l},{top})"
             st.session_state["ultimo_titulo_superdom"] = _msg
@@ -3058,7 +3194,7 @@ def capturar_times_trades_ordem_original():
     """Captura o Times & Trades na aba ORDEM ORIGINAL (1ª janela da esquerda)."""
     # 1ª tentativa: palavras específicas da aba Ordem Original
     palavras = ["ordem original", "compradora", "vendedora", "agressor", "hora comprad"]
-    img, msg = _capturar_por_palavras_forcado(palavras, "T&T Ordem Original")
+    img, msg = _capturar_por_palavras_forcado(palavras, "T&T Ordem Original", preferir_bitblt=False)
     if img is not None:
         st.session_state["ultimo_titulo_tt_oo"] = msg
         return img, msg
@@ -3067,7 +3203,7 @@ def capturar_times_trades_ordem_original():
     if len(janelas) >= 1:
         j = janelas[0]
         l, top, w, h = j["l"], j["top"], j["r"]-j["l"], j["b"]-j["top"]
-        img = _bitblt_regiao_desktop(l, top, w, h)
+        img = _capturar_regiao_hibrida(j["hwnd"], l, top, w, h, "T&T Ordem Original")
         if img is not None:
             _msg = f"T&T Ordem Original (1ª janela): '{j['titulo']}' ({w}x{h}px)"
             st.session_state["ultimo_titulo_tt_oo"] = _msg
@@ -3093,7 +3229,7 @@ def capturar_times_trades_ordem_original():
         _cand.sort(key=lambda x: (x["r"] - x["l"]) * (x["b"] - x["top"]), reverse=True)
         j = _cand[0]
         l, top, w, h = j["l"], j["top"], j["r"]-j["l"], j["b"]-j["top"]
-        img = _bitblt_regiao_desktop(l, top, w, h)
+        img = _capturar_regiao_hibrida(j["hwnd"], l, top, w, h, "T&T Ordem Original")
         if img is not None:
             _msg = f"T&T Ordem Original capturado (janela ampla): '{j['titulo']}' ({w}x{h}px)"
             st.session_state["ultimo_titulo_tt_oo"] = _msg
@@ -3111,7 +3247,7 @@ def capturar_times_trades():
         "4 times", "5 times", "hora comprad", "book de negoc",
         "fluxo de negoc", "ordens executadas", "execuc", "tempo e vendas",
     ]
-    img, msg = _capturar_por_palavras_forcado(palavras, "Times & Trades")
+    img, msg = _capturar_por_palavras_forcado(palavras, "Times & Trades", preferir_bitblt=False)
     if img is not None:
         st.session_state["ultimo_titulo_tt"] = msg
         return img, msg
@@ -3125,7 +3261,7 @@ def capturar_times_trades():
         # 1ª é o gráfico, 2ª costuma ser o T&T ou Ordem Original
         j = janelas_wdo[1]
         l, top, w, h = j["l"], j["top"], j["r"]-j["l"], j["b"]-j["top"]
-        img = _bitblt_regiao_desktop(l, top, w, h)
+        img = _capturar_regiao_hibrida(j["hwnd"], l, top, w, h, "Times & Trades")
         if img is not None:
             _msg = f"Times & Trades capturado (fallback 2ª janela WDOFUT): '{j['titulo']}' ({w}x{h}px em {l},{top})"
             st.session_state["ultimo_titulo_tt"] = _msg
@@ -3138,7 +3274,7 @@ def capturar_livro_ofertas():
     em representacao grafica, e a aba agregada 'Saldo' de compra/venda)."""
     palavras = ["livro", "ofertas", "book", "order", "depth", "profundidade",
                 "livro visual", "saldo"]
-    img, msg = _capturar_por_palavras_forcado(palavras, "Livro de Ofertas")
+    img, msg = _capturar_por_palavras_forcado(palavras, "Livro de Ofertas", preferir_bitblt=False)
     if img is not None:
         st.session_state["ultimo_titulo_livro"] = msg
         return img, msg
@@ -3149,7 +3285,7 @@ def capturar_livro_ofertas():
     if janelas_wdo:
         j = janelas_wdo[-1]
         l, top, w, h = j["l"], j["top"], j["r"] - j["l"], j["b"] - j["top"]
-        img = _bitblt_regiao_desktop(l, top, w, h)
+        img = _capturar_regiao_hibrida(j["hwnd"], l, top, w, h, "Livro de Ofertas")
         if img is not None:
             _msg = f"Livro de Ofertas capturado (fallback última janela WDOFUT): '{j['titulo']}' ({w}x{h}px em {l},{top})"
             st.session_state["ultimo_titulo_livro"] = _msg
@@ -3192,7 +3328,7 @@ def capturar_todas_janelas_profit(max_janelas=6):
         w, h = j["r"] - j["l"], j["b"] - j["top"]
         if w < 200 or h < 120:
             continue
-        img = _bitblt_regiao_desktop(l, top, w, h)
+        img = _capturar_regiao_hibrida(j["hwnd"], l, top, w, h, j["titulo"] or "janela Profit")
         if img is not None:
             resultado.append({"img": img, "titulo": j["titulo"],
                               "largura": w, "altura": h, "left": l, "top": top})
@@ -3213,7 +3349,7 @@ def capturar_agentes():
         # ranking de corretoras por volume negociado (% + Vol.Fin + Vol.Qtd + Média)
         "volume at market", "vol. fin", "vol.fin", "vol. qtd"
     ]
-    img, msg = _capturar_por_palavras_forcado(palavras, "Agentes")
+    img, msg = _capturar_por_palavras_forcado(palavras, "Agentes", preferir_bitblt=False)
     if img is not None:
         st.session_state["ultimo_titulo_agentes"] = msg
         return img, msg
@@ -3227,7 +3363,7 @@ def capturar_agentes():
     if len(janelas_wdo) >= 3:
         j = janelas_wdo[2]
         l, top, w, h = j["l"], j["top"], j["r"]-j["l"], j["b"]-j["top"]
-        img = _bitblt_regiao_desktop(l, top, w, h)
+        img = _capturar_regiao_hibrida(j["hwnd"], l, top, w, h, "Agentes")
         if img is not None:
             _msg = f"Agentes capturado (fallback 3ª janela WDOFUT): '{j['titulo']}' ({w}x{h}px em {l},{top})"
             st.session_state["ultimo_titulo_agentes"] = _msg
@@ -3238,7 +3374,7 @@ def capturar_agentes():
         janelas_sim = sorted(janelas_sim, key=lambda j: (j["r"]-j["l"])*(j["b"]-j["top"]), reverse=True)
         j = janelas_sim[0]
         l, top, w, h = j["l"], j["top"], j["r"]-j["l"], j["b"]-j["top"]
-        img = _bitblt_regiao_desktop(l, top, w, h)
+        img = _capturar_regiao_hibrida(j["hwnd"], l, top, w, h, "Agentes")
         if img is not None:
             _msg = f"Agentes capturado (fallback janela Simulador): '{j['titulo']}' ({w}x{h}px em {l},{top})"
             st.session_state["ultimo_titulo_agentes"] = _msg
@@ -7467,15 +7603,26 @@ def _contexto_fallback_seguro(dados_tela: Dict[str, Any],
 
 def executar_analise():
     ignorar_macro = st.session_state.modo_replay and not st.session_state.usar_macro_no_replay
-    img, msg = capturar_janela()
-    if img is None:
-        st.session_state.ultimo_diagnostico = msg
-        return None, msg
 
-    dados_tela = extrair_dados_tela(img, st.session_state.modo_replay)
-    if not dados_tela:
-        st.session_state.ultimo_diagnostico = "Nao foi possivel extrair dados da tela."
-        return img, msg
+    # Fonte alternativa de dados (ex.: ProfitDLL) tem prioridade quando
+    # configurada e disponivel; captura de tela e o fallback automatico,
+    # incluindo quando a fonte alternativa nao esta configurada (padrao).
+    _ativo_ref = ativo_canonico((st.session_state.get("ultimos_dados_tela") or {}).get("ativo", ""))
+    dados_tela = obter_dados_mercado_externo(_ativo_ref)
+    img, msg = None, ""
+    if dados_tela:
+        msg = f"Dados de mercado lidos via {FONTE_DADOS_MERCADO} (sem captura de tela)."
+        st.session_state.ultimo_diagnostico = msg
+    else:
+        img, msg = capturar_janela()
+        if img is None:
+            st.session_state.ultimo_diagnostico = msg
+            return None, msg
+
+        dados_tela = extrair_dados_tela(img, st.session_state.modo_replay)
+        if not dados_tela:
+            st.session_state.ultimo_diagnostico = "Nao foi possivel extrair dados da tela."
+            return img, msg
 
     # Modo replay: o relogio LIDO DA TELA do Profit tem prioridade absoluta.
     # O campo manual so e usado quando a IA nao conseguiu ler o relogio.
@@ -7594,9 +7741,15 @@ def executar_analise():
     img_fluxo_book = img_sd if img_sd is not None else img_livro
 
     # Fallback: se tudo falhar, usa a imagem principal (IA extrai o que estiver visivel nela)
-    if img_fluxo_book is None and img_tt2 is None:
+    if img_fluxo_book is None and img_tt2 is None and img is not None:
         fluxo = analisar_fluxo_com_ia(img, None)
         st.session_state["fonte_fluxo"] = "janela_principal (fallback)"
+    elif img_fluxo_book is None and img_tt2 is None:
+        # Sem nenhuma imagem disponivel (fonte externa sem captura de tela) —
+        # devolve fluxo neutro em vez de chamar a IA de visao sem imagem.
+        fluxo = {"resumo_fluxo": "", "vies_fluxo": "indefinido", "dominancia": "indefinido",
+                 "saldo_agressao": "", "pressao_compradora": 0, "pressao_vendedora": 0}
+        st.session_state["fonte_fluxo"] = f"indisponivel (fonte {FONTE_DADOS_MERCADO} sem imagem)"
     else:
         fluxo = analisar_fluxo_com_ia(img_fluxo_book, img_tt2)
         _fontes = []
@@ -7632,7 +7785,12 @@ def executar_analise():
         st.session_state["ultimo_erro_analise"] = f"{type(_e_ctx).__name__}: {_e_ctx}"
         contexto = _contexto_fallback_seguro(dados_tela, st.session_state.get("ultimo_contexto"))
     st.session_state["ultimo_contexto"] = contexto
-    ia = analisar_com_ia(img, dados_tela, contexto, fech_ant, ignorar_macro)
+    if img is not None:
+        ia = analisar_com_ia(img, dados_tela, contexto, fech_ant, ignorar_macro)
+    else:
+        # Fonte externa sem imagem: nao ha "confirmacao visual" para auditar.
+        ia = {"confirmacao_visual": "N/A — dados via " + FONTE_DADOS_MERCADO,
+              "auditoria_completa": "", "status_tt": ""}
     st.session_state['ultima_auditoria_ia'] = ia.get("auditoria_completa", "")
 
     est = contexto["estrategia"]; acao = contexto["acao_objetiva"]
@@ -10671,6 +10829,14 @@ with aba_geral:
 
     st.markdown('<div class="section-title">🩺 Diagnóstico de captura</div>', unsafe_allow_html=True)
     st.caption(st.session_state.get("ultimo_diagnostico", "Aguardando primeira análise..."))
+    if FONTE_DADOS_MERCADO != "captura_tela":
+        _pd_erro = _profitdll_estado.get("erro", "")
+        if _profitdll_estado.get("conectado"):
+            st.caption(f"Fonte de dados configurada: **{FONTE_DADOS_MERCADO}** (conectada).")
+        else:
+            st.warning(f"Fonte de dados configurada como **{FONTE_DADOS_MERCADO}**, mas ainda não conectada"
+                       + (f": {_pd_erro}" if _pd_erro else ".")
+                       + " Usando captura de tela como alternativa enquanto isso.")
 
     _erro_ciclo = st.session_state.get("ultimo_erro_ciclo")
     if _erro_ciclo:
