@@ -2280,12 +2280,24 @@ def coletar_dados_macro():
     except Exception:
         dados["macro_indisponiveis"] = ["coleta_web_falhou"]
         dados["macro_completo"] = False
+    # yfinance so entra para os indicadores (DXY, EWZ, VIX) que a cadeia web
+    # (fmp/stooq/investing/tradingeconomics) ainda nao trouxe valor. Antes
+    # este loop sobrescrevia dados[nome] incondicionalmente para TODOS os
+    # tickers, inclusive DXY/EWZ/VIX que ja tinham acabado de ser
+    # preenchidos acima — uma falha do yfinance (comum e frequente no
+    # ticker "EWZ", ativo pouco liquido fora do horario de NY) jogava fora
+    # um valor bom que a cadeia web ja tinha conseguido, e explica o "sem
+    # leitura de EWZ" intermitente mesmo quando a fonte web funcionou.
     for nome, candidatos in tickers.items():
+        if nome in dados and num(dados.get(nome), 0) > 0:
+            continue
         v = "N/A"
         for t in candidatos:
             v = obter_ultimo_preco(t)
             if v != "N/A": break
         dados[nome] = v
+        if v != "N/A" and nome in ("DXY", "EWZ", "VIX"):
+            dados.setdefault("macro_fontes", {})[nome] = "yfinance"
     try:
         with open(MACRO_JSON, "w", encoding="utf-8") as f:
             json.dump(dados, f, ensure_ascii=False, indent=2)
