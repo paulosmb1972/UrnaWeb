@@ -5399,8 +5399,8 @@ def calcular_pressao_fluxo(agentes_info, preco, registrar=False):
     if not ag or preco <= 0:
         return r
 
-    bid = sum(num(o.get("qtde", 0)) for o in (ag.get("ofertantes_compra") or [])[:5])
-    ask = sum(num(o.get("qtde", 0)) for o in (ag.get("ofertantes_venda") or [])[:5])
+    bid = sum(num(o.get("qtde", 0)) for o in (ag.get("ofertantes_compra") or [])[:5] if isinstance(o, dict))
+    ask = sum(num(o.get("qtde", 0)) for o in (ag.get("ofertantes_venda") or [])[:5] if isinstance(o, dict))
     r["qtd_bid"], r["qtd_ask"] = bid, ask
     if bid + ask > 0:
         r["desequilibrio"] = round(((bid - ask) / (bid + ask)) * 100, 1)
@@ -5647,9 +5647,21 @@ def validar_integridade_book(agentes_info, preco, tolerancia_pts=10.0, registrar
     if preco <= 0:
         return res
 
+    # Filtra entradas nao-dict ANTES de tudo: a IA de visao ocasionalmente
+    # devolve um item nulo/quebrado no meio de uma lista longa (book agregado
+    # com muitos niveis). A varredura antiga so olhava os 3-5 primeiros
+    # niveis e nunca esbarrava nisso; a assinatura de profundidade INTEIRA
+    # abaixo passa pela lista toda, entao uma entrada malformada em QUALQUER
+    # posicao (nao so nas primeiras) derrubava validar_integridade_book com
+    # AttributeError — e, chamada de dentro do motor, isso silenciosamente
+    # jogava toda a leitura no contexto de fallback neutro (Candles ficava
+    # "sem sinal" sem erro nenhum visivel).
+    compra_ok = [o for o in (ag.get("ofertantes_compra") or []) if isinstance(o, dict)]
+    venda_ok = [o for o in (ag.get("ofertantes_venda") or []) if isinstance(o, dict)]
+
     precos = []
-    for lado in ("ofertantes_compra", "ofertantes_venda"):
-        for o in (ag.get(lado) or [])[:5]:
+    for lado in (compra_ok, venda_ok):
+        for o in lado[:5]:
             p = num(o.get("preco", 0))
             if p > 0:
                 precos.append(p)
@@ -5660,7 +5672,7 @@ def validar_integridade_book(agentes_info, preco, tolerancia_pts=10.0, registrar
                         "motivo": f"Book a {dist:.1f} pts do preço negociado — leitura de fluxo descartada."})
             return res
 
-    tem_dados = bool((ag.get("ofertantes_compra") or []) or (ag.get("ofertantes_venda") or []))
+    tem_dados = bool(compra_ok or venda_ok)
     if not tem_dados:
         return res
 
@@ -5675,12 +5687,10 @@ def validar_integridade_book(agentes_info, preco, tolerancia_pts=10.0, registrar
         passo = max(1.0, abs(q) * TOLERANCIA_QTDE_BOOK_PCT)
         return round(q / passo)
 
-    compra_lvls = [[num(o.get("preco")), _bucket_qtde(o.get("qtde"))]
-                   for o in (ag.get("ofertantes_compra") or [])]
-    venda_lvls = [[num(o.get("preco")), _bucket_qtde(o.get("qtde"))]
-                  for o in (ag.get("ofertantes_venda") or [])]
-    tot_bid = sum(num(o.get("qtde", 0)) for o in (ag.get("ofertantes_compra") or []))
-    tot_ask = sum(num(o.get("qtde", 0)) for o in (ag.get("ofertantes_venda") or []))
+    compra_lvls = [[num(o.get("preco")), _bucket_qtde(o.get("qtde"))] for o in compra_ok]
+    venda_lvls = [[num(o.get("preco")), _bucket_qtde(o.get("qtde"))] for o in venda_ok]
+    tot_bid = sum(num(o.get("qtde", 0)) for o in compra_ok)
+    tot_ask = sum(num(o.get("qtde", 0)) for o in venda_ok)
     assinatura = json.dumps({
         "c": compra_lvls, "v": venda_lvls,
         "tb": _bucket_qtde(tot_bid), "ta": _bucket_qtde(tot_ask),
@@ -5750,10 +5760,15 @@ def avaliar_lotes_institucionais(agentes_info, preco, limite=1000):
     if preco <= 0:
         return r
 
+    # Filtra nao-dict antes: percorre a lista INTEIRA (sem corte de indice),
+    # entao uma entrada nula/quebrada no meio de um book agregado longo
+    # derrubava a funcao inteira com AttributeError.
     _bids = [(num(o.get("preco", 0)), num(o.get("qtde", 0)), str(o.get("agente", "BOOK")))
-             for o in (ag.get("ofertantes_compra") or []) if num(o.get("qtde", 0)) >= limite]
+             for o in (ag.get("ofertantes_compra") or [])
+             if isinstance(o, dict) and num(o.get("qtde", 0)) >= limite]
     _asks = [(num(o.get("preco", 0)), num(o.get("qtde", 0)), str(o.get("agente", "BOOK")))
-             for o in (ag.get("ofertantes_venda") or []) if num(o.get("qtde", 0)) >= limite]
+             for o in (ag.get("ofertantes_venda") or [])
+             if isinstance(o, dict) and num(o.get("qtde", 0)) >= limite]
 
     _bids = [b for b in _bids if 0 < b[0] <= preco + 2]
     _asks = [a for a in _asks if a[0] >= preco - 2]
@@ -8814,6 +8829,8 @@ def montar_escada_book(ag, preco_atual=0.0, max_niveis=6):
     def _normalizar(lista, lado):
         saida = []
         for o in lista:
+            if not isinstance(o, dict):
+                continue
             pr = num(o.get("preco", 0))
             qt = int(num(o.get("qtde", 0)))
             if pr <= 0 and qt <= 0:
@@ -11683,7 +11700,18 @@ with aba_macro:
 # ============================================================
 with aba_liquidez:
     botao_analisar("liquidez")
-    _v_liq, _liq_bruto = veredito_liquidez_aba()
+    # Rede de seguranca: veredito_liquidez_aba() roda a cada rerun do
+    # Streamlit, FORA de qualquer botao — uma excecao aqui (ex.: book com
+    # entrada malformada vinda da IA) travava a pagina inteira ANTES de
+    # chegar nas abas Candles/Confluencia, que vem depois no script.
+    try:
+        _v_liq, _liq_bruto = veredito_liquidez_aba()
+    except Exception as _e_liq:
+        _v_liq = {"vies": "neutro", "forca": "neutro", "convicao": 0, "estado": "erro",
+                  "qualidade_dado": "erro",
+                  "fatores": [f"Falha ao calcular liquidez: {type(_e_liq).__name__}: {_e_liq}"],
+                  "resumo": "Liquidez indisponível — erro de cálculo nesta leitura.", "contras": []}
+        _liq_bruto = {"fluxo": {}, "lotes": {}, "integridade": {}}
     _card_veredito("Painel de liquidez (book · agressão · absorção · lotes)", _v_liq, icone="💧")
 
     # Transparencia do calculo (parte G do pedido): mostra o denominador usado
@@ -11777,7 +11805,13 @@ with aba_candles:
     botao_analisar("candles")
     _ctx_c = st.session_state.get("ultimo_contexto") or {}
     _dt_c = st.session_state.get("ultimos_dados_tela") or {}
-    _v_candles_top = veredito_candles_aba(_dt_c, _ctx_c)
+    try:
+        _v_candles_top = veredito_candles_aba(_dt_c, _ctx_c)
+    except Exception as _e_candles:
+        _v_candles_top = {"vies": "neutro", "forca": "neutro", "convicao": 0,
+                           "fatores": [f"Falha ao calcular veredito técnico: "
+                                       f"{type(_e_candles).__name__}: {_e_candles}"],
+                           "resumo": "Gráfico de candles indisponível — erro de cálculo nesta leitura."}
     _card_veredito("Painel técnico (momentum · Bollinger · IFR · candle · robô preditivo)",
                    _v_candles_top, icone="🕯️")
 
@@ -11899,8 +11933,14 @@ with aba_confluencia:
     _dt_conf_top = st.session_state.get("ultimos_dados_tela") or {}
     _ctx_conf_top = st.session_state.get("ultimo_contexto") or {}
     _v_macro_c, _ = veredito_macro_aba()
-    _v_liq_c, _ = veredito_liquidez_aba()
-    _v_candles_c = veredito_candles_aba(_dt_conf_top, _ctx_conf_top)
+    try:
+        _v_liq_c, _ = veredito_liquidez_aba()
+    except Exception:
+        _v_liq_c = {"vies": "neutro", "forca": "neutro", "convicao": 0}
+    try:
+        _v_candles_c = veredito_candles_aba(_dt_conf_top, _ctx_conf_top)
+    except Exception:
+        _v_candles_c = {"vies": "neutro", "forca": "neutro", "convicao": 0}
     _v_final = veredito_confluencia_aba(veredito_liq=_v_liq_c, veredito_macro=_v_macro_c,
                                          veredito_candles=_v_candles_c)
     _card_veredito("Veredito final — setups técnicos + gatilho + book + macro + candles",
