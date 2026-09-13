@@ -11469,6 +11469,17 @@ with aba_geral:
         st.error(f"🛑 A última tentativa de análise (automática ou manual) falhou e por "
                  f"isso o veredito ficou parado no resultado anterior: {_erro_ciclo}")
 
+    # classificar_contexto() nunca deixa a excecao propagar (ela cai num
+    # fallback seguro/neutro por dentro) — sem mostrar isso em algum lugar,
+    # o usuario via a aba Candles sempre "sem sinal" sem NENHUM erro visivel
+    # em lugar nenhum da tela, achando que o robo simplesmente parou de
+    # analisar em vez de estar mascarando uma falha real.
+    _erro_ctx = st.session_state.get("ultimo_erro_analise")
+    if _erro_ctx:
+        st.error(f"🛑 Falha ao classificar o contexto técnico (Bollinger/IFR/candle/robô "
+                 f"preditivo) nesta leitura — a aba Gráfico de Candles caiu num contexto "
+                 f"neutro de segurança em vez de travar: {_erro_ctx}")
+
     _falhas_tt = int(st.session_state.get("falhas_tt_consecutivas", 0))
     if _falhas_tt >= 3:
         st.warning(
