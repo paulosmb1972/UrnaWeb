@@ -11122,9 +11122,15 @@ def veredito_candles_aba(dados_tela=None, contexto=None):
 def veredito_confluencia_aba(veredito_liq=None, veredito_macro=None, veredito_candles=None):
     """Aba 4 — parte do motor ja calibrado (consolidar_veredito, que ja pondera
     gatilho, previsao, absorcao/book basicos e os setups tecnicos de maior
-    acerto medido) e SOMA o voto do painel macro como fonte adicional. Nao
-    recalcula liquidez do zero (ja embutida no motor via contexto_fluxo);
-    a Aba 3 entra apenas como reforco textual no detalhamento."""
+    acerto medido) e SOMA o voto do painel macro e o voto do painel de
+    liquidez (aba 3, ja calibrada e com fonte unica de verdade) como fontes
+    adicionais. Liquidez usada como VOTO aqui e a mesma que ja embutida no
+    motor via contexto_fluxo/book — nao e recalculo do zero, e sim o
+    resultado ja pronto de veredito_liquidez_aba(), na MESMA escala de peso
+    do Macro (nao duplica calculo, so reaproveita o resultado). Candles
+    continua so como reforco textual: o motor principal ja embute
+    momentum/padrao de candle no proprio score historico calibrado, e
+    contar de novo aqui inflaria o mesmo sinal duas vezes."""
     base = dict(st.session_state.get("ultimo_veredito") or {})
     if not base:
         return {"vies": "neutro", "forca": "neutro", "convicao": 0,
@@ -11132,6 +11138,7 @@ def veredito_confluencia_aba(veredito_liq=None, veredito_macro=None, veredito_ca
                 "resumo": "Aguardando primeira leitura."}
 
     macro_v = veredito_macro or {}
+    liq_v = veredito_liq or {}
     votos = {"compra": 0.0, "venda": 0.0}
     _dir_base = base.get("direcao")
     if _dir_base in ("compra", "venda"):
@@ -11140,6 +11147,16 @@ def veredito_confluencia_aba(veredito_liq=None, veredito_macro=None, veredito_ca
     _mv, _mf = macro_v.get("vies"), macro_v.get("forca")
     if _mv in ("compra", "venda"):
         votos[_mv] += 1.5 if _mf == "forte" else 0.75
+
+    # Liquidez vota na MESMA escala do Macro (antes so entrava como texto no
+    # detalhamento, nunca mudava a conviccao final — mesmo com a aba
+    # mostrando 100%, o numero da Confluencia ficava travado no que o Macro
+    # sozinho dava). "forca" ja vem calibrada por veredito_liquidez_aba
+    # (fraco/moderado/forte), entao usa o mesmo corte binario do Macro em
+    # vez de reponderar por conviccao bruta de novo aqui.
+    _lv, _lf = liq_v.get("vies"), liq_v.get("forca")
+    if _lv in ("compra", "venda"):
+        votos[_lv] += 1.5 if _lf == "forte" else 0.75
 
     total = votos["compra"] + votos["venda"]
     detalhe = list(base.get("detalhe", []))
