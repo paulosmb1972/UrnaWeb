@@ -7716,6 +7716,90 @@ Campos obrigatórios:
 
 
 # =========================
+# LEITURA CRUZADA MULTITELA (notebook = fluxo, monitor auxiliar = macro/estrutura)
+# =========================
+def analisar_multitela_com_ia(img_notebook, img_auxiliar):
+    """Pede um veredito PRÓPRIO da IA cruzando as duas telas físicas do
+    setup do usuário: notebook (Times & Trades, SuperDOM, agressão de
+    curto prazo) e monitor auxiliar (gráfico de maior periodicidade,
+    médias móveis, zonas técnicas, book agregado). Só roda quando
+    MODO_CAPTURA_POR_MONITOR está ativo (as duas capturas são o monitor
+    inteiro, não uma janela recortada).
+
+    Isto É COMPLEMENTAR ao motor de score/gatekeeper já calibrado com
+    acerto histórico medido (ver TABELA_INDICADORES) — não o substitui.
+    A leitura em texto livre da IA não tem amostra medida de acerto, por
+    isso entra só como um card informativo extra na Confluência, nunca
+    como voto numérico dentro de consolidar_veredito()."""
+    if img_notebook is None and img_auxiliar is None:
+        return None
+
+    prompt = """Atue como um motor especialista de alta precisão em Análise de Fluxo de
+Ordens (Order Flow), Análise Técnica e Leitura Integrada de Múltiplas
+Telas (ProfitPro / ProfitChart).
+
+Você está recebendo simultaneamente duas capturas de tela que compõem o
+ambiente operacional profissional do trader:
+
+1. TELA PRINCIPAL — NOTEBOOK (primeira imagem, se presente): focada no
+   fluxo de micro-estrutura intradiária — Times & Trades detalhado,
+   SuperDOM e agressão por faixa de preço.
+2. TELA AUXILIAR — MONITOR EXTERNO (segunda imagem, se presente): focada
+   na visão macro/estrutural de contexto — gráfico de maior
+   periodicidade, inclinação das médias móveis de referência, zonas
+   técnicas de suporte/resistência, máxima/mínima do dia e livro de
+   ofertas agregado.
+
+Execute a varredura visual integral de ambas as imagens e entregue um
+veredito unificado:
+
+1. Mapeamento e sincronização multitela:
+   - Visão macro/estrutural (tela auxiliar): posição do preço em relação
+     às médias móveis de maior período, comportamento das bandas/limites
+     de volatilidade, perfil macro de liquidez no book agregado.
+   - Visão micro/fluxo imediato (tela principal): agressão de curto
+     prazo, saldo líquido de negócios, velocidade de execução no
+     Times & Trades, pressão imediata no SuperDOM.
+2. Diretrizes de ponderação:
+   - Cruze a micro-agressão de fluxo da tela principal com a
+     macro-estrutura de tendência e zonas técnicas da tela auxiliar.
+   - Verifique se o fluxo de curto prazo CONFIRMA ou DIVERGE do contexto
+     direcional de maior periodicidade — divergência reduz a convicção;
+     nunca invente uma direção que nenhuma das duas telas sustenta.
+   - Se uma das duas imagens não vier (só notebook ou só auxiliar),
+     avise disso na justificativa e reduza a convicção proporcionalmente.
+
+Responda APENAS em JSON válido, sem markdown, neste formato exato:
+{
+  "direcao": "compra" | "venda" | "neutro",
+  "forca": "forte" | "moderada" | "fraca",
+  "conviccao": 0-100,
+  "confirmacao_ou_divergencia": "confirma" | "diverge" | "indefinido",
+  "justificativa": "texto curto citando pelo menos um elemento de CADA tela presente"
+}"""
+
+    partes = [{"type": "text", "text": prompt}]
+    for _img in (img_notebook, img_auxiliar):
+        if _img is not None:
+            _b64 = imagem_para_b64(_img, largura_max=1400, qualidade=80)
+            partes.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{_b64}"}})
+
+    content = chamar_openrouter(partes, temperature=0.0, timeout=45)
+    if not content:
+        return None
+    parsed = extrair_json(content)
+    if not parsed:
+        return None
+    return {
+        "direcao": str(parsed.get("direcao", "neutro")).strip().lower(),
+        "forca": str(parsed.get("forca", "fraca")).strip().lower(),
+        "conviccao": int(max(0, min(100, num(parsed.get("conviccao", 0))))),
+        "confirmacao": str(parsed.get("confirmacao_ou_divergencia", "indefinido")).strip().lower(),
+        "justificativa": str(parsed.get("justificativa", "")).strip(),
+    }
+
+
+# =========================
 # ANALISE COM IA
 # =========================
 def analisar_com_ia(img, dados_tela, contexto, fechamento_ant, ignorar_macro):
@@ -7899,6 +7983,14 @@ def executar_analise():
     img_tt2, msg_tt_exec = capturar_times_trades()
     img_livro, msg_livro_exec = capturar_livro_ofertas()
     img_agentes, msg_agentes_exec = capturar_agentes()
+
+    # Leitura cruzada multitela (notebook = fluxo, monitor auxiliar =
+    # macro/estrutura) — so roda em MODO_CAPTURA_POR_MONITOR, onde 'img'
+    # (capturado la em cima por capturar_janela) e img_livro sao as DUAS
+    # telas fisicas inteiras, nao janelas recortadas. Complementa o motor
+    # de score/gatekeeper; nunca substitui a decisao ja calibrada.
+    if _modo_captura_por_monitor_ativo():
+        st.session_state["leitura_multitela"] = analisar_multitela_com_ia(img_livro, img)
 
     # (3) INVESTIGACAO T&T: rastreia falhas consecutivas para virar um aviso
     # visivel na aba Geral em vez de silenciosamente cair no proxy toda vez.
@@ -11571,6 +11663,28 @@ with aba_confluencia:
         _sg_conf = st.session_state.get("ultimo_status_gatilho", "AGUARDANDO")
         _sg_conv = num((st.session_state.get("ultimo_veredito") or {}).get("convicao", 0))
         st.markdown(f"{_sg_conf} · convicção **{int(_sg_conv)}%**")
+
+    _leitura_mt = st.session_state.get("leitura_multitela")
+    if _leitura_mt:
+        st.markdown('<div class="section-title">🖥️🖥️ Leitura multitela (IA) — notebook × monitor auxiliar</div>',
+                    unsafe_allow_html=True)
+        st.caption("Complementar ao motor de score/gatekeeper acima — cruza as duas telas físicas "
+                   "inteiras (ativo em Geral → Testar captura das janelas → captura por monitor). "
+                   "Não tem amostra histórica medida como os demais indicadores, por isso não entra "
+                   "como voto no veredito final, só como leitura qualitativa extra.")
+        _mt_dir = _leitura_mt.get("direcao", "neutro")
+        _mt_cor = {"compra": "#00e676", "venda": "#ff5252"}.get(_mt_dir, "#8892a4")
+        _mt_conf_txt = {"confirma": "✅ fluxo confirma o contexto macro",
+                         "diverge": "⚠️ fluxo diverge do contexto macro",
+                         }.get(_leitura_mt.get("confirmacao", ""), "confirmação indefinida")
+        st.markdown(
+            f'<div class="book-wrap"><div style="display:flex;justify-content:space-between;'
+            f'align-items:center;flex-wrap:wrap;gap:10px;">'
+            f'<div><span style="color:{_mt_cor};font-weight:800;font-size:18px">{_mt_dir.upper()}</span>'
+            f' · {_leitura_mt.get("forca","—")} · {_mt_conf_txt}</div>'
+            f'<div style="font-size:24px;font-weight:800;color:{_mt_cor}">{_leitura_mt.get("conviccao",0)}%</div>'
+            f'</div><div style="font-size:12px;color:#8892a4;margin-top:6px;">'
+            f'{_leitura_mt.get("justificativa","")}</div></div>', unsafe_allow_html=True)
 
     st.markdown('<div class="section-title">🎛️ Painel de comando (alvo, stop, RR)</div>', unsafe_allow_html=True)
     _dt_conf = st.session_state.get("ultimos_dados_tela", {})
