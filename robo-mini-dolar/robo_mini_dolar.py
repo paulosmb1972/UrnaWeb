@@ -10063,6 +10063,32 @@ def liberar_tendencia_forte_sem_pullback(ctx_res, dados_tela):
     if conv < LIMIAR_CONVICCAO_TENDENCIA_FORTE:
         return ctx_res
 
+    # BUG CORRIGIDO — replay de 12/09: leituras com tela zerada (score 0,
+    # maxima/minima/mm9/mm20 ausentes) chegavam ATE AQUI com conviccao
+    # ponderada fabricada (82/92/94%) por indicadores de ausencia (ver
+    # _detectar_indicadores). So nao liberaram porque agressao/lotes
+    # calharam de nao alinhar naquelas 3 leituras especificas — defesa por
+    # COINCIDENCIA, nao por desenho: agressao pode vir de PROXY (sem book
+    # real) e alinhar por acaso com o "regime" mesmo sem nenhuma estrutura
+    # de preco observavel para sustentar "tendencia forte" de verdade.
+    # Guarda estrutural: afirmar tendencia exige VER a estrutura de preco
+    # (candle do dia + pelo menos uma media movel) — sem isso, o que existe
+    # e ausencia de contra-indicacao, nao evidencia de tendencia. Roda antes
+    # da checagem de agressao/lotes para nao depender dela por sorte.
+    try:
+        _validacao = ctx_res.get("validacao")
+        _inconsistente = isinstance(_validacao, dict) and _validacao.get("consistente") is False
+        _dt_lib = dados_tela or {}
+        _sem_candle_dia = not (num(_dt_lib.get("maxima", 0)) > 0 and num(_dt_lib.get("minima", 0)) > 0)
+        _sem_medias = not (num(_dt_lib.get("mm9", 0)) > 0 or num(_dt_lib.get("mm20", 0)) > 0)
+        if _inconsistente or _sem_candle_dia or _sem_medias:
+            ctx_res["liberacao_bloqueada_sem_estrutura"] = True
+            return ctx_res
+    except Exception:
+        # Guarda nova nunca pode derrubar o ciclo de analise — em duvida,
+        # nao bloqueia (mantem o comportamento anterior a este fix).
+        pass
+
     direcao = "compra" if regime == "trend_up" else "venda"
 
     # travas de seguranca — as mesmas que qualquer outro caminho de armada respeita
