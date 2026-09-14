@@ -71,6 +71,16 @@ import win32com.client
 from streamlit_autorefresh import st_autorefresh
 import yfinance as yf
 
+# rtd_profit.py fica ao lado deste arquivo — le o Profit direto via RTD
+# (COM), sem depender de captura de tela nem de IA de visao. Import
+# protegido: se o arquivo nao estiver presente (ex.: deploy parcial), o
+# app continua funcionando normalmente por captura de tela — so a fonte
+# FONTE_DADOS_MERCADO=rtd fica indisponivel (ver obter_dados_mercado_externo).
+try:
+    from rtd_profit import FonteDadosRTD as _FonteDadosRTD
+except Exception:
+    _FonteDadosRTD = None
+
 # =============================================================================
 # LOGGING DE AUDITORIA — decisoes do gatekeeper
 # Log estruturado, paralelo ao CSV (log_armadilhas_evitadas.csv). O CSV serve
@@ -168,9 +178,18 @@ MODELO_OPENROUTER = os.getenv("OPENROUTER_MODEL", "google/gemini-2.5-flash").str
 #   completar as chamadas de login/callback da DLL em _profitdll_conectar()
 #   — a assinatura exata varia por versao entregue pela corretora, por isso
 #   fica como ponto de extensao em vez de uma integracao "adivinhada".
+# FONTE_DADOS_MERCADO=rtd — le o Profit pelo RTD (COM) que a Nelogica ja
+#   expoe (o mesmo protocolo que o Excel usa em =RTD(...)). Diferente do
+#   profitdll acima, esta fonte E funcional de verdade (rtd_profit.py, com
+#   33 testes cobrindo conversao numerica, agregacao de candle e
+#   degradacao com o Profit fechado) — so exige Windows + Profit aberto e
+#   logado, sem DLL nem credenciais extras da corretora. RTD_PROGID ajusta
+#   o ProgID COM se a instalacao usar um nome diferente do padrao.
 FONTE_DADOS_MERCADO = os.getenv("FONTE_DADOS_MERCADO", "captura_tela").strip().lower()
 PROFITDLL_PATH = os.getenv("PROFITDLL_PATH", "").strip()
+RTD_PROGID = os.getenv("RTD_PROGID", "ProfitDLL.RTD").strip()
 _profitdll_estado = {"dll": None, "conectado": False, "erro": ""}
+_rtd_estado = {"fonte": None, "conectado": False, "erro": "", "ativo": ""}
 
 
 def _profitdll_conectar():
@@ -203,12 +222,57 @@ def _profitdll_conectar():
         return False
 
 
+def _rtd_conectar(ativo):
+    """Conecta (ou reconecta, se o ativo mudou) a fonte RTD uma unica vez
+    por sessao. Nunca lanca excecao — se pywin32/Profit nao estiverem
+    disponiveis (ex.: rodando fora do Windows), devolve False e o motivo
+    fica em _rtd_estado['erro'] para a aba Geral mostrar."""
+    if _FonteDadosRTD is None:
+        _rtd_estado["erro"] = "rtd_profit.py nao encontrado ao lado do app."
+        return False
+    if _rtd_estado["conectado"] and _rtd_estado["ativo"] == ativo:
+        return True
+    fonte = _FonteDadosRTD(ativo, timeframe_min=TIMEFRAME_CANDLE_MIN, progid=RTD_PROGID)
+    ok, erro = fonte.conectar()
+    if not ok:
+        _rtd_estado["erro"] = erro
+        _rtd_estado["conectado"] = False
+        return False
+    # Historico ja acumulado nesta sessao (mesmo ativo, capturado por tela
+    # antes de trocar para RTD) semeia MM50/MM200 na hora, em vez de esperar
+    # 50-200 candles do zero.
+    try:
+        fonte.semear_historico(st.session_state.get("hist_candles", []))
+    except Exception:
+        pass
+    _rtd_estado.update({"fonte": fonte, "conectado": True, "erro": "", "ativo": ativo})
+    return True
+
+
 def obter_dados_mercado_externo(ativo=""):
     """Ponto de extensao para uma fonte de dados que NAO seja captura de
     tela. Devolve um dict no MESMO formato de extrair_dados_tela (preco_atual,
     abertura, maxima, minima, mm9..mm200, volume, etc.) quando a fonte
     alternativa estiver disponivel, ou None quando nao estiver — nesse caso
     executar_analise() usa a captura de tela normalmente, sem quebrar nada."""
+    if FONTE_DADOS_MERCADO == "rtd":
+        if not ativo or not _rtd_conectar(ativo):
+            return None
+        try:
+            d = _rtd_estado["fonte"].ler_dados_tela()
+        except Exception as e:
+            _rtd_estado["erro"] = f"Falha ao ler RTD: {e}"
+            return None
+        if not d.get("rtd_conectado") or num(d.get("preco_atual", 0)) <= 0:
+            # RTD conectado mas sem preco (ex.: ativo sem book aberto ainda) —
+            # cai para captura de tela nesta leitura, sem tratar como erro.
+            return None
+        # hist_candles fica em session_state (mesma convencao de
+        # registrar_candle) para todo o resto do app enxergar os candles
+        # agregados pelo RTD sem precisar conhecer FonteDadosRTD.
+        st.session_state["hist_candles"] = _rtd_estado["fonte"].hist_candles()[:60]
+        return d
+
     if FONTE_DADOS_MERCADO != "profitdll":
         return None
     if not _profitdll_conectar():
@@ -11539,7 +11603,15 @@ with aba_geral:
 
     st.markdown('<div class="section-title">🩺 Diagnóstico de captura</div>', unsafe_allow_html=True)
     st.caption(st.session_state.get("ultimo_diagnostico", "Aguardando primeira análise..."))
-    if FONTE_DADOS_MERCADO != "captura_tela":
+    if FONTE_DADOS_MERCADO == "rtd":
+        _rtd_erro = _rtd_estado.get("erro", "")
+        if _rtd_estado.get("conectado"):
+            st.caption(f"Fonte de dados configurada: **rtd** (conectada — {_rtd_estado.get('ativo','')}).")
+        else:
+            st.warning("Fonte de dados configurada como **rtd**, mas ainda não conectada"
+                       + (f": {_rtd_erro}" if _rtd_erro else ".")
+                       + " Usando captura de tela como alternativa enquanto isso.")
+    elif FONTE_DADOS_MERCADO != "captura_tela":
         _pd_erro = _profitdll_estado.get("erro", "")
         if _profitdll_estado.get("conectado"):
             st.caption(f"Fonte de dados configurada: **{FONTE_DADOS_MERCADO}** (conectada).")
