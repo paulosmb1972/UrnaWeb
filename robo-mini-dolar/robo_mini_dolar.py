@@ -9218,7 +9218,18 @@ _MAPA_IND = {t[0]: t for t in TABELA_INDICADORES}
 
 
 def _detectar_indicadores(ctx_res, dados_tela):
-    """Marca quais indicadores estao presentes nesta leitura."""
+    """Marca quais indicadores estao presentes nesta leitura.
+
+    Indicador de AUSENCIA (ex.: "sem absorcao contraria", "sem rompimento
+    seco", "momentum neutro") so pode pontuar quando a FONTE dele foi
+    efetivamente lida nesta leitura. Diagnostico do replay de 12/09: com a
+    tela zerada (book/candle/MM ausentes, so preco e range as vezes vindo),
+    nenhum desses indicadores tinha como detectar algo ruim — e o sistema
+    lia isso como "esta tudo bem", somando +12/+12/+12 de pesos calibrados
+    para uma conviccao de 94% fabricada do vazio, com score 0/4. Dado
+    ausente nao e evidencia positiva; sem a fonte, o indicador simplesmente
+    nao entra na votacao (nem a favor, nem contra).
+    """
     sim = lambda v: str(v).strip().lower() in ("sim", "true", "1", "yes")
     regime = str(ctx_res.get("regime", "")).lower()
     momentum = str(ctx_res.get("momentum", "")).lower()
@@ -9240,16 +9251,29 @@ def _detectar_indicadores(ctx_res, dados_tela):
     absorve_contra = sim(ctx_res.get("absorcao_favoravel"))
     romp = bool((ctx_res.get("rompimento") or {}).get("dispara")) or sim(ctx_res.get("rompimento_dispara"))
 
+    # Fonte de cada indicador de ausencia REALMENTE lida nesta leitura:
+    # fluxo_valido ja reflete se agentes_info/book tinha bid+ask>0 (mesma
+    # flag usada em FluxoValido no CSV); hist_candles>=2 e a MESMA condicao
+    # que gatilho_rompimento_candle() exige internamente para avaliar
+    # rompimento; MM9 lida (>0) e o insumo central do calculo de momentum;
+    # pos_range==-1 e o sentinel que calcular_momentum() usa para "sem
+    # maxima/minima do dia" — zona_morta fica False por default nesse caso
+    # (mesmo bug de ausencia: sem range, "fora_zona_morta" disparava sozinho).
+    leu_fluxo = bool(ctx_res.get("fluxo_valido"))
+    leu_candle = len(st.session_state.get("hist_candles", [])) >= 2
+    leu_mm9 = num((dados_tela or {}).get("mm9", 0)) > 0
+    leu_range = num(ctx_res.get("pos_range", -1)) >= 0
+
     p = set()
     if rev: p.add("reversao_extremo_sim")
     if pull_reg: p.add("regime_pullback")
     # 'trend puro' deixou de ser penalidade: apenas nao soma o bonus de pullback.
     if pull_flx: p.add("pullback_favoravel")
     if zmorta: p.add("zona_morta")
-    else:      p.add("fora_zona_morta")
-    if not absorve_contra: p.add("sem_absorcao_contra")
+    elif leu_range: p.add("fora_zona_morta")
+    if leu_fluxo and not absorve_contra: p.add("sem_absorcao_contra")
     if fontes >= 4: p.add("veredito_forte")
-    if momentum == "neutro": p.add("momentum_neutro")
+    if leu_mm9 and momentum == "neutro": p.add("momentum_neutro")
 
     # ---- MOMENTUM: penaliza a entrada CONTRA o movimento, nao a favor ----
     _mom_st = st.session_state.get("ultimo_momentum") or {}
@@ -9268,7 +9292,7 @@ def _detectar_indicadores(ctx_res, dados_tela):
         p.add("momentum_alinhado")
     if _mom_st.get("momentum_confirmado") and _a_favor:
         p.add("momentum_confirmado")
-    if not romp: p.add("sem_rompimento_seco")
+    if leu_candle and not romp: p.add("sem_rompimento_seco")
     if score in (4, 5): p.add("score_ideal")
     if hora == 13: p.add("horario_13h")
     elif hora != 9: p.add("horario_bom")
