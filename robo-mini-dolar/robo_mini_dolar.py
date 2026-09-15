@@ -3641,6 +3641,35 @@ def capturar_agentes():
     st.session_state["origem_agentes"] = "indisponivel"
     return None, "Agentes: sem painel dedicado e sem T&T capturavel neste momento."
 
+
+def capturar_grade_cotacoes():
+    """Captura a 'Grade de Cotações' do Profit — painel tabular (Ativo,
+    Último, Hora, Variação, Máximo, Mínimo, Fechamento Ant., Abertura,
+    Ofertas de compra/venda, Negócios, Quantidade, Volume, Ajuste, Aj.
+    Anterior, Cont. Abertos, Preço Teórico) MUITO mais confiavel de ler do
+    que os mesmos numeros no grafico: e uma tabela limpa, sem sobreposicao
+    de linhas/candles.
+
+    preferir_bitblt=False (PrintWindow primeiro) de proposito — igual
+    SuperDOM/Livro/T&T/Agentes: um grid GDI simples continua renderizando
+    via PrintWindow mesmo com a janela em segundo plano, minimizada ou
+    atras de outra (diferente do grafico, que e GPU-renderizado e exige
+    BitBlt com a janela visivel). Requer a Grade de Cotações destacada
+    (undocked) como janela propria — dentro do workspace principal do
+    Profit ela nao tem HWND separado para capturar."""
+    if _modo_captura_por_monitor_ativo():
+        img, msg = capturar_monitor(_monitor_grafico_superdom_atual())
+        if img is not None:
+            st.session_state["ultimo_titulo_grade_cotacoes"] = msg
+        return img, msg
+    palavras = [
+        "grade de cotações", "grade de cotacoes", "grade cotações", "grade cotacoes",
+        "cotações", "cotacoes", "quotes", "watchlist",
+    ]
+    img, msg = _capturar_por_palavras_forcado(palavras, "Grade de Cotações", preferir_bitblt=False)
+    st.session_state["ultimo_titulo_grade_cotacoes"] = msg
+    return img, msg
+
 def listar_todas_janelas_visiveis(area_minima=20000):
     """Lista TODAS as janelas visiveis do Windows, sem filtro por palavra-chave.
     Serve para descobrir o titulo real das janelas/abas do Profit."""
@@ -3834,7 +3863,7 @@ def _recorte_legenda_indicadores(img, fracao_largura=0.42):
         return None
 
 
-def extrair_dados_tela(img, modo_replay=False):
+def extrair_dados_tela(img, modo_replay=False, img_grade=None):
     # Grafico precisa de mais resolucao: os numeros das medias sao pequenos.
     b64 = imagem_para_b64(img, largura_max=1500, qualidade=78)
 
@@ -3844,17 +3873,37 @@ def extrair_dados_tela(img, modo_replay=False):
     _b64_legenda = (imagem_para_b64(_legenda_img, largura_max=900, qualidade=88)
                      if _legenda_img is not None else None)
 
+    # Grade de Cotacoes (tabela limpa: Ultimo/Maximo/Minimo/Abertura/Ajuste/
+    # Aj.Anterior/Volume) — quando capturada, e MAIS confiavel que ler os
+    # mesmos numeros no grafico (sem candle nem linha sobrepondo o texto).
+    # Ver capturar_grade_cotacoes(): so preenche quando o painel foi
+    # destacado como janela propria; None nao muda nada do fluxo antigo.
+    _b64_grade = (imagem_para_b64(img_grade, largura_max=1100, qualidade=82)
+                   if img_grade is not None else None)
+
     prompt = """
 Extraia os dados objetivos visiveis na tela do Profit/Replay.
 Responda apenas em JSON valido. Nao use markdown. Se nao conseguir ler um campo use 0.0 ou string vazia.
 Para preco_atual use o fechamento marcado como F no topo. Nao invente valores.
 
-Voce recebe DUAS imagens (quando a segunda existir): a primeira e o grafico
-completo; a SEGUNDA e um recorte AMPLIADO, em resolucao maior, da mesma
-faixa esquerda de indicadores que aparece na primeira imagem (Pivot,
-Detector de Topos e Fundos, Media Movel E, VWAP Band, Media Movel A, VWAP D
-etc.) — use a segunda imagem de preferencia para ler mm9/mm20/mm50/mm200,
-ja que nela o texto fica maior e mais legivel do que na imagem completa.
+Voce recebe ATE TRES imagens (a segunda e a terceira so quando existirem):
+a primeira e o grafico completo; a SEGUNDA e um recorte AMPLIADO, em
+resolucao maior, da mesma faixa esquerda de indicadores que aparece na
+primeira imagem (Pivot, Detector de Topos e Fundos, Media Movel E, VWAP
+Band, Media Movel A, VWAP D etc.) — use a segunda imagem de preferencia
+para ler mm9/mm20/mm50/mm200, ja que nela o texto fica maior e mais
+legivel do que na imagem completa.
+
+A TERCEIRA imagem, quando existir, e a "Grade de Cotacoes" do Profit —
+uma TABELA (nao um grafico), com colunas tipo Ativo/Ultimo/Maximo/Minimo/
+Fechamento Ant./Abertura/Volume/Ajuste/Aj. Anterior. Ela e mais confiavel
+que o grafico para os campos numericos basicos porque e texto puro numa
+tabela, sem candle nem linha de indicador sobrepondo os digitos. Quando
+essa terceira imagem existir, PREFIRA os valores dela para: preco_atual
+(coluna "Ultimo"), abertura (coluna "Abertura"), maxima (coluna "Maximo"),
+minima (coluna "Minimo"), ajuste (coluna "Ajuste") e volume (coluna
+"Volume"). Continue lendo mm9/mm20/mm50/mm200 e padrao_candle SOMENTE da
+primeira/segunda imagem — esses dois campos nao aparecem na grade.
 
 CRITICO — VALIDE A ARITMETICA ANTES DE FECHAR O JSON:
 1. "maxima" NUNCA pode ser menor que "minima". Se a leitura violar isso, releia os dois campos.
@@ -3907,6 +3956,8 @@ CRITICO — VALIDE A ARITMETICA ANTES DE FECHAR O JSON:
     ]
     if _b64_legenda:
         partes.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{_b64_legenda}"}})
+    if _b64_grade:
+        partes.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{_b64_grade}"}})
 
     content = chamar_openrouter(partes, temperature=0.0, timeout=40)
     if not content:
@@ -8062,7 +8113,15 @@ def executar_analise():
             st.session_state.ultimo_diagnostico = msg
             return None, msg
 
-        dados_tela = extrair_dados_tela(img, st.session_state.modo_replay)
+        # Grade de Cotacoes: opcional, so preenche quando o painel estiver
+        # destacado como janela propria (ver capturar_grade_cotacoes). Falha
+        # silenciosa de proposito — sem ela, extrair_dados_tela cai no
+        # comportamento antigo (le tudo do grafico), sem quebrar nada.
+        try:
+            img_grade, _msg_grade = capturar_grade_cotacoes()
+        except Exception:
+            img_grade = None
+        dados_tela = extrair_dados_tela(img, st.session_state.modo_replay, img_grade=img_grade)
         if not dados_tela:
             st.session_state.ultimo_diagnostico = "Nao foi possivel extrair dados da tela."
             return img, msg
@@ -11754,6 +11813,12 @@ with aba_geral:
         if colt5.button("👥 Agentes", key="btn_teste_cap_agentes"):
             _im, _ms = capturar_agentes()
             if _im is not None: st.image(_im, caption=f"Agentes — {_ms}", width=700)
+            else: st.error(_ms)
+
+        if st.button("🧮 Grade de Cotações (funciona em 2º plano/minimizado)",
+                      key="btn_teste_cap_grade_cotacoes"):
+            _im, _ms = capturar_grade_cotacoes()
+            if _im is not None: st.image(_im, caption=f"Grade de Cotações — {_ms}", width=700)
             else: st.error(_ms)
 
         if st.button("🔍 Listar TODAS as janelas visíveis, com coordenadas",
