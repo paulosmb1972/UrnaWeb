@@ -148,5 +148,57 @@ class TestLiberarTendenciaFortesemPullback(unittest.TestCase):
         self.assertNotIn("liberacao_bloqueada_sem_estrutura", resultado)
 
 
+class TestVolumeProfileFallbackTPO(unittest.TestCase):
+    """BUG 3 — captura de tela nunca le o campo "volume" do candle (ver
+    VolumeStatus="nao_lido" no CSV do dia 15/09/2026: 27/27 leituras), entao
+    todo candle guardado em hist_candles chegava com volume=0 e
+    calcular_volume_profile desistia sempre, rotulando o motivo como
+    "amostra insuficiente" mesmo com dezenas de candles disponiveis (ex.:
+    "33/3 candles" — 33 candles para um minimo de 3, mensagem enganosa).
+
+    Correcao: quando NENHUM candle da amostra tem volume real, o perfil usa
+    peso 1 por candle (TPO — tempo no preco) em vez de devolver
+    indisponivel; e o motivo do "indisponivel" (quando genuino) passa a
+    ser especifico em vez de sempre "amostra insuficiente"."""
+
+    def setUp(self):
+        FAKE_ST.session_state.clear()
+        self.calc = NS["calcular_volume_profile"]
+
+    def _candles(self, n=33, volume=0):
+        preco = 5150.0
+        candles = []
+        for i in range(n):
+            preco += (i % 5) - 2
+            candles.append({"maxima": preco + 3, "minima": preco - 3,
+                             "volume": volume, "abertura": preco, "fechamento": preco})
+        return candles
+
+    def test_amostra_grande_sem_volume_real_nao_fica_indisponivel(self):
+        """Reproducao exata do caso relatado: 33 candles, todos com
+        volume=0 — antes voltava sempre "indisponivel"."""
+        r = self.calc(hist=self._candles(n=33, volume=0))
+        self.assertTrue(r["valido"])
+        self.assertTrue(r["modo_estimado"])
+        self.assertGreater(r["poc"], 0)
+
+    def test_com_volume_real_mantem_calculo_original_sem_modo_estimado(self):
+        """Controle: existindo volume real em pelo menos 1 candle, o
+        resultado nao pode ser sinalizado como estimado."""
+        candles = self._candles(n=33, volume=0)
+        for i, c in enumerate(candles):
+            c["volume"] = 100 + (i * 7) % 50
+        r = self.calc(hist=candles)
+        self.assertTrue(r["valido"])
+        self.assertFalse(r["modo_estimado"])
+
+    def test_amostra_insuficiente_continua_indisponivel(self):
+        """Poucos candles (abaixo do minimo) continua indisponivel de
+        verdade — o fallback nao pode mascarar esse caso."""
+        r = self.calc(hist=self._candles(n=2, volume=0))
+        self.assertFalse(r["valido"])
+        self.assertEqual(r["motivo"], "amostra insuficiente")
+
+
 if __name__ == "__main__":
     unittest.main()

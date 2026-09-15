@@ -4460,20 +4460,37 @@ TOLERANCIA_LVN_PONTOS = 3.0
 
 def calcular_volume_profile(dados_tela=None, hist=None, n_bins=VOLUME_PROFILE_BINS):
     """Perfil de volume por faixa de preco, construido a partir dos candles
-    do timeframe operacional (hist_candles)."""
+    do timeframe operacional (hist_candles).
+
+    FALLBACK TPO — quando NENHUM candle da amostra tem volume real (captura
+    de tela sem o campo "volume" lido — ver VolumeStatus="nao_lido"), o
+    perfil deixa de devolver "indisponivel" por amostra insuficiente mesmo
+    tendo dezenas de candles: passa a contar TEMPO NO PRECO (1 "voto" por
+    candle que passou por aquela faixa, distribuido pela mesma fracao de
+    sobreposicao que o volume real usaria) — a mesma ideia do Market
+    Profile classico (TPO, Time Price Opportunity), pensado justamente para
+    mercados/fontes sem volume por candle confiavel. Sinalizado em
+    "modo_estimado" para a tela avisar que o perfil e por TEMPO, nao por
+    contratos negociados. Com volume real em pelo menos 1 candle da
+    amostra, o calculo permanece 100% o mesmo de antes."""
     hist_c = hist if hist is not None else st.session_state.get("hist_candles", [])
     candles = [c for c in (hist_c or [])
                if num(c.get("maxima", 0)) > 0 and num(c.get("minima", 0)) > 0]
     vazio = {"valido": False, "poc": 0.0, "hvn": [], "lvn": [], "bins": [],
-             "va_superior": 0.0, "va_inferior": 0.0, "amostra": len(candles)}
+             "va_superior": 0.0, "va_inferior": 0.0, "amostra": len(candles),
+             "modo_estimado": False, "motivo": ""}
     if len(candles) < VOLUME_PROFILE_AMOSTRA_MINIMA:
+        vazio["motivo"] = "amostra insuficiente"
         return vazio
 
     maxima_geral = max(num(c.get("maxima", 0)) for c in candles)
     minima_geral = min(num(c.get("minima", 0)) for c in candles)
     amplitude = maxima_geral - minima_geral
     if amplitude <= 0:
+        vazio["motivo"] = "sem variação de preço nos candles da amostra"
         return vazio
+
+    modo_estimado = not any(num(c.get("volume", 0)) > 0 for c in candles)
 
     largura_bin = amplitude / n_bins
     bins = [{"preco_min": round(minima_geral + i * largura_bin, 2),
@@ -4482,7 +4499,11 @@ def calcular_volume_profile(dados_tela=None, hist=None, n_bins=VOLUME_PROFILE_BI
 
     for c in candles:
         cmax = num(c.get("maxima", 0)); cmin = num(c.get("minima", 0))
-        cvol = num(c.get("volume", 0))
+        # Sem volume real em NENHUM candle da amostra: usa peso 1 por candle
+        # (TPO — quantos candles passaram por cada faixa de preco) em vez de
+        # devolver "indisponivel". Com volume real em pelo menos 1 candle,
+        # mantem a logica original (candle individual sem volume pesa 0).
+        cvol = 1.0 if modo_estimado else num(c.get("volume", 0))
         faixa_candle = cmax - cmin
         for b in bins:
             sobreposicao = min(cmax, b["preco_max"]) - max(cmin, b["preco_min"])
@@ -4491,6 +4512,7 @@ def calcular_volume_profile(dados_tela=None, hist=None, n_bins=VOLUME_PROFILE_BI
                 b["volume"] += cvol * fracao
 
     if all(b["volume"] <= 0 for b in bins):
+        vazio["motivo"] = "candles sem volume nem faixa de preço aproveitável"
         return vazio
 
     poc_bin = max(bins, key=lambda b: b["volume"])
@@ -4523,16 +4545,24 @@ def calcular_volume_profile(dados_tela=None, hist=None, n_bins=VOLUME_PROFILE_BI
 
     return {"valido": True, "poc": poc, "hvn": sorted(hvn), "lvn": sorted(lvn),
             "bins": bins, "va_superior": va_superior, "va_inferior": va_inferior,
-            "amostra": len(candles)}
+            "amostra": len(candles), "modo_estimado": modo_estimado}
 
 
 def render_volume_profile(vp_info, preco=0.0):
     """Renderiza o painel de Volume Profile (POC/HVN/LVN) na aba de Liquidez."""
     st.markdown('<div class="section-title">📊 Volume Profile (POC · HVN · LVN)</div>', unsafe_allow_html=True)
     if not vp_info or not vp_info.get("valido"):
-        st.caption("Volume Profile indisponível — amostra insuficiente "
-                   f"({(vp_info or {}).get('amostra', 0)}/{VOLUME_PROFILE_AMOSTRA_MINIMA} candles).")
+        _motivo = (vp_info or {}).get("motivo") or "amostra insuficiente"
+        if _motivo == "amostra insuficiente":
+            st.caption("Volume Profile indisponível — amostra insuficiente "
+                       f"({(vp_info or {}).get('amostra', 0)}/{VOLUME_PROFILE_AMOSTRA_MINIMA} candles).")
+        else:
+            st.caption(f"Volume Profile indisponível — {_motivo}.")
         return
+    if vp_info.get("modo_estimado"):
+        st.caption("⚠️ Volume do candle não capturado nesta sessão — perfil abaixo é uma "
+                   "ESTIMATIVA por TEMPO NO PREÇO (TPO): POC/HVN/LVN refletem quantos candles "
+                   "passaram por cada faixa, não contratos negociados.")
     pcol1, pcol2, pcol3 = st.columns(3)
     pcol1.metric("POC", f"{vp_info['poc']:.2f}")
     pcol2.metric("Área de valor (70%)", f"{vp_info['va_inferior']:.2f} – {vp_info['va_superior']:.2f}")
