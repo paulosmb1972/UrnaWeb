@@ -184,10 +184,20 @@ MODELO_OPENROUTER = os.getenv("OPENROUTER_MODEL", "google/gemini-2.5-flash").str
 #   33 testes cobrindo conversao numerica, agregacao de candle e
 #   degradacao com o Profit fechado) — so exige Windows + Profit aberto e
 #   logado, sem DLL nem credenciais extras da corretora. RTD_PROGID ajusta
-#   o ProgID COM se a instalacao usar um nome diferente do padrao.
+#   o ProgID COM se a instalacao usar um nome diferente do padrao, e
+#   RTD_TICKER (ex.: WDOV26) da o ativo de partida — sem ele o RTD so
+#   descobre o ativo depois do 1o ciclo de captura de tela bem-sucedido.
 FONTE_DADOS_MERCADO = os.getenv("FONTE_DADOS_MERCADO", "captura_tela").strip().lower()
 PROFITDLL_PATH = os.getenv("PROFITDLL_PATH", "").strip()
 RTD_PROGID = os.getenv("RTD_PROGID", "ProfitDLL.RTD").strip()
+# BUG CORRIGIDO — obter_dados_mercado_externo() so descobria o ativo lendo
+# "ativo" de ultimos_dados_tela, que so existe DEPOIS do primeiro ciclo de
+# CAPTURA DE TELA bem-sucedido. Ou seja: com FONTE_DADOS_MERCADO=rtd (cujo
+# proposito e justamente NAO depender de captura de tela), o RTD nunca
+# tentava conectar no primeiro ciclo — a aba Geral mostrava "nao conectada"
+# sem motivo nenhum (a mensagem de erro ficava vazia porque _rtd_conectar
+# nunca chegava a ser chamada). RTD_TICKER da um ativo de partida explicito.
+RTD_TICKER = os.getenv("RTD_TICKER", "").strip().upper()
 _profitdll_estado = {"dll": None, "conectado": False, "erro": ""}
 _rtd_estado = {"fonte": None, "conectado": False, "erro": "", "ativo": ""}
 
@@ -256,7 +266,17 @@ def obter_dados_mercado_externo(ativo=""):
     alternativa estiver disponivel, ou None quando nao estiver — nesse caso
     executar_analise() usa a captura de tela normalmente, sem quebrar nada."""
     if FONTE_DADOS_MERCADO == "rtd":
-        if not ativo or not _rtd_conectar(ativo):
+        # Sem "ativo" ainda (1o ciclo, antes de qualquer captura de tela
+        # bem-sucedida) cai para RTD_TICKER — sem isso o RTD nunca tentava
+        # conectar sozinho, o que derrotava o proposito dele (nao depender
+        # de captura de tela).
+        ativo_rtd = ativo or RTD_TICKER
+        if not ativo_rtd:
+            _rtd_estado["erro"] = ("nenhum ativo conhecido ainda — defina a variavel de "
+                                    "ambiente RTD_TICKER (ex.: RTD_TICKER=WDOV26) ou rode "
+                                    "1 ciclo por captura de tela primeiro.")
+            return None
+        if not _rtd_conectar(ativo_rtd):
             return None
         try:
             d = _rtd_estado["fonte"].ler_dados_tela()
