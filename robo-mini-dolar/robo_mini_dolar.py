@@ -8095,6 +8095,451 @@ def _contexto_fallback_seguro(dados_tela: Dict[str, Any],
     return base
 
 
+# =============================================================================
+# VEREDITOS POR ABA — MACRO / LIQUIDEZ / CONFLUENCIA
+# Reaproveitam as funcoes de calculo ja existentes (nada e recalculado do
+# zero): cada aba de indicadores devolve o MESMO formato de veredito
+# {vies, forca, convicao, fatores, resumo} para ficar consistente na tela.
+# =============================================================================
+
+def veredito_macro_aba():
+    """Aba 2 — usa 1:1 a leitura de vies_macro_consolidado (DXY/EWZ/VIX/PMI/PTAX).
+    Dado essencial ausente => NEUTRO explicito, nunca herda valor velho."""
+    macro = ler_dados_macro()
+    v = vies_macro_consolidado(macro)
+    convicao = min(100, abs(int(v.get("pontos", 0))) * 20)
+    return {
+        "vies": v.get("vies", "neutro"),
+        "forca": v.get("forca", "neutro"),
+        "convicao": convicao,
+        "fatores": v.get("fatores", []),
+        "resumo": v.get("resumo", ""),
+        "indisponivel": v.get("indisponivel", False),
+        "parcial": v.get("parcial", False),
+    }, macro
+
+
+# ---- LIQUIDEZ: reponderacao dos gatilhos + modo degradado (revisao) ----
+# Corte de forca dos "lotes institucionais" que vale como voto: livro
+# AGREGADO (sem nomes de corretora) raramente forma paredes >=1000 contratos
+# tao desequilibradas quanto o antigo corte de 30 exigia.
+LIMITE_FORCA_LOTES_VOTO = 20
+# Peso do SNAPSHOT do book (paredes, desequilibrio estatico, lotes) quando a
+# qualidade do dado esta degradada — as fontes que NAO dependem do snapshot
+# pontual (absorcao, flow map dinamico, VWAP bands) continuam com peso cheio.
+FATOR_QUALIDADE_DEGRADADO = 0.5
+# Teto de conviccao quando qualidade_dado="degradado" — a direcao continua
+# visivel, so a forca do sinal fica limitada enquanto o snapshot for suspeito.
+CONVICCAO_MAXIMA_DEGRADADO = 35
+# Piso do denominador da conviccao (mesmo espirito do "6.0" antigo, so que
+# agora e um PISO, nao um teto fixo — quando mais fontes concordam, o
+# denominador cresce com elas em vez de "achatar" a conviccao sempre igual).
+PESO_MAXIMO_LIQUIDEZ_PISO = 6.0
+# Janela de preco (pts) para a votacao de Volume Profile: "perto" do
+# POC/HVN/LVN o suficiente para valer como teste daquele nivel.
+_LIQUIDEZ_TOL_VP_PTS = TOLERANCIA_LVN_PONTOS
+
+
+def veredito_liquidez_aba(agentes_info=None, dados_tela=None, contexto=None):
+    """Aba 3 — funde absorcao, desequilibrio de book (escalonado), agressao
+    (nivel + tendencia), lotes institucionais, desequilibrio liquido das
+    paredes proximas, liquidez passiva (flow map estatico), vies dinamico
+    do flow map, VWAP bands e Volume Profile num veredito unico.
+
+    Book "congelado" deixou de ser motivo para descartar a leitura inteira:
+    vira qualidade_dado="degradado" (snapshot do book com peso reduzido,
+    conviccao limitada), nunca NEUTRO 0% quando existe dado de verdade —
+    isso so acontece quando NAO HA leitura nenhuma (estado="indisponivel").
+    """
+    ag = agentes_info if agentes_info is not None else st.session_state.get("ultimos_agentes") or {}
+    dt = dados_tela if dados_tela is not None else st.session_state.get("ultimos_dados_tela") or {}
+    ctx = contexto if contexto is not None else st.session_state.get("ultimo_contexto") or {}
+    preco = num(dt.get("preco_atual", 0))
+
+    tem_agentes = bool((ag.get("ofertantes_compra") or []) or (ag.get("ofertantes_venda") or []))
+    if preco <= 0 or not tem_agentes:
+        return ({"vies": "neutro", "forca": "neutro", "convicao": 0, "estado": "indisponivel",
+                 "qualidade_dado": "indisponivel",
+                 "fatores": ["Sem leitura de preço/book nesta janela — aguardando captura."],
+                 "resumo": "Liquidez indisponível — sem dado.", "contras": []},
+                {"fluxo": {}, "lotes": {}, "integridade": {}})
+
+    # registrar=False em AMBAS: esta funcao roda a cada rerun do Streamlit
+    # (autorefresh, clique, troca de aba) — quem registra de verdade e o
+    # motor (classificar_contexto), 1x por leitura real.
+    integridade = validar_integridade_book(ag, preco, registrar=False)
+    fluxo = calcular_pressao_fluxo(ag, preco, registrar=False)
+    lotes = avaliar_lotes_institucionais(ag, preco)
+    dados_brutos = {"fluxo": fluxo, "lotes": lotes, "integridade": integridade}
+
+    # "Congelado" pelo RECORTE que validar_integridade_book olha (poucos
+    # niveis) pode ser falso-positivo em book agregado. Se qualquer sinal
+    # INDEPENDENTE do snapshot mostrar movimento real (agressao mudando,
+    # liquidez passiva entrando/saindo), o dado nao esta parado — so aquele
+    # recorte especifico ficou por tras.
+    _flow_dyn = (ctx.get("flow_map_dinamico") or {}) if ctx else {}
+    _moveu_fora_do_snapshot = (
+        abs(num(fluxo.get("delta_agressao", 0))) >= 3.0
+        or abs(num(_flow_dyn.get("delta_bid_ciclo", 0))) >= 50
+        or abs(num(_flow_dyn.get("delta_ask_ciclo", 0))) >= 50
+    )
+
+    qualidade_dado = "ok"
+    motivo_qualidade = ""
+    if integridade.get("fora_de_preco"):
+        # Book fora de preco e problema de CAPTURA (janela errada/atrasada),
+        # nao mercado parado — aqui o snapshot inteiro pesa menos mesmo.
+        qualidade_dado = "degradado"
+        motivo_qualidade = integridade.get("motivo", "book fora de preço")
+    elif integridade.get("congelado") and not _moveu_fora_do_snapshot:
+        qualidade_dado = "degradado"
+        motivo_qualidade = (f"{integridade.get('motivo', 'book suspeito')} — snapshot do book "
+                             f"(paredes/desequilíbrio estático) entra com peso reduzido; as demais "
+                             f"fontes (fluxo, flow map dinâmico, VWAP bands) continuam com peso cheio.")
+    fator_snap = FATOR_QUALIDADE_DEGRADADO if qualidade_dado == "degradado" else 1.0
+
+    votos = {"compra": 0.0, "venda": 0.0}
+    fatores = []
+    contras = []
+
+    # ---- ABSORCAO: nao depende do snapshot pontual, peso cheio sempre ----
+    if fluxo.get("absorcao") == "compra_absorvendo_venda":
+        votos["compra"] += 3.0
+        fatores.append("Absorção compradora no fluxo (venda sendo absorvida) [+3.00]")
+    elif fluxo.get("absorcao") == "venda_absorvendo_compra":
+        votos["venda"] += 3.0
+        fatores.append("Absorção vendedora no fluxo (compra sendo absorvida) [+3.00]")
+
+    # ---- DESEQUILIBRIO DE BOOK: escalonado em vez do corte unico de 20% —
+    # os -15,4% de um book real nao valiam nada antes. Faz parte do SNAPSHOT. ----
+    des = num(fluxo.get("desequilibrio", 0))
+    _peso_des = 2.50 if abs(des) >= 35 else (1.50 if abs(des) >= 20 else (0.75 if abs(des) >= 12 else 0.0))
+    if _peso_des > 0:
+        _peso_des *= fator_snap
+        lado = "compra" if des > 0 else "venda"
+        votos[lado] += _peso_des
+        fatores.append(f"Book desequilibrado para {lado} ({des:+.1f}%) [+{_peso_des:.2f}]")
+
+    # ---- LIQUIDEZ PASSIVA (flow map estatico, profundidade INTEIRA do book
+    # — diferente do desequilibrio acima, que usa so os 5 primeiros niveis
+    # de agentes_info). Faz parte do SNAPSHOT tambem. ----
+    try:
+        _flow_liq = calcular_flow_map_liquidez(ag, preco)
+    except Exception:
+        _flow_liq = {"valido": False}
+    if _flow_liq.get("valido") and _flow_liq.get("vies") in ("compradora", "vendedora"):
+        _peso_liq = 1.5 * fator_snap
+        _lado_liq = "compra" if _flow_liq["vies"] == "compradora" else "venda"
+        votos[_lado_liq] += _peso_liq
+        fatores.append(f"Liquidez passiva: {int(_flow_liq.get('qtd_total_compra', 0))} bid vs "
+                        f"{int(_flow_liq.get('qtd_total_venda', 0))} ask "
+                        f"({_flow_liq.get('desequilibrio_pct', 0):+.1f}%) [+{_peso_liq:.2f}]")
+
+    # ---- AGRESSAO COMO NIVEL, alem da tendencia — os 60% da tela nao
+    # votavam antes, so a variacao (crescente/decrescente) contava. ----
+    _agr_pct = num(fluxo.get("agressao_pct", 50.0))
+    _peso_agr_nivel = round(min(2.0, (abs(_agr_pct - 50.0) / 10.0) * 0.6), 2)
+    if _peso_agr_nivel > 0.05:
+        _lado_agr = "compra" if _agr_pct > 50 else "venda"
+        votos[_lado_agr] += _peso_agr_nivel
+        fatores.append(f"Agressão {_lado_agr}dora em {_agr_pct:.1f}% [+{_peso_agr_nivel:.2f}]")
+
+    # ---- LOTES INSTITUCIONAIS: vies classico (corte de forca reduzido) ----
+    if lotes.get("vies") in ("compra", "venda") and num(lotes.get("forca", 0)) >= LIMITE_FORCA_LOTES_VOTO:
+        _peso_lotes = 1.5 * fator_snap
+        votos[lotes["vies"]] += _peso_lotes
+        fatores.append(f"Grandes lotes sustentando {lotes['vies']} — {lotes.get('resumo','')} "
+                        f"[+{_peso_lotes:.2f}]")
+
+    # ---- DESEQUILIBRIO LIQUIDO DAS PAREDES PROXIMAS: funciona em book
+    # agregado mesmo quando nenhum lado sozinho bate o corte de "lote
+    # institucional" acima (o vies classico exige diferenca >=25% entre
+    # defesa e teto; isto aqui vota proporcional, sem esse corte). ----
+    _qd, _qt = num(lotes.get("qtd_defesa", 0)), num(lotes.get("qtd_teto", 0))
+    if _qd or _qt:
+        _dif_paredes = (_qd - _qt) / (_qd + _qt)
+        _peso_paredes = round(min(1.5, abs(_dif_paredes) * 1.5) * fator_snap, 2)
+        if _peso_paredes > 0.05:
+            _lado_paredes = "compra" if _qd > _qt else "venda"
+            votos[_lado_paredes] += _peso_paredes
+            fatores.append(f"Desequilíbrio líquido das paredes próximas: {int(_qd)} vs {int(_qt)} "
+                            f"[+{_peso_paredes:.2f}]")
+
+    # ---- TENDENCIA DE AGRESSAO (separada do nivel, soma a parte) ----
+    tend = fluxo.get("tendencia", "neutro")
+    if tend == "compradora_crescente":
+        votos["compra"] += 1.0
+        fatores.append(f"Agressão compradora crescente (Δ{fluxo.get('delta_agressao',0):+.1f}p.p.) [+1.00]")
+    elif tend == "vendedora_crescente":
+        votos["venda"] += 1.0
+        fatores.append(f"Agressão vendedora crescente (Δ{fluxo.get('delta_agressao',0):+.1f}p.p.) [+1.00]")
+
+    # ---- ROMPIMENTO DE CANDLE COM VOLUME (mantido como estava) ----
+    try:
+        romp = gatilho_rompimento_candle(dt) if dt else {}
+    except Exception:
+        romp = {}
+    _pos_range = num(ctx.get("pos_range", 50))
+    _no_extremo = bool(ctx.get("reversao_extremo")) or _pos_range >= 80 or _pos_range <= 20
+    if romp.get("dispara") and romp.get("direcao") in ("compra", "venda"):
+        if _no_extremo:
+            votos[romp["direcao"]] += 1.0
+            fatores.append(f"Rompimento de candle com volume confirmado ({romp['direcao']}) [+1.00]")
+        else:
+            contras.append("rompimento seco no meio do range (trava de falso rompimento)")
+
+    exf = fluxo.get("exaustao_fluxo", "")
+    if exf == "alta_perdendo_forca":
+        votos["venda"] += 0.5
+        contras.append("exaustão de fluxo na alta")
+    elif exf == "baixa_perdendo_forca":
+        votos["compra"] += 0.5
+        contras.append("exaustão de fluxo na baixa")
+
+    # ---- FLOW MAP DINAMICO: vies acumulado de liquidez passiva. NAO
+    # recalcula (evitaria sujar flow_map_hist_deltas a cada rerun) — le o
+    # que o motor ja guardou em ultimo_contexto. ----
+    _ciclos_fmd = int(_flow_dyn.get("ciclos_no_historico", 0))
+    if _flow_dyn.get("valido") and _flow_dyn.get("vies_dinamico") in ("compradora", "vendedora"):
+        _peso_fmd = 2.0 if _ciclos_fmd >= 8 else 1.5
+        _lado_fmd = "compra" if _flow_dyn["vies_dinamico"] == "compradora" else "venda"
+        votos[_lado_fmd] += _peso_fmd
+        fatores.append(f"Flow map dinâmico: viés {_flow_dyn['vies_dinamico']} em {_ciclos_fmd} ciclos "
+                        f"(Δbid {_flow_dyn.get('delta_bid_ciclo',0):+.0f} · "
+                        f"Δask {_flow_dyn.get('delta_ask_ciclo',0):+.0f}) [+{_peso_fmd:.2f}]")
+
+    # ---- VWAP BANDS: reversao a media quando o preco esta esticado. Le do
+    # contexto quando disponivel (calcular_vwap_bands e pura, recalcular nao
+    # suja estado nenhum, mas reaproveitar evita ler hist_leituras de novo). ----
+    _vwap_b = (ctx.get("vwap_bands") if ctx and ctx.get("vwap_bands") else calcular_vwap_bands(dt))
+    if _vwap_b and _vwap_b.get("valido"):
+        _estado_vwap = _vwap_b.get("estado", "indefinido")
+        _peso_vwap = {"extensao_superior": 1.0, "acima_banda1": 0.5,
+                      "extensao_inferior": 1.0, "abaixo_banda1": 0.5}.get(_estado_vwap, 0.0)
+        if _peso_vwap > 0:
+            _lado_vwap = "venda" if _estado_vwap in ("extensao_superior", "acima_banda1") else "compra"
+            votos[_lado_vwap] += _peso_vwap
+            fatores.append(f"VWAP bands: preço em {_estado_vwap.replace('_',' ')} "
+                            f"(reversão à média) [+{_peso_vwap:.2f}]")
+
+    # ---- VOLUME PROFILE: LVN a favor do movimento, POC/HVN contra ----
+    _vp = (ctx.get("volume_profile") if ctx and ctx.get("volume_profile")
+           else calcular_volume_profile(dt, st.session_state.get("hist_candles")))
+    _mm_txt = str(ctx.get("momentum", "")) if ctx else ""
+    _dir_momentum = "compra" if _mm_txt.startswith("alta") else ("venda" if _mm_txt.startswith("baixa") else "")
+    if _vp and _vp.get("valido") and preco > 0 and _dir_momentum:
+        _perto_lvn = any(abs(preco - lv) <= _LIQUIDEZ_TOL_VP_PTS for lv in (_vp.get("lvn") or []))
+        _perto_poc_hvn = (abs(preco - num(_vp.get("poc", 0))) <= _LIQUIDEZ_TOL_VP_PTS
+                          or any(abs(preco - hv) <= _LIQUIDEZ_TOL_VP_PTS for hv in (_vp.get("hvn") or [])))
+        if _perto_lvn:
+            votos[_dir_momentum] += 1.0
+            fatores.append(f"Preço perto de LVN — tende a atravessar na direção do movimento "
+                            f"({_dir_momentum}) [+1.00]")
+        elif _perto_poc_hvn:
+            _dir_rejeicao = "venda" if _dir_momentum == "compra" else "compra"
+            votos[_dir_rejeicao] += 1.0
+            fatores.append(f"Preço testando POC/HVN contra o movimento — favorece rejeição "
+                            f"({_dir_rejeicao}) [+1.00]")
+
+    total = votos["compra"] + votos["venda"]
+    # Denominador com PISO (nao mais um 6.0 fixo): quando mais fontes
+    # concordam, total cresce e o denominador cresce junto — uma unica fonte
+    # fraca nao vira 100%, mas 4-5 fontes concordando chegam em "forte" de
+    # verdade em vez de ficarem sempre presas perto de 50%.
+    peso_maximo = max(PESO_MAXIMO_LIQUIDEZ_PISO, total)
+
+    if total <= 0:
+        return ({"vies": "neutro", "forca": "neutro", "convicao": 0, "estado": "sem_direcao",
+                 "qualidade_dado": qualidade_dado,
+                 "fatores": (([motivo_qualidade] if motivo_qualidade else [])
+                             + ["sem sinal de liquidez dominante nesta leitura"]),
+                 "resumo": "Liquidez sem direção definida", "contras": contras,
+                 "peso_maximo_usado": round(peso_maximo, 2)},
+                dados_brutos)
+
+    direcao = "compra" if votos["compra"] > votos["venda"] else "venda"
+    dom = max(votos["compra"], votos["venda"])
+    perdedor = min(votos.values())
+    convicao_calc = (dom / peso_maximo) * 100
+    if perdedor > 0:
+        convicao_calc *= max(0.5, 1 - (perdedor / dom))
+    convicao_calc -= len(contras) * 6
+    if qualidade_dado == "degradado":
+        convicao_calc *= fator_snap
+    convicao = int(max(0, round(convicao_calc)))
+    if qualidade_dado == "degradado":
+        convicao = min(convicao, CONVICCAO_MAXIMA_DEGRADADO)
+
+    forca = "forte" if convicao >= 55 else ("moderado" if convicao >= 30 else "fraco")
+    # Direcao fica visivel mesmo em "fraco" — antes virava neutro e o
+    # usuario lia "sem sinal" onde na verdade havia sinal, so que fraco.
+    vies = direcao
+
+    _resumo = f"Liquidez aponta {direcao} · convicção {convicao}%"
+    if motivo_qualidade:
+        _resumo += f" · qualidade do dado: {qualidade_dado} ({motivo_qualidade})"
+        fatores = [motivo_qualidade] + fatores
+
+    return ({"vies": vies, "forca": forca, "convicao": convicao, "estado": "direcional",
+             "qualidade_dado": qualidade_dado,
+             "fatores": fatores[:9], "contras": contras,
+             "resumo": _resumo, "peso_maximo_usado": round(peso_maximo, 2)},
+            dados_brutos)
+
+
+def veredito_candles_aba(dados_tela=None, contexto=None):
+    """Aba 'Gráfico de Candles' — funde momentum, Bollinger, IFR, padrão e
+    rompimento de candle, robô preditivo e tendência de abertura num
+    veredito SÓ TÉCNICO (sem macro/liquidez), com o mesmo esquema de votos
+    ponderados das abas Macro e Liquidez."""
+    dt = dados_tela if dados_tela is not None else st.session_state.get("ultimos_dados_tela") or {}
+    ctx = contexto if contexto is not None else st.session_state.get("ultimo_contexto") or {}
+    if not dt or not ctx:
+        return {"vies": "neutro", "forca": "neutro", "convicao": 0,
+                "fatores": ["Sem leitura ainda — execute uma análise."],
+                "resumo": "Aguardando primeira leitura."}
+
+    votos = {"compra": 0.0, "venda": 0.0}
+    fatores = []
+    contras = []
+
+    mm = str(ctx.get("momentum", "neutro"))
+    if mm in ("alta", "alta_forte"):
+        peso = 2.0 if mm == "alta_forte" else 1.0
+        votos["compra"] += peso
+        fatores.append(f"Momentum {mm.replace('_', ' ')}")
+    elif mm in ("baixa", "baixa_forte"):
+        peso = 2.0 if mm == "baixa_forte" else 1.0
+        votos["venda"] += peso
+        fatores.append(f"Momentum {mm.replace('_', ' ')}")
+
+    _acao_pad = str(ctx.get("acao_pretendida") or ctx.get("acao_objetiva") or "").lower()
+    if ctx.get("padrao_confirma") and _acao_pad in ("compra", "venda"):
+        votos[_acao_pad] += 1.5
+        fatores.append(f"Padrão de candle ({ctx.get('padrao_candle')}) confirma {_acao_pad}")
+    elif ctx.get("padrao_contradiz"):
+        contras.append(f"padrão de candle ({ctx.get('padrao_candle')}) contra a direção")
+
+    if ctx.get("rompimento_dispara") and ctx.get("rompimento_direcao") in ("compra", "venda"):
+        votos[ctx["rompimento_direcao"]] += 2.0
+        fatores.append(f"Rompimento de candle confirmado ({ctx['rompimento_direcao']})")
+
+    _boll_estado = ctx.get("bollinger_estado", "indefinido")
+    if _boll_estado == "sobrecompra":
+        votos["venda"] += 0.5
+        fatores.append("Bollinger em sobrecompra")
+    elif _boll_estado == "sobrevenda":
+        votos["compra"] += 0.5
+        fatores.append("Bollinger em sobrevenda")
+
+    _ifr_estado = ctx.get("ifr_estado", "indefinido")
+    if _ifr_estado == "sobrecompra":
+        votos["venda"] += 0.5
+        fatores.append(f"IFR em sobrecompra ({num(ctx.get('ifr', 50)):.0f})")
+    elif _ifr_estado == "sobrevenda":
+        votos["compra"] += 0.5
+        fatores.append(f"IFR em sobrevenda ({num(ctx.get('ifr', 50)):.0f})")
+
+    prev = ctx.get("previsao") or {}
+    _dir_prev = prev.get("direcao_prevista")
+    _conf_prev = num(prev.get("confianca", 0))
+    if _dir_prev in ("compra", "venda") and _conf_prev >= 40:
+        votos[_dir_prev] += (_conf_prev / 100.0) * 2.0
+        fatores.append(f"Robô preditivo aponta {_dir_prev} (confiança {int(_conf_prev)}%)")
+
+    _ab = ctx.get("abertura_info") or {}
+    if _ab.get("tendencia_formando") in ("compra", "venda") and not _ab.get("em_observacao"):
+        votos[_ab["tendencia_formando"]] += 0.5
+        fatores.append(f"Tendência de abertura: {_ab['tendencia_formando']}")
+
+    total = votos["compra"] + votos["venda"]
+    if total <= 0:
+        return {"vies": "neutro", "forca": "neutro", "convicao": 0,
+                "fatores": ["sem sinal técnico dominante nesta leitura"],
+                "resumo": "Gráfico de candles sem direção definida", "contras": contras}
+
+    direcao = "compra" if votos["compra"] > votos["venda"] else "venda"
+    dom = max(votos["compra"], votos["venda"])
+    convicao = int(min(100, round((dom / max(6.0, total)) * 100)))
+    if votos["compra"] > 0 and votos["venda"] > 0:
+        convicao = int(convicao * (1 - min(0.5, min(votos.values()) / dom)))
+    convicao = max(0, convicao - len(contras) * 10)
+    forca = "forte" if convicao >= 55 else ("moderado" if convicao >= 30 else "neutro")
+    vies = direcao if forca != "neutro" else "neutro"
+
+    return {"vies": vies, "forca": forca, "convicao": convicao,
+            "fatores": fatores[:6], "contras": contras,
+            "resumo": f"Gráfico de candles aponta {direcao} · convicção {convicao}%"}
+
+
+def veredito_confluencia_aba(veredito_liq=None, veredito_macro=None, veredito_candles=None):
+    """Aba 4 — parte do motor ja calibrado (consolidar_veredito, que ja pondera
+    gatilho, previsao, absorcao/book basicos e os setups tecnicos de maior
+    acerto medido) e SOMA o voto do painel macro e o voto do painel de
+    liquidez (aba 3, ja calibrada e com fonte unica de verdade) como fontes
+    adicionais. Liquidez usada como VOTO aqui e a mesma que ja embutida no
+    motor via contexto_fluxo/book — nao e recalculo do zero, e sim o
+    resultado ja pronto de veredito_liquidez_aba(), na MESMA escala de peso
+    do Macro (nao duplica calculo, so reaproveita o resultado). Candles
+    continua so como reforco textual: o motor principal ja embute
+    momentum/padrao de candle no proprio score historico calibrado, e
+    contar de novo aqui inflaria o mesmo sinal duas vezes."""
+    base = dict(st.session_state.get("ultimo_veredito") or {})
+    if not base:
+        return {"vies": "neutro", "forca": "neutro", "convicao": 0,
+                "fatores": ["Sem leitura ainda — execute uma análise."],
+                "resumo": "Aguardando primeira leitura."}
+
+    macro_v = veredito_macro or {}
+    liq_v = veredito_liq or {}
+    votos = {"compra": 0.0, "venda": 0.0}
+    _dir_base = base.get("direcao")
+    if _dir_base in ("compra", "venda"):
+        votos[_dir_base] = (num(base.get("convicao", 0)) / 100.0) * 6.0
+
+    _mv, _mf = macro_v.get("vies"), macro_v.get("forca")
+    if _mv in ("compra", "venda"):
+        votos[_mv] += 1.5 if _mf == "forte" else 0.75
+
+    # Liquidez vota na MESMA escala do Macro (antes so entrava como texto no
+    # detalhamento, nunca mudava a conviccao final — mesmo com a aba
+    # mostrando 100%, o numero da Confluencia ficava travado no que o Macro
+    # sozinho dava). "forca" ja vem calibrada por veredito_liquidez_aba
+    # (fraco/moderado/forte), entao usa o mesmo corte binario do Macro em
+    # vez de reponderar por conviccao bruta de novo aqui.
+    _lv, _lf = liq_v.get("vies"), liq_v.get("forca")
+    if _lv in ("compra", "venda"):
+        votos[_lv] += 1.5 if _lf == "forte" else 0.75
+
+    total = votos["compra"] + votos["venda"]
+    detalhe = list(base.get("detalhe", []))
+    if _mv in ("compra", "venda"):
+        detalhe.append(f"Macro {_mf} para {_mv}")
+    if veredito_liq and veredito_liq.get("vies") in ("compra", "venda"):
+        detalhe.append(f"Liquidez {veredito_liq.get('forca')} para {veredito_liq.get('vies')} "
+                        f"({veredito_liq.get('convicao', 0)}%)")
+    if veredito_candles and veredito_candles.get("vies") in ("compra", "venda"):
+        detalhe.append(f"Gráfico de candles {veredito_candles.get('forca')} para "
+                        f"{veredito_candles.get('vies')} ({veredito_candles.get('convicao', 0)}%)")
+
+    if total <= 0:
+        direcao, convicao = base.get("direcao", "indefinida"), int(num(base.get("convicao", 0)))
+    else:
+        direcao = "compra" if votos["compra"] >= votos["venda"] else "venda"
+        convicao = int(min(100, round((max(votos.values()) / max(6.0, total)) * 100)))
+
+    forca = "forte" if convicao >= 55 else ("moderado" if convicao >= 30 else "fraco")
+    saida = dict(base)
+    saida["vies"] = direcao if convicao > 0 else "neutro"
+    saida["forca"] = forca
+    saida["convicao"] = convicao
+    saida["fatores"] = detalhe[:8]
+    saida["contras"] = base.get("contras", [])
+    saida["resumo"] = (f"{len(detalhe)} fontes (setups + gatilho + book + macro + candles) apontam "
+                        f"{direcao} · convicção {convicao}%")
+    return saida
+
+
 def executar_analise():
     ignorar_macro = st.session_state.modo_replay and not st.session_state.usar_macro_no_replay
 
@@ -10935,449 +11380,6 @@ if st.session_state.get("modo_replay") and st.session_state.get("avancar_replay_
 # ABAS PRINCIPAIS
 # =========================
 
-# =============================================================================
-# VEREDITOS POR ABA — MACRO / LIQUIDEZ / CONFLUENCIA
-# Reaproveitam as funcoes de calculo ja existentes (nada e recalculado do
-# zero): cada aba de indicadores devolve o MESMO formato de veredito
-# {vies, forca, convicao, fatores, resumo} para ficar consistente na tela.
-# =============================================================================
-
-def veredito_macro_aba():
-    """Aba 2 — usa 1:1 a leitura de vies_macro_consolidado (DXY/EWZ/VIX/PMI/PTAX).
-    Dado essencial ausente => NEUTRO explicito, nunca herda valor velho."""
-    macro = ler_dados_macro()
-    v = vies_macro_consolidado(macro)
-    convicao = min(100, abs(int(v.get("pontos", 0))) * 20)
-    return {
-        "vies": v.get("vies", "neutro"),
-        "forca": v.get("forca", "neutro"),
-        "convicao": convicao,
-        "fatores": v.get("fatores", []),
-        "resumo": v.get("resumo", ""),
-        "indisponivel": v.get("indisponivel", False),
-        "parcial": v.get("parcial", False),
-    }, macro
-
-
-# ---- LIQUIDEZ: reponderacao dos gatilhos + modo degradado (revisao) ----
-# Corte de forca dos "lotes institucionais" que vale como voto: livro
-# AGREGADO (sem nomes de corretora) raramente forma paredes >=1000 contratos
-# tao desequilibradas quanto o antigo corte de 30 exigia.
-LIMITE_FORCA_LOTES_VOTO = 20
-# Peso do SNAPSHOT do book (paredes, desequilibrio estatico, lotes) quando a
-# qualidade do dado esta degradada — as fontes que NAO dependem do snapshot
-# pontual (absorcao, flow map dinamico, VWAP bands) continuam com peso cheio.
-FATOR_QUALIDADE_DEGRADADO = 0.5
-# Teto de conviccao quando qualidade_dado="degradado" — a direcao continua
-# visivel, so a forca do sinal fica limitada enquanto o snapshot for suspeito.
-CONVICCAO_MAXIMA_DEGRADADO = 35
-# Piso do denominador da conviccao (mesmo espirito do "6.0" antigo, so que
-# agora e um PISO, nao um teto fixo — quando mais fontes concordam, o
-# denominador cresce com elas em vez de "achatar" a conviccao sempre igual).
-PESO_MAXIMO_LIQUIDEZ_PISO = 6.0
-# Janela de preco (pts) para a votacao de Volume Profile: "perto" do
-# POC/HVN/LVN o suficiente para valer como teste daquele nivel.
-_LIQUIDEZ_TOL_VP_PTS = TOLERANCIA_LVN_PONTOS
-
-
-def veredito_liquidez_aba(agentes_info=None, dados_tela=None, contexto=None):
-    """Aba 3 — funde absorcao, desequilibrio de book (escalonado), agressao
-    (nivel + tendencia), lotes institucionais, desequilibrio liquido das
-    paredes proximas, liquidez passiva (flow map estatico), vies dinamico
-    do flow map, VWAP bands e Volume Profile num veredito unico.
-
-    Book "congelado" deixou de ser motivo para descartar a leitura inteira:
-    vira qualidade_dado="degradado" (snapshot do book com peso reduzido,
-    conviccao limitada), nunca NEUTRO 0% quando existe dado de verdade —
-    isso so acontece quando NAO HA leitura nenhuma (estado="indisponivel").
-    """
-    ag = agentes_info if agentes_info is not None else st.session_state.get("ultimos_agentes") or {}
-    dt = dados_tela if dados_tela is not None else st.session_state.get("ultimos_dados_tela") or {}
-    ctx = contexto if contexto is not None else st.session_state.get("ultimo_contexto") or {}
-    preco = num(dt.get("preco_atual", 0))
-
-    tem_agentes = bool((ag.get("ofertantes_compra") or []) or (ag.get("ofertantes_venda") or []))
-    if preco <= 0 or not tem_agentes:
-        return ({"vies": "neutro", "forca": "neutro", "convicao": 0, "estado": "indisponivel",
-                 "qualidade_dado": "indisponivel",
-                 "fatores": ["Sem leitura de preço/book nesta janela — aguardando captura."],
-                 "resumo": "Liquidez indisponível — sem dado.", "contras": []},
-                {"fluxo": {}, "lotes": {}, "integridade": {}})
-
-    # registrar=False em AMBAS: esta funcao roda a cada rerun do Streamlit
-    # (autorefresh, clique, troca de aba) — quem registra de verdade e o
-    # motor (classificar_contexto), 1x por leitura real.
-    integridade = validar_integridade_book(ag, preco, registrar=False)
-    fluxo = calcular_pressao_fluxo(ag, preco, registrar=False)
-    lotes = avaliar_lotes_institucionais(ag, preco)
-    dados_brutos = {"fluxo": fluxo, "lotes": lotes, "integridade": integridade}
-
-    # "Congelado" pelo RECORTE que validar_integridade_book olha (poucos
-    # niveis) pode ser falso-positivo em book agregado. Se qualquer sinal
-    # INDEPENDENTE do snapshot mostrar movimento real (agressao mudando,
-    # liquidez passiva entrando/saindo), o dado nao esta parado — so aquele
-    # recorte especifico ficou por tras.
-    _flow_dyn = (ctx.get("flow_map_dinamico") or {}) if ctx else {}
-    _moveu_fora_do_snapshot = (
-        abs(num(fluxo.get("delta_agressao", 0))) >= 3.0
-        or abs(num(_flow_dyn.get("delta_bid_ciclo", 0))) >= 50
-        or abs(num(_flow_dyn.get("delta_ask_ciclo", 0))) >= 50
-    )
-
-    qualidade_dado = "ok"
-    motivo_qualidade = ""
-    if integridade.get("fora_de_preco"):
-        # Book fora de preco e problema de CAPTURA (janela errada/atrasada),
-        # nao mercado parado — aqui o snapshot inteiro pesa menos mesmo.
-        qualidade_dado = "degradado"
-        motivo_qualidade = integridade.get("motivo", "book fora de preço")
-    elif integridade.get("congelado") and not _moveu_fora_do_snapshot:
-        qualidade_dado = "degradado"
-        motivo_qualidade = (f"{integridade.get('motivo', 'book suspeito')} — snapshot do book "
-                             f"(paredes/desequilíbrio estático) entra com peso reduzido; as demais "
-                             f"fontes (fluxo, flow map dinâmico, VWAP bands) continuam com peso cheio.")
-    fator_snap = FATOR_QUALIDADE_DEGRADADO if qualidade_dado == "degradado" else 1.0
-
-    votos = {"compra": 0.0, "venda": 0.0}
-    fatores = []
-    contras = []
-
-    # ---- ABSORCAO: nao depende do snapshot pontual, peso cheio sempre ----
-    if fluxo.get("absorcao") == "compra_absorvendo_venda":
-        votos["compra"] += 3.0
-        fatores.append("Absorção compradora no fluxo (venda sendo absorvida) [+3.00]")
-    elif fluxo.get("absorcao") == "venda_absorvendo_compra":
-        votos["venda"] += 3.0
-        fatores.append("Absorção vendedora no fluxo (compra sendo absorvida) [+3.00]")
-
-    # ---- DESEQUILIBRIO DE BOOK: escalonado em vez do corte unico de 20% —
-    # os -15,4% de um book real nao valiam nada antes. Faz parte do SNAPSHOT. ----
-    des = num(fluxo.get("desequilibrio", 0))
-    _peso_des = 2.50 if abs(des) >= 35 else (1.50 if abs(des) >= 20 else (0.75 if abs(des) >= 12 else 0.0))
-    if _peso_des > 0:
-        _peso_des *= fator_snap
-        lado = "compra" if des > 0 else "venda"
-        votos[lado] += _peso_des
-        fatores.append(f"Book desequilibrado para {lado} ({des:+.1f}%) [+{_peso_des:.2f}]")
-
-    # ---- LIQUIDEZ PASSIVA (flow map estatico, profundidade INTEIRA do book
-    # — diferente do desequilibrio acima, que usa so os 5 primeiros niveis
-    # de agentes_info). Faz parte do SNAPSHOT tambem. ----
-    try:
-        _flow_liq = calcular_flow_map_liquidez(ag, preco)
-    except Exception:
-        _flow_liq = {"valido": False}
-    if _flow_liq.get("valido") and _flow_liq.get("vies") in ("compradora", "vendedora"):
-        _peso_liq = 1.5 * fator_snap
-        _lado_liq = "compra" if _flow_liq["vies"] == "compradora" else "venda"
-        votos[_lado_liq] += _peso_liq
-        fatores.append(f"Liquidez passiva: {int(_flow_liq.get('qtd_total_compra', 0))} bid vs "
-                        f"{int(_flow_liq.get('qtd_total_venda', 0))} ask "
-                        f"({_flow_liq.get('desequilibrio_pct', 0):+.1f}%) [+{_peso_liq:.2f}]")
-
-    # ---- AGRESSAO COMO NIVEL, alem da tendencia — os 60% da tela nao
-    # votavam antes, so a variacao (crescente/decrescente) contava. ----
-    _agr_pct = num(fluxo.get("agressao_pct", 50.0))
-    _peso_agr_nivel = round(min(2.0, (abs(_agr_pct - 50.0) / 10.0) * 0.6), 2)
-    if _peso_agr_nivel > 0.05:
-        _lado_agr = "compra" if _agr_pct > 50 else "venda"
-        votos[_lado_agr] += _peso_agr_nivel
-        fatores.append(f"Agressão {_lado_agr}dora em {_agr_pct:.1f}% [+{_peso_agr_nivel:.2f}]")
-
-    # ---- LOTES INSTITUCIONAIS: vies classico (corte de forca reduzido) ----
-    if lotes.get("vies") in ("compra", "venda") and num(lotes.get("forca", 0)) >= LIMITE_FORCA_LOTES_VOTO:
-        _peso_lotes = 1.5 * fator_snap
-        votos[lotes["vies"]] += _peso_lotes
-        fatores.append(f"Grandes lotes sustentando {lotes['vies']} — {lotes.get('resumo','')} "
-                        f"[+{_peso_lotes:.2f}]")
-
-    # ---- DESEQUILIBRIO LIQUIDO DAS PAREDES PROXIMAS: funciona em book
-    # agregado mesmo quando nenhum lado sozinho bate o corte de "lote
-    # institucional" acima (o vies classico exige diferenca >=25% entre
-    # defesa e teto; isto aqui vota proporcional, sem esse corte). ----
-    _qd, _qt = num(lotes.get("qtd_defesa", 0)), num(lotes.get("qtd_teto", 0))
-    if _qd or _qt:
-        _dif_paredes = (_qd - _qt) / (_qd + _qt)
-        _peso_paredes = round(min(1.5, abs(_dif_paredes) * 1.5) * fator_snap, 2)
-        if _peso_paredes > 0.05:
-            _lado_paredes = "compra" if _qd > _qt else "venda"
-            votos[_lado_paredes] += _peso_paredes
-            fatores.append(f"Desequilíbrio líquido das paredes próximas: {int(_qd)} vs {int(_qt)} "
-                            f"[+{_peso_paredes:.2f}]")
-
-    # ---- TENDENCIA DE AGRESSAO (separada do nivel, soma a parte) ----
-    tend = fluxo.get("tendencia", "neutro")
-    if tend == "compradora_crescente":
-        votos["compra"] += 1.0
-        fatores.append(f"Agressão compradora crescente (Δ{fluxo.get('delta_agressao',0):+.1f}p.p.) [+1.00]")
-    elif tend == "vendedora_crescente":
-        votos["venda"] += 1.0
-        fatores.append(f"Agressão vendedora crescente (Δ{fluxo.get('delta_agressao',0):+.1f}p.p.) [+1.00]")
-
-    # ---- ROMPIMENTO DE CANDLE COM VOLUME (mantido como estava) ----
-    try:
-        romp = gatilho_rompimento_candle(dt) if dt else {}
-    except Exception:
-        romp = {}
-    _pos_range = num(ctx.get("pos_range", 50))
-    _no_extremo = bool(ctx.get("reversao_extremo")) or _pos_range >= 80 or _pos_range <= 20
-    if romp.get("dispara") and romp.get("direcao") in ("compra", "venda"):
-        if _no_extremo:
-            votos[romp["direcao"]] += 1.0
-            fatores.append(f"Rompimento de candle com volume confirmado ({romp['direcao']}) [+1.00]")
-        else:
-            contras.append("rompimento seco no meio do range (trava de falso rompimento)")
-
-    exf = fluxo.get("exaustao_fluxo", "")
-    if exf == "alta_perdendo_forca":
-        votos["venda"] += 0.5
-        contras.append("exaustão de fluxo na alta")
-    elif exf == "baixa_perdendo_forca":
-        votos["compra"] += 0.5
-        contras.append("exaustão de fluxo na baixa")
-
-    # ---- FLOW MAP DINAMICO: vies acumulado de liquidez passiva. NAO
-    # recalcula (evitaria sujar flow_map_hist_deltas a cada rerun) — le o
-    # que o motor ja guardou em ultimo_contexto. ----
-    _ciclos_fmd = int(_flow_dyn.get("ciclos_no_historico", 0))
-    if _flow_dyn.get("valido") and _flow_dyn.get("vies_dinamico") in ("compradora", "vendedora"):
-        _peso_fmd = 2.0 if _ciclos_fmd >= 8 else 1.5
-        _lado_fmd = "compra" if _flow_dyn["vies_dinamico"] == "compradora" else "venda"
-        votos[_lado_fmd] += _peso_fmd
-        fatores.append(f"Flow map dinâmico: viés {_flow_dyn['vies_dinamico']} em {_ciclos_fmd} ciclos "
-                        f"(Δbid {_flow_dyn.get('delta_bid_ciclo',0):+.0f} · "
-                        f"Δask {_flow_dyn.get('delta_ask_ciclo',0):+.0f}) [+{_peso_fmd:.2f}]")
-
-    # ---- VWAP BANDS: reversao a media quando o preco esta esticado. Le do
-    # contexto quando disponivel (calcular_vwap_bands e pura, recalcular nao
-    # suja estado nenhum, mas reaproveitar evita ler hist_leituras de novo). ----
-    _vwap_b = (ctx.get("vwap_bands") if ctx and ctx.get("vwap_bands") else calcular_vwap_bands(dt))
-    if _vwap_b and _vwap_b.get("valido"):
-        _estado_vwap = _vwap_b.get("estado", "indefinido")
-        _peso_vwap = {"extensao_superior": 1.0, "acima_banda1": 0.5,
-                      "extensao_inferior": 1.0, "abaixo_banda1": 0.5}.get(_estado_vwap, 0.0)
-        if _peso_vwap > 0:
-            _lado_vwap = "venda" if _estado_vwap in ("extensao_superior", "acima_banda1") else "compra"
-            votos[_lado_vwap] += _peso_vwap
-            fatores.append(f"VWAP bands: preço em {_estado_vwap.replace('_',' ')} "
-                            f"(reversão à média) [+{_peso_vwap:.2f}]")
-
-    # ---- VOLUME PROFILE: LVN a favor do movimento, POC/HVN contra ----
-    _vp = (ctx.get("volume_profile") if ctx and ctx.get("volume_profile")
-           else calcular_volume_profile(dt, st.session_state.get("hist_candles")))
-    _mm_txt = str(ctx.get("momentum", "")) if ctx else ""
-    _dir_momentum = "compra" if _mm_txt.startswith("alta") else ("venda" if _mm_txt.startswith("baixa") else "")
-    if _vp and _vp.get("valido") and preco > 0 and _dir_momentum:
-        _perto_lvn = any(abs(preco - lv) <= _LIQUIDEZ_TOL_VP_PTS for lv in (_vp.get("lvn") or []))
-        _perto_poc_hvn = (abs(preco - num(_vp.get("poc", 0))) <= _LIQUIDEZ_TOL_VP_PTS
-                          or any(abs(preco - hv) <= _LIQUIDEZ_TOL_VP_PTS for hv in (_vp.get("hvn") or [])))
-        if _perto_lvn:
-            votos[_dir_momentum] += 1.0
-            fatores.append(f"Preço perto de LVN — tende a atravessar na direção do movimento "
-                            f"({_dir_momentum}) [+1.00]")
-        elif _perto_poc_hvn:
-            _dir_rejeicao = "venda" if _dir_momentum == "compra" else "compra"
-            votos[_dir_rejeicao] += 1.0
-            fatores.append(f"Preço testando POC/HVN contra o movimento — favorece rejeição "
-                            f"({_dir_rejeicao}) [+1.00]")
-
-    total = votos["compra"] + votos["venda"]
-    # Denominador com PISO (nao mais um 6.0 fixo): quando mais fontes
-    # concordam, total cresce e o denominador cresce junto — uma unica fonte
-    # fraca nao vira 100%, mas 4-5 fontes concordando chegam em "forte" de
-    # verdade em vez de ficarem sempre presas perto de 50%.
-    peso_maximo = max(PESO_MAXIMO_LIQUIDEZ_PISO, total)
-
-    if total <= 0:
-        return ({"vies": "neutro", "forca": "neutro", "convicao": 0, "estado": "sem_direcao",
-                 "qualidade_dado": qualidade_dado,
-                 "fatores": (([motivo_qualidade] if motivo_qualidade else [])
-                             + ["sem sinal de liquidez dominante nesta leitura"]),
-                 "resumo": "Liquidez sem direção definida", "contras": contras,
-                 "peso_maximo_usado": round(peso_maximo, 2)},
-                dados_brutos)
-
-    direcao = "compra" if votos["compra"] > votos["venda"] else "venda"
-    dom = max(votos["compra"], votos["venda"])
-    perdedor = min(votos.values())
-    convicao_calc = (dom / peso_maximo) * 100
-    if perdedor > 0:
-        convicao_calc *= max(0.5, 1 - (perdedor / dom))
-    convicao_calc -= len(contras) * 6
-    if qualidade_dado == "degradado":
-        convicao_calc *= fator_snap
-    convicao = int(max(0, round(convicao_calc)))
-    if qualidade_dado == "degradado":
-        convicao = min(convicao, CONVICCAO_MAXIMA_DEGRADADO)
-
-    forca = "forte" if convicao >= 55 else ("moderado" if convicao >= 30 else "fraco")
-    # Direcao fica visivel mesmo em "fraco" — antes virava neutro e o
-    # usuario lia "sem sinal" onde na verdade havia sinal, so que fraco.
-    vies = direcao
-
-    _resumo = f"Liquidez aponta {direcao} · convicção {convicao}%"
-    if motivo_qualidade:
-        _resumo += f" · qualidade do dado: {qualidade_dado} ({motivo_qualidade})"
-        fatores = [motivo_qualidade] + fatores
-
-    return ({"vies": vies, "forca": forca, "convicao": convicao, "estado": "direcional",
-             "qualidade_dado": qualidade_dado,
-             "fatores": fatores[:9], "contras": contras,
-             "resumo": _resumo, "peso_maximo_usado": round(peso_maximo, 2)},
-            dados_brutos)
-
-
-def veredito_candles_aba(dados_tela=None, contexto=None):
-    """Aba 'Gráfico de Candles' — funde momentum, Bollinger, IFR, padrão e
-    rompimento de candle, robô preditivo e tendência de abertura num
-    veredito SÓ TÉCNICO (sem macro/liquidez), com o mesmo esquema de votos
-    ponderados das abas Macro e Liquidez."""
-    dt = dados_tela if dados_tela is not None else st.session_state.get("ultimos_dados_tela") or {}
-    ctx = contexto if contexto is not None else st.session_state.get("ultimo_contexto") or {}
-    if not dt or not ctx:
-        return {"vies": "neutro", "forca": "neutro", "convicao": 0,
-                "fatores": ["Sem leitura ainda — execute uma análise."],
-                "resumo": "Aguardando primeira leitura."}
-
-    votos = {"compra": 0.0, "venda": 0.0}
-    fatores = []
-    contras = []
-
-    mm = str(ctx.get("momentum", "neutro"))
-    if mm in ("alta", "alta_forte"):
-        peso = 2.0 if mm == "alta_forte" else 1.0
-        votos["compra"] += peso
-        fatores.append(f"Momentum {mm.replace('_', ' ')}")
-    elif mm in ("baixa", "baixa_forte"):
-        peso = 2.0 if mm == "baixa_forte" else 1.0
-        votos["venda"] += peso
-        fatores.append(f"Momentum {mm.replace('_', ' ')}")
-
-    _acao_pad = str(ctx.get("acao_pretendida") or ctx.get("acao_objetiva") or "").lower()
-    if ctx.get("padrao_confirma") and _acao_pad in ("compra", "venda"):
-        votos[_acao_pad] += 1.5
-        fatores.append(f"Padrão de candle ({ctx.get('padrao_candle')}) confirma {_acao_pad}")
-    elif ctx.get("padrao_contradiz"):
-        contras.append(f"padrão de candle ({ctx.get('padrao_candle')}) contra a direção")
-
-    if ctx.get("rompimento_dispara") and ctx.get("rompimento_direcao") in ("compra", "venda"):
-        votos[ctx["rompimento_direcao"]] += 2.0
-        fatores.append(f"Rompimento de candle confirmado ({ctx['rompimento_direcao']})")
-
-    _boll_estado = ctx.get("bollinger_estado", "indefinido")
-    if _boll_estado == "sobrecompra":
-        votos["venda"] += 0.5
-        fatores.append("Bollinger em sobrecompra")
-    elif _boll_estado == "sobrevenda":
-        votos["compra"] += 0.5
-        fatores.append("Bollinger em sobrevenda")
-
-    _ifr_estado = ctx.get("ifr_estado", "indefinido")
-    if _ifr_estado == "sobrecompra":
-        votos["venda"] += 0.5
-        fatores.append(f"IFR em sobrecompra ({num(ctx.get('ifr', 50)):.0f})")
-    elif _ifr_estado == "sobrevenda":
-        votos["compra"] += 0.5
-        fatores.append(f"IFR em sobrevenda ({num(ctx.get('ifr', 50)):.0f})")
-
-    prev = ctx.get("previsao") or {}
-    _dir_prev = prev.get("direcao_prevista")
-    _conf_prev = num(prev.get("confianca", 0))
-    if _dir_prev in ("compra", "venda") and _conf_prev >= 40:
-        votos[_dir_prev] += (_conf_prev / 100.0) * 2.0
-        fatores.append(f"Robô preditivo aponta {_dir_prev} (confiança {int(_conf_prev)}%)")
-
-    _ab = ctx.get("abertura_info") or {}
-    if _ab.get("tendencia_formando") in ("compra", "venda") and not _ab.get("em_observacao"):
-        votos[_ab["tendencia_formando"]] += 0.5
-        fatores.append(f"Tendência de abertura: {_ab['tendencia_formando']}")
-
-    total = votos["compra"] + votos["venda"]
-    if total <= 0:
-        return {"vies": "neutro", "forca": "neutro", "convicao": 0,
-                "fatores": ["sem sinal técnico dominante nesta leitura"],
-                "resumo": "Gráfico de candles sem direção definida", "contras": contras}
-
-    direcao = "compra" if votos["compra"] > votos["venda"] else "venda"
-    dom = max(votos["compra"], votos["venda"])
-    convicao = int(min(100, round((dom / max(6.0, total)) * 100)))
-    if votos["compra"] > 0 and votos["venda"] > 0:
-        convicao = int(convicao * (1 - min(0.5, min(votos.values()) / dom)))
-    convicao = max(0, convicao - len(contras) * 10)
-    forca = "forte" if convicao >= 55 else ("moderado" if convicao >= 30 else "neutro")
-    vies = direcao if forca != "neutro" else "neutro"
-
-    return {"vies": vies, "forca": forca, "convicao": convicao,
-            "fatores": fatores[:6], "contras": contras,
-            "resumo": f"Gráfico de candles aponta {direcao} · convicção {convicao}%"}
-
-
-def veredito_confluencia_aba(veredito_liq=None, veredito_macro=None, veredito_candles=None):
-    """Aba 4 — parte do motor ja calibrado (consolidar_veredito, que ja pondera
-    gatilho, previsao, absorcao/book basicos e os setups tecnicos de maior
-    acerto medido) e SOMA o voto do painel macro e o voto do painel de
-    liquidez (aba 3, ja calibrada e com fonte unica de verdade) como fontes
-    adicionais. Liquidez usada como VOTO aqui e a mesma que ja embutida no
-    motor via contexto_fluxo/book — nao e recalculo do zero, e sim o
-    resultado ja pronto de veredito_liquidez_aba(), na MESMA escala de peso
-    do Macro (nao duplica calculo, so reaproveita o resultado). Candles
-    continua so como reforco textual: o motor principal ja embute
-    momentum/padrao de candle no proprio score historico calibrado, e
-    contar de novo aqui inflaria o mesmo sinal duas vezes."""
-    base = dict(st.session_state.get("ultimo_veredito") or {})
-    if not base:
-        return {"vies": "neutro", "forca": "neutro", "convicao": 0,
-                "fatores": ["Sem leitura ainda — execute uma análise."],
-                "resumo": "Aguardando primeira leitura."}
-
-    macro_v = veredito_macro or {}
-    liq_v = veredito_liq or {}
-    votos = {"compra": 0.0, "venda": 0.0}
-    _dir_base = base.get("direcao")
-    if _dir_base in ("compra", "venda"):
-        votos[_dir_base] = (num(base.get("convicao", 0)) / 100.0) * 6.0
-
-    _mv, _mf = macro_v.get("vies"), macro_v.get("forca")
-    if _mv in ("compra", "venda"):
-        votos[_mv] += 1.5 if _mf == "forte" else 0.75
-
-    # Liquidez vota na MESMA escala do Macro (antes so entrava como texto no
-    # detalhamento, nunca mudava a conviccao final — mesmo com a aba
-    # mostrando 100%, o numero da Confluencia ficava travado no que o Macro
-    # sozinho dava). "forca" ja vem calibrada por veredito_liquidez_aba
-    # (fraco/moderado/forte), entao usa o mesmo corte binario do Macro em
-    # vez de reponderar por conviccao bruta de novo aqui.
-    _lv, _lf = liq_v.get("vies"), liq_v.get("forca")
-    if _lv in ("compra", "venda"):
-        votos[_lv] += 1.5 if _lf == "forte" else 0.75
-
-    total = votos["compra"] + votos["venda"]
-    detalhe = list(base.get("detalhe", []))
-    if _mv in ("compra", "venda"):
-        detalhe.append(f"Macro {_mf} para {_mv}")
-    if veredito_liq and veredito_liq.get("vies") in ("compra", "venda"):
-        detalhe.append(f"Liquidez {veredito_liq.get('forca')} para {veredito_liq.get('vies')} "
-                        f"({veredito_liq.get('convicao', 0)}%)")
-    if veredito_candles and veredito_candles.get("vies") in ("compra", "venda"):
-        detalhe.append(f"Gráfico de candles {veredito_candles.get('forca')} para "
-                        f"{veredito_candles.get('vies')} ({veredito_candles.get('convicao', 0)}%)")
-
-    if total <= 0:
-        direcao, convicao = base.get("direcao", "indefinida"), int(num(base.get("convicao", 0)))
-    else:
-        direcao = "compra" if votos["compra"] >= votos["venda"] else "venda"
-        convicao = int(min(100, round((max(votos.values()) / max(6.0, total)) * 100)))
-
-    forca = "forte" if convicao >= 55 else ("moderado" if convicao >= 30 else "fraco")
-    saida = dict(base)
-    saida["vies"] = direcao if convicao > 0 else "neutro"
-    saida["forca"] = forca
-    saida["convicao"] = convicao
-    saida["fatores"] = detalhe[:8]
-    saida["contras"] = base.get("contras", [])
-    saida["resumo"] = (f"{len(detalhe)} fontes (setups + gatilho + book + macro + candles) apontam "
-                        f"{direcao} · convicção {convicao}%")
-    return saida
 
 
 def _card_veredito(titulo, veredito, icone="🧭"):
