@@ -57,7 +57,7 @@ where streamlit >nul 2>nul
 if errorlevel 1 (
     echo [ERRO] O comando "streamlit" nao foi encontrado.
     echo Abra um Prompt de Comando nesta pasta e rode:
-    echo     pip install streamlit pandas requests streamlit-autorefresh
+    echo     pip install -r requirements.txt
     echo Depois feche esta janela e clique de novo no iniciar_robo.bat.
     echo.
     pause
