@@ -795,10 +795,24 @@ def atualizar_macro_agendado(agora=None, forcar=False):
     base["macro_timestamp"] = web.get("timestamp", "")
     # Guarda a leitura anterior de DXY e EWZ: sem ela a variacao percentual
     # nunca era calculada e esses dois indicadores nao pontuavam.
+    #
+    # BUG CORRIGIDO — a condicao aqui exigia "abs(novo - anterior) > 1e-9"
+    # (so grava se o valor mudou) antes de guardar o "_ANTERIOR". DXY vem do
+    # FRED (serie DTWEXBGS, resolucao DIARIA): dentro do mesmo dia o valor
+    # nunca muda, entao essa condicao nunca era verdadeira e DXY_ANTERIOR
+    # nunca era gravado — vies_macro_consolidado() caia sempre no corte de
+    # NIVEL ABSOLUTO (>=105/<=97, calibrado pro DXY classico da ICE, nao pro
+    # DTWEXBGS, que hoje em dia gira na casa dos 115-130) em vez de comparar
+    # a variacao real dia-a-dia. Na pratica isso fazia o DXY votar "dolar
+    # forte" (+1 ponto) TODO dia, o dia inteiro, esteja o dolar subindo,
+    # caindo ou parado. Agora grava sempre que houver uma leitura anterior
+    # de verdade no arquivo, igual ou diferente — no mesmo dia o "anterior"
+    # fica igual ao "novo" (variacao 0%, corretamente neutro); a diferenca
+    # so aparece de um dia pro outro, que e quando ela existe de fato.
     _ant = _ler_macro_arquivo() or {}
     for _k in ("DXY", "EWZ"):
         _v_novo, _v_ant = num(web.get(_k)), num(_ant.get(_k))
-        if _v_novo > 0 and _v_ant > 0 and abs(_v_novo - _v_ant) > 1e-9:
+        if _v_novo > 0 and _v_ant > 0:
             base[_k + "_ANTERIOR"] = _v_ant
     try:
         with open(MACRO_JSON, "w", encoding="utf-8") as f:
@@ -852,7 +866,10 @@ def proximo_evento_macro(agora=None):
 
 
 def vies_macro_consolidado(macro=None):
-    """Converte o painel macro (PMI, DXY, EWZ, VIX, PTAX) num vies unico para o WDO.
+    """Converte o painel macro (PMI, DXY, EWZ, VIX) num vies unico para o WDO.
+    PTAX NAO pontua aqui — entra so como checagem de disponibilidade do
+    macro (ver _sem_essenciais abaixo); e exibida na tela por contexto, mas
+    nao vota.
 
     Dolar sobe quando: PMI/inflacao dos EUA acima do esperado, DXY subindo,
     EWZ caindo, VIX subindo (aversao a risco).
@@ -881,13 +898,20 @@ def vies_macro_consolidado(macro=None):
 
     dxy = num(macro.get("DXY"))
     dxy_ant = num(macro.get("DXY_ANTERIOR"))
-    # Sem leitura anterior o DXY deixava de pontuar. O NIVEL tambem informa:
-    # acima de 105 o dolar esta forte no mundo; abaixo de 97, fraco.
+    # BUG CORRIGIDO — sem leitura anterior, o DXY votava pelo NIVEL absoluto
+    # (>=105 dolar forte / <=97 dolar fraco). Esses cortes foram calibrados
+    # pro DXY classico da ICE (tipicamente 90-115); a serie que de fato
+    # usamos aqui e o DTWEXBGS do FRED (Broad Dollar Index), que hoje em dia
+    # gira naturalmente na casa dos 115-130 — ou seja, o corte ">=105"
+    # praticamente NUNCA era falso, e o DXY acabava votando "dolar forte"
+    # todo dia, o dia inteiro, independente do que o dolar estivesse fazendo
+    # de verdade. Sem uma leitura anterior de verdade pra comparar, o nivel
+    # absoluto deste indice especifico nao da pra classificar como forte ou
+    # fraco com confianca — mesmo espirito do indicador de ausencia em
+    # _detectar_indicadores(): sem a fonte (aqui, o dado de comparacao), nao
+    # pontua. So fica registrado como fator informativo, sem peso.
     if dxy > 0 and dxy_ant <= 0:
-        if dxy >= 105:
-            pontos += 1; fatores.append(f"DXY em {dxy:.2f} — dólar forte no mundo")
-        elif dxy <= 97:
-            pontos -= 1; fatores.append(f"DXY em {dxy:.2f} — dólar fraco no mundo")
+        fatores.append(f"DXY em {dxy:.2f} — sem leitura anterior pra comparar, não pontua")
     if dxy > 0 and dxy_ant > 0:
         var = (dxy - dxy_ant) / dxy_ant * 100
         if var >= 0.25:

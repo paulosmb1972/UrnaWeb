@@ -200,5 +200,49 @@ class TestVolumeProfileFallbackTPO(unittest.TestCase):
         self.assertEqual(r["motivo"], "amostra insuficiente")
 
 
+class TestViesMacroDXYSemLeituraAnterior(unittest.TestCase):
+    """BUG 4 — diagnosticado no export do dia 15/09/2026: a aba Macro
+    ficava com vies e "% de confianca" travados no mesmo valor por horas.
+    Causa raiz: DXY vem do FRED (serie DTWEXBGS, resolucao DIARIA — nao
+    muda dentro do mesmo dia). O corte de "sem leitura anterior" usava
+    NIVEL ABSOLUTO (>=105 dolar forte / <=97 dolar fraco) calibrado pro
+    DXY classico da ICE (90-115); o DTWEXBGS gira naturalmente em 115-130,
+    entao ">=105" era quase sempre verdadeiro e o DXY votava "dolar forte"
+    (+1 ponto) todo dia, o dia inteiro, travando a conta."""
+
+    def setUp(self):
+        FAKE_ST.session_state.clear()
+        self.vies = NS["vies_macro_consolidado"]
+
+    def _macro_base(self, **over):
+        base = {"DXY": 118.2126, "VIX": 17.10, "PTAX": 5.1490, "EWZ": 37.90,
+                "macro_indisponiveis": [], "macro_indisponiveis_essenciais": []}
+        base.update(over)
+        return base
+
+    def test_dxy_sem_leitura_anterior_nao_pontua_pelo_nivel_absoluto(self):
+        """Reproducao do caso real: DXY em 118.21 (nivel do DTWEXBGS, nao do
+        DXY classico), sem DXY_ANTERIOR — antes isso sozinho já classificava
+        "dolar forte" (+1); agora fica neutro, so informativo."""
+        r = self.vies(self._macro_base())
+        self.assertEqual(r["pontos"], 0)
+        self.assertEqual(r["vies"], "neutro")
+        self.assertTrue(any("não pontua" in f for f in r["fatores"]))
+
+    def test_dxy_estavel_no_mesmo_dia_nao_pontua(self):
+        """Controle: DXY_ANTERIOR igual ao atual (mesma leitura diaria
+        repetida ao longo do dia) — variacao 0%, nao pode pontuar."""
+        r = self.vies(self._macro_base(DXY_ANTERIOR=118.2126))
+        self.assertEqual(r["pontos"], 0)
+
+    def test_dxy_com_variacao_real_dia_a_dia_continua_pontuando(self):
+        """Controle: quando existe de fato uma leitura anterior diferente
+        (dia seguinte, DXY subiu 0.30%), a correcao nao pode ter quebrado o
+        caminho de pontuacao por variacao percentual."""
+        r = self.vies(self._macro_base(DXY_ANTERIOR=118.2126 * 0.997))
+        self.assertGreater(r["pontos"], 0)
+        self.assertEqual(r["vies"], "compra")
+
+
 if __name__ == "__main__":
     unittest.main()
