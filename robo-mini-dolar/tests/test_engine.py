@@ -243,6 +243,69 @@ class TestViesMacroDXYSemLeituraAnterior(unittest.TestCase):
         self.assertGreater(r["pontos"], 0)
         self.assertEqual(r["vies"], "compra")
 
+    def test_dxy_nao_mistura_fred_com_as_demais_fontes(self):
+        """BUG 5 — a serie do FRED (DTWEXBGS) e uma escala DIFERENTE do DXY
+        classico que fmp/tradingeconomics/investing devolvem. Com "fred" na
+        cadeia de fontes, o campo DXY chegou a alternar entre ~118 e ~99
+        varias vezes no mesmo dia (16/09), conforme a fonte que respondia
+        naquele ciclo — parecia o dolar "saltar" 15% em minutos. "fred" foi
+        tirado da cadeia do DXY; continua servindo VIX/PMI normalmente."""
+        cadeia_dxy = NS["FONTES_MACRO_WEB"]["DXY"]
+        self.assertNotIn("fred", cadeia_dxy)
+        self.assertIn("fmp", cadeia_dxy)
+        # VIX/PMI nao foram afetados pela correcao.
+        self.assertIn("fred", NS["FONTES_MACRO_WEB"]["VIX"])
+
+
+class TestSaldoAgressaoProxyDeBook(unittest.TestCase):
+    """BUG 6 — diagnosticado no dia 16/09/2026: sem Times & Trades com nomes
+    de agentes (o caso comum — TemNomesAgentes="nao" em quase toda leitura),
+    o percentual de agressao caia num fallback de so 3 valores FIXOS
+    (60.0/40.0/50.0, um por categoria "comprador/vendedor/neutro"). Nesse
+    dia, 14 sinais de venda SEGUIDOS foram bloqueados com a mensagem
+    identica "agressao 60%" — o gatekeeper nunca teve uma leitura de
+    verdade pra decidir, so uma de 3 categorias, e ficou preso em
+    "comprador" o dia inteiro mesmo com o preco caindo ~43 pontos."""
+
+    def setUp(self):
+        FAKE_ST.session_state.clear()
+        self.calc = NS["_calcular_saldo_agressao_pct"]
+
+    def test_usa_profundidade_do_book_quando_falta_tt_com_nomes(self):
+        """Reproducao do caso real: categoria "comprador" (que travava em
+        60.0 fixo) mas o BOOK em si pesa pra venda — o resultado tem que
+        refletir o book, nao a categoria."""
+        ag = {
+            "saldo_agentes": "comprador",
+            "ofertantes_compra": [{"qtde": 300}, {"qtde": 250}, {"qtde": 200},
+                                   {"qtde": 150}, {"qtde": 100}],
+            "ofertantes_venda": [{"qtde": 500}, {"qtde": 450}, {"qtde": 400},
+                                  {"qtde": 350}, {"qtde": 300}],
+        }
+        r = self.calc(ag)
+        self.assertNotEqual(r, 60.0)
+        self.assertLess(r, 50.0)  # book pesa pra venda -> tem que ficar abaixo de 50%
+
+    def test_tt_com_nomes_continua_tendo_prioridade(self):
+        """Controle: com pressao_compradora/vendedora reais (T&T com nomes),
+        a correcao nao pode ter mudado esse caminho, que e o mais confiavel."""
+        r = self.calc({"pressao_compradora": 30, "pressao_vendedora": 70,
+                        "ofertantes_compra": [{"qtde": 999}], "ofertantes_venda": []})
+        self.assertEqual(r, 30.0)
+
+    def test_sem_book_nenhum_continua_neutro(self):
+        """Controle: sem nenhum dado, continua 50.0 (nao inventa direcao)."""
+        self.assertEqual(self.calc({}), 50.0)
+        self.assertEqual(self.calc(None), 50.0)
+
+    def test_sem_tt_e_sem_profundidade_mantem_fallback_categorico(self):
+        """Controle: quando nao ha T&T NEM profundidade de book (nada real
+        pra usar), o fallback antigo por categoria continua existindo como
+        ultimo recurso."""
+        self.assertEqual(self.calc({"saldo_agentes": "comprador"}), 60.0)
+        self.assertEqual(self.calc({"saldo_agentes": "vendedor"}), 40.0)
+        self.assertEqual(self.calc({"saldo_agentes": "neutro"}), 50.0)
+
 
 if __name__ == "__main__":
     unittest.main()

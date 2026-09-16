@@ -622,9 +622,19 @@ FRED_SERIES = {
 }
 
 # Endpoints das fontes, em ordem de preferencia por indicador.
+# DXY sem "fred" DE PROPOSITO — diagnosticado no dia 16/09: a serie do FRED
+# (DTWEXBGS, "Broad Dollar Index") e uma cesta e escala DIFERENTES do DXY
+# classico que fmp/tradingeconomics/investing devolvem (a do FRED gira em
+# ~115-130, a classica em ~90-105). Com "fred" na cadeia, cada vez que ele
+# respondia e cada vez que falhava (caindo pro fmp) o campo "DXY" trocava de
+# indice no meio do dia — chegou a alternar entre 118 e 99 varias vezes na
+# mesma sessao, parecendo o dolar "saltar" 15% e voltar em minutos. Tirar o
+# FRED daqui fixa numa unica familia de indice (fmp/te/investing sao todos
+# DXY classico); FRED continua servindo VIX e PMI normalmente, onde nao ha
+# esse problema de escala.
 FONTES_MACRO_WEB = {
     "PTAX":  ["bcb", "fmp", "investing"],
-    "DXY":   ["fred", "fmp", "tradingeconomics", "investing"],
+    "DXY":   ["fmp", "tradingeconomics", "investing"],
     "VIX":   ["fred", "fmp", "investing"],
     "EWZ":   ["fmp", "stooq", "investing", "tradingeconomics"],
     "PMI":   ["tradingeconomics", "fred", "investing"],
@@ -5672,14 +5682,41 @@ DECISION_ENGINE = AutoProTradingDecisionEngine(agressividade_base="Média")
 
 
 def _calcular_saldo_agressao_pct(agentes_info):
-    """Calcula % de agressão compradora a partir da leitura de agentes/T&T.
-    Retorna 50.0 quando não há dados (neutro)."""
+    """Calcula % de agressão compradora. Tres niveis de fonte, do mais
+    granular ao mais grosseiro:
+
+    1. pressao_compradora/pressao_vendedora (Times & Trades com nomes de
+       agentes) — percentual real, continuo. So existe quando o SuperDOM
+       tem nomes de corretora visiveis.
+
+    2. BUG CORRIGIDO — sem T&T (o caso comum: TemNomesAgentes="nao" na
+       quase totalidade das leituras), o fallback devolvia so 3 valores
+       FIXOS (60.0/40.0/50.0, um por categoria "comprador/vendedor/neutro"
+       da leitura da IA). Diagnosticado no dia 16/09: 14 sinais de venda
+       SEGUIDOS bloqueados com a mensagem identica "agressao 60%" — o
+       gatekeeper so tinha 3 leituras possiveis pra decidir, nunca uma
+       leitura de verdade, e ficou preso em "comprador" o dia inteiro
+       mesmo com o preco caindo ~43 pontos. Agora usa a PROFUNDIDADE do
+       book agregado (soma dos 5 primeiros niveis de bid x ask — o MESMO
+       dado que ja alimenta o calculo de "desequilibrio" logo abaixo,
+       nao e uma leitura nova) como proxy continuo. Nao depende de nomes
+       de agentes, so do book em si, que e capturado quase sempre.
+
+    3. Sem nenhum dado de book: 50.0 (neutro, sem informacao)."""
     if not agentes_info: return 50.0
-    _saldo = str(agentes_info.get("saldo_agentes", "neutro")).lower()
     _pc = float(agentes_info.get("pressao_compradora", 0) or 0)
     _pv = float(agentes_info.get("pressao_vendedora", 0) or 0)
     if _pc + _pv > 0:
         return round((_pc / (_pc + _pv)) * 100, 1)
+
+    bid = sum(num(o.get("qtde", 0)) for o in (agentes_info.get("ofertantes_compra") or [])[:5]
+              if isinstance(o, dict))
+    ask = sum(num(o.get("qtde", 0)) for o in (agentes_info.get("ofertantes_venda") or [])[:5]
+              if isinstance(o, dict))
+    if bid + ask > 0:
+        return round((bid / (bid + ask)) * 100, 1)
+
+    _saldo = str(agentes_info.get("saldo_agentes", "neutro")).lower()
     if _saldo == "comprador": return 60.0
     if _saldo == "vendedor": return 40.0
     return 50.0
