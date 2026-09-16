@@ -53,11 +53,17 @@ if errorlevel 1 (
     exit /b 1
 )
 
-where streamlit >nul 2>nul
+REM Verifica o streamlit chamando o MODULO Python (python -m streamlit),
+REM nao o comando solto "streamlit" - em muitas instalacoes do Windows o
+REM pip instala em AppData\Roaming\Python\PythonXXX\Scripts, uma pasta que
+REM nao entra no PATH sozinha. "python -m streamlit" funciona mesmo assim,
+REM porque so depende do "python" (ja confirmado acima), nao do PATH do
+REM streamlit.exe.
+python -m streamlit --version >nul 2>nul
 if errorlevel 1 (
-    echo [ERRO] O comando "streamlit" nao foi encontrado.
+    echo [ERRO] O pacote "streamlit" nao foi encontrado para este Python.
     echo Abra um Prompt de Comando nesta pasta e rode:
-    echo     pip install -r requirements.txt
+    echo     python -m pip install -r requirements.txt
     echo Depois feche esta janela e clique de novo no iniciar_robo.bat.
     echo.
     pause
@@ -76,7 +82,7 @@ if not exist "robo_mini_dolar.py" (
 echo Tudo certo. Iniciando o robo mini-dolar...
 echo (o navegador deve abrir sozinho em alguns segundos)
 echo.
-streamlit run robo_mini_dolar.py
+python -m streamlit run robo_mini_dolar.py
 
 echo.
 echo O Streamlit foi encerrado.
