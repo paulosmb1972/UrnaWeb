@@ -558,7 +558,9 @@ AGENDA_MACRO = [
 ]
 
 # Minutos ANTES do evento em que o robo para de armar entrada nova.
-MINUTOS_BLOQUEIO_PRE_EVENTO = 10
+# Reduzido de 10 para 5 min a pedido do usuario — o lado "depois" tambem foi
+# igualado a 5 min (ver MINUTOS_RUIDO_POS_EVENTO).
+MINUTOS_BLOQUEIO_PRE_EVENTO = 5
 # Minutos DEPOIS do evento em que o robo analisa em ciclo acelerado.
 MINUTOS_JANELA_POS_EVENTO = 30
 # Ciclo de captura: permanece 300 s em TODA faixa de horario, inclusive em
@@ -578,8 +580,11 @@ INTERVALO_REFRESH_ANUNCIO_MS = 5000
 # Minutos antes/depois do anuncio em que vale o refresh fino.
 MIN_ANTES_REFRESH_FINO = 3
 MIN_DEPOIS_REFRESH_FINO = 2
-# Minutos apos o evento em que a volatilidade ainda distorce o book.
-MINUTOS_RUIDO_POS_EVENTO = 3
+# Minutos apos o evento em que a volatilidade ainda distorce o book — e
+# tambem quanto tempo dura o bloqueio de entrada nova DEPOIS do anuncio
+# (ver janela_evento_macro): igualado ao pre-evento a pedido do usuario
+# (era 3 min, ficou desalinhado dos 10 min do lado "antes").
+MINUTOS_RUIDO_POS_EVENTO = 5
 
 # =============================================================================
 # COLETA WEB DE MACRO — funciona SEM nenhuma tela aberta.
