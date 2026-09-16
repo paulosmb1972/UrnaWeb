@@ -1,0 +1,31 @@
+@echo off
+REM ============================================================
+REM MODELO — copie este arquivo para "config_local.bat" (sem o
+REM ".exemplo" no final) e preencha com seus valores de verdade.
+REM
+REM "config_local.bat" fica de fora do Git (.gitignore) de proposito:
+REM e o unico lugar onde sua chave de API deve morar. NUNCA renomeie
+REM ESTE arquivo (o .exemplo) para colocar a chave real nele, senao
+REM ela acaba indo pro repositorio.
+REM ============================================================
+
+REM Obrigatoria — sem ela o robo nao roda a analise por IA.
+set OPENROUTER_API_KEY=coloque_sua_chave_aqui
+
+REM Opcionais — descomente (tire o "REM" da frente) so o que for usar.
+
+REM Troca o modelo de IA usado na analise (padrao: google/gemini-2.5-flash)
+REM set OPENROUTER_MODEL=google/gemini-2.5-flash
+
+REM Fonte de dados de mercado: "captura_tela" (padrao) ou "rtd" (Profit via COM)
+REM set FONTE_DADOS_MERCADO=rtd
+REM set RTD_PROGID=ProfitDLL.RTD
+REM set RTD_TICKER=WDOV20
+
+REM Caminho da ProfitDLL, se estiver usando a fonte RTD
+REM set PROFITDLL_PATH=C:\Caminho\Para\ProfitDLL.dll
+
+REM Captura por monitor especifico (notebook/auxiliar)
+REM set MODO_CAPTURA_POR_MONITOR=sim
+REM set MONITOR_NOTEBOOK=principal
+REM set MONITOR_GRAFICO_SUPERDOM=auxiliar
