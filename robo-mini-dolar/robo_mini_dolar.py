@@ -1142,6 +1142,23 @@ ESTRATEGIAS = {
 
 CSS_PROFISSIONAL = """
 <style>
+    /* ---------- Tokens de design (reforma de UI — ver prompt_reforma_ui.md,
+    secao 4). Variaveis CSS centralizadas: os valores sao os MESMOS hex ja
+    usados no resto da folha, so ganham nome — nada muda visualmente, exceto
+    nos componentes NOVOS (badge/metric_card/status_item, banner de alerta,
+    timeline, pulso de vida, painel de fonte de dados), que consomem esses
+    tokens em vez de repetir o hex cru. ---------- */
+    :root {
+        --cor-compra: #10b981;
+        --cor-venda: #ef4444;
+        --cor-espera: #f59e0b;
+        --cor-info: #3b82f6;
+        --cor-texto: #f8fafc;
+        --cor-texto-sec: #8b949e;
+        --cor-fundo: #0e1117;
+        --cor-superficie: rgba(22, 27, 34, 0.7);
+        --cor-borda: #30363d;
+    }
     .stApp { background-color: #0b0e14; color: #e8ecf3; }
     .block-container { padding-top: 1.1rem !important; }
 
@@ -1222,6 +1239,51 @@ CSS_PROFISSIONAL = """
     .limiar-medio { color:#ffd740; font-weight:700; }
     div[data-testid="stTabs"] button { font-size:15px; font-weight:600; }
     div[data-testid="stExpander"] { border:1px solid #232a45; border-radius:10px; }
+
+    /* ---------- Reforma de UI — componentes novos (secao 5) ---------- */
+
+    /* Cartao de metrica com subtexto contextual + hover sutil (5.5) */
+    .metric-card { transition: border-color .15s ease, box-shadow .15s ease; }
+    .metric-card:hover { border-color:#3a4468; box-shadow:0 4px 14px rgba(0,0,0,.35); }
+    .metric-card .sub { font-size:11px; color:var(--cor-texto-sec); margin-top:5px; line-height:1.35; }
+
+    /* Banner de alerta de mudanca de status (5.1) */
+    .alert-banner { border-radius:10px; padding:10px 16px; margin:0 0 14px 0;
+                    font-weight:700; font-size:14px; display:flex; align-items:center; gap:10px;
+                    animation: alert-in .25s ease; }
+    .alert-banner.armado    { background:rgba(245,158,11,.12); border:1px solid var(--cor-espera); color:var(--cor-espera); }
+    .alert-banner.bloqueado { background:rgba(239,68,68,.12); border:1px solid var(--cor-venda); color:var(--cor-venda); }
+    @keyframes alert-in { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+
+    /* Indicador de "vida" do sistema — pulse dots (5.4) */
+    .pulse-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; }
+    .pulse-verde  { background:var(--cor-compra); box-shadow:0 0 8px var(--cor-compra); }
+    .pulse-amarelo{ background:var(--cor-espera); box-shadow:0 0 8px var(--cor-espera); }
+    .pulse-vermelho{ background:var(--cor-venda); box-shadow:0 0 8px var(--cor-venda);
+                     animation: pulse-blink 1.1s ease-in-out infinite; }
+    @keyframes pulse-blink { 0%,100% { opacity:1; } 50% { opacity:.25; } }
+
+    /* Painel de fonte de dados no header (5.7) */
+    .header-fonte { display:flex; flex-wrap:wrap; align-items:center; gap:18px;
+                    background:var(--cor-superficie); border:1px solid var(--cor-borda);
+                    border-radius:12px; padding:10px 16px; margin-bottom:14px; font-size:13px; }
+    .header-fonte .item { display:flex; align-items:center; gap:6px; color:var(--cor-texto-sec); }
+    .header-fonte .item b { color:var(--cor-texto); font-family:monospace; }
+
+    /* Timeline de eventos do dia (5.3) */
+    .timeline { border-left:2px solid var(--cor-borda); margin:6px 0 6px 8px; padding-left:16px; }
+    .timeline-item { position:relative; padding-bottom:14px; font-size:13px; }
+    .timeline-item:last-child { padding-bottom:0; }
+    .timeline-item .dot { position:absolute; left:-21px; top:3px; width:10px; height:10px; border-radius:50%; }
+    .timeline-item.armado .dot    { background:var(--cor-espera); box-shadow:0 0 6px var(--cor-espera); }
+    .timeline-item.bloqueado .dot { background:var(--cor-venda); box-shadow:0 0 6px var(--cor-venda); }
+    .timeline-item .hora { font-family:monospace; color:var(--cor-texto-sec); margin-right:8px; }
+
+    /* Dashboard de regime do dia — barra horizontal empilhada (5.6) */
+    .regime-gauge { display:flex; width:100%; height:22px; border-radius:6px; overflow:hidden;
+                    border:1px solid var(--cor-borda); }
+    .regime-gauge .seg { height:100%; display:flex; align-items:center; justify-content:center;
+                         font-size:10px; font-weight:700; color:#0b0e14; white-space:nowrap; overflow:hidden; }
 </style>
 """
 
@@ -1298,11 +1360,63 @@ defaults = {
     "min_dia_manual": 0.0,
     "varal_contratos_totais": 5,
     "varal_ativo": True,
+    # ---- Reforma de UI: historico de score/eventos, alerta de mudanca de
+    # status e indicadores de "vida" do sistema (ver prompt_reforma_ui.md). ----
+    "historico_gatilhos": [],
+    "score_historico": [],
+    "ultimo_status": "ESPERA",
+    "alerta_ativo": False,
+    "alerta_mensagem": "",
+    "registros_hoje": 0,
+    "ultima_leitura_ok": None,
+    "latencia_ms": 0,
 }
 
 for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
+
+
+# =========================
+# REFORMA DE UI — HELPERS REUTILIZAVEIS (ver prompt_reforma_ui.md, secao 7,
+# Fase 1). Definidos aqui, logo apos a CSS e o estado inicial, para ficarem
+# disponiveis em QUALQUER ponto do resto do script — evita repetir o erro de
+# ordem de definicao que ja quebrou o ciclo automatico uma vez neste projeto
+# (uma funcao chamada antes de ser definida vira NameError, porque o
+# Streamlit executa o arquivo de cima a baixo a cada rerun).
+# =========================
+def badge(texto, tipo="info"):
+    """Pilula colorida reutilizavel — usa as classes .pill ja existentes na
+    folha de estilo (ok/warn/bad/info), so centraliza a chamada num helper
+    em vez de cada tela montar o HTML na mao."""
+    _classe = {"ok": "ok", "warn": "warn", "bad": "bad", "info": "info"}.get(tipo, "info")
+    st.markdown(f'<span class="pill {_classe}">{texto}</span>', unsafe_allow_html=True)
+
+
+def metric_card(label, valor, cor="", sub=""):
+    """Cartao de metrica com label, valor grande e subtexto contextual
+    (secao 5.5) — reaproveita a classe .metric-card ja existente; o hover
+    sutil e o estilo do subtexto ja estao na folha de estilo."""
+    _cor_classe = {"compra": "green", "venda": "red", "info": "blue", "espera": "gold"}.get(cor, "")
+    _sub_html = f'<div class="sub">{sub}</div>' if sub else ""
+    st.markdown(
+        f'<div class="metric-card"><div class="label">{label}</div>'
+        f'<div class="value {_cor_classe}">{valor}</div>{_sub_html}</div>',
+        unsafe_allow_html=True)
+
+
+def status_item(label, status, tipo="aguardando"):
+    """Linha compacta label + badge de status (ARMADO/BLOQUEADO/ESPERA/
+    AGUARDANDO) para paineis de estado — reaproveita as classes .badge-*
+    ja existentes na folha de estilo."""
+    _tipo = tipo if tipo in ("armado", "bloqueado", "espera", "aguardando") else "aguardando"
+    st.markdown(
+        f'<div style="display:flex;justify-content:space-between;align-items:center;'
+        f'padding:6px 0;border-bottom:1px solid #1c2333;">'
+        f'<span style="color:#8892a4;font-size:12px;text-transform:uppercase;'
+        f'letter-spacing:.5px;">{label}</span>'
+        f'<span class="status-badge badge-{_tipo}">{status}</span></div>',
+        unsafe_allow_html=True)
 
 
 # =========================
@@ -9332,6 +9446,48 @@ def executar_analise():
     if not salvo: diag += f" | HIST: {erro}"
     st.session_state.ultimo_diagnostico = diag
     st.session_state.ultimo_status_gatilho = sg
+
+    # ---- Reforma de UI (Fase 2) — historico de score, timeline de eventos e
+    # alerta visual de mudanca de status. So roda aqui, no fim de
+    # executar_analise() — 1x por CICLO REAL de analise, nunca por rerun do
+    # Streamlit (clique de widget, autorefresh de tela) — mesma regra que ja
+    # protege hist_leituras/hist_candles contra duplicar reruns como se
+    # fossem leituras novas. NAO chama disparar_alarme() aqui: o som de
+    # ARMADO/gatilho ja e disparado acima (linhas ~9043-9072), com o texto
+    # completo por TTS — chamar de novo aqui tocaria o alarme 2x. ----
+    try:
+        _hora_evt = str(registro.get("DataEvento", "")).split()[-1][:5]
+    except Exception:
+        _hora_evt = datetime.now().strftime("%H:%M")
+
+    st.session_state.score_historico.append({
+        "hora": _hora_evt,
+        "score": registro.get("Score", 0),
+        "score_min": registro.get("ScoreMin", 0),
+        "status": registro.get("StatusGatilho", ""),
+    })
+    st.session_state.score_historico = st.session_state.score_historico[-50:]
+
+    _status_novo = str(registro.get("StatusGatilho", ""))
+    if _status_novo and _status_novo != st.session_state.get("ultimo_status", "ESPERA"):
+        st.session_state.alerta_ativo = True
+        st.session_state.alerta_mensagem = (
+            f"Status: {st.session_state.get('ultimo_status', 'ESPERA')} → {_status_novo}"
+        )
+    st.session_state.ultimo_status = _status_novo
+
+    if _status_novo in ("ARMADO", "BLOQUEADO"):
+        st.session_state.historico_gatilhos.append({
+            "hora": _hora_evt,
+            "evento": (f"{_status_novo} — Score {registro.get('Score', 0)}/{registro.get('ScoreMin', 0)}, "
+                       f"RR {registro.get('RR', 0)}"),
+            "tipo": _status_novo.lower(),
+        })
+        st.session_state.historico_gatilhos = st.session_state.historico_gatilhos[-100:]
+
+    st.session_state.registros_hoje = int(st.session_state.get("registros_hoje", 0)) + 1
+    st.session_state.ultima_leitura_ok = datetime.now()
+
     return img, msg
 
 
@@ -11503,6 +11659,43 @@ def botao_analisar(chave_widget):
             st.rerun()
 
 
+# =========================
+# HEADER — vida do sistema + fonte de dados (secoes 5.4 e 5.7 da reforma de
+# UI). Fica ACIMA das abas de proposito ("sempre visivel no header"), lido
+# 1x por rerun a partir do session_state ja existente — nao dispara nenhuma
+# leitura nova nem chama a IA.
+# =========================
+_ultimo_erro_ciclo_hdr = st.session_state.get("ultimo_erro_ciclo")
+_rtd_indisponivel_hdr = (FONTE_DADOS_MERCADO == "rtd" and not _rtd_estado.get("conectado"))
+if _ultimo_erro_ciclo_hdr or _rtd_indisponivel_hdr:
+    _pulso_cor_hdr, _pulso_txt_hdr = "vermelho", "Erro no último ciclo / fonte indisponível"
+elif not dentro_janela_operacional() or not st.session_state.get("ultima_leitura_ok"):
+    _pulso_cor_hdr, _pulso_txt_hdr = "amarelo", "Fora da janela / aguardando primeira leitura"
+else:
+    _pulso_cor_hdr, _pulso_txt_hdr = "verde", "Engine operando normalmente"
+
+_fonte_nome_hdr = {"rtd": "RTD (Profit)", "profitdll": "ProfitDLL",
+                    "captura_tela": "Captura de tela"}.get(FONTE_DADOS_MERCADO, FONTE_DADOS_MERCADO)
+if FONTE_DADOS_MERCADO in ("rtd", "profitdll"):
+    _fonte_status_hdr = "conectado" if _rtd_estado.get("conectado") else "desconectado"
+else:
+    _fonte_status_hdr = "ativo"
+
+_ultima_ok_hdr = st.session_state.get("ultima_leitura_ok")
+if _ultima_ok_hdr:
+    _delta_s_hdr = max(0, int(time.time() - _ultima_ok_hdr.timestamp()))
+    _desde_hdr = f"{_delta_s_hdr}s atrás" if _delta_s_hdr < 60 else f"{_delta_s_hdr // 60}min atrás"
+else:
+    _desde_hdr = "nenhuma ainda"
+
+st.markdown(
+    f'<div class="header-fonte">'
+    f'<div class="item"><span class="pulse-dot pulse-{_pulso_cor_hdr}"></span>{_pulso_txt_hdr}</div>'
+    f'<div class="item">📡 Fonte: <b>{_fonte_nome_hdr}</b> ({_fonte_status_hdr})</div>'
+    f'<div class="item">🕒 Última leitura: <b>{_desde_hdr}</b></div>'
+    f'<div class="item">📊 Leituras hoje: <b>{int(st.session_state.get("registros_hoje", 0))}</b></div>'
+    f'</div>', unsafe_allow_html=True)
+
 aba_geral, aba_macro, aba_liquidez, aba_candles, aba_confluencia = st.tabs([
     "⚙️ Geral", "🌎 Macroeconômicos", "💧 Liquidez", "🕯️ Gráfico de Candles", "🎯 Confluência"])
 
@@ -11511,6 +11704,95 @@ aba_geral, aba_macro, aba_liquidez, aba_candles, aba_confluencia = st.tabs([
 # ABA 1 — GERAL (configuração, operação, históricos)
 # ============================================================
 with aba_geral:
+    # ---- Banner de alerta de mudanca de status (5.1) — aparece por 1 ciclo
+    # de refresh (a proxima vez que o script rodar do zero, some sozinho, a
+    # nao ser que uma NOVA mudanca de status o reative). ----
+    if st.session_state.get("alerta_ativo"):
+        _msg_alerta_ui = st.session_state.get("alerta_mensagem", "")
+        _tipo_banner_ui = "bloqueado" if "BLOQUEADO" in _msg_alerta_ui else "armado"
+        st.markdown(f'<div class="alert-banner {_tipo_banner_ui}">⚠️ {_msg_alerta_ui}</div>',
+                    unsafe_allow_html=True)
+        st.session_state.alerta_ativo = False
+
+    # ---- Cards de metricas com contexto (5.5) — usa os helpers da Fase 1
+    # (metric_card/status_item), lendo so de session_state ja existente
+    # (ultimo_veredito, ultimo_status_gatilho) — sem recalcular nada. ----
+    st.markdown('<div class="section-title">🧭 Status atual</div>', unsafe_allow_html=True)
+    _ult_ver_ui = st.session_state.get("ultimo_veredito") or {}
+    _score_ult_ui = st.session_state.score_historico[-1] if st.session_state.get("score_historico") else {}
+    _cc1, _cc2, _cc3 = st.columns(3)
+    with _cc1:
+        _sc_atual, _sc_min = _score_ult_ui.get("score"), _score_ult_ui.get("score_min")
+        _tem_sc = isinstance(_sc_atual, (int, float)) and isinstance(_sc_min, (int, float))
+        _cor_sc = ("compra" if _tem_sc and _sc_atual >= _sc_min else "venda") if _tem_sc else ""
+        metric_card("Score", f"{_sc_atual if _sc_atual is not None else '—'}/{_sc_min if _sc_min is not None else '—'}",
+                    cor=_cor_sc,
+                    sub=("Na faixa ideal" if _cor_sc == "compra" else "Abaixo do limiar") if _tem_sc
+                        else "Aguardando primeira leitura")
+    with _cc2:
+        _dir_ui = str(_ult_ver_ui.get("direcao", "indefinida"))
+        _cor_dir = {"compra": "compra", "venda": "venda"}.get(_dir_ui, "")
+        metric_card("Direção do veredito", _dir_ui.upper(), cor=_cor_dir,
+                    sub=str(_ult_ver_ui.get("resumo", "") or "Sem leitura ainda"))
+    with _cc3:
+        _conv_ui = num(_ult_ver_ui.get("convicao", 0))
+        _cor_conv = "compra" if _conv_ui >= 55 else ("espera" if _conv_ui >= 30 else "venda")
+        metric_card("Convicção ponderada", f"{int(_conv_ui)}%", cor=_cor_conv,
+                    sub="Favorável se gatilho confirmar" if _conv_ui >= 55 else "Ainda insuficiente")
+    status_item("Status do gatilho", st.session_state.get("ultimo_status_gatilho", "AGUARDANDO"),
+                tipo={"ARMADO": "armado", "BLOQUEADO": "bloqueado", "ESPERA": "espera"}.get(
+                    st.session_state.get("ultimo_status_gatilho", ""), "aguardando"))
+
+    # ---- Mini-grafico de evolucao do score (5.2) ----
+    st.markdown('<div class="section-title">📈 Evolução do score</div>', unsafe_allow_html=True)
+    if st.session_state.get("score_historico"):
+        _df_score_ui = pd.DataFrame(st.session_state.score_historico)
+        _score_min_atual = _df_score_ui.iloc[-1].get("score_min", "—")
+        st.caption(f"Últimos {len(_df_score_ui)} ciclos · score mínimo atual: **{_score_min_atual}** "
+                   "(gráfico nativo do Streamlit não pinta por trecho — abaixo/igual/acima do "
+                   "mínimo fica no texto do próprio card de score, não neste gráfico)")
+        st.area_chart(_df_score_ui.set_index("hora")[["score"]], height=160)
+    else:
+        st.caption("Histórico de score vazio — aguardando o primeiro ciclo de análise.")
+
+    # ---- Dashboard de regime do dia (5.6) ----
+    st.markdown('<div class="section-title">📊 Regime do dia</div>', unsafe_allow_html=True)
+    _hoje_str_ui = datetime.now().strftime("%Y-%m-%d")
+    _regimes_hoje_ui = [str(r.get("Regime", "")) for r in st.session_state.get("historico_trades", [])
+                        if str(r.get("DataRegistro", "")).startswith(_hoje_str_ui) and r.get("Regime")]
+    if _regimes_hoje_ui:
+        _cont_regime_ui = {}
+        for _r in _regimes_hoje_ui:
+            _cont_regime_ui[_r] = _cont_regime_ui.get(_r, 0) + 1
+        _total_regime_ui = len(_regimes_hoje_ui)
+        _cores_regime_ui = {"trend_up": "#10b981", "trend_down": "#ef4444",
+                            "pullback_up": "#3b82f6", "pullback_down": "#f59e0b",
+                            "inconsistente": "#8b949e"}
+        _ordenado_regime_ui = sorted(_cont_regime_ui.items(), key=lambda kv: -kv[1])
+        _segs_html_ui = "".join(
+            f'<div class="seg" style="width:{(v / _total_regime_ui) * 100:.1f}%;'
+            f'background:{_cores_regime_ui.get(k, "#8b949e")};" title="{k}: {v}/{_total_regime_ui}">'
+            f'{k if v / _total_regime_ui > 0.12 else ""}</div>'
+            for k, v in _ordenado_regime_ui)
+        st.markdown(f'<div class="regime-gauge">{_segs_html_ui}</div>', unsafe_allow_html=True)
+        st.caption(" · ".join(f"{k}: {v}/{_total_regime_ui} ({v / _total_regime_ui * 100:.0f}%)"
+                              for k, v in _ordenado_regime_ui))
+    else:
+        st.caption("Sem leituras registradas hoje ainda.")
+
+    # ---- Timeline de eventos do dia (5.3) ----
+    st.markdown('<div class="section-title">🕐 Timeline de eventos do dia</div>', unsafe_allow_html=True)
+    if st.session_state.get("historico_gatilhos"):
+        _itens_tl_ui = list(reversed(st.session_state.historico_gatilhos[-15:]))
+        _html_tl_ui = '<div class="timeline">' + "".join(
+            f'<div class="timeline-item {i.get("tipo", "")}"><span class="dot"></span>'
+            f'<span class="hora">{i.get("hora", "")}</span>{i.get("evento", "")}</div>'
+            for i in _itens_tl_ui
+        ) + '</div>'
+        st.markdown(_html_tl_ui, unsafe_allow_html=True)
+    else:
+        st.caption("Nenhum evento (ARMADO/BLOQUEADO) registrado ainda hoje.")
+
     st.markdown('<div class="section-title">⚙️ Configuração e operação</div>', unsafe_allow_html=True)
 
     col_cfg1, col_cfg2, col_cfg3 = st.columns(3)
