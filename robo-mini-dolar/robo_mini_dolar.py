@@ -12226,6 +12226,23 @@ with aba_confluencia:
     _card_veredito("Veredito final — setups técnicos + gatilho + book + macro + candles",
                    _v_final, icone="🎯")
 
+    st.markdown('<div class="section-title">🤖 Robô preditivo (projeção 5/10 min)</div>', unsafe_allow_html=True)
+    _prev_conf = _ctx_conf_top.get("previsao") or {}
+    pcol1, pcol2, pcol3, pcol4 = st.columns(4)
+    pcol1.metric("Direção prevista", str(_prev_conf.get("direcao_prevista", "indefinido")).title())
+    pcol2.metric("Prob. alta em 5min", f"{int(_prev_conf.get('prob_alta_5', 50))}%")
+    pcol3.metric("Prob. alta em 10min", f"{int(_prev_conf.get('prob_alta_10', 50))}%")
+    pcol4.metric("Confiança", f"{int(_prev_conf.get('confianca', 0))}%")
+    pcol5, pcol6, pcol7 = st.columns(3)
+    pcol5.metric("Projeção 5min", f"{num(_prev_conf.get('projecao_5', 0)):.2f}")
+    pcol6.metric("Projeção 10min", f"{num(_prev_conf.get('projecao_10', 0)):.2f}")
+    _vel_txt_conf = (f"{num(_prev_conf.get('velocidade_pts_min', 0)):+.2f} pts/min"
+                     if _prev_conf.get("velocidade_valida") else "sem histórico")
+    pcol7.metric("Velocidade real", _vel_txt_conf)
+    _fatores_conf = _prev_conf.get("fatores") or []
+    if _fatores_conf:
+        st.caption("Fatores considerados: " + " · ".join(str(f) for f in _fatores_conf[:4]))
+
     st.markdown('<div class="section-title">🧩 Contribuição por fonte</div>', unsafe_allow_html=True)
     _cor_vies = {"compra": "#00e676", "venda": "#ff5252"}.get
 
