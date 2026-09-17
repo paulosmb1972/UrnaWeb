@@ -307,5 +307,101 @@ class TestSaldoAgressaoProxyDeBook(unittest.TestCase):
         self.assertEqual(self.calc({"saldo_agentes": "neutro"}), 50.0)
 
 
+class TestParseListaNumerosPt(unittest.TestCase):
+    """parse_lista_numeros_pt() transcreve a linha crua de vwap_banda_lista
+    (formato brasileiro, separada por ';') sem exigir que a IA saiba
+    ordenar/rotular cada numero — so precisa listar o que ve."""
+
+    def setUp(self):
+        self.parse = NS["parse_lista_numeros_pt"]
+
+    def test_lista_completa_formato_brasileiro(self):
+        r = self.parse("5.175,85;5.193,04;5.210,24;5.141,46;5.124,26;5.107,07")
+        self.assertEqual(r, [5175.85, 5193.04, 5210.24, 5141.46, 5124.26, 5107.07])
+
+    def test_aceita_pipe_como_separador(self):
+        self.assertEqual(self.parse("5175,85|5141,46"), [5175.85, 5141.46])
+
+    def test_vazio_devolve_lista_vazia(self):
+        self.assertEqual(self.parse(""), [])
+        self.assertEqual(self.parse(None), [])
+
+    def test_ignora_pedaco_ilegivel_sem_lancar_excecao(self):
+        r = self.parse("5175,85;;abc;5141,46")
+        self.assertEqual(r, [5175.85, 5141.46])
+
+
+class TestVwapBandsDaTela(unittest.TestCase):
+    """calcular_vwap_bands() passa a preferir o indicador real "VWAP Band"
+    da tela (bandas_vwap_da_tela) — disponivel desde a primeira leitura do
+    dia, sem depender de hist_leituras acumulado. Caso real do pedido: WDOV26
+    com VWAP D = 5158,65 e VWAP Band mostrando 3 desvios simetricos de cada
+    lado (5175,85/5193,04/5210,24 acima; 5141,46/5124,26/5107,07 abaixo)."""
+
+    def setUp(self):
+        FAKE_ST.session_state.clear()
+        self.calcular = NS["calcular_vwap_bands"]
+
+    def _dt(self, preco, **over):
+        base = {
+            "preco_atual": preco, "vwap": 5158.65,
+            "vwap_banda_lista": "5175,85;5193,04;5210,24;5141,46;5124,26;5107,07",
+        }
+        base.update(over)
+        return base
+
+    def test_usa_banda_da_tela_mesmo_sem_historico_nenhum(self):
+        """Sem NENHUMA leitura acumulada (hist=[]), a estimativa estatistica
+        antiga devolveria 'indisponivel' — a banda da tela tem que valer
+        de qualquer forma, ja na primeira leitura do dia."""
+        r = self.calcular(self._dt(5160.0), hist=[])
+        self.assertTrue(r["valido"])
+        self.assertEqual(r["fonte"], "tela")
+        self.assertEqual(r["vwap"], 5158.65)
+        self.assertEqual(r["superior_1"], 5175.85)
+        self.assertEqual(r["superior_2"], 5210.24)
+        self.assertEqual(r["inferior_1"], 5141.46)
+        self.assertEqual(r["inferior_2"], 5107.07)
+
+    def test_estado_extensao_superior_bloqueia_compra_no_extremo(self):
+        """Preco alem do +2sigma da tela: mesmo estado que a estimativa
+        antiga ja usava para vetar entrada sem ancora (avaliar_risco_vwap_banda
+        nao precisou mudar - so o calculo do input mudou)."""
+        r = self.calcular(self._dt(5215.0), hist=[])
+        self.assertEqual(r["estado"], "extensao_superior")
+
+    def test_estado_dentro_quando_preco_entre_as_bandas_1(self):
+        r = self.calcular(self._dt(5160.0), hist=[])
+        self.assertEqual(r["estado"], "dentro")
+
+    def test_sem_vwap_banda_lista_cai_para_estimativa_antiga(self):
+        """Sem o campo (indicador nao capturado/nao visivel), comportamento
+        100% igual ao de antes desta mudanca: sem historico suficiente,
+        continua 'indisponivel', fonte 'calculado'."""
+        dt = {"preco_atual": 5160.0, "vwap": 5158.65, "vwap_banda_lista": ""}
+        r = self.calcular(dt, hist=[])
+        self.assertFalse(r["valido"])
+        self.assertEqual(r["fonte"], "calculado")
+
+    def test_lista_so_com_valores_de_um_lado_cai_para_estimativa_antiga(self):
+        """Leitura manca (so achou os valores ACIMA do centro): nao da pra
+        montar banda 1/2 dos dois lados, entao nao usa a tela - evita
+        gatekeeper/score decidirem com banda so de um lado."""
+        dt = {"preco_atual": 5160.0, "vwap": 5158.65,
+              "vwap_banda_lista": "5175,85;5193,04"}
+        r = self.calcular(dt, hist=[])
+        self.assertEqual(r.get("fonte"), "calculado")
+
+    def test_vwap_banda_lista_com_apenas_1_desvio_de_cada_lado(self):
+        """Indicador configurado com so 1 desvio (2 numeros no total): banda
+        1 e banda 2 empatam no mesmo valor, mas continua valido e usavel."""
+        dt = {"preco_atual": 5160.0, "vwap": 5158.65,
+              "vwap_banda_lista": "5175,85;5141,46"}
+        r = self.calcular(dt, hist=[])
+        self.assertTrue(r["valido"])
+        self.assertEqual(r["superior_1"], r["superior_2"])
+        self.assertEqual(r["inferior_1"], r["inferior_2"])
+
+
 if __name__ == "__main__":
     unittest.main()

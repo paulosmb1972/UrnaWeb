@@ -4492,6 +4492,25 @@ def num(v, p=0.0):
     except Exception: return p
 
 
+def parse_lista_numeros_pt(texto):
+    """Converte a string crua de vwap_banda_lista ('5.175,85;5.193,04;...')
+    numa lista de floats, usando num() em cada pedaco (mesma tolerancia a
+    formato brasileiro). Aceita ';' ou '|' como separador (nunca ',', que e
+    o separador decimal brasileiro); ignora pedacos vazios/ilegiveis."""
+    if not texto:
+        return []
+    partes = re.split(r"[;|]", str(texto))
+    valores = []
+    for pedaco in partes:
+        pedaco = pedaco.strip()
+        if not pedaco:
+            continue
+        v = num(pedaco, p=None)
+        if v is not None and v > 0:
+            valores.append(v)
+    return valores
+
+
 def _set_state(chave, valor):
     """Escreve em session_state sem quebrar quando a chave pertence a um widget
     ja instanciado (StreamlitAPIException). Retorna True se conseguiu gravar."""
@@ -4664,7 +4683,9 @@ CRITICO — VALIDE A ARITMETICA ANTES DE FECHAR O JSON:
   "data_replay": "data do replay no formato YYYY-MM-DD. Leia no CABECALHO da janela do grafico (ex: '28/07/2026 09:00:31' -> '2026-07-28') ou no painel Replay/Modos de Exibicao. NUNCA invente.",
   "hora_replay": "hora EXATA do replay no formato HH:MM:SS. Leia no CABECALHO da janela do grafico, ao lado da data (ex: '28/07/2026 09:00:31' -> '09:00:31'), ou no painel Replay onde aparece o cronometro (ex: '09:00:31'). Se so houver HH:MM, retorne HH:MM:00. Este campo e CRITICO: leia com atencao maxima.",
   "preco_atual": 0.0, "abertura": 0.0, "maxima": 0.0, "minima": 0.0,
-  "vwap": 0.0, "ajuste": 0.0, "ptax": 0.0,
+  "vwap": "valor da linha 'VWAP D' (VWAP diaria, UM unico numero central) na legenda do grafico. Se 'VWAP D' nao aparecer, use a linha generica 'VWAP'. NAO confunda com 'VWAP Band', que e outra linha com VARIOS numeros (bandas) — essa vai no campo vwap_banda_lista, nao aqui. 0.0 se nao encontrar.",
+  "ajuste": 0.0, "ptax": 0.0,
+  "vwap_banda_lista": "TODOS os numeros da linha 'VWAP Band' na legenda do grafico (as bandas/desvios acima e abaixo da VWAP central), na ORDEM em que aparecem, separados por ponto e virgula (;). Exemplo: se a linha mostrar 'VWAP Band  5.175,85  5.193,04  5.210,24  5.141,46  5.124,26  5.107,07', responda EXATAMENTE '5.175,85;5.193,04;5.210,24;5.141,46;5.124,26;5.107,07'. Nao precisa identificar qual e qual — so transcreva todos os numeros dessa linha, na ordem, separados por ';'. String vazia se a linha 'VWAP Band' nao existir/nao estiver visivel.",
   "superdom_maxima": "MAXIMA do dia exibida no painel SuperDOM, se visivel. 0.0 se nao houver.",
   "superdom_minima": "MINIMA do dia exibida no painel SuperDOM, se visivel. 0.0 se nao houver.",
   "superdom_vwap": "VWAP exibida no painel SuperDOM, se visivel. 0.0 se nao houver.",
@@ -5084,14 +5105,79 @@ def estimar_vwap_sessao(hist: Optional[List[Dict[str, Any]]] = None) -> float:
         return 0.0
 
 
-def calcular_vwap_bands(dados_tela, hist=None):
-    """VWAP de sessao com bandas de 1 e 2 desvios-padrao, ponderadas por volume.
+def bandas_vwap_da_tela(dados_tela):
+    """Monta as bandas a partir do indicador REAL "VWAP Band" da tela
+    (campo vwap_banda_lista), quando a IA conseguiu ler a linha inteira.
 
-    Centro: VWAP exibida na tela quando disponivel (e a VWAP real do book);
-    na falta dela, a VWAP calculada pela propria serie. O desvio sempre vem
-    da dispersao volume-ponderada da serie do dia (mesma logica de um VWAP
-    com bandas de desvio-padrao em plataformas de order flow).
+    Vantagem sobre a estimativa estatistica local (ver calcular_vwap_bands):
+    e o calculo de verdade do Profit, entao ja vale na PRIMEIRA leitura do
+    dia — nao precisa esperar VWAP_BANDS_AMOSTRA_MINIMA leituras acumuladas
+    em hist_leituras. A lista pode trazer 2, 4 ou 6 numeros (1, 2 ou 3
+    desvios de cada lado); a ORDEM em que a IA leu nao importa, so a
+    posicao de cada numero em relacao ao centro (vwap): os mais PROXIMOS
+    do centro (dos dois lados) viram banda 1, os mais DISTANTES viram
+    banda 2 (zona de extremo/exaustao — mesmo papel que a banda 2 estatistica
+    ja tem em avaliar_risco_vwap_banda/gatekeeper).
+
+    Devolve None (sem lancar excecao) quando a lista nao veio, veio
+    incompleta, ou nao da pra separar valores acima E abaixo do centro —
+    nesses casos calcular_vwap_bands() cai para a estimativa de sempre.
     """
+    try:
+        dados_tela = dados_tela or {}
+        preco = num(dados_tela.get("preco_atual", 0))
+        centro = num(dados_tela.get("vwap", 0))
+        if preco <= 0 or centro <= 0:
+            return None
+        valores = parse_lista_numeros_pt(dados_tela.get("vwap_banda_lista", ""))
+        acima = sorted(v for v in valores if v > centro)
+        abaixo = sorted((v for v in valores if v < centro), reverse=True)
+        if not acima or not abaixo:
+            return None
+
+        superior_1, superior_2 = round(acima[0], 2), round(acima[-1], 2)
+        inferior_1, inferior_2 = round(abaixo[0], 2), round(abaixo[-1], 2)
+        desvio = round(superior_1 - centro, 2)
+
+        largura2 = superior_2 - inferior_2
+        posicao = -1.0
+        if largura2 > 0:
+            posicao = round(((preco - inferior_2) / largura2) * 100, 1)
+            posicao = max(-20.0, min(120.0, posicao))
+
+        if preco >= superior_2:
+            estado = "extensao_superior"
+        elif preco >= superior_1:
+            estado = "acima_banda1"
+        elif preco <= inferior_2:
+            estado = "extensao_inferior"
+        elif preco <= inferior_1:
+            estado = "abaixo_banda1"
+        else:
+            estado = "dentro"
+
+        return {"valido": True, "vwap": round(centro, 2),
+                "superior_1": superior_1, "inferior_1": inferior_1,
+                "superior_2": superior_2, "inferior_2": inferior_2,
+                "desvio": desvio, "posicao": posicao, "estado": estado,
+                "amostra": len(valores), "fonte": "tela"}
+    except Exception:
+        return None
+
+
+def calcular_vwap_bands(dados_tela, hist=None):
+    """VWAP com bandas de 1 e 2 desvios em torno do centro.
+
+    Preferencia 1: bandas REAIS lidas do indicador "VWAP Band" da tela (ver
+    bandas_vwap_da_tela) — mais fieis e disponiveis desde a primeira leitura.
+    Preferencia 2 (fallback de sempre, comportamento inalterado): estimativa
+    estatistica ponderada por volume a partir do historico de leituras
+    (hist_leituras), usada quando a tela nao trouxe a banda.
+    """
+    _tela = bandas_vwap_da_tela(dados_tela)
+    if _tela is not None:
+        return _tela
+
     hist = hist if hist is not None else st.session_state.get("hist_leituras", [])
     preco = num((dados_tela or {}).get("preco_atual", 0))
     vwap_tela = num((dados_tela or {}).get("vwap", 0))
@@ -5099,7 +5185,7 @@ def calcular_vwap_bands(dados_tela, hist=None):
               if num(x.get("preco", 0)) > 0]
     vazio = {"valido": False, "vwap": 0.0, "superior_1": 0.0, "inferior_1": 0.0,
              "superior_2": 0.0, "inferior_2": 0.0, "desvio": 0.0, "posicao": -1.0,
-             "estado": "indefinido", "amostra": len(pontos)}
+             "estado": "indefinido", "amostra": len(pontos), "fonte": "calculado"}
     if preco <= 0 or len(pontos) < VWAP_BANDS_AMOSTRA_MINIMA:
         return vazio
 
@@ -5145,7 +5231,7 @@ def calcular_vwap_bands(dados_tela, hist=None):
             "superior_1": superior_1, "inferior_1": inferior_1,
             "superior_2": superior_2, "inferior_2": inferior_2,
             "desvio": round(desvio, 2), "posicao": posicao, "estado": estado,
-            "amostra": len(pontos)}
+            "amostra": len(pontos), "fonte": "calculado"}
 
 
 def render_vwap_bands(vwap_info, preco=0.0):
@@ -5155,6 +5241,10 @@ def render_vwap_bands(vwap_info, preco=0.0):
         st.caption("VWAP bands indisponíveis — amostra insuficiente "
                    f"({(vwap_info or {}).get('amostra', 0)}/{VWAP_BANDS_AMOSTRA_MINIMA} leituras).")
         return
+    _fonte = vwap_info.get("fonte", "calculado")
+    _fonte_txt = ("📡 lida do indicador \"VWAP Band\" da tela" if _fonte == "tela"
+                  else "🧮 estimada pelo histórico de leituras (indicador \"VWAP Band\" não capturado)")
+    st.caption(_fonte_txt)
     vcol1, vcol2, vcol3, vcol4, vcol5 = st.columns(5)
     vcol1.metric("Banda -2σ", f"{vwap_info['inferior_2']:.2f}")
     vcol2.metric("Banda -1σ", f"{vwap_info['inferior_1']:.2f}")
