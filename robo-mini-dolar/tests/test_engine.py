@@ -257,6 +257,46 @@ class TestViesMacroDXYSemLeituraAnterior(unittest.TestCase):
         self.assertIn("fred", NS["FONTES_MACRO_WEB"]["VIX"])
 
 
+class TestViesMacroPTAXVota(unittest.TestCase):
+    """PTAX (cotacaoVenda oficial do BACEN, ja coletada em bcb_ptax) passou
+    a votar em vies_macro_consolidado — antes so entrava como checagem de
+    disponibilidade do macro, nunca somava/subtraia pontos. Mesmo racional
+    de ausencia ja usado pro DXY: sem leitura anterior pra comparar, so
+    fica registrado como informativo."""
+
+    def setUp(self):
+        FAKE_ST.session_state.clear()
+        self.vies = NS["vies_macro_consolidado"]
+
+    def _macro_base(self, **over):
+        base = {"DXY": 118.2126, "VIX": 17.10, "PTAX": 5.1490, "EWZ": 37.90,
+                "macro_indisponiveis": [], "macro_indisponiveis_essenciais": []}
+        base.update(over)
+        return base
+
+    def test_ptax_sem_leitura_anterior_nao_pontua(self):
+        r = self.vies(self._macro_base())
+        self.assertTrue(any("PTAX" in f and "não pontua" in f for f in r["fatores"]))
+
+    def test_ptax_subindo_meio_ponto_pct_vota_compra(self):
+        """PTAX de 5.1490 pra 5.1750 (~+0.50%) — dolar mais caro em reais,
+        favorece compra do WDO."""
+        r = self.vies(self._macro_base(PTAX_ANTERIOR=5.1490 * (1 - 0.005)))
+        self.assertGreater(r["pontos"], 0)
+        self.assertTrue(any("PTAX" in f and "mais caro" in f for f in r["fatores"]))
+
+    def test_ptax_caindo_meio_ponto_pct_vota_venda(self):
+        r = self.vies(self._macro_base(PTAX_ANTERIOR=5.1490 * 1.005))
+        self.assertLess(r["pontos"], 0)
+        self.assertTrue(any("PTAX" in f and "mais barato" in f for f in r["fatores"]))
+
+    def test_ptax_variacao_abaixo_do_limiar_nao_pontua(self):
+        """Ruido de fixacao intradia normal (~0.05%) nao pode virar sinal."""
+        r = self.vies(self._macro_base(DXY_ANTERIOR=118.2126,  # DXY estavel, nao pontua
+                                        PTAX_ANTERIOR=5.1490 * (1 - 0.0005)))
+        self.assertEqual(r["pontos"], 0)
+
+
 class TestSaldoAgressaoProxyDeBook(unittest.TestCase):
     """BUG 6 — diagnosticado no dia 16/09/2026: sem Times & Trades com nomes
     de agentes (o caso comum — TemNomesAgentes="nao" em quase toda leitura),

@@ -882,12 +882,12 @@ def proximo_evento_macro(agora=None):
 
 
 def vies_macro_consolidado(macro=None):
-    """Converte o painel macro (PMI, DXY, EWZ, VIX) num vies unico para o WDO.
-    PTAX NAO pontua aqui — entra so como checagem de disponibilidade do
-    macro (ver _sem_essenciais abaixo); e exibida na tela por contexto, mas
-    nao vota.
+    """Converte o painel macro (PMI, DXY, PTAX, EWZ, VIX) num vies unico
+    para o WDO.
 
     Dolar sobe quando: PMI/inflacao dos EUA acima do esperado, DXY subindo,
+    PTAX subindo (dolar mais caro em reais — leitura MAIS direta pro WDO
+    que o DXY, que e dolar contra uma cesta de moedas, nao contra o real),
     EWZ caindo, VIX subindo (aversao a risco).
     """
     macro = macro or ler_dados_macro()
@@ -934,6 +934,23 @@ def vies_macro_consolidado(macro=None):
             pontos += 2; fatores.append(f"DXY +{var:.2f}% — dolar forte no mundo")
         elif var <= -0.25:
             pontos -= 2; fatores.append(f"DXY {var:.2f}% — dolar fraco no mundo")
+
+    # PTAX real do BACEN (cotacaoVenda oficial) — mesmo racional de ausencia
+    # do DXY acima: sem leitura anterior pra comparar, so registra o nivel
+    # como informativo e nao vota (nivel absoluto do dolar sozinho nao diz
+    # se ele esta subindo ou caindo). Com leitura anterior, e o sinal MAIS
+    # direto que existe pro WDO: e a propria cotacao oficial dolar/real,
+    # nao uma cesta de moedas (DXY) nem um proxy (EWZ).
+    ptax = num(macro.get("PTAX"))
+    ptax_ant = num(macro.get("PTAX_ANTERIOR"))
+    if ptax > 0 and ptax_ant <= 0:
+        fatores.append(f"PTAX em {ptax:.4f} — sem leitura anterior pra comparar, não pontua")
+    if ptax > 0 and ptax_ant > 0:
+        var = (ptax - ptax_ant) / ptax_ant * 100
+        if var >= 0.30:
+            pontos += 2; fatores.append(f"PTAX +{var:.2f}% — dolar mais caro em reais")
+        elif var <= -0.30:
+            pontos -= 2; fatores.append(f"PTAX {var:.2f}% — dolar mais barato em reais")
 
     ewz = num(macro.get("EWZ"))
     ewz_ant = num(macro.get("EWZ_ANTERIOR"))
@@ -2237,8 +2254,28 @@ def bcb_serie_na_data(serie, data_ref):
     return {"valor": v, "data": str(ult.get("data", ""))} if v else None
 
 
+def _bcb_ptax_valor_em_ou_antes(d, tentativas=6):
+    """Cotacao de venda do PTAX no primeiro dia util <= d (anda pra tras em
+    fim de semana/feriado, mesma logica de sempre). Devolve (valor, data)
+    ou (None, None) se nao achar em nenhuma das tentativas."""
+    for _ in range(tentativas):
+        url = URLS_FONTES_MACRO["bcb_ptax_dia"].format(data=d.strftime("%m-%d-%Y"))
+        dados = _http_json(url)
+        val = (dados or {}).get("value") or []
+        if val:
+            v = num(val[0].get("cotacaoVenda"))
+            if v:
+                return round(v, 4), d
+        d = d - timedelta(days=1)
+    return None, None
+
+
 def bcb_ptax(data_ref=None):
-    """PTAX de venda. Com data_ref busca o valor daquele dia (replay)."""
+    """PTAX de venda oficial do BACEN. Com data_ref busca o valor daquele
+    dia (replay). Tambem busca o PTAX do pregao util ANTERIOR (campo
+    'anterior') -- sem ele, vies_macro_consolidado nao tinha como comparar
+    e o PTAX real nunca votava na direcao do dolar, so servia pra checar
+    se o macro estava disponivel."""
     if data_ref:
         try:
             d = datetime.strptime(str(data_ref)[:10], "%Y-%m-%d")
@@ -2246,16 +2283,16 @@ def bcb_ptax(data_ref=None):
             d = datetime.now()
     else:
         d = datetime.now()
-    for _ in range(6):   # anda para tras em fim de semana e feriado
-        url = URLS_FONTES_MACRO["bcb_ptax_dia"].format(data=d.strftime("%m-%d-%Y"))
-        dados = _http_json(url)
-        val = (dados or {}).get("value") or []
-        if val:
-            v = num(val[0].get("cotacaoVenda"))
-            if v:
-                return {"valor": round(v, 4), "data": d.strftime("%Y-%m-%d"),
-                        "fonte": "BCB/PTAX"}
-        d = d - timedelta(days=1)
+
+    valor, data_enc = _bcb_ptax_valor_em_ou_antes(d)
+    if valor is not None:
+        resultado = {"valor": valor, "data": data_enc.strftime("%Y-%m-%d"),
+                     "fonte": "BCB/PTAX"}
+        anterior, _data_ant = _bcb_ptax_valor_em_ou_antes(data_enc - timedelta(days=1))
+        if anterior is not None:
+            resultado["anterior"] = anterior
+        return resultado
+
     s = bcb_serie_ultimo(BCB_SERIES["PTAX_VENDA"], 1)
     if s:
         s["fonte"] = "BCB/SGS"
