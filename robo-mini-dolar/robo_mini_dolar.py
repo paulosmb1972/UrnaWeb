@@ -65,6 +65,7 @@ import pygetwindow as gw
 import win32api
 import win32gui
 import win32ui
+import win32con
 import winsound
 import pythoncom
 import win32com.client
@@ -2965,27 +2966,15 @@ def _bitblt_regiao_desktop(min_x, min_y, width, height):
     Funciona em qualquer monitor pois usa coordenadas globais do desktop virtual —
     por isso usa GetDC(0) (DC do virtual screen inteiro), e NAO
     GetWindowDC(GetDesktopWindow()), que em alguns setups so cobre o monitor
-    PRINCIPAL e faz a captura sair preta/cortada em qualquer monitor secundario."""
-    try:
-        if width <= 10 or height <= 10:
-            return None
-        hdc = win32gui.GetDC(0)
-        mdc = win32ui.CreateDCFromHandle(hdc)
-        sdc = mdc.CreateCompatibleDC()
-        bmp = win32ui.CreateBitmap()
-        bmp.CreateCompatibleBitmap(mdc, width, height)
-        sdc.SelectObject(bmp)
-        sdc.BitBlt((0, 0), (width, height), mdc, (min_x, min_y), 0x00CC0020)  # SRCCOPY
-        bi = bmp.GetInfo()
-        bits = bmp.GetBitmapBits(True)
-        img = Image.frombuffer("RGB", (bi["bmWidth"], bi["bmHeight"]), bits, "raw", "BGRX", 0, 1)
-        try:
-            win32gui.DeleteObject(bmp.GetHandle())
-            sdc.DeleteDC(); mdc.DeleteDC(); win32gui.ReleaseDC(0, hdc)
-        except Exception: pass
-        return img
-    except Exception:
-        return None
+    PRINCIPAL e faz a captura sair preta/cortada em qualquer monitor secundario.
+
+    BUG CORRIGIDO (reforma de captura): delega pra capturar_bitblt_desktop()
+    (definida mais abaixo, mesma logica exata) em vez de duplicar o codigo
+    GDI — havia duas implementacoes identicas deste mesmo BitBlt no arquivo
+    (esta e _capturar_regiao_tela_direta), risco de uma ser corrigida e a
+    outra nao. Forward-reference seguro: so e chamada em runtime, depois do
+    modulo inteiro carregado, igual a outras funcoes ja usadas assim aqui."""
+    return capturar_bitblt_desktop(min_x, min_y, width, height)
 
 
 def _listar_monitores():
@@ -3290,33 +3279,13 @@ def _capturar_regiao_tela_direta(left, top, width, height):
     negativos) cai fora da area coberta e a captura sai preta ou pega
     sempre o monitor principal — o sintoma de "so captura a tela do
     notebook" mesmo com a janela aberta no monitor externo.
+
+    BUG CORRIGIDO (reforma de captura): delega pra capturar_bitblt_desktop()
+    (definida mais abaixo) em vez de duplicar a mesma logica GDI de
+    _bitblt_regiao_desktop — as duas funcoes faziam exatamente a mesma
+    coisa com nomes diferentes.
     """
-    try:
-        if width <= 10 or height <= 10:
-            return None
-        hDC_tela = win32gui.GetDC(0)
-        hDC = win32ui.CreateDCFromHandle(hDC_tela)
-        saveDC = hDC.CreateCompatibleDC()
-
-        bitmap = win32ui.CreateBitmap()
-        bitmap.CreateCompatibleBitmap(hDC, width, height)
-        saveDC.SelectObject(bitmap)
-
-        # Copia da tela nas coordenadas exatas (globais do virtual screen,
-        # podem ser negativas se o monitor estiver a esquerda/acima do principal)
-        saveDC.BitBlt((0, 0), (width, height), hDC, (left, top), 0x00CC0020) # SRCCOPY
-
-        signedints = bitmap.GetBitmapBits(True)
-        img = Image.frombuffer("RGB", (width, height), signedints, "raw", "BGRX", 0, 1)
-
-        # Limpeza
-        win32gui.DeleteObject(bitmap.GetHandle())
-        saveDC.DeleteDC()
-        hDC.DeleteDC()
-        win32gui.ReleaseDC(0, hDC_tela)
-        return img
-    except Exception:
-        return None
+    return capturar_bitblt_desktop(left, top, width, height)
 
 
 def _imagem_esta_em_branco(img, limiar_variancia=3.0):
@@ -3497,8 +3466,480 @@ def _capturar_por_palavras_forcado(palavras, nome_amigavel, preferir_bitblt=True
 
     return None, f"Falha total na captura de {nome_amigavel}."
 
+
+# =============================================================================
+# REFORMA DA CAPTURA — camada NOVA e ADITIVA (nada abaixo troca o
+# comportamento do que ja funciona hoje; so acrescenta um ultimo recurso
+# quando TUDO o que ja existe acima falhar ou devolver imagem preta/branca).
+#
+# Motivo de existir: diagnosticado que o grafico (renderizado por GPU) so
+# pode ser capturado por BitBlt, que por sua vez SO enxerga o que esta
+# fisicamente visivel na tela — falha se a janela estiver coberta por outra
+# (ex.: o navegador com o proprio painel do robo por cima do Profit) ou
+# minimizada. Os paineis de tabela (SuperDOM/T&T/Livro/Agentes) usam
+# PrintWindow, que funciona coberto/minimizado, mas exige que o painel
+# esteja "destacado" como janela propria do Windows — se estiver encaixado
+# dentro da janela principal do Profit, nao ha HWND separado pra capturar.
+#
+# A novidade real desta secao e a ATIVACAO TEMPORARIA: quando a captura
+# direta falha, o sistema restaura/traz a janela pra frente por uma fracao
+# de segundo (sem mover nem redimensionar), tenta capturar de novo, e
+# devolve o foco pra onde estava. Isso cobre o caso de janela coberta que
+# nenhum dos metodos acima resolve sozinho.
+# =============================================================================
+
+def classificar_tipo_janela_profit(titulo, classe, w, h):
+    """Chuta o TIPO de painel do Profit a partir do titulo/classe/formato da
+    janela. Usado so para diagnostico e como desempate no seletor de
+    'melhor janela' (item novo, complementar) — nunca substitui a busca por
+    palavra-chave especifica que cada capturar_*() ja faz. Nunca lanca
+    excecao."""
+    try:
+        t = str(titulo or "").strip().lower()
+        c = str(classe or "").strip().lower()
+        texto = f"{t} {c}"
+        w, h = max(1, int(w or 0)), max(1, int(h or 0))
+        proporcao = w / float(h) if h else 0.0
+
+        candidatos = []  # (tipo, pontos, motivo)
+
+        if any(p in texto for p in ("grafico", "gráfico", "chart", "candle", "replay",
+                                     "mini dolar", "mini dólar", "1 dolar mini")):
+            candidatos.append(("grafico", 55, "titulo sugere grafico/candle"))
+        if any(p in texto for p in ("superdom", "super dom", "simulador")):
+            candidatos.append(("superdom", 55, "titulo sugere SuperDOM/book"))
+        elif any(p in texto for p in (" dom", "boleta")):
+            candidatos.append(("superdom", 30, "titulo sugere DOM/boleta (fraco)"))
+        if any(p in texto for p in ("livro", "ofertas", "depth", "profundidade")):
+            candidatos.append(("livro", 45, "titulo sugere livro/profundidade"))
+        if any(p in texto for p in ("times", "trades", "tape", "negocio", "negócio",
+                                     "ordem original", "compradora", "vendedora", "agressor")):
+            candidatos.append(("times_trades", 50, "titulo sugere Times & Trades"))
+        if any(p in texto for p in ("agentes", "corretora", "player", "ranking")):
+            candidatos.append(("agentes", 50, "titulo sugere Agentes/corretoras"))
+        if any(p in texto for p in ("grade de cota", "grade cota")):
+            candidatos.append(("grade", 60, "titulo sugere Grade de Cotacoes"))
+        if any(p in texto for p in ("wdo", "wdofut", "wdov", "wdoz", "wdoq", "wdox",
+                                     "wdoj", "wdon", "wdom", "dolpro", "dolar", "dólar")):
+            candidatos.append(("desconhecido_wdo", 15, "titulo tem o ticker, mas generico"))
+
+        if not candidatos:
+            return {"tipo": "desconhecido", "confianca": 0, "motivo": "titulo/classe sem palavra-chave conhecida"}
+
+        # Proporcao da janela desempata entre candidatos parecidos: grafico
+        # tende a ser mais largo que alto; SuperDOM tende a ser estreito e
+        # alto; T&T/livro/agentes tendem a ser tabelas retangulares.
+        ajustados = []
+        for tipo, pontos, motivo in candidatos:
+            bonus = 0
+            if tipo == "grafico" and proporcao >= 1.3:
+                bonus = 10
+            elif tipo == "grafico" and proporcao < 0.9:
+                bonus = -15  # muito estreito pra ser grafico
+            elif tipo == "superdom" and proporcao <= 0.7:
+                bonus = 10
+            elif tipo in ("times_trades", "livro", "agentes") and 0.5 <= proporcao <= 2.5:
+                bonus = 5
+            ajustados.append((tipo, max(0, min(100, pontos + bonus)), motivo))
+
+        ajustados.sort(key=lambda x: -x[1])
+        tipo, pontos, motivo = ajustados[0]
+        if tipo == "desconhecido_wdo":
+            return {"tipo": "desconhecido", "confianca": pontos, "motivo": motivo}
+        return {"tipo": tipo, "confianca": pontos, "motivo": motivo}
+    except Exception as e:
+        return {"tipo": "desconhecido", "confianca": 0, "motivo": f"erro ao classificar: {e}"}
+
+
+def listar_janelas_profit_classificadas():
+    """Enumera TODAS as janelas top-level do Windows (via EnumWindows bruto —
+    nao usa pygetwindow, que costuma pular janela minimizada sozinho) e
+    classifica cada uma. Base do diagnostico novo e do selecionar_melhor_janela().
+    Nunca quebra o app: qualquer janela problematica e simplesmente ignorada."""
+    janelas = []
+
+    def _cb(hwnd, _):
+        try:
+            titulo = (win32gui.GetWindowText(hwnd) or "").strip()
+            classe = (win32gui.GetClassName(hwnd) or "").strip()
+            minimizada = bool(win32gui.IsIconic(hwnd))
+            visivel = bool(win32gui.IsWindowVisible(hwnd))
+            # Nao descarta minimizada nem invisivel aqui — só ignora lixo
+            # sem titulo/classe nenhuma (overlays, tooltips sem nome).
+            if not titulo and not classe:
+                return True
+            l, top, r, b = win32gui.GetWindowRect(hwnd)
+            w, h = r - l, b - top
+            if w < 40 or h < 40:
+                return True  # tooltip/overlay minusculo, sem area util
+            cls = classificar_tipo_janela_profit(titulo, classe, w, h)
+            janelas.append({
+                "hwnd": hwnd, "titulo": titulo, "classe": classe,
+                "left": l, "top": top, "right": r, "bottom": b,
+                "width": w, "height": h, "area": w * h,
+                "visivel": visivel, "minimizada": minimizada,
+                "tipo": cls["tipo"], "confianca": cls["confianca"], "motivo": cls["motivo"],
+            })
+        except Exception:
+            pass
+        return True
+
+    try:
+        win32gui.EnumWindows(_cb, None)
+    except Exception:
+        pass
+
+    ordem_tipo = {"grafico": 0, "superdom": 1, "times_trades": 2, "livro": 3,
+                  "agentes": 4, "grade": 5, "desconhecido": 9}
+    janelas.sort(key=lambda j: (ordem_tipo.get(j["tipo"], 9), -j["confianca"], -j["area"]))
+    return janelas
+
+
+def imagem_valida_para_analise(img, nome=""):
+    """Validacao mais completa que _imagem_esta_em_branco(): usada pelos
+    metodos NOVOS desta secao (capturar_bitblt_desktop/capturar_printwindow/
+    capturar_janela_hibrida). Nao troca _imagem_esta_em_branco nem seu uso
+    nos metodos antigos — so acrescenta checagens.
+    Devolve (ok: bool, motivo: str)."""
+    if img is None:
+        return False, "imagem ausente"
+    try:
+        w, h = img.size
+    except Exception:
+        return False, "objeto de imagem invalido"
+    if w < 30 or h < 30:
+        return False, f"imagem muito pequena ({w}x{h}px)"
+    try:
+        amostra = img.convert("L").resize((64, 64))
+        dados = list(amostra.getdata())
+        minimo, maximo = min(dados), max(dados)
+        media = sum(dados) / len(dados)
+        variancia = sum((p - media) ** 2 for p in dados) / len(dados)
+        if maximo - minimo <= 1:
+            return False, "imagem uniforme (uma unica cor)"
+        if variancia < 3.0:
+            return False, "imagem preta/uniforme (variancia muito baixa)"
+        if media <= 6:
+            return False, "imagem quase toda preta"
+        if media >= 249 and variancia < 40:
+            return False, "imagem quase toda branca"
+    except Exception:
+        pass
+    return True, "imagem valida"
+
+
+def capturar_bitblt_desktop(left, top, width, height):
+    """BitBlt do desktop virtual inteiro (GetDC(0)) — funciona em qualquer
+    monitor, inclusive com coordenada NEGATIVA (monitor a esquerda/acima do
+    principal). Nome novo/publico para _capturar_regiao_tela_direta, que
+    passa a delegar aqui (mesma implementacao, sem duplicar logica)."""
+    try:
+        left, top, width, height = int(left), int(top), int(width), int(height)
+    except Exception:
+        return None
+    if width <= 10 or height <= 10:
+        return None
+    hDC_tela = None
+    hDC = saveDC = bitmap = None
+    try:
+        hDC_tela = win32gui.GetDC(0)
+        hDC = win32ui.CreateDCFromHandle(hDC_tela)
+        saveDC = hDC.CreateCompatibleDC()
+        bitmap = win32ui.CreateBitmap()
+        bitmap.CreateCompatibleBitmap(hDC, width, height)
+        saveDC.SelectObject(bitmap)
+        saveDC.BitBlt((0, 0), (width, height), hDC, (left, top), 0x00CC0020)  # SRCCOPY
+        bits = bitmap.GetBitmapBits(True)
+        return Image.frombuffer("RGB", (width, height), bits, "raw", "BGRX", 0, 1)
+    except Exception:
+        return None
+    finally:
+        try:
+            if bitmap is not None:
+                win32gui.DeleteObject(bitmap.GetHandle())
+            if saveDC is not None:
+                saveDC.DeleteDC()
+            if hDC is not None:
+                hDC.DeleteDC()
+            if hDC_tela is not None:
+                win32gui.ReleaseDC(0, hDC_tela)
+        except Exception:
+            pass
+
+
+def capturar_printwindow(hwnd):
+    """PrintWindow direto no HWND, recalculando o tamanho por GetWindowRect —
+    funciona com a janela minimizada ou totalmente coberta, MAS costuma
+    devolver frame preto em conteudo acelerado por GPU (o grafico). Tenta
+    PW_RENDERFULLCONTENT (2) primeiro, cai para o modo padrao (0) depois.
+    Devolve (PIL.Image ou None, motivo)."""
+    if not hwnd or not win32gui.IsWindow(hwnd):
+        return None, "HWND invalido"
+    try:
+        l, top, r, b = win32gui.GetWindowRect(hwnd)
+        w, h = r - l, b - top
+    except Exception as e:
+        return None, f"GetWindowRect falhou: {e}"
+    if w <= 10 or h <= 10:
+        return None, f"janela muito pequena ({w}x{h}px)"
+
+    hdcScreen = hDC = saveDC = bitmap = None
+    try:
+        hdcScreen = win32gui.GetDC(0)
+        hDC = win32ui.CreateDCFromHandle(hdcScreen)
+        saveDC = hDC.CreateCompatibleDC()
+        bitmap = win32ui.CreateBitmap()
+        bitmap.CreateCompatibleBitmap(hDC, w, h)
+        saveDC.SelectObject(bitmap)
+
+        res = win32gui.PrintWindow(hwnd, saveDC.GetSafeHdc(), 2)
+        if not res:
+            res = win32gui.PrintWindow(hwnd, saveDC.GetSafeHdc(), 0)
+        if not res:
+            return None, "PrintWindow devolveu falha nas duas tentativas (2 e 0)"
+
+        bits = bitmap.GetBitmapBits(True)
+        img = Image.frombuffer("RGB", (w, h), bits, "raw", "BGRX", 0, 1)
+    except Exception as e:
+        return None, f"PrintWindow lancou excecao: {e}"
+    finally:
+        try:
+            if bitmap is not None:
+                win32gui.DeleteObject(bitmap.GetHandle())
+            if saveDC is not None:
+                saveDC.DeleteDC()
+            if hDC is not None:
+                hDC.DeleteDC()
+            if hdcScreen is not None:
+                win32gui.ReleaseDC(0, hdcScreen)
+        except Exception:
+            pass
+
+    ok, motivo = imagem_valida_para_analise(img)
+    if not ok:
+        return None, f"PrintWindow deu imagem invalida ({motivo}) — comum em grafico acelerado por GPU"
+    return img, "capturado via PrintWindow"
+
+
+def trazer_janela_para_frente_temporariamente(hwnd):
+    """Traz 'hwnd' pra frente por uma fracao de segundo, SEM mover nem
+    redimensionar, pra dar chance ao BitBlt de enxergar uma janela que
+    estava coberta. Restaura se estiver minimizada. Devolve o hwnd que
+    estava em foreground ANTES (para restaurar_foco_janela depois), ou None
+    se nao foi possivel determinar/agir. Nunca lanca excecao."""
+    anterior = None
+    try:
+        anterior = win32gui.GetForegroundWindow()
+    except Exception:
+        anterior = None
+    try:
+        if not hwnd or not win32gui.IsWindow(hwnd):
+            return anterior
+        if win32gui.IsIconic(hwnd):
+            win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+        try:
+            win32gui.SetForegroundWindow(hwnd)
+        except Exception:
+            try:
+                win32gui.SetWindowPos(
+                    hwnd, win32con.HWND_TOP, 0, 0, 0, 0,
+                    win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW)
+            except Exception:
+                pass
+        time.sleep(0.2)  # 150-300ms: da tempo do compositor redesenhar
+    except Exception:
+        pass
+    return anterior
+
+
+def restaurar_foco_janela(hwnd_anterior):
+    """Tenta devolver o foco pra janela que estava em primeiro plano antes
+    de trazer_janela_para_frente_temporariamente(). Best-effort: se falhar,
+    nao quebra nada (so fica com o foco onde a ativacao temporaria deixou)."""
+    if not hwnd_anterior:
+        return
+    try:
+        if win32gui.IsWindow(hwnd_anterior):
+            win32gui.SetForegroundWindow(hwnd_anterior)
+    except Exception:
+        pass
+
+
+def capturar_janela_hibrida(hwnd, nome_amigavel, tipo_esperado="desconhecido"):
+    """Funcao central da reforma de captura. Ordem de tentativa depende do
+    TIPO esperado:
+
+    - "grafico" (acelerado por GPU — só BitBlt pega pixel de verdade):
+      1) BitBlt direto. 2) Se invalida, ativa a janela temporariamente,
+      recalcula a posicao (pode ter mudado 1px por causa da animacao de
+      restaurar) e tenta BitBlt de novo. 3) PrintWindow so como ultimo
+      recurso diagnostico (costuma dar preto em GPU, mas as vezes o Profit
+      surpreende). 4) Falha com motivo claro.
+
+    - qualquer outro tipo (paineis de tabela/texto — PrintWindow funciona
+      em segundo plano de verdade):
+      1) PrintWindow direto. 2) Se invalido, ativa a janela temporariamente
+      e tenta BitBlt. 3) Falha com motivo claro.
+
+    Sempre restaura o foco pra onde estava, se precisou ativar. Devolve
+    (PIL.Image ou None, mensagem)."""
+    if not hwnd or not win32gui.IsWindow(hwnd):
+        return None, f"{nome_amigavel}: janela nao encontrada (HWND invalido)."
+
+    def _rect():
+        l, top, r, b = win32gui.GetWindowRect(hwnd)
+        return l, top, r - l, b - top
+
+    if tipo_esperado == "grafico":
+        try:
+            l, top, w, h = _rect()
+        except Exception as e:
+            return None, f"{nome_amigavel}: GetWindowRect falhou ({e})."
+        img = capturar_bitblt_desktop(l, top, w, h)
+        ok, motivo = imagem_valida_para_analise(img, nome_amigavel)
+        if ok:
+            return img, f"{nome_amigavel} capturado via BitBlt direto ({w}x{h}px)"
+
+        anterior = trazer_janela_para_frente_temporariamente(hwnd)
+        try:
+            l, top, w, h = _rect()
+            img2 = capturar_bitblt_desktop(l, top, w, h)
+            ok2, motivo2 = imagem_valida_para_analise(img2, nome_amigavel)
+            if ok2:
+                return img2, f"{nome_amigavel} capturado via BitBlt após ativar janela ({w}x{h}px)"
+        finally:
+            restaurar_foco_janela(anterior)
+
+        img3, motivo3 = capturar_printwindow(hwnd)
+        if img3 is not None:
+            return img3, f"{nome_amigavel} capturado via PrintWindow (fallback diagnóstico, incomum p/ gráfico)"
+        return None, f"{nome_amigavel}: falha: imagem preta/uniforme mesmo após ativar a janela ({motivo2})."
+
+    # Paineis de tabela/texto: PrintWindow primeiro.
+    img, motivo = capturar_printwindow(hwnd)
+    if img is not None:
+        return img, f"{nome_amigavel} capturado via PrintWindow em segundo plano"
+
+    anterior = trazer_janela_para_frente_temporariamente(hwnd)
+    try:
+        l, top, w, h = _rect()
+        img2 = capturar_bitblt_desktop(l, top, w, h)
+        ok2, motivo2 = imagem_valida_para_analise(img2, nome_amigavel)
+        if ok2:
+            return img2, f"{nome_amigavel} capturado via BitBlt após ativar janela ({w}x{h}px)"
+    except Exception as e:
+        motivo2 = str(e)
+    finally:
+        restaurar_foco_janela(anterior)
+
+    return None, f"{nome_amigavel}: falha: janela não encontrada ou imagem inválida mesmo após ativar ({motivo})."
+
+
+def selecionar_melhor_janela(tipo_desejado, palavras=None):
+    """Usa listar_janelas_profit_classificadas() pra achar a MELHOR janela
+    do tipo pedido — ultimo recurso, chamado só quando toda a busca por
+    palavra-chave especifica de cada capturar_*() já falhou. Devolve o HWND
+    ou None. Nunca escolhe SuperDOM como grafico nem vice-versa: só
+    considera candidatos cujo tipo classificado bate com o pedido (ou
+    "desconhecido" com o ticker no titulo, como ultimo recurso)."""
+    palavras_low = [p.lower() for p in (palavras or [])]
+    try:
+        janelas = listar_janelas_profit_classificadas()
+    except Exception:
+        return None
+
+    diretas = [j for j in janelas if j["tipo"] == tipo_desejado]
+    candidatas = diretas if diretas else [
+        j for j in janelas
+        if j["tipo"] == "desconhecido" and any(p in j["titulo"].lower() for p in palavras_low)
+    ]
+    if not candidatas:
+        return None
+
+    def _score(j):
+        bonus_palavra = 20 if any(p in j["titulo"].lower() for p in palavras_low) else 0
+        return (j["confianca"] + bonus_palavra, j["area"])
+
+    candidatas.sort(key=_score, reverse=True)
+    return candidatas[0]["hwnd"]
+
+
+def capturar_rect_manual(nome_env, nome_amigavel=""):
+    """Fallback por COORDENADA MANUAL fixa, via variavel de ambiente
+    (formato "left,top,width,height", ex.: CAPTURA_GRAFICO_RECT=0,0,1280,720).
+    Prioridade maxima quando definida — util quando nem o casamento por
+    titulo nem a ativacao temporaria da janela resolvem (titulo generico
+    demais, ou o usuario ja sabe a coordenada de cor). SEM a env var
+    definida, devolve (None, None) IMEDIATAMENTE: zero mudanca de
+    comportamento pra quem nao usa isso."""
+    bruto = os.getenv(nome_env, "").strip()
+    if not bruto:
+        return None, None
+    try:
+        partes = [int(p.strip()) for p in bruto.split(",")]
+        if len(partes) != 4:
+            raise ValueError("esperado 4 numeros")
+        left, top, width, height = partes
+    except Exception:
+        return None, f"{nome_env} mal formatada (esperado 'left,top,width,height'): '{bruto}'"
+    img = capturar_bitblt_desktop(left, top, width, height)
+    ok, motivo = imagem_valida_para_analise(img, nome_amigavel or nome_env)
+    if ok:
+        return img, f"{nome_amigavel or nome_env} capturado via coordenada manual ({nome_env}={bruto})"
+    return None, f"Coordenada manual de {nome_env} deu '{motivo}' — verifique a variavel de ambiente."
+
+
+def _registrar_diagnostico_captura(tipo_janela, resultado):
+    """Grava o resultado de uma captura nos campos de diagnostico genericos
+    (item novo da reforma). Nao substitui os campos especificos que cada
+    capturar_*() ja grava (ultimo_titulo_superdom etc.) — soma a eles.
+    Protegido pra nunca quebrar caso st.session_state nao esteja disponivel
+    (ex.: chamado fora do contexto do Streamlit em algum teste)."""
+    img, msg = resultado
+    try:
+        st.session_state["ultimo_tipo_janela"] = tipo_janela
+        st.session_state["ultima_mensagem_captura"] = msg or ""
+        if img is None:
+            st.session_state["ultimo_motivo_falha_captura"] = msg or "falha desconhecida"
+            st.session_state["ultimo_metodo_captura"] = ""
+        else:
+            st.session_state["ultimo_motivo_falha_captura"] = ""
+            _m = str(msg or "").lower()
+            if "printwindow" in _m:
+                metodo = "PrintWindow (segundo plano)"
+            elif "ativar" in _m or "ativa" in _m or "após ativar" in _m:
+                metodo = "BitBlt após ativar janela"
+            elif "manual" in _m:
+                metodo = "Coordenada manual (env var)"
+            elif "monitor" in _m:
+                metodo = "Captura por monitor inteiro"
+            elif "bitblt" in _m:
+                metodo = "BitBlt direto"
+            else:
+                metodo = "desconhecido"
+            st.session_state["ultimo_metodo_captura"] = metodo
+    except Exception:
+        pass
+    return resultado
+
+
+def _com_diagnostico_captura(tipo_janela, func):
+    """Envolve uma funcao capturar_*() existente pra alimentar os campos de
+    diagnostico genericos em TODO ponto de retorno dela, sem precisar tocar
+    em cada 'return' interno (que ja tem sua propria logica testada)."""
+    def _wrapped(*args, **kwargs):
+        return _registrar_diagnostico_captura(tipo_janela, func(*args, **kwargs))
+    _wrapped.__name__ = getattr(func, "__name__", "capturar")
+    _wrapped.__doc__ = func.__doc__
+    return _wrapped
+
+
 def capturar_janela():
     """Captura o gráfico principal."""
+    _img_m, _msg_m = capturar_rect_manual("CAPTURA_GRAFICO_RECT", "Gráfico")
+    if _img_m is not None:
+        st.session_state.ultimo_titulo_capturado = _msg_m
+        return _img_m, _msg_m
     if _modo_captura_por_monitor_ativo():
         img, msg = capturar_monitor(_monitor_grafico_superdom_atual())
         st.session_state.ultimo_titulo_capturado = msg
@@ -3514,6 +3955,17 @@ def capturar_janela():
             img, msg = img2, msg2
         elif img is None:
             img, msg = img2, msg2
+    if img is None or "parece em branco/preta" in (msg or ""):
+        # ULTIMO RECURSO (reforma de captura): classifica todas as janelas,
+        # acha a melhor candidata a "grafico" e tenta a estrategia hibrida
+        # com ativacao temporaria — cobre o caso de o grafico estar coberto
+        # por outra janela (ex.: o navegador com este proprio painel por
+        # cima do Profit), que nenhum dos metodos acima resolve sozinho.
+        _hwnd_sel = selecionar_melhor_janela("grafico", palavras=palavras)
+        if _hwnd_sel is not None:
+            img3, msg3 = capturar_janela_hibrida(_hwnd_sel, "Gráfico", tipo_esperado="grafico")
+            if img3 is not None:
+                img, msg = img3, msg3
     st.session_state.ultimo_titulo_capturado = msg
     return img, msg
 
@@ -3522,6 +3974,10 @@ def capturar_SuperDom():
     """Captura SuperDOM. A ladder de execucao do simulador ('S Simulador
     **numero...') e o MESMO tipo de painel (precos + qtde compra/venda) —
     por isso 'simulador'/'sim ' entram nas palavras-chave, nao so 'dom'."""
+    _img_m, _msg_m = capturar_rect_manual("CAPTURA_SUPERDOM_RECT", "SuperDOM")
+    if _img_m is not None:
+        st.session_state["ultimo_titulo_superdom"] = _msg_m
+        return _img_m, _msg_m
     if _modo_captura_por_monitor_ativo():
         img, msg = capturar_monitor(_monitor_grafico_superdom_atual())
         if img is not None:
@@ -3545,6 +4001,15 @@ def capturar_SuperDom():
             st.session_state["ultimo_titulo_superdom"] = _msg
             return img, _msg
 
+    # ULTIMO RECURSO (reforma de captura): classifica todas as janelas e
+    # tenta a estrategia hibrida com ativacao temporaria.
+    _hwnd_sel = selecionar_melhor_janela("superdom", palavras=palavras)
+    if _hwnd_sel is not None:
+        img4, msg4 = capturar_janela_hibrida(_hwnd_sel, "SuperDOM", tipo_esperado="superdom")
+        if img4 is not None:
+            st.session_state["ultimo_titulo_superdom"] = msg4
+            return img4, msg4
+
     st.session_state["ultimo_titulo_superdom"] = msg
     return img, msg
 
@@ -3567,6 +4032,10 @@ def _janelas_wdofut_ordenadas():
 
 def capturar_times_trades_ordem_original():
     """Captura o Times & Trades na aba ORDEM ORIGINAL (1ª janela da esquerda)."""
+    _img_m, _msg_m = capturar_rect_manual("CAPTURA_TIMES_TRADES_RECT", "T&T Ordem Original")
+    if _img_m is not None:
+        st.session_state["ultimo_titulo_tt_oo"] = _msg_m
+        return _img_m, _msg_m
     if _modo_captura_por_monitor_ativo():
         img, msg = capturar_monitor(_monitor_livro_tt_atual())
         if img is not None:
@@ -3615,11 +4084,24 @@ def capturar_times_trades_ordem_original():
             st.session_state["ultimo_titulo_tt_oo"] = _msg
             return img, _msg
 
+    # ULTIMO RECURSO (reforma de captura): classifica todas as janelas e
+    # tenta a estrategia hibrida com ativacao temporaria.
+    _hwnd_sel = selecionar_melhor_janela("times_trades", palavras=palavras)
+    if _hwnd_sel is not None:
+        img5, msg5 = capturar_janela_hibrida(_hwnd_sel, "T&T Ordem Original", tipo_esperado="times_trades")
+        if img5 is not None:
+            st.session_state["ultimo_titulo_tt_oo"] = msg5
+            return img5, msg5
+
     return None, "T&T Ordem Original nao encontrado. Use o botao de diagnostico e me diga os titulos listados."
 
 def capturar_times_trades():
     """Captura Times & Trades. Testa múltiplas palavras-chave e, se falhar,
     tenta pegar a 2ª/3ª maior janela WDOFUT (quando o Profit reusa o título)."""
+    _img_m, _msg_m = capturar_rect_manual("CAPTURA_TIMES_TRADES_RECT", "Times & Trades")
+    if _img_m is not None:
+        st.session_state["ultimo_titulo_tt"] = _msg_m
+        return _img_m, _msg_m
     if _modo_captura_por_monitor_ativo():
         img, msg = capturar_monitor(_monitor_livro_tt_atual())
         if img is not None:
@@ -3651,12 +4133,26 @@ def capturar_times_trades():
             _msg = f"Times & Trades capturado (fallback 2ª janela WDOFUT): '{j['titulo']}' ({w}x{h}px em {l},{top})"
             st.session_state["ultimo_titulo_tt"] = _msg
             return img, _msg
+
+    # ULTIMO RECURSO (reforma de captura): classifica todas as janelas e
+    # tenta a estrategia hibrida com ativacao temporaria.
+    _hwnd_sel = selecionar_melhor_janela("times_trades", palavras=palavras)
+    if _hwnd_sel is not None:
+        img6, msg6 = capturar_janela_hibrida(_hwnd_sel, "Times & Trades", tipo_esperado="times_trades")
+        if img6 is not None:
+            st.session_state["ultimo_titulo_tt"] = msg6
+            return img6, msg6
+
     return None, f"Times & Trades nao encontrado. Ative a aba Negócios/Ordem Original numa janela separada."
 
 
 def capturar_livro_ofertas():
     """Captura Livro de Ofertas (inclui a variante 'Livro Visual', o mesmo book
     em representacao grafica, e a aba agregada 'Saldo' de compra/venda)."""
+    _img_m, _msg_m = capturar_rect_manual("CAPTURA_LIVRO_RECT", "Livro de Ofertas")
+    if _img_m is not None:
+        st.session_state["ultimo_titulo_livro"] = _msg_m
+        return _img_m, _msg_m
     if _modo_captura_por_monitor_ativo():
         img, msg = capturar_monitor(_monitor_livro_tt_atual())
         if img is not None:
@@ -3680,6 +4176,15 @@ def capturar_livro_ofertas():
             _msg = f"Livro de Ofertas capturado (fallback última janela WDOFUT): '{j['titulo']}' ({w}x{h}px em {l},{top})"
             st.session_state["ultimo_titulo_livro"] = _msg
             return img, _msg
+
+    # ULTIMO RECURSO (reforma de captura): classifica todas as janelas e
+    # tenta a estrategia hibrida com ativacao temporaria.
+    _hwnd_sel = selecionar_melhor_janela("livro", palavras=palavras)
+    if _hwnd_sel is not None:
+        img7, msg7 = capturar_janela_hibrida(_hwnd_sel, "Livro de Ofertas", tipo_esperado="livro")
+        if img7 is not None:
+            st.session_state["ultimo_titulo_livro"] = msg7
+            return img7, msg7
 
     st.session_state["ultimo_titulo_livro"] = msg
     return img, msg
@@ -3728,6 +4233,10 @@ def capturar_todas_janelas_profit(max_janelas=6):
 def capturar_agentes():
     """Captura o painel de Agentes / Negociação / Pressão / Descrição.
     Se as palavras-chave falharem, tenta a 3ª maior janela WDOFUT (fallback)."""
+    _img_m, _msg_m = capturar_rect_manual("CAPTURA_AGENTES_RECT", "Agentes")
+    if _img_m is not None:
+        st.session_state["ultimo_titulo_agentes"] = _msg_m
+        return _img_m, _msg_m
     if _modo_captura_por_monitor_ativo():
         img, msg = capturar_monitor(_monitor_livro_tt_atual())
         if img is not None:
@@ -3774,6 +4283,16 @@ def capturar_agentes():
             _msg = f"Agentes capturado (fallback janela Simulador): '{j['titulo']}' ({w}x{h}px em {l},{top})"
             st.session_state["ultimo_titulo_agentes"] = _msg
             return img, _msg
+
+    # ULTIMO RECURSO ANTES de reusar T&T (reforma de captura): classifica
+    # todas as janelas e tenta a estrategia hibrida com ativacao temporaria.
+    _hwnd_sel = selecionar_melhor_janela("agentes", palavras=palavras)
+    if _hwnd_sel is not None:
+        img8, msg8 = capturar_janela_hibrida(_hwnd_sel, "Agentes", tipo_esperado="agentes")
+        if img8 is not None:
+            st.session_state["ultimo_titulo_agentes"] = msg8
+            return img8, msg8
+
     # Fallback definitivo: o T&T na aba Ordem Original / Negocios JA traz os nomes
     # das corretoras nas colunas Compradora / Vendedora / Agressor.
     # Nesse layout nao existe janela "Negociacao" separada — e isso nao e erro.
@@ -3810,6 +4329,10 @@ def capturar_grade_cotacoes():
     BitBlt com a janela visivel). Requer a Grade de Cotações destacada
     (undocked) como janela propria — dentro do workspace principal do
     Profit ela nao tem HWND separado para capturar."""
+    _img_m, _msg_m = capturar_rect_manual("CAPTURA_GRADE_RECT", "Grade de Cotações")
+    if _img_m is not None:
+        st.session_state["ultimo_titulo_grade_cotacoes"] = _msg_m
+        return _img_m, _msg_m
     if _modo_captura_por_monitor_ativo():
         img, msg = capturar_monitor(_monitor_grafico_superdom_atual())
         if img is not None:
@@ -3820,8 +4343,34 @@ def capturar_grade_cotacoes():
         "cotações", "cotacoes", "quotes", "watchlist",
     ]
     img, msg = _capturar_por_palavras_forcado(palavras, "Grade de Cotações", preferir_bitblt=False)
+    if img is None:
+        # ULTIMO RECURSO (reforma de captura): classifica todas as janelas e
+        # tenta a estrategia hibrida com ativacao temporaria.
+        _hwnd_sel = selecionar_melhor_janela("grade", palavras=palavras)
+        if _hwnd_sel is not None:
+            img9, msg9 = capturar_janela_hibrida(_hwnd_sel, "Grade de Cotações", tipo_esperado="grade")
+            if img9 is not None:
+                img, msg = img9, msg9
     st.session_state["ultimo_titulo_grade_cotacoes"] = msg
     return img, msg
+
+
+# Alimenta os campos de diagnostico genericos (ultimo_metodo_captura,
+# ultimo_tipo_janela, ultima_mensagem_captura, ultimo_motivo_falha_captura)
+# em TODO ponto de retorno das 6 funcoes de captura acima, sem precisar
+# tocar em cada 'return' interno delas. Rebind seguro: essas funcoes só são
+# chamadas depois que o modulo inteiro carrega (dentro de executar_analise,
+# nos botoes de teste etc.), entao o nome global ja aponta pra versao
+# envolvida em qualquer chamada real.
+capturar_janela = _com_diagnostico_captura("grafico", capturar_janela)
+capturar_SuperDom = _com_diagnostico_captura("superdom", capturar_SuperDom)
+capturar_times_trades_ordem_original = _com_diagnostico_captura(
+    "times_trades", capturar_times_trades_ordem_original)
+capturar_times_trades = _com_diagnostico_captura("times_trades", capturar_times_trades)
+capturar_livro_ofertas = _com_diagnostico_captura("livro", capturar_livro_ofertas)
+capturar_agentes = _com_diagnostico_captura("agentes", capturar_agentes)
+capturar_grade_cotacoes = _com_diagnostico_captura("grade", capturar_grade_cotacoes)
+
 
 def listar_todas_janelas_visiveis(area_minima=20000):
     """Lista TODAS as janelas visiveis do Windows, sem filtro por palavra-chave.
@@ -3853,7 +4402,14 @@ def listar_todas_janelas_visiveis(area_minima=20000):
 
 
 def diagnosticar_janelas_profit():
-    """Retorna lista de janelas relacionadas ao Profit com posicao/tamanho."""
+    """Retorna lista de janelas relacionadas ao Profit com posicao/tamanho.
+
+    Mantida a assinatura e o uso original (_enumerar_todas_janelas + filtro
+    por palavra-chave no titulo), so ACRESCENTANDO os campos novos do
+    diagnostico (tipo provavel, confianca, motivo e metodo de captura
+    recomendado) quando disponiveis via listar_janelas_profit_classificadas().
+    Se a classificacao nova falhar por qualquer motivo, cai de volta na
+    lista simples de sempre — nunca quebra quem ja chama esta funcao."""
     janelas = _enumerar_todas_janelas()
     relevantes = []
     for j in janelas:
@@ -3864,7 +4420,32 @@ def diagnosticar_janelas_profit():
             "1 dolar", "2 super", "3 livro", "4 times"
         ]):
             relevantes.append(j)
-    return sorted(relevantes, key=lambda x: -x["area"])
+    relevantes = sorted(relevantes, key=lambda x: -x["area"])
+
+    try:
+        classificadas_por_hwnd = {c["hwnd"]: c for c in listar_janelas_profit_classificadas()}
+        metodo_por_tipo = {
+            "grafico": "BitBlt (tela visivel; traz p/ frente se preciso)",
+            "superdom": "PrintWindow (2o plano; BitBlt se falhar)",
+            "livro": "PrintWindow (2o plano; BitBlt se falhar)",
+            "times_trades": "PrintWindow (2o plano; BitBlt se falhar)",
+            "agentes": "PrintWindow (2o plano; BitBlt se falhar)",
+            "grade": "PrintWindow (2o plano; BitBlt se falhar)",
+            "desconhecido": "indefinido (sem palavra-chave reconhecida)",
+        }
+        for j in relevantes:
+            c = classificadas_por_hwnd.get(j.get("hwnd"))
+            if not c:
+                continue
+            j["tipo_provavel"] = c["tipo"]
+            j["confianca"] = c["confianca"]
+            j["motivo_classificacao"] = c["motivo"]
+            j["visivel"] = c["visivel"]
+            j["minimizada"] = c["minimizada"]
+            j["metodo_recomendado"] = metodo_por_tipo.get(c["tipo"], "indefinido")
+    except Exception:
+        pass
+    return relevantes
 
 
 
@@ -12213,6 +12794,24 @@ with aba_geral:
                 st.dataframe(
                     pd.DataFrame([{k: v for k, v in j.items() if k != "hwnd"} for j in _todas_j]),
                     use_container_width=True, hide_index=True)
+
+        st.divider()
+        st.markdown("**🩺 Diagnóstico de janelas do Profit (tipo provável e método de captura)**")
+        st.caption("Inclui janelas MINIMIZADAS e em 2º plano — não precisa deixar nada "
+                   "em primeiro plano antes de clicar. 'Tipo provável' e 'Método "
+                   "recomendado' são só diagnóstico: não mudam a captura de verdade, "
+                   "que continua sendo feita pelos botões acima.")
+        if st.button("🩺 Diagnosticar janelas do Profit", key="btn_diagnosticar_janelas_profit"):
+            _diag_j = diagnosticar_janelas_profit()
+            if not _diag_j:
+                st.error("Nenhuma janela do Profit encontrada (nem minimizada/2º plano).")
+            else:
+                st.success(f"{len(_diag_j)} janela(s) relacionada(s) ao Profit encontrada(s).")
+                _colunas_diag = ["hwnd", "titulo", "classe", "tipo_provavel", "confianca",
+                                  "motivo_classificacao", "left", "top", "width", "height",
+                                  "area", "visivel", "minimizada", "metodo_recomendado"]
+                _linhas_diag = [{c: j.get(c, "") for c in _colunas_diag} for j in _diag_j]
+                st.dataframe(pd.DataFrame(_linhas_diag), use_container_width=True, hide_index=True)
 
     st.markdown('<div class="section-title">📚 Históricos</div>', unsafe_allow_html=True)
     hist_tabs = st.tabs(["Trades", "Bloqueios evitados", "Leituras recentes"])

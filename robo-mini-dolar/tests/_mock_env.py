@@ -123,7 +123,7 @@ def carregar_engine():
     arquivo inteiro a cada teste seria lento e desnecessario, ja que as
     funcoes da engine sao puras o suficiente (leem/gravam so
     st.session_state, que cada teste pode resetar)."""
-    for name in ("pygetwindow", "win32api", "win32gui", "win32ui", "winsound",
+    for name in ("pygetwindow", "win32api", "win32gui", "win32ui", "win32con", "winsound",
                  "pythoncom", "yfinance"):
         sys.modules[name] = _stub_module(name)
     _w32_client = _stub_module("win32com.client")
