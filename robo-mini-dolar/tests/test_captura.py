@@ -179,5 +179,45 @@ class TestDiagnosticarJanelasProfitSemWindows(unittest.TestCase):
         self.assertEqual(diagnosticar(), [])
 
 
+class TestRecorteLegendaIndicadoresComFaixaDeVolume(unittest.TestCase):
+    """Export real mostrou 'volume' lido em so ~3% dos ciclos: o recorte
+    ampliado enviado a IA cobria so os 42% ESQUERDOS da largura do grafico
+    (bom pras medias moveis, que ficam no canto superior esquerdo), mas o
+    histograma de Volume fica a largura CHEIA, com a barra mais recente na
+    PONTA DIREITA -- sempre fora daquele recorte. _recorte_legenda_indicadores
+    passou a empilhar uma segunda faixa, largura CHEIA, da parte inferior do
+    grafico (onde fica o Volume) embaixo da faixa de legenda de sempre --
+    continua sendo UMA SO imagem extra, sem custo/latencia a mais."""
+
+    def setUp(self):
+        self.recortar = NS["_recorte_legenda_indicadores"]
+
+    def _imagem_grafico(self, w=1600, h=900):
+        img = Image.new("RGB", (w, h))
+        pix = img.load()
+        for x in range(w):
+            for y in range(h):
+                pix[x, y] = ((x * 3) % 255, (y * 5) % 255, ((x + y) * 2) % 255)
+        return img
+
+    def test_composta_inclui_largura_cheia_da_parte_inferior(self):
+        """A faixa de baixo tem que ter a LARGURA CHEIA do grafico (onde
+        esta a barra mais recente do histograma), nao os 42% da legenda."""
+        img = self._imagem_grafico(w=1600, h=900)
+        composta = self.recortar(img)
+        self.assertIsNotNone(composta)
+        self.assertEqual(composta.width, 1600)
+
+    def test_composta_e_mais_alta_que_a_legenda_sozinha_pra_caber_as_duas_faixas(self):
+        img = self._imagem_grafico(w=1600, h=900)
+        composta = self.recortar(img)
+        # altura da legenda (h inteiro) + altura da faixa de volume (20% de h)
+        self.assertEqual(composta.height, 900 + int(900 * 0.20))
+
+    def test_imagem_pequena_demais_devolve_none_sem_lancar_excecao(self):
+        img = self._imagem_grafico(w=50, h=50)
+        self.assertIsNone(self.recortar(img))
+
+
 if __name__ == "__main__":
     unittest.main()

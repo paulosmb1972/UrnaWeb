@@ -4632,19 +4632,45 @@ def imagem_para_b64(img, largura_max=1280, qualidade=72):
         return base64.b64encode(buf.getvalue()).decode()
 
 
-def _recorte_legenda_indicadores(img, fracao_largura=0.42):
-    """Recorta a faixa vertical esquerda do grafico, onde o Profit empilha a
-    legenda de indicadores (Pivot, Detector de Topos e Fundos, Media Movel E
-    e A, VWAP Band, VWAP D etc.). Enviada como imagem extra: nessa faixa o
-    texto e pequeno e denso (varias linhas com numeros colados), e some na
-    imagem inteira depois que ela e redimensionada para caber os candles —
-    e por isso mm20/mm50/mm200 vinham 0.0 mesmo com a mm9 (a primeira da
-    lista, mais perto do topo) sendo lida direito."""
+def _recorte_legenda_indicadores(img, fracao_largura=0.42, fracao_altura_volume=0.20):
+    """Recorta e empilha em UMA UNICA imagem extra duas faixas de alta
+    densidade de texto/numeros que a IA costuma perder na imagem inteira
+    (pequena demais depois de redimensionada pra caber os candles):
+
+    1) a faixa vertical ESQUERDA, altura cheia — legenda de indicadores
+       (Pivot, Detector de Topos e Fundos, Media Movel E e A, VWAP Band,
+       VWAP D etc.). E por isso que mm20/mm50/mm200 vinham 0.0 mesmo com a
+       mm9 (a primeira da lista, mais perto do topo) sendo lida direito.
+
+    2) a faixa horizontal INFERIOR, LARGURA CHEIA — onde fica o histograma
+       de Volume (quando existe), logo abaixo do grafico de candles. Reparo
+       feito depois de um export real mostrar 'volume' lido em so ~3% dos
+       ciclos mesmo com instrucao detalhada no prompt: o recorte da legenda
+       sozinho cobria so os 42% ESQUERDOS da largura, exatamente o lado
+       ERRADO — a barra do ULTIMO candle FECHADO (a que o campo 'volume'
+       precisa) fica na PONTA DIREITA do histograma, sempre fora daquele
+       recorte. So a imagem cheia mostrava a barra mais recente por
+       inteiro, pequena demais pra ler o numero.
+
+    As duas faixas empilhadas continuam sendo SO UMA imagem a mais pra IA
+    (mesmo custo/latencia de antes) — a fracao_altura_volume e um chute
+    razoavel (20% da altura do grafico) que pode precisar de ajuste fino
+    conforme o layout real do usuario; sem volume visivel na faixa, nao
+    piora nada — os demais fallbacks (tooltip, Grade de Cotacoes) continuam
+    valendo do jeito que sempre valeram."""
     try:
         w, h = img.size
         if w < 100 or h < 100:
             return None
-        return img.crop((0, 0, max(1, int(w * fracao_largura)), h))
+        legenda = img.crop((0, 0, max(1, int(w * fracao_largura)), h)).convert("RGB")
+        faixa_volume = img.crop(
+            (0, max(0, int(h * (1 - fracao_altura_volume))), w, h)).convert("RGB")
+        largura_total = max(legenda.width, faixa_volume.width)
+        altura_total = legenda.height + faixa_volume.height
+        composta = Image.new("RGB", (largura_total, altura_total), (0, 0, 0))
+        composta.paste(legenda, (0, 0))
+        composta.paste(faixa_volume, (0, legenda.height))
+        return composta
     except Exception:
         return None
 
@@ -4673,12 +4699,16 @@ Responda apenas em JSON valido. Nao use markdown. Se nao conseguir ler um campo 
 Para preco_atual use o fechamento marcado como F no topo. Nao invente valores.
 
 Voce recebe ATE TRES imagens (a segunda e a terceira so quando existirem):
-a primeira e o grafico completo; a SEGUNDA e um recorte AMPLIADO, em
-resolucao maior, da mesma faixa esquerda de indicadores que aparece na
-primeira imagem (Pivot, Detector de Topos e Fundos, Media Movel E, VWAP
-Band, Media Movel A, VWAP D etc.) — use a segunda imagem de preferencia
-para ler mm9/mm20/mm50/mm200, ja que nela o texto fica maior e mais
-legivel do que na imagem completa.
+a primeira e o grafico completo; a SEGUNDA imagem tem DUAS faixas
+empilhadas, ambas recortadas e ampliadas da PRIMEIRA imagem: a faixa DE
+CIMA e a mesma faixa esquerda de indicadores que aparece na primeira
+imagem (Pivot, Detector de Topos e Fundos, Media Movel E, VWAP Band,
+Media Movel A, VWAP D etc.) — use-a de preferencia para ler
+mm9/mm20/mm50/mm200, ja que nela o texto fica maior e mais legivel do
+que na imagem completa. A faixa DE BAIXO (largura cheia) e a parte
+inferior do grafico, onde fica o histograma de "Volume" (quando
+existir) — use-a de preferencia para ler volume/volume_financeiro,
+prestando atencao na barra mais a DIREITA (o candle mais recente).
 
 A TERCEIRA imagem, quando existir, e a "Grade de Cotacoes" do Profit —
 uma TABELA (nao um grafico), com colunas tipo Ativo/Ultimo/Maximo/Minimo/
@@ -4717,7 +4747,8 @@ CRITICO — VALIDE A ARITMETICA ANTES DE FECHAR O JSON:
   "hora_replay": "hora EXATA do replay no formato HH:MM:SS. Leia no CABECALHO da janela do grafico, ao lado da data (ex: '28/07/2026 09:00:31' -> '09:00:31'), ou no painel Replay onde aparece o cronometro (ex: '09:00:31'). Se so houver HH:MM, retorne HH:MM:00. Este campo e CRITICO: leia com atencao maxima.",
   "preco_atual": 0.0, "abertura": 0.0, "maxima": 0.0, "minima": 0.0,
   "vwap": "valor da linha 'VWAP D' (VWAP diaria, UM unico numero central) na legenda do grafico. Se 'VWAP D' nao aparecer, use a linha generica 'VWAP'. NAO confunda com 'VWAP Band', que e outra linha com VARIOS numeros (bandas) — essa vai no campo vwap_banda_lista, nao aqui. 0.0 se nao encontrar.",
-  "ajuste": 0.0, "ptax": 0.0,
+  "ajuste": "valor do AJUSTE em vigor no pregao atual — a mesma linha horizontal rotulada 'Ajuste' no grafico, ou o rotulo 'Prior Cote Ajuste'/'Ajuste Anterior' (durante o pregao, o ajuste do dia so e publicado no fechamento, entao essa MESMA linha serve de referencia o dia todo — normal o valor aqui ser igual ao de ajuste_anterior). 0.0 se nao encontrar.",
+  "ptax": 0.0,
   "vwap_banda_lista": "TODOS os numeros da linha 'VWAP Band' na legenda do grafico (as bandas/desvios acima e abaixo da VWAP central), na ORDEM em que aparecem, separados por ponto e virgula (;). Exemplo: se a linha mostrar 'VWAP Band  5.175,85  5.193,04  5.210,24  5.141,46  5.124,26  5.107,07', responda EXATAMENTE '5.175,85;5.193,04;5.210,24;5.141,46;5.124,26;5.107,07'. Nao precisa identificar qual e qual — so transcreva todos os numeros dessa linha, na ordem, separados por ';'. String vazia se a linha 'VWAP Band' nao existir/nao estiver visivel.",
   "superdom_maxima": "MAXIMA do dia exibida no painel SuperDOM, se visivel. 0.0 se nao houver.",
   "superdom_minima": "MINIMA do dia exibida no painel SuperDOM, se visivel. 0.0 se nao houver.",
@@ -4730,8 +4761,8 @@ CRITICO — VALIDE A ARITMETICA ANTES DE FECHAR O JSON:
   "mm20": "mesma lógica do campo mm9, mas para 'Média Móvel A [20]' (arITMÉTICA, período 20). 0.0 se não encontrar.",
   "mm50": "mesma lógica do campo mm9, mas para 'Média Móvel A [50]' (aritmética, período 50). 0.0 se não encontrar.",
   "mm200": "mesma lógica do campo mm9, mas para 'Média Móvel A [200]' (aritmética, período 200) — CUIDADO: existe também 'Média Móvel E [200]' (exponencial) com o MESMO período 200; use apenas a que tiver a letra A, não a E. 0.0 se não encontrar.",
-  "volume": "volume em CONTRATOS do ULTIMO CANDLE FECHADO (numero inteiro, NAO confundir com volume_financeiro, que e em R$/valor financeiro). Procure o indicador \"Volume\" — um histograma de barras verticais numa sub-janela PROPRIA logo ABAIXO do grafico de candles, uma barra por candle: leia a barra alinhada ao ultimo candle fechado. Se esse histograma nao estiver visivel, tente o valor \"Volume\" da caixa de dados que aparece ao passar o mouse sobre o candle (tooltip/crosshair), se capturada. Se a TERCEIRA imagem (Grade de Cotacoes) existir, PREFIRA o valor da coluna \"Volume\" dela em vez de qualquer um dos anteriores. 0 se nao conseguir ler por nenhum desses caminhos.",
-  "volume_financeiro": "volume FINANCEIRO da barra/histograma logo ABAIXO do grafico de candles. Leia exatamente como aparece, com o sufixo (ex: '1,25 B', '870 M', '15.400'). String vazia se nao conseguir ler.",
+  "volume": "volume em CONTRATOS do ULTIMO CANDLE FECHADO (numero inteiro, NAO confundir com volume_financeiro, que e em R$/valor financeiro). Procure o indicador \"Volume\" — um histograma de barras verticais numa sub-janela PROPRIA logo ABAIXO do grafico de candles, uma barra por candle: leia a barra MAIS A DIREITA (o candle mais recente). Use de preferencia a faixa DE BAIXO da SEGUNDA imagem (recorte ampliado da parte inferior do grafico) para enxergar esse numero — na imagem completa ele costuma ficar pequeno demais pra ler. Se esse histograma nao estiver visivel em nenhuma das duas, tente o valor \"Volume\" da caixa de dados que aparece ao passar o mouse sobre o candle (tooltip/crosshair), se capturada. Se a TERCEIRA imagem (Grade de Cotacoes) existir, PREFIRA o valor da coluna \"Volume\" dela em vez de qualquer um dos anteriores. 0 se nao conseguir ler por nenhum desses caminhos.",
+  "volume_financeiro": "volume FINANCEIRO da barra MAIS A DIREITA (candle mais recente) do histograma logo ABAIXO do grafico de candles — mesma faixa DE BAIXO da SEGUNDA imagem usada para o campo volume. Leia exatamente como aparece, com o sufixo (ex: '1,25 B', '870 M', '15.400'). String vazia se nao conseguir ler.",
   "volume_financeiro_acumulado": "volume financeiro acumulado do dia, se visivel no rodape ou no painel de volume. Mesmo formato. String vazia se nao houver.",
   "padrao_candle": "identifique o padrão do último candle fechado. Use EXATAMENTE um destes valores: engolfo_alta, engolfo_baixa, pinbar_alta, pinbar_baixa, martelo, estrela_cadente, estrela_da_manha, estrela_da_tarde, marubozu_alta, marubozu_baixa, doji, harami, nenhum",
   "status_fluxo": "", "observacao_visual": ""
