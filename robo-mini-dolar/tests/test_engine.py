@@ -443,5 +443,44 @@ class TestVwapBandsDaTela(unittest.TestCase):
         self.assertEqual(r["inferior_1"], r["inferior_2"])
 
 
+class TestTsEventoModoRealIgnoraDataReplay(unittest.TestCase):
+    """Export real de 17/09/2026 mostrou DataEvento gravado em 2020 e 2024
+    em linhas com ModoReplay=nao (ao vivo), minutos depois do app iniciar,
+    enquanto DataRegistro (sempre datetime.now()) continuava certo. Causa:
+    ts_evento() em modo real lia dados_tela["data_replay"]/["hora_replay"]
+    ANTES do relogio do sistema -- e a IA e instruida a tentar ler esses
+    dois campos em QUALQUER modo, podendo confundir outro elemento da tela
+    com uma data de replay mesmo estando ao vivo. Fora do modo replay, o
+    unico relogio confiavel e o do sistema."""
+
+    def setUp(self):
+        FAKE_ST.session_state.clear()
+        FAKE_ST.session_state["modo_replay"] = False
+        self.ts_evento = NS["ts_evento"]
+
+    def test_ignora_data_replay_alucinada_fora_do_modo_replay(self):
+        dt = {"data_replay": "2020-09-16", "hora_replay": "09:00:00"}
+        r = self.ts_evento(dt)
+        self.assertNotIn("2020-09-16", r)
+        from datetime import datetime
+        self.assertTrue(r.startswith(datetime.now().strftime("%Y-%m-%d")))
+
+    def test_sem_data_replay_nenhuma_continua_usando_relogio_do_sistema(self):
+        """Controle: comportamento de sempre (sem os campos) inalterado."""
+        r = self.ts_evento({})
+        from datetime import datetime
+        self.assertTrue(r.startswith(datetime.now().strftime("%Y-%m-%d")))
+
+    def test_modo_replay_continua_usando_data_da_tela_normalmente(self):
+        """Controle: a correcao e SO pro modo real -- em replay, a leitura
+        da tela continua tendo prioridade, como sempre."""
+        FAKE_ST.session_state["modo_replay"] = True
+        FAKE_ST.session_state["replay_data"] = "2026-01-01"
+        FAKE_ST.session_state["replay_hora"] = "09:00"
+        dt = {"data_replay": "2026-07-28", "hora_replay": "09:00:31"}
+        r = self.ts_evento(dt)
+        self.assertEqual(r, "2026-07-28 09:00:31")
+
+
 if __name__ == "__main__":
     unittest.main()

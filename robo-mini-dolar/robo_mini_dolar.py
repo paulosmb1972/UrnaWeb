@@ -4586,20 +4586,16 @@ def ts_evento(dados_tela):
         hora = hora or dados_tela.get("hora_replay") or dados_tela.get("hora") or datetime.now().strftime("%H:%M")
         return f"{data} {hora}:00" if len(hora) == 5 else f"{data} {hora}"
 
-    # Modo real (nao replay)
-    data = dados_tela.get("data_replay") or dados_tela.get("data") or datetime.now().strftime("%Y-%m-%d")
-    hora = dados_tela.get("hora_replay") or dados_tela.get("hora") or ""
-    if hora:
-        try:
-            if int(hora.split(":")[0]) < 9:
-                return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        except Exception: pass
-
-    if data and hora:
-        for fmt in ["%Y-%m-%d %H:%M","%d/%m/%Y %H:%M","%Y-%m-%d %H:%M:%S","%d/%m/%Y %H:%M:%S"]:
-            try: return datetime.strptime(f"{data} {hora}", fmt).strftime("%Y-%m-%d %H:%M:%S")
-            except Exception: pass
-            
+    # Modo real (nao replay): o relogio de VERDADE e o do sistema. NUNCA usa
+    # data_replay/hora_replay aqui -- o prompt de extrair_dados_tela() pede
+    # esses dois campos em QUALQUER modo (cabecalho do grafico ou painel
+    # Replay), e a IA pode ler/inventar uma data mesmo estando ao vivo (a
+    # tela do Profit tem varios elementos com data). Um export real mostrou
+    # DataEvento gravado em 2020 e 2024 em linhas com ModoReplay=nao, minutos
+    # depois de comecar o app, enquanto DataRegistro (sempre datetime.now())
+    # continuava certo -- prova de que o defeito era so aqui, nao no relogio
+    # da maquina. dados_tela.get("data")/"hora" (sem sufixo _replay) nunca
+    # sao escritos em lugar nenhum do app, entao nunca faziam diferenca.
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
