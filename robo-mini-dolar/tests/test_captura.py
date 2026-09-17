@@ -14,6 +14,7 @@ Rodar de dentro de robo-mini-dolar/:
     python3 -m unittest tests.test_captura -v
 """
 import os
+import sys
 import unittest
 
 from PIL import Image
@@ -155,6 +156,54 @@ class TestCapturarRectManual(unittest.TestCase):
         img, msg = self.capturar("CAPTURA_TESTE_RECT", "Teste")
         self.assertIsNone(img)
         self.assertIn("mal formatada", msg)
+
+
+class TestRectJanelaParaCaptura(unittest.TestCase):
+    """GetWindowRect() devolve o retangulo-placeholder do Windows (perto de
+    -32000,-32000, poucos pixels) pra uma janela MINIMIZADA de verdade, nao
+    o tamanho real dela restaurada. Isso fazia capturar_printwindow()
+    (que promete funcionar com a janela minimizada) rejeitar essas janelas
+    como "muito pequenas", e fazia o filtro de area (w/h<40px) de
+    listar_janelas_profit_classificadas()/_capturar_por_palavras_forcado()
+    descartar minimizadas mesmo dizendo no comentario que nao descartava.
+    _rect_janela_para_captura() usa GetWindowPlacement().rcNormalPosition
+    (sempre correto, minimizada ou nao) so quando IsIconic() for verdadeiro."""
+
+    def setUp(self):
+        self.rect_captura = NS["_rect_janela_para_captura"]
+        self._win32gui = sys.modules["win32gui"]
+        self._bak_isiconic = self._win32gui.IsIconic
+        self._bak_getrect = self._win32gui.GetWindowRect
+        self._bak_getplacement = getattr(self._win32gui, "GetWindowPlacement", None)
+
+    def tearDown(self):
+        self._win32gui.IsIconic = self._bak_isiconic
+        self._win32gui.GetWindowRect = self._bak_getrect
+        if self._bak_getplacement is not None:
+            self._win32gui.GetWindowPlacement = self._bak_getplacement
+
+    def test_janela_normal_usa_getwindowrect(self):
+        self._win32gui.IsIconic = lambda hwnd: False
+        self._win32gui.GetWindowRect = lambda hwnd: (10, 20, 810, 620)
+        self.assertEqual(self.rect_captura(123), (10, 20, 810, 620))
+
+    def test_janela_minimizada_usa_rect_normal_do_getwindowplacement(self):
+        """Retangulo real (janela normalmente 800x600 em 100,100), mesmo com
+        GetWindowRect devolvendo o placeholder tipico de minimizada."""
+        self._win32gui.IsIconic = lambda hwnd: True
+        self._win32gui.GetWindowRect = lambda hwnd: (-32000, -32000, -31840, -31972)
+        self._win32gui.GetWindowPlacement = lambda hwnd: (
+            0, 2, (-1, -1), (-1, -1), (100, 100, 900, 700))
+        self.assertEqual(self.rect_captura(456), (100, 100, 900, 700))
+
+    def test_erro_no_getwindowplacement_cai_para_getwindowrect(self):
+        self._win32gui.IsIconic = lambda hwnd: True
+
+        def _quebra(hwnd):
+            raise RuntimeError("falha simulada")
+        self._win32gui.GetWindowPlacement = _quebra
+        self._win32gui.GetWindowRect = lambda hwnd: (1, 2, 3, 4)
+        self.assertEqual(self.rect_captura(789), (1, 2, 3, 4))
 
 
 class TestSelecionarMelhorJanelaSemWindows(unittest.TestCase):

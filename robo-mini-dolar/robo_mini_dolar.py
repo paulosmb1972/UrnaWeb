@@ -3436,7 +3436,11 @@ def _capturar_por_palavras_forcado(palavras, nome_amigavel, preferir_bitblt=True
             # Se for Times & Trades, Livro ou Agentes, aceita também termos genéricos do Profit se contiverem o ticker
 
             if match:
-                l, top, r, b = win32gui.GetWindowRect(hwnd)
+                # _rect_janela_para_captura(), nao GetWindowRect() puro: uma
+                # janela MINIMIZADA de verdade cai no retangulo-placeholder
+                # do Windows (perto de -32000,-32000, poucos pixels) e o
+                # filtro w>40/h>40 abaixo descartava ela igual a um tooltip.
+                l, top, r, b = _rect_janela_para_captura(hwnd)
                 w, h = r - l, b - top
                 if w > 40 and h > 40: # Ignora janelas minúsculas/tooltips
                     candidatos.append({
@@ -3605,7 +3609,12 @@ def listar_janelas_profit_classificadas():
             # sem titulo/classe nenhuma (overlays, tooltips sem nome).
             if not titulo and not classe:
                 return True
-            l, top, r, b = win32gui.GetWindowRect(hwnd)
+            # _rect_janela_para_captura(), nao GetWindowRect() puro: minimizada
+            # de verdade devolve o retangulo-placeholder do Windows (perto de
+            # -32000,-32000, poucos pixels) em vez do tamanho real da janela
+            # restaurada — o filtro de area logo abaixo descartaria TODA
+            # janela minimizada, apesar do comentario acima dizer o contrario.
+            l, top, r, b = _rect_janela_para_captura(hwnd)
             w, h = r - l, b - top
             if w < 40 or h < 40:
                 return True  # tooltip/overlay minusculo, sem area util
@@ -3704,16 +3713,40 @@ def capturar_bitblt_desktop(left, top, width, height):
             pass
 
 
+def _rect_janela_para_captura(hwnd):
+    """GetWindowRect(hwnd) mente sobre o tamanho de uma janela MINIMIZADA:
+    devolve o retangulo-placeholder classico do Windows (algo perto de
+    -32000,-32000 com poucos pixels de largura/altura), nao o tamanho real
+    da janela restaurada. Isso fazia capturar_printwindow() (que promete
+    funcionar com a janela minimizada) rejeitar essas janelas como "muito
+    pequenas", e fazia listar_janelas_profit_classificadas()/
+    _capturar_por_palavras_forcado() descartarem minimizadas no filtro de
+    area util (w/h < 40px) mesmo dizendo no comentario que nao descartavam.
+
+    GetWindowPlacement(hwnd) nao tem esse problema: rcNormalPosition e
+    sempre o retangulo de quando a janela estiver RESTAURADA, minimizada ou
+    nao. Usa ele so quando IsIconic(hwnd) for verdadeiro; do contrario,
+    GetWindowRect continua sendo a fonte (mais direta, sem side-effects).
+    Cai para GetWindowRect em qualquer erro/formato inesperado."""
+    try:
+        if win32gui.IsIconic(hwnd):
+            _, _, _, _, rect_normal = win32gui.GetWindowPlacement(hwnd)
+            return rect_normal
+    except Exception:
+        pass
+    return win32gui.GetWindowRect(hwnd)
+
+
 def capturar_printwindow(hwnd):
-    """PrintWindow direto no HWND, recalculando o tamanho por GetWindowRect —
-    funciona com a janela minimizada ou totalmente coberta, MAS costuma
-    devolver frame preto em conteudo acelerado por GPU (o grafico). Tenta
-    PW_RENDERFULLCONTENT (2) primeiro, cai para o modo padrao (0) depois.
-    Devolve (PIL.Image ou None, motivo)."""
+    """PrintWindow direto no HWND, recalculando o tamanho por
+    _rect_janela_para_captura() — funciona com a janela minimizada ou
+    totalmente coberta, MAS costuma devolver frame preto em conteudo
+    acelerado por GPU (o grafico). Tenta PW_RENDERFULLCONTENT (2) primeiro,
+    cai para o modo padrao (0) depois. Devolve (PIL.Image ou None, motivo)."""
     if not hwnd or not win32gui.IsWindow(hwnd):
         return None, "HWND invalido"
     try:
-        l, top, r, b = win32gui.GetWindowRect(hwnd)
+        l, top, r, b = _rect_janela_para_captura(hwnd)
         w, h = r - l, b - top
     except Exception as e:
         return None, f"GetWindowRect falhou: {e}"
@@ -12842,9 +12875,12 @@ with aba_geral:
             "2. **O título da janela não bate com nenhuma palavra-chave buscada** "
             "(times, trades, negócios, tape, ordem original, agressor...). Renomeie "
             "ou verifique o título exato em '📊 Ver logs de captura de janelas' abaixo.\n"
-            "3. **A janela está minimizada ou fora da área capturável** (outro monitor, "
-            "atrás de outra janela). A captura é por região de tela (bitblt) — a janela "
-            "precisa estar visível e não sobreposta no momento da análise.\n"
+            "3. **Sem coluna de corretora no seu plano de dados.** Diferente do "
+            "gráfico, esta janela NÃO precisa estar visível nem em primeiro plano — "
+            "minimizada ou coberta funciona (o robô lê o conteúdo dela por dentro, "
+            "sem precisar trazer pra frente). Se mesmo assim continuar sem nomes de "
+            "corretora, o mais provável é o seu plano de dados não incluir "
+            "identificação de agressor/corretora nessa janela.\n"
             "4. **Alternativa caso o Profit não exponha essa aba como janela separada:** "
             "usar o SuperDOM/Livro de Ofertas como fonte principal de fluxo (já é o "
             "fallback atual) e aceitar que a agressão fica proxy — ou migrar para uma "
