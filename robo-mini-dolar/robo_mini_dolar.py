@@ -11892,11 +11892,33 @@ def _avaliar_travas(gatilho):
     if _acao_g in ("compra", "venda") and EXIGE_FLUXO_DIRECIONAL and str(g.get("FluxoLido", "")) == "sim":
         _agr_g = num(g.get("SaldoAgressaoPct", 50.0))
         _vf_g = str(g.get("ViesFluxo", "indefinido")).strip().lower()
+        # TENDENCIA ACIMA DO FLUXO — mesma valvula de escape que ja existe
+        # dentro de classificar_contexto (ver comentario "TENDENCIA ACIMA DO
+        # FLUXO" mais acima neste arquivo), estendida pra cá porque o
+        # gatekeeper reavalia esta MESMA trava de forma independente, sem
+        # saber que a classificacao ja tinha liberado a entrada por este
+        # motivo. Sem isso, o gatekeeper podia vetar sozinho uma venda que a
+        # classificacao ja confirmava pela tendencia — caso real relatado
+        # pelo usuario: queda de 5171 para 5147 (24 pontos) sem NENHUMA
+        # venda armada, porque o proxy de agressao (sem nomes de corretora
+        # neste plano de dados — TemNomesAgentes fica "nao" o dia inteiro)
+        # nunca cruzou o limiar de 42%, mesmo com preco/MM9/MM20/momentum
+        # confirmando baixa o tempo todo. Em regime SEM tendencia definida,
+        # a trava continua identica a antes.
+        _regime_g = str(g.get("Regime", "") or "")
+        _tend_alta_g = _regime_g in ("trend_up", "pullback_up")
+        _tend_baixa_g = _regime_g in ("trend_down", "pullback_down")
+        _a_favor_tend_g = ((_acao_g == "compra" and _tend_alta_g) or
+                            (_acao_g == "venda" and _tend_baixa_g))
+        _mom_a_favor_g = ((_acao_g == "compra" and _mom in ("alta", "alta_forte")) or
+                           (_acao_g == "venda" and _mom in ("baixa", "baixa_forte")))
+        _pr_g = num(g.get("PosRange", -1))
+        _tendencia_manda_g = bool(_a_favor_tend_g and (_mom_a_favor_g or _pr_g < 0 or 20 <= _pr_g <= 80))
         if _acao_g == "compra":
-            if not (_agr_g >= SALDO_AGRESSAO_MINIMO or _vf_g == "comprador"):
+            if not (_agr_g >= SALDO_AGRESSAO_MINIMO or _vf_g == "comprador" or _tendencia_manda_g):
                 return "Fluxo sem direcao compradora (agressao %.0f%%)" % _agr_g
         else:
-            if not (_agr_g <= (100.0 - SALDO_AGRESSAO_MINIMO) or _vf_g == "vendedor"):
+            if not (_agr_g <= (100.0 - SALDO_AGRESSAO_MINIMO) or _vf_g == "vendedor" or _tendencia_manda_g):
                 return "Fluxo sem direcao vendedora (agressao %.0f%%)" % _agr_g
 
     if str(g.get("RompimentoDispara", "")).strip() == "sim":

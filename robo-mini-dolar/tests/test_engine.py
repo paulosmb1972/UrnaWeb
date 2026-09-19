@@ -482,5 +482,76 @@ class TestTsEventoModoRealIgnoraDataReplay(unittest.TestCase):
         self.assertEqual(r, "2026-07-28 09:00:31")
 
 
+class TestGatekeeperTendenciaAcimaDoFluxo(unittest.TestCase):
+    """Caso real relatado pelo usuario: preco caiu de 5171 para 5147 (24
+    pontos) e o sistema NUNCA armou venda. Causa raiz: o gatekeeper
+    reavaliava a trava de "fluxo direcional" (SaldoAgressaoPct/ViesFluxo)
+    de forma independente da classificacao, sem a mesma valvula de escape
+    "tendencia acima do fluxo" que classificar_contexto ja usa -- entao
+    vetava sozinho uma venda que a tendencia/momentum ja confirmavam,
+    so porque o proxy de agressao (sem nomes de corretora no plano de
+    dados deste usuario) nunca cruzava o limiar de 42%/58%."""
+
+    def setUp(self):
+        self.avaliar = NS["_avaliar_travas"]
+
+    def _gatilho_base(self, **over):
+        base = {
+            "Acao": "venda", "Momentum": "baixa", "DistanciaMM9": 2.0,
+            "AncoraEntrada": "nao", "FluxoLido": "sim",
+            "SaldoAgressaoPct": 50.0, "ViesFluxo": "indefinido",
+            "PosRange": 50.0, "Regime": "trend_down", "Score": 3,
+        }
+        base.update(over)
+        return base
+
+    def test_sem_tendencia_definida_continua_bloqueando_como_antes(self):
+        """Controle: fora de um regime de tendencia confirmada, a trava
+        continua identica a antes da correcao -- nao ficou permissiva demais."""
+        g = self._gatilho_base(Regime="lateral")
+        motivo = self.avaliar(g)
+        self.assertIsNotNone(motivo)
+        self.assertIn("Fluxo sem direcao vendedora", motivo)
+
+    def test_tendencia_de_baixa_confirmada_libera_venda_com_fluxo_neutro(self):
+        """Regime trend_down + momentum baixa confirmando: a venda arma
+        mesmo com agressao neutra (50%) -- exatamente o cenario da queda
+        de 5171 para 5147 relatada."""
+        g = self._gatilho_base(Regime="trend_down", Momentum="baixa", SaldoAgressaoPct=50.0)
+        motivo = self.avaliar(g)
+        self.assertIsNone(motivo)
+
+    def test_pullback_down_tambem_conta_como_tendencia_de_baixa(self):
+        g = self._gatilho_base(Regime="pullback_down", Momentum="baixa_forte", DistanciaMM9=0.0)
+        motivo = self.avaliar(g)
+        self.assertIsNone(motivo)
+
+    def test_tendencia_confirmada_libera_venda_mesmo_com_fluxo_fortemente_contrario(self):
+        """Mesma filosofia ja usada dentro de classificar_contexto (ver
+        "TENDENCIA ACIMA DO FLUXO"): quando a tendencia E o momentum
+        confirmam, o fluxo contrario (mesmo forte) nunca vira 'espera' la —
+        so reduz o score, meses antes desta trava. O gatekeeper precisa
+        replicar a MESMA regra, senao ele veta sozinho o que a classificacao
+        ja deixou passar (com score menor)."""
+        g = self._gatilho_base(Regime="trend_down", Momentum="baixa", SaldoAgressaoPct=70.0)
+        motivo = self.avaliar(g)
+        self.assertIsNone(motivo)
+
+    def test_tendencia_de_alta_confirmada_libera_compra_com_fluxo_neutro(self):
+        """Mesma correcao, simetrica pro lado de compra."""
+        g = self._gatilho_base(Acao="compra", Momentum="alta", Regime="trend_up",
+                                SaldoAgressaoPct=50.0)
+        motivo = self.avaliar(g)
+        self.assertIsNone(motivo)
+
+    def test_tendencia_a_favor_mas_perseguindo_ponta_do_range_nao_forca_liberacao(self):
+        """pos_range fora de 20-80 e sem momentum a favor explicito nao ativa
+        a valvula de escape -- evita perseguir a ponta do movimento so
+        porque o regime e de tendencia."""
+        g = self._gatilho_base(Regime="trend_down", Momentum="neutro", PosRange=5.0)
+        motivo = self.avaliar(g)
+        self.assertIsNotNone(motivo)
+
+
 if __name__ == "__main__":
     unittest.main()
