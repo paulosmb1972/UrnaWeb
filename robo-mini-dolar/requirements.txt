@@ -1,0 +1,8 @@
+streamlit
+streamlit-autorefresh
+pandas
+requests
+Pillow
+pygetwindow
+pywin32
+yfinance
