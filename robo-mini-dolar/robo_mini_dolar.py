@@ -714,7 +714,7 @@ def macro_deve_coletar_agora(agora=None):
 def atualizar_macro_agendado(agora=None, forcar=False):
     """Dispara a coleta web quando for a hora. Chamar a cada ciclo de analise."""
     agora = agora or datetime.now()
-    if st.session_state.get("modo_replay_ativo") and not forcar:
+    if st.session_state.get("modo_replay") and not forcar:
         return {"coletou": False, "motivo": "replay: coleta ao vivo desligada"}
     # Fora da janela nao ha decisao a tomar: nao gasta requisicao nas fontes.
     if not forcar and not dentro_janela_operacional(agora):
@@ -7151,13 +7151,13 @@ def classificar_contexto(dados_tela, fechamento_ant=None, ignorar_macro=False):
     # ---- PMI dos EUA: vies macro para o Mini Dolar ----
     if ignorar_macro:
         _macro_pmi = {}
-    elif st.session_state.get("modo_replay_ativo"):
+    elif st.session_state.get("modo_replay"):
         # No replay a coleta ao vivo nao vale: busca o macro da DATA do replay
         # nas fontes com historico (BCB, FRED, FMP). O que nao vier fica
         # marcado como indisponivel e nao pontua.
         _macro_pmi = macro_para_replay(
-            st.session_state.get("data_replay")
-            or str((dados_tela or {}).get("data", ""))[:10])
+            st.session_state.get("replay_data")
+            or str((dados_tela or {}).get("data_replay", ""))[:10])
     else:
         # A coleta web tem relogio proprio no topo do app; aqui apenas LE o
         # arquivo ja gravado. Buscar na web dentro da analise travava o ciclo.
@@ -9039,8 +9039,20 @@ def _contexto_fallback_seguro(dados_tela: Dict[str, Any],
 
 def veredito_macro_aba():
     """Aba 2 — usa 1:1 a leitura de vies_macro_consolidado (DXY/EWZ/VIX/PMI/PTAX).
-    Dado essencial ausente => NEUTRO explicito, nunca herda valor velho."""
-    macro = ler_dados_macro()
+    Dado essencial ausente => NEUTRO explicito, nunca herda valor velho.
+
+    Em modo replay, ler_dados_macro() devolveria sempre o macro.json do
+    ultimo pregao REAL (a coleta ao vivo fica congelada durante o replay —
+    ver atualizar_macro_agendado) -- ou seja, a aba ficava travada no MESMO
+    vies e percentual o dia inteiro de replay, nao importa qual dia estava
+    sendo replayado nem quanto tempo passasse. Busca o macro DA DATA do
+    replay, igual classificar_contexto ja faz na decisao real."""
+    if st.session_state.get("modo_replay"):
+        macro = macro_para_replay(
+            st.session_state.get("replay_data")
+            or str((st.session_state.get("ultimos_dados_tela") or {}).get("data_replay", ""))[:10])
+    else:
+        macro = ler_dados_macro()
     v = vies_macro_consolidado(macro)
     convicao = min(100, abs(int(v.get("pontos", 0))) * 20)
     return {

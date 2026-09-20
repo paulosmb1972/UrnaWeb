@@ -514,6 +514,49 @@ class TestCorrigirAnoReplayDaTela(unittest.TestCase):
         self.assertEqual(r, "nao-e-data")
 
 
+class TestVeredictoMacroAbaRespeitaReplay(unittest.TestCase):
+    """Usuario relatou: a aba Macroeconomicos so mostrava "compra" e sempre
+    41% (n*20 arredondado -> aparentava travado em 40%), em qualquer dia de
+    replay. Causa raiz: veredito_macro_aba() sempre chamava
+    ler_dados_macro() (o macro.json do ultimo pregao REAL, congelado durante
+    o replay -- atualizar_macro_agendado nao coleta em modo replay), nunca
+    macro_para_replay(data). Um segundo bug agravava isso na DECISAO (nao so
+    na aba): classificar_contexto() e atualizar_macro_agendado() checavam
+    "modo_replay_ativo", uma chave que nunca e definida em lugar nenhum do
+    app (o toggle real e "modo_replay") -- o ramo de macro-por-data-do-replay
+    era codigo morto, nunca executava."""
+
+    def setUp(self):
+        FAKE_ST.session_state.clear()
+        self.veredito_macro_aba = NS["veredito_macro_aba"]
+        self._macro_para_replay_orig = NS["macro_para_replay"]
+        self._ler_dados_macro_orig = NS["ler_dados_macro"]
+        self._chamadas = []
+        NS["macro_para_replay"] = lambda data: (
+            self._chamadas.append(("replay", data)) or
+            {"DXY": 100.0, "DXY_ANTERIOR": 100.0, "VIX": 15.0, "PTAX": 5.10,
+             "PTAX_ANTERIOR": 5.10, "disponivel": True})
+        NS["ler_dados_macro"] = lambda: (
+            self._chamadas.append(("live", None)) or
+            {"DXY": 100.0, "DXY_ANTERIOR": 100.0, "VIX": 15.0, "PTAX": 5.10,
+             "PTAX_ANTERIOR": 5.10})
+
+    def tearDown(self):
+        NS["macro_para_replay"] = self._macro_para_replay_orig
+        NS["ler_dados_macro"] = self._ler_dados_macro_orig
+
+    def test_fora_do_replay_usa_ler_dados_macro(self):
+        FAKE_ST.session_state["modo_replay"] = False
+        self.veredito_macro_aba()
+        self.assertEqual(self._chamadas, [("live", None)])
+
+    def test_em_replay_usa_macro_da_data_do_replay(self):
+        FAKE_ST.session_state["modo_replay"] = True
+        FAKE_ST.session_state["replay_data"] = "2026-09-15"
+        self.veredito_macro_aba()
+        self.assertEqual(self._chamadas, [("replay", "2026-09-15")])
+
+
 class TestGatekeeperTendenciaAcimaDoFluxo(unittest.TestCase):
     """Caso real relatado pelo usuario: preco caiu de 5171 para 5147 (24
     pontos) e o sistema NUNCA armou venda. Causa raiz: o gatekeeper
