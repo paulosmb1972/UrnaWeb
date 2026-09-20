@@ -1357,6 +1357,9 @@ defaults = {
     "replay_hora": "09:00",
     "replay_seq": 0,
     "avancar_replay_auto": False,
+    "replay_auto_tentativas": 0,
+    "replay_auto_registrados": 0,
+    "replay_auto_duplicados": 0,
     "analise_automatica": False,
     "disparos_anuncio_feitos": {},
     "ultimo_disparo_anuncio": "",
@@ -12901,11 +12904,24 @@ if st.session_state.get("modo_replay") and st.session_state.get("avancar_replay_
     _dec_replay = time.time() - num(st.session_state.get("ultimo_ciclo_analise", 0))
     if CHAVE_OPENROUTER and _dec_replay >= (INTERVALO_AUTO_REPLAY_MS / 1000.0):
         st.session_state["origem_ciclo_atual"] = "replay_auto"
+        # Contador visivel de tentativas/salvos/duplicados — usuario relatou
+        # "as analises rodam sem parar mas nao aparecem no historico". A cada
+        # 8s o ciclo roda de verdade (a IA e chamada), mas salvar_historico()
+        # descarta como "Duplicado." quando o relogio do replay (DataEvento,
+        # parte da chave de deduplicacao) ainda nao mudou desde a ultima vez
+        # -- comportamento correto (evita linha repetida do MESMO instante),
+        # mas invisivel: o spinner da a impressao de analise nova a cada
+        # ciclo, sem indicar quantas viraram linha de verdade no historico.
+        st.session_state["replay_auto_tentativas"] = st.session_state.get("replay_auto_tentativas", 0) + 1
         with st.spinner("Replay: analisando o próximo instante..."):
             try:
                 executar_analise()
                 st.session_state.ultimo_ciclo_analise = time.time()
                 st.session_state["ultimo_erro_ciclo"] = None
+                if "HIST: Duplicado." in str(st.session_state.get("ultimo_diagnostico", "")):
+                    st.session_state["replay_auto_duplicados"] = st.session_state.get("replay_auto_duplicados", 0) + 1
+                else:
+                    st.session_state["replay_auto_registrados"] = st.session_state.get("replay_auto_registrados", 0) + 1
             except Exception as _e_replay:
                 st.session_state["ultimo_erro_ciclo"] = str(_e_replay)
 
@@ -13136,6 +13152,16 @@ with aba_geral:
                        "ligado, o sistema volta a analisar sozinho a cada "
                        f"{INTERVALO_AUTO_REPLAY_MS // 1000}s, acompanhando o "
                        "relógio do replay do Profit.")
+        if st.session_state.get("modo_replay") and st.session_state.get("avancar_replay_auto"):
+            _rat = st.session_state.get("replay_auto_tentativas", 0)
+            _rar = st.session_state.get("replay_auto_registrados", 0)
+            _rad = st.session_state.get("replay_auto_duplicados", 0)
+            st.caption(
+                f"🔁 Ciclos rodados: **{_rat}** · novos no histórico: **{_rar}** · "
+                f"descartados por ser o MESMO instante do replay (relógio da tela "
+                f"ainda não avançou): **{_rad}**. Descartado é esperado — só vira "
+                "problema se 'novos' ficar em 0 por muito tempo com o replay "
+                "avançando.")
 
     # ---- DATA E HORA DO REPLAY (entrada manual) ----
     # A data digitada aqui manda em todo o sistema: define o pregao analisado,
