@@ -17,12 +17,13 @@ REM Opcionais — descomente (tire o "REM" da frente) so o que for usar.
 REM Troca o modelo de IA usado na analise (padrao: google/gemini-2.5-flash)
 REM set OPENROUTER_MODEL=google/gemini-2.5-flash
 
-REM Fonte de dados de mercado: "captura_tela" (padrao) ou "rtd" (Profit via COM)
-REM set FONTE_DADOS_MERCADO=rtd
-REM set RTD_PROGID=ProfitDLL.RTD
-REM set RTD_TICKER=WDOV20
+REM Fonte de dados de mercado: "captura_tela" (padrao, unica recomendada) ou
+REM "profitdll" (leitura direta via ProfitDLL, exige o arquivo da DLL).
+REM A fonte RTD (COM) foi removida do sistema: nao funcionava de forma
+REM confiavel e nao existe mais no codigo.
+REM set FONTE_DADOS_MERCADO=profitdll
 
-REM Caminho da ProfitDLL, se estiver usando a fonte RTD
+REM Caminho da ProfitDLL, se estiver usando a fonte profitdll
 REM set PROFITDLL_PATH=C:\Caminho\Para\ProfitDLL.dll
 
 REM Captura por monitor especifico (notebook/auxiliar)
