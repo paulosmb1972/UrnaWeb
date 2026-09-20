@@ -482,6 +482,38 @@ class TestTsEventoModoRealIgnoraDataReplay(unittest.TestCase):
         self.assertEqual(r, "2026-07-28 09:00:31")
 
 
+class TestCorrigirAnoReplayDaTela(unittest.TestCase):
+    """Export de 20/09/2026 mostrou 20 de 49 leituras do MESMO pregao (mesmo
+    dia/mes, sequencia continua de horarios ao longo do dia) gravadas com o
+    ano trocado (2026 -> 2020) -- a IA le mal o relogio do replay na tela do
+    Profit as vezes, mas acerta dia e mes."""
+
+    def setUp(self):
+        self.f = NS["corrigir_ano_replay_da_tela"]
+
+    def test_ano_trocado_no_mesmo_dia_mes_mantem_ano_anterior(self):
+        r = self.f("2020-09-15", "2026-09-15")
+        self.assertEqual(r, "2026-09-15")
+
+    def test_virada_real_de_dia_com_ano_novo_e_aceita(self):
+        """Controle: mudar de dia (replay avancou pro proximo pregao) nao e
+        confundido com leitura errada, mesmo se o ano tambem mudar."""
+        r = self.f("2027-01-02", "2026-12-31")
+        self.assertEqual(r, "2027-01-02")
+
+    def test_mesmo_ano_e_mesmo_dia_mes_devolve_sem_alteracao(self):
+        r = self.f("2026-09-15", "2026-09-15")
+        self.assertEqual(r, "2026-09-15")
+
+    def test_sem_data_anterior_para_comparar_devolve_a_nova_sem_alteracao(self):
+        r = self.f("2020-09-15", "")
+        self.assertEqual(r, "2020-09-15")
+
+    def test_formato_invalido_devolve_a_nova_sem_alteracao(self):
+        r = self.f("nao-e-data", "2026-09-15")
+        self.assertEqual(r, "nao-e-data")
+
+
 class TestGatekeeperTendenciaAcimaDoFluxo(unittest.TestCase):
     """Caso real relatado pelo usuario: preco caiu de 5171 para 5147 (24
     pontos) e o sistema NUNCA armou venda. Causa raiz: o gatekeeper

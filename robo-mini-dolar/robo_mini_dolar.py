@@ -4526,6 +4526,28 @@ def _set_state(chave, valor):
         return False
 
 
+def corrigir_ano_replay_da_tela(data_tela_nova, data_replay_atual):
+    """Blinda contra a IA lendo mal o ANO do relogio do replay na tela do
+    Profit (ex.: "2026" virando "2020" — digitos parecidos/anti-aliasing),
+    mantendo dia e mes certos. Um export real mostrou 20/49 leituras do
+    MESMO pregao (mesmo dia/mes, sequencia continua de horarios ao longo do
+    dia) gravadas com o ano trocado.
+
+    Dia e mes iguais ao ja estabelecido mas ano diferente = leitura errada,
+    nao virada real de pregao (isso sim muda dia e/ou mes) — devolve o ano
+    ja em uso nesse caso. Datas em formatos invalidos ou sem data anterior
+    para comparar sao devolvidas sem alteracao (o chamador decide o que
+    fazer com o formato)."""
+    try:
+        ano_novo, mes_novo, dia_novo = str(data_tela_nova).split("-")
+        ano_prev, mes_prev, dia_prev = str(data_replay_atual).split("-")
+    except Exception:
+        return data_tela_nova
+    if (mes_novo, dia_novo) == (mes_prev, dia_prev) and ano_novo != ano_prev:
+        return data_replay_atual
+    return data_tela_nova
+
+
 def ts_evento(dados_tela):
     """
     Gera o timestamp do evento. No modo replay, SEMPRE usa a data/hora do replay
@@ -9511,6 +9533,8 @@ def executar_analise():
             if "/" in _data_tela:
                 _d, _m, _a = _data_tela.split("/")
                 _data_tela = f"{_a}-{_m}-{_d}"
+            _data_tela = corrigir_ano_replay_da_tela(
+                _data_tela, st.session_state.get("replay_data", ""))
             dados_tela["data_replay"] = _data_tela
             _set_state("replay_data", _data_tela)
         else:
