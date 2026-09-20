@@ -369,6 +369,14 @@ MIN_PRE_AQUECIMENTO_JANELA = 3
 INTERVALO_ANALISE_SEGUNDOS = 300
 # Ciclo separado do de mercado real — so roda em modo replay, com o toggle
 # "Analisar automaticamente durante o replay" ligado (ver AUTO-AVANCO NO REPLAY).
+# IMPORTANTE: isto e so a cadencia de REFRESH DA PAGINA (rapida, so pra a UI
+# responder/mostrar o cronometro) — a cadencia da ANALISE de verdade (que
+# gasta credito de IA) e INTERVALO_ANALISE_SEGUNDOS, o MESMO valor usado no
+# ciclo real, a pedido do usuario (queria replay gastando credito no mesmo
+# ritmo do robo ao vivo, nao a cada 8s). Os dois timers sao independentes de
+# proposito: confundir "intervalo de refresh" com "intervalo de analise" foi
+# exatamente o bug do incidente antigo "quase sempre analisando" (esgotava
+# credito porque cada refresh de tela virava um ciclo de analise).
 INTERVALO_AUTO_REPLAY_MS = 8000
 INTERVALO_MACRO_SEGUNDOS = 300
 
@@ -12900,16 +12908,21 @@ if st.session_state.get("analise_automatica") and CHAVE_OPENROUTER and (
 # em paralelo, ignora o horario real e SO liga com o toggle explicito do
 # usuario em "Analisar automaticamente durante o replay".
 if st.session_state.get("modo_replay") and st.session_state.get("avancar_replay_auto"):
+    # st_autorefresh so faz a PAGINA responder/mostrar o cronometro a cada
+    # poucos segundos -- a analise de verdade (proximo "if"), que gasta
+    # credito de IA, so dispara a cada INTERVALO_ANALISE_SEGUNDOS (mesma
+    # cadencia do ciclo ao vivo, 5 min), nunca a cada refresh de tela.
     st_autorefresh(interval=INTERVALO_AUTO_REPLAY_MS, key="refresh_auto_replay")
     _dec_replay = time.time() - num(st.session_state.get("ultimo_ciclo_analise", 0))
-    if CHAVE_OPENROUTER and _dec_replay >= (INTERVALO_AUTO_REPLAY_MS / 1000.0):
+    if CHAVE_OPENROUTER and _dec_replay >= INTERVALO_ANALISE_SEGUNDOS:
         st.session_state["origem_ciclo_atual"] = "replay_auto"
         # Contador visivel de tentativas/salvos/duplicados — usuario relatou
         # "as analises rodam sem parar mas nao aparecem no historico". A cada
-        # 8s o ciclo roda de verdade (a IA e chamada), mas salvar_historico()
-        # descarta como "Duplicado." quando o relogio do replay (DataEvento,
-        # parte da chave de deduplicacao) ainda nao mudou desde a ultima vez
-        # -- comportamento correto (evita linha repetida do MESMO instante),
+        # ciclo (agora a cada 5 min, mesma cadencia do ao vivo) a IA e
+        # chamada de verdade, mas salvar_historico() descarta como
+        # "Duplicado." quando o relogio do replay (DataEvento, parte da
+        # chave de deduplicacao) ainda nao mudou desde a ultima vez --
+        # comportamento correto (evita linha repetida do MESMO instante),
         # mas invisivel: o spinner da a impressao de analise nova a cada
         # ciclo, sem indicar quantas viraram linha de verdade no historico.
         st.session_state["replay_auto_tentativas"] = st.session_state.get("replay_auto_tentativas", 0) + 1
@@ -13150,8 +13163,9 @@ with aba_geral:
                        "você clicou 'Executar análise agora' — foi o que aconteceu "
                        "no replay de 03/09 (compra travada em 12%). Com o toggle "
                        "ligado, o sistema volta a analisar sozinho a cada "
-                       f"{INTERVALO_AUTO_REPLAY_MS // 1000}s, acompanhando o "
-                       "relógio do replay do Profit.")
+                       f"{INTERVALO_ANALISE_SEGUNDOS // 60} min — mesma cadência do "
+                       "ciclo ao vivo, para não gastar crédito de IA mais rápido "
+                       "do que no pregão real.")
         if st.session_state.get("modo_replay") and st.session_state.get("avancar_replay_auto"):
             _rat = st.session_state.get("replay_auto_tentativas", 0)
             _rar = st.session_state.get("replay_auto_registrados", 0)
