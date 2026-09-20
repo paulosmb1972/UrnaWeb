@@ -298,17 +298,6 @@ INTERVALO_REFRESH_REPOUSO_MS = 60000
 MIN_PRE_AQUECIMENTO_JANELA = 3
 
 INTERVALO_ANALISE_SEGUNDOS = 300
-# Ciclo separado do de mercado real — so roda em modo replay, com o toggle
-# "Analisar automaticamente durante o replay" ligado (ver AUTO-AVANCO NO REPLAY).
-# IMPORTANTE: isto e so a cadencia de REFRESH DA PAGINA (rapida, so pra a UI
-# responder/mostrar o cronometro) — a cadencia da ANALISE de verdade (que
-# gasta credito de IA) e INTERVALO_ANALISE_SEGUNDOS, o MESMO valor usado no
-# ciclo real, a pedido do usuario (queria replay gastando credito no mesmo
-# ritmo do robo ao vivo, nao a cada 8s). Os dois timers sao independentes de
-# proposito: confundir "intervalo de refresh" com "intervalo de analise" foi
-# exatamente o bug do incidente antigo "quase sempre analisando" (esgotava
-# credito porque cada refresh de tela virava um ciclo de analise).
-INTERVALO_AUTO_REPLAY_MS = 8000
 INTERVALO_MACRO_SEGUNDOS = 300
 
 # ---- AMOSTRAGEM: CICLO FIXO DE 5 MINUTOS ----
@@ -1295,11 +1284,15 @@ defaults = {
     "replay_data": datetime.now().strftime("%Y-%m-%d"),
     "replay_hora": "09:00",
     "replay_seq": 0,
-    "avancar_replay_auto": False,
-    "replay_auto_tentativas": 0,
-    "replay_auto_registrados": 0,
-    "replay_auto_duplicados": 0,
     "analise_automatica": False,
+    # Contadores do ciclo automatico (analise_automatica), em qualquer modo
+    # (real ou replay) — mostrados na aba Geral para deixar visivel se o
+    # ciclo esta de fato rodando, salvando no historico, sendo descartado
+    # por duplicidade (mesmo evento/preco/alvo) ou dando erro.
+    "auto_analise_tentativas": 0,
+    "auto_analise_salvos": 0,
+    "auto_analise_duplicados": 0,
+    "auto_analise_erros": 0,
     "disparos_anuncio_feitos": {},
     "ultimo_disparo_anuncio": "",
     "disparo_automatico": False,
@@ -5411,58 +5404,6 @@ def calcular_volume_profile(dados_tela=None, hist=None, n_bins=VOLUME_PROFILE_BI
             "amostra": len(candles), "modo_estimado": modo_estimado}
 
 
-def render_camada_continua(ctx):
-    """Painel de auditoria da camada continua (VWAP Bands/Volume Profile/
-    LVN/Absorcao) — EXPERIMENTAL: mostra o score_final_contextual calculado
-    em paralelo, mas deixa claro que ele ainda NAO decide execucao (so o
-    score/gatekeeper reais, inalterados, fazem isso)."""
-    ctx = ctx or {}
-    st.markdown('<div class="section-title">🧪 Contribuição contínua dos indicadores (experimental)</div>',
-                unsafe_allow_html=True)
-    st.caption("Camada paralela/observacional — ainda NÃO influencia execução, score real nem "
-               "gatekeeper. Serve para comparar em replay antes de eventualmente ser promovida.")
-    if "score_final_contextual" not in ctx:
-        st.caption("Sem leitura válida para calcular o ajuste contínuo ainda.")
-        return
-
-    _score_base = ctx.get("score_base", 0)
-    _ajuste = ctx.get("score_ajuste_continuo", 0)
-    _final = ctx.get("score_final_contextual", _score_base)
-    ccol1, ccol2, ccol3 = st.columns(3)
-    ccol1.metric("Score base", f"{_score_base}")
-    ccol2.metric("Ajuste contínuo", f"{_ajuste:+d}" if isinstance(_ajuste, int) else str(_ajuste))
-    ccol3.metric("Score final (contextual)", f"{_final}")
-
-    _blocos = (
-        ("VWAP Bands", ctx.get("vwap_band_continuo", {})),
-        ("Volume Profile", ctx.get("volume_profile_continuo", {})),
-        ("LVN", ctx.get("lvn_continuo", {})),
-        ("Absorção", ctx.get("absorcao_continua", {})),
-    )
-    for _nome, _info in _blocos:
-        _score = _info.get("score", 0)
-        _estado = _info.get("estado", "indisponivel")
-        _motivo = _info.get("motivo", "") or "sem leitura."
-        if _estado == "valido":
-            _icone = "🟢" if _score > 0 else ("🔴" if _score < 0 else "⚪")
-            st.caption(f"{_icone} **{_nome}** ({_score:+d}): {_motivo}")
-        else:
-            st.caption(f"⚫ **{_nome}** ({_estado}): {_motivo}")
-
-    _insuf = ctx.get("indicadores_insuficientes") or []
-    _indisp = ctx.get("indicadores_indisponiveis") or []
-    _naplic = ctx.get("indicadores_nao_aplicaveis") or []
-    if _insuf or _indisp or _naplic:
-        _partes = []
-        if _insuf: _partes.append(f"insuficientes: {', '.join(_insuf)}")
-        if _indisp: _partes.append(f"indisponíveis: {', '.join(_indisp)}")
-        if _naplic: _partes.append(f"não aplicáveis: {', '.join(_naplic)}")
-        st.caption("ℹ️ " + " · ".join(_partes))
-
-    for _alerta in (ctx.get("alertas_continuos") or []):
-        st.warning(f"⚠️ {_alerta}")
-
-
 def render_volume_profile(vp_info, preco=0.0):
     """Renderiza o painel de Volume Profile (POC/HVN/LVN) na aba de Liquidez."""
     st.markdown('<div class="section-title">📊 Volume Profile (POC · HVN · LVN)</div>', unsafe_allow_html=True)
@@ -9512,398 +9453,6 @@ def veredito_confluencia_aba(veredito_liq=None, veredito_macro=None, veredito_ca
     return saida
 
 
-# =============================================================================
-# CAMADA CONTINUA DE INDICADORES (VWAP Bands / Volume Profile / LVN / Absorção)
-#
-# Diagnostico levantado em replay pelo usuario (19/09): VWAP Bands, Volume
-# Profile, LVN e Absorcao ja existem e ja aparecem no CSV, mas pesam pouco ou
-# so atuam em bloqueios extremos -- nao contribuem de forma GRADUAL pro score
-# como MM/momentum/Bollinger/IFR ja contribuem. Verificado no codigo: VWAP
-# Bands e LVN JA somam/subtraem do score real (ver avaliar_risco_vwap_banda/
-# avaliar_risco_lvn, chamadas dentro de classificar_contexto) -- so o CAMPO
-# de motivo no CSV so era preenchido quando bloqueava. Volume Profile so dava
-# um bonus fixo de +1 no lado do POC; HVN nunca virava sinal; Absorcao so
-# entrava embutida no combo de reversao_extremo, nunca como sinal isolado.
-#
-# Esta secao NAO substitui nada disso: e uma camada PARALELA e OBSERVACIONAL,
-# como recomendado explicitamente pelo usuario ("implementar como camada
-# paralela auditavel primeiro, depois promover para decisao se o replay
-# provar melhora"). calcular_score_contextual_continuo() calcula um
-# score_final_contextual e grava tudo no CSV/painel, mas contexto["score"]
-# (o que o gatekeeper realmente usa pra liberar execucao) NAO e alterado por
-# nenhuma funcao desta secao. Nenhuma delas pode lancar excecao -- todas tem
-# fallback "indisponivel" seguro.
-# =============================================================================
-
-def classificar_vwap_band_continuo(preco, acao, vwap_bands, contexto=None):
-    """Traduz avaliar_risco_vwap_banda() (fonte unica de verdade, ja somada
-    ao score REAL dentro de classificar_contexto) pro vocabulario de
-    zona/estado/risco do painel de auditoria continua. NAO reimplementa os
-    limiares de banda -- le sempre a mesma funcao que decide o score de
-    verdade, pra nunca divergir dela (mesmo principio de "fonte unica" ja
-    documentado acima de avaliar_risco_vwap_banda/avaliar_risco_lvn).
-
-    O campo "score" devolvido aqui e SO para exibicao/auditoria: ja foi
-    somado ao score real em classificar_contexto, e por isso
-    calcular_score_contextual_continuo() NAO soma esse valor de novo no
-    ajuste_total (contar duas vezes o mesmo sinal)."""
-    vazio = {"estado": "indisponivel", "zona": "indefinida", "score": 0, "risco": "indefinido",
-             "motivo": "VWAP Bands indisponível nesta leitura (amostra insuficiente ou indicador não capturado)."}
-    try:
-        if not vwap_bands or not vwap_bands.get("valido") or acao not in ("compra", "venda") or preco <= 0:
-            return vazio
-        estado_banda = str(vwap_bands.get("estado", "indefinido"))
-        centro = num(vwap_bands.get("vwap", 0))
-        mapa_zona = {"extensao_inferior": "abaixo_2sigma", "abaixo_banda1": "entre_menos2_menos1",
-                     "acima_banda1": "entre_mais1_mais2", "extensao_superior": "acima_2sigma"}
-        if estado_banda == "dentro":
-            zona = "entre_vwap_mais1" if preco >= centro else "entre_menos1_vwap"
-        else:
-            zona = mapa_zona.get(estado_banda, "indefinida")
-        risco_txt = {"extensao_inferior": "extremo", "extensao_superior": "extremo",
-                     "abaixo_banda1": "moderado", "acima_banda1": "moderado"}.get(estado_banda, "baixo")
-        # ancora_entrada=False so pra ler o ajuste puro da zona (o BLOQUEIO de
-        # verdade, que depende da ancora real do ciclo, continua decidido
-        # exclusivamente em colunas_gatekeeper()).
-        _risco = avaliar_risco_vwap_banda(preco, acao, vwap_bands, ancora_entrada=False)
-        _fonte = vwap_bands.get("fonte", "calculado")
-        motivo = (f"{acao.capitalize()} com preço em {zona.replace('_', ' ')} da VWAP "
-                  f"({_fonte}, centro {centro:.2f}) — risco {risco_txt}. Ajuste já aplicado "
-                  "ao score real; exibido aqui só para auditoria.")
-        return {"estado": "valido", "zona": zona, "score": int(_risco.get("ajuste_score", 0)),
-                "risco": risco_txt, "motivo": motivo}
-    except Exception:
-        return vazio
-
-
-def classificar_volume_profile_continuo(preco, acao, volume_profile, tolerancia=TOLERANCIA_LVN_PONTOS, contexto=None):
-    """Volume Profile como fator GRADUAL de score (POC/HVN/LVN/entre
-    zonas/fora do perfil) -- ate aqui, calcular_volume_profile() so alimentava
-    um bonus FIXO de +1 do lado do POC (ver classificar_contexto); HVN nunca
-    virava sinal isolado. Zona "LVN" aqui e so a classificacao de POSICAO;
-    o recorte de "aceitacao vs rejeicao" fica em classificar_lvn_continuo(),
-    que usa fechamentos recentes como prova objetiva."""
-    vp = volume_profile or {}
-    _motivo_vazio = str(vp.get("motivo", "") or "")
-    estado_vazio = "insuficiente" if "insuficiente" in _motivo_vazio else "indisponivel"
-    vazio = {"estado": estado_vazio, "zona": "indefinida", "score": 0,
-             "motivo": f"Volume Profile indisponível ({_motivo_vazio or 'não calculado nesta leitura'}).",
-             "nivel_relevante": None}
-    try:
-        if not vp.get("valido") or acao not in ("compra", "venda") or preco <= 0:
-            return vazio
-        poc = num(vp.get("poc", 0))
-        hvns, lvns = (vp.get("hvn") or []), (vp.get("lvn") or [])
-        va_sup, va_inf = num(vp.get("va_superior", 0)), num(vp.get("va_inferior", 0))
-        dentro_area_valor = 0 < va_inf <= preco <= va_sup
-
-        def _mais_proximo(niveis):
-            return min(niveis, key=lambda n: abs(preco - num(n))) if niveis else None
-
-        nivel_lvn, nivel_hvn = _mais_proximo(lvns), _mais_proximo(hvns)
-        ctx = contexto or {}
-        _rompeu_a_favor = bool(ctx.get("rompimento_dispara")) and str(ctx.get("rompimento_direcao")) == acao
-
-        if poc > 0 and abs(preco - poc) <= tolerancia:
-            if _rompeu_a_favor:
-                return {"estado": "valido", "zona": "POC", "score": 1,
-                        "motivo": f"Preço rompeu o POC ({poc:.2f}) com aceitação a favor de {acao}.",
-                        "nivel_relevante": poc}
-            return {"estado": "valido", "zona": "POC", "score": 0,
-                    "motivo": f"Preço no POC ({poc:.2f}) sem rompimento confirmado — mercado decidindo.",
-                    "nivel_relevante": poc}
-
-        if nivel_lvn is not None and abs(preco - nivel_lvn) <= tolerancia:
-            if _rompeu_a_favor:
-                return {"estado": "valido", "zona": "LVN", "score": 1,
-                        "motivo": f"Rompimento de {acao} com aceitação através do LVN {nivel_lvn:.2f}.",
-                        "nivel_relevante": nivel_lvn}
-            return {"estado": "valido", "zona": "LVN", "score": -1,
-                    "motivo": f"Entrada de {acao} perto do LVN {nivel_lvn:.2f} sem aceitação confirmada — vácuo de liquidez.",
-                    "nivel_relevante": nivel_lvn}
-
-        if nivel_hvn is not None and abs(preco - nivel_hvn) <= tolerancia:
-            _a_favor = ((acao == "compra" and preco >= nivel_hvn) or (acao == "venda" and preco <= nivel_hvn))
-            if dentro_area_valor:
-                return {"estado": "valido", "zona": "HVN", "score": (1 if _a_favor else -1),
-                        "motivo": (f"Preço no nó de alto volume {nivel_hvn:.2f}, dentro da área de valor — "
-                                   + ("busca continuidade a favor." if _a_favor else "contra o fluxo dominante.")),
-                        "nivel_relevante": nivel_hvn}
-            return {"estado": "valido", "zona": "HVN", "score": 0,
-                    "motivo": f"Preço no nó de alto volume {nivel_hvn:.2f}, fora da área de valor (lateral).",
-                    "nivel_relevante": nivel_hvn}
-
-        if dentro_area_valor:
-            return {"estado": "valido", "zona": "entre_zonas", "score": 0,
-                    "motivo": f"Preço dentro da área de valor ({va_inf:.2f}–{va_sup:.2f}), fora de POC/HVN/LVN.",
-                    "nivel_relevante": None}
-        return {"estado": "valido", "zona": "fora_do_perfil", "score": 0,
-                "motivo": "Preço fora da área de valor do perfil.", "nivel_relevante": None}
-    except Exception:
-        return vazio
-
-
-def classificar_lvn_continuo(preco, acao, volume_profile, contexto=None, hist_candles=None):
-    """Complementa classificar_volume_profile_continuo() com o recorte
-    especifico de LVN pedido: usa os FECHAMENTOS recentes (hist_candles) como
-    prova objetiva de "aceitacao" (fechou alem do nivel, sustentando) ou
-    ausencia de aceitacao, em vez de depender so do rompimento do ciclo
-    atual. LVN longe do preco atual = "nao_aplicavel" (nao e zona ativa
-    agora); sem NENHUM LVN mapeado no perfil = "nao_aplicavel" tambem."""
-    vp = volume_profile or {}
-    vazio = {"estado": ("indisponivel" if not vp or not vp.get("valido") else "nao_aplicavel"),
-             "score": 0, "motivo": "Volume Profile indisponível para localizar LVN.",
-             "nivel_relevante": None}
-    try:
-        if not vp.get("valido") or acao not in ("compra", "venda") or preco <= 0:
-            return vazio
-        lvns = vp.get("lvn") or []
-        if not lvns:
-            return {"estado": "nao_aplicavel", "score": 0,
-                    "motivo": "Perfil de volume sem LVN identificado nesta amostra.", "nivel_relevante": None}
-
-        nivel = min(lvns, key=lambda n: abs(preco - num(n)))
-        dist = preco - num(nivel)
-        if abs(dist) > TOLERANCIA_LVN_PONTOS * 2:
-            return {"estado": "nao_aplicavel", "score": 0,
-                    "motivo": f"LVN mais próximo ({nivel:.2f}) longe do preço atual — não é zona ativa agora.",
-                    "nivel_relevante": nivel}
-
-        hist_c = hist_candles if hist_candles is not None else st.session_state.get("hist_candles", [])
-        fechamentos = [num(c.get("fechamento", 0)) for c in (hist_c or [])[:3] if num(c.get("fechamento", 0)) > 0]
-        aceitacao = False
-        if fechamentos:
-            if acao == "compra":
-                aceitacao = dist > 0 and all(f > nivel for f in fechamentos)
-            else:
-                aceitacao = dist < 0 and all(f < nivel for f in fechamentos)
-
-        if aceitacao:
-            return {"estado": "valido", "score": 1,
-                    "motivo": f"LVN {nivel:.2f} rompido com aceitação — últimos fechamentos sustentam {acao}.",
-                    "nivel_relevante": nivel}
-        if abs(dist) <= TOLERANCIA_LVN_PONTOS:
-            return {"estado": "valido", "score": -1,
-                    "motivo": f"Entrada de {acao} à frente do LVN {nivel:.2f} sem aceitação confirmada nos últimos fechamentos.",
-                    "nivel_relevante": nivel}
-        return {"estado": "valido", "score": 0,
-                "motivo": f"LVN {nivel:.2f} já superado a favor de {acao} — pode servir de defesa, não de alvo.",
-                "nivel_relevante": nivel}
-    except Exception:
-        return vazio
-
-
-# Distancia, em pontos, pra considerar preco "perto" de um nivel relevante
-# (suporte/resistencia/VWAP banda extrema/LVN/POC) na absorcao continua.
-ABSORCAO_TOLERANCIA_NIVEL_PTS = 3.0
-
-
-def classificar_absorcao_continua(dados_tela, agentes_info, contexto=None):
-    """Absorcao objetiva, SEM depender de nome de corretora/agente -- o caso
-    comum neste app e TemNomesAgentes='nao' na quase totalidade das leituras
-    (Times & Trades sem identificacao de corretora no plano de dados), o que
-    deixava a absorcao antiga (embutida so no combo de reversao_extremo)
-    praticamente sem disparar. Usa apenas dado ja objetivo: saldo de
-    agressao, desequilibrio de book, posicao no range, momentum/velocidade
-    de preco e proximidade de um nivel relevante (suporte/resistencia do
-    dia, banda extrema da VWAP, LVN ou POC).
-
-    score devolvido em convencao "a favor de COMPRA" (positivo = absorcao
-    compradora, negativo = absorcao vendedora) -- calcular_score_contextual_
-    continuo() e quem inverte o sinal conforme a acao pretendida."""
-    ctx = contexto or {}
-    dt = dados_tela or {}
-    vazio = {"estado": "indisponivel", "direcao": "neutra", "score": 0,
-             "motivo": "Dados de fluxo/book insuficientes para avaliar absorção.", "nivel": None}
-    try:
-        preco = num(dt.get("preco_atual", 0))
-        if preco <= 0:
-            return vazio
-        pos_range = num(ctx.get("pos_range", -1))
-        fluxo = ctx.get("fluxo_pressao") or {}
-        agr = num(fluxo.get("agressao_pct", -1))
-        if agr < 0:
-            agr = num(ctx.get("saldo_agressao_pct", -1))
-        if pos_range < 0 and agr < 0:
-            return vazio
-        agr = 50.0 if agr < 0 else agr
-        pos_range = 50.0 if pos_range < 0 else pos_range
-
-        desequilibrio = num(ctx.get("fluxo_desequilibrio", 0))
-        momentum = str(ctx.get("momentum", "neutro") or "neutro")
-        delta_preco = num(ctx.get("delta_preco", 0))
-        delta_3 = num(ctx.get("delta_3", 0))
-
-        maxima, minima = num(dt.get("maxima", 0)), num(dt.get("minima", 0))
-        vwap_bands = ctx.get("vwap_bands") or {}
-        vp = ctx.get("volume_profile") or {}
-        niveis_suporte = [v for v in (minima, num(vwap_bands.get("inferior_2", 0)),
-                                       num(vwap_bands.get("inferior_1", 0))) if v > 0]
-        niveis_resistencia = [v for v in (maxima, num(vwap_bands.get("superior_2", 0)),
-                                           num(vwap_bands.get("superior_1", 0))) if v > 0]
-        for lvl in list(vp.get("lvn") or []) + ([vp.get("poc")] if vp.get("poc") else []):
-            lvl = num(lvl)
-            if lvl <= 0:
-                continue
-            (niveis_suporte if lvl <= preco else niveis_resistencia).append(lvl)
-
-        perto_suporte = pos_range <= 15 or any(
-            abs(preco - v) <= ABSORCAO_TOLERANCIA_NIVEL_PTS for v in niveis_suporte)
-        perto_resistencia = pos_range >= 85 or any(
-            abs(preco - v) <= ABSORCAO_TOLERANCIA_NIVEL_PTS for v in niveis_resistencia)
-        preco_travado = abs(delta_preco) <= 1.5 and abs(delta_3) <= 2.0
-        momentum_fraco = momentum == "neutro"
-
-        # Absorcao compradora: agressao vendedora perto de suporte, preco nao continua caindo.
-        if perto_suporte and agr <= 44 and preco_travado:
-            score = 2 if (momentum_fraco or desequilibrio > 0) else 1
-            nivel = min(niveis_suporte, key=lambda v: abs(preco - v)) if niveis_suporte else None
-            return {"estado": "valido", "direcao": "compradora", "score": score,
-                    "motivo": (f"Preço perto de suporte (pos_range={pos_range:.0f}%) com agressão "
-                               f"vendedora ({agr:.0f}%) sem continuidade de queda — absorção compradora."),
-                    "nivel": nivel}
-
-        # Absorcao vendedora: agressao compradora perto de resistencia, preco nao continua subindo.
-        if perto_resistencia and agr >= 56 and preco_travado:
-            score = 2 if (momentum_fraco or desequilibrio < 0) else 1
-            nivel = min(niveis_resistencia, key=lambda v: abs(preco - v)) if niveis_resistencia else None
-            return {"estado": "valido", "direcao": "vendedora", "score": -score,
-                    "motivo": (f"Preço perto de resistência (pos_range={pos_range:.0f}%) com agressão "
-                               f"compradora ({agr:.0f}%) sem continuidade de alta — absorção vendedora."),
-                    "nivel": nivel}
-
-        return {"estado": "valido", "direcao": "neutra", "score": 0,
-                "motivo": "Sem sinal objetivo de absorção nesta leitura.", "nivel": None}
-    except Exception:
-        return vazio
-
-
-def normalizar_estado_indicadores(contexto):
-    """Estados explicitos (valido/insuficiente/indisponivel/nao_aplicavel)
-    pros indicadores que ja tinham um campo "valido"/amostra verificavel mas
-    so apareciam no painel como numero 0 ou string vazia, sem dizer se
-    tinham sido TENTADOS. Deliberadamente NAO mexe nos campos originais
-    (Bollinger*, IFR*, FluxoAbsorcao etc.) nem reinterpreta os que usam ""
-    como valor legitimo (ex.: IFRDivergencia="" ja significa "sem
-    divergencia", nao "faltou calcular") -- so soma os NOMES aos 3 grupos
-    devolvidos, que viram 3 colunas novas no CSV (IndicadoresInsuficientes/
-    IndicadoresIndisponiveis/IndicadoresNaoAplicaveis), sem risco de quebrar
-    alguma checagem existente que dependa do campo original ficar vazio."""
-    c = contexto or {}
-    saida = {"insuficientes": [], "indisponiveis": [], "nao_aplicaveis": []}
-    try:
-        _boll_sup = num(c.get("bollinger_superior", 0))
-        if _boll_sup <= 0 and str(c.get("bollinger_estado", "indefinido")) == "indefinido":
-            saida["insuficientes"].append("BOLLINGER")
-
-        _ifr_estado = str(c.get("ifr_estado", "indefinido"))
-        if _ifr_estado == "indefinido":
-            saida["insuficientes"].append("IFR")
-
-        vp = c.get("volume_profile") or {}
-        if not vp.get("valido"):
-            _motivo_vp = str(vp.get("motivo", "") or "")
-            saida["insuficientes" if "insuficiente" in _motivo_vp else "indisponiveis"].append("VOLUME_PROFILE")
-
-        vwap_bands = c.get("vwap_bands") or {}
-        if not vwap_bands.get("valido"):
-            saida["insuficientes"].append("VWAP_BANDS")
-
-        if not c.get("scalp_direcao"):
-            saida["nao_aplicaveis"].append("SCALP")
-
-        if not c.get("fluxo_valido"):
-            saida["indisponiveis"].append("FLUXO_AGRESSAO")
-    except Exception:
-        pass
-    return saida
-
-
-def _acumular_ajuste_continuo(resultado, nome, info, contar_no_total=True):
-    """Registra o resultado de UM classificador continuo dentro do dict
-    agregador de calcular_score_contextual_continuo() -- estado (pros 3
-    grupos de ausencia), ajuste (se contar_no_total, feito False pro VWAP
-    Bands pra nao contar de novo um ajuste que ja foi somado ao score real),
-    bloqueio suave e alerta de risco extremo."""
-    info = info or {}
-    estado = str(info.get("estado", "indisponivel"))
-    if estado == "insuficiente":
-        resultado["indicadores_insuficientes"].append(nome)
-    elif estado == "indisponivel":
-        resultado["indicadores_indisponiveis"].append(nome)
-    elif estado == "nao_aplicavel":
-        resultado["indicadores_nao_aplicaveis"].append(nome)
-
-    impacto = int(num(info.get("score", 0)))
-    if contar_no_total and impacto != 0:
-        resultado["ajustes"].append({"indicador": nome, "impacto": impacto,
-                                      "motivo": str(info.get("motivo", ""))})
-    if info.get("bloqueia"):
-        resultado["bloqueios_suaves"].append({"indicador": nome, "motivo": str(info.get("motivo", ""))})
-    if info.get("risco") == "extremo":
-        resultado["alertas"].append(f"{nome} em risco extremo: {info.get('motivo', '')}")
-
-
-def calcular_score_contextual_continuo(contexto, dados_tela, agentes_info=None):
-    """Camada PARALELA e OBSERVACIONAL (ver comentario de secao acima) que
-    junta VWAP Bands (so eco, ja contado no score real), Volume Profile,
-    LVN e Absorcao continua num unico ajuste auditavel.
-
-    NAO ALTERA contexto["score"]/["score_ponderado"] (usados pelo gatekeeper
-    pra liberar execucao de verdade) -- so devolve score_final PARA
-    COMPARACAO/LOG. Trava de seguranca: leitura invalida, sem preco ou sem
-    direcao definida devolve ajuste zero e score_final = score_base, sem
-    rodar nenhum classificador."""
-    contexto = contexto or {}
-    dados_tela = dados_tela or {}
-    score_base = num(contexto.get("score", 0))
-    resultado = {
-        "ajuste_total": 0, "ajustes": [], "bloqueios_suaves": [], "alertas": [],
-        "score_base": score_base, "score_final": score_base,
-        "indicadores_insuficientes": [], "indicadores_indisponiveis": [], "indicadores_nao_aplicaveis": [],
-        "vwap_band": {}, "volume_profile": {}, "lvn": {}, "absorcao": {},
-    }
-    try:
-        preco = num(dados_tela.get("preco_atual", 0))
-        acao = str(contexto.get("acao_pretendida", contexto.get("acao_objetiva", ""))).lower()
-        if (preco <= 0 or acao not in ("compra", "venda")
-                or str(contexto.get("regime", "")) == "inconsistente"
-                or not contexto.get("validacao", {"consistente": True}).get("consistente", True)):
-            return resultado
-
-        vwap_band = classificar_vwap_band_continuo(preco, acao, contexto.get("vwap_bands"), contexto)
-        resultado["vwap_band"] = vwap_band
-        _acumular_ajuste_continuo(resultado, "VWAP_BANDS", vwap_band, contar_no_total=False)
-
-        vp = contexto.get("volume_profile")
-        vol_profile = classificar_volume_profile_continuo(preco, acao, vp, contexto=contexto)
-        resultado["volume_profile"] = vol_profile
-        _acumular_ajuste_continuo(resultado, "VOLUME_PROFILE", vol_profile)
-
-        lvn = classificar_lvn_continuo(preco, acao, vp, contexto=contexto)
-        resultado["lvn"] = lvn
-        _acumular_ajuste_continuo(resultado, "LVN", lvn)
-
-        absorcao = classificar_absorcao_continua(dados_tela, agentes_info, contexto=contexto)
-        resultado["absorcao"] = absorcao
-        _impacto_abs = int(num(absorcao.get("score", 0)))
-        if acao == "venda":
-            _impacto_abs = -_impacto_abs
-        _acumular_ajuste_continuo(resultado, "ABSORCAO", {**absorcao, "score": _impacto_abs})
-
-        _normalizados = normalizar_estado_indicadores(contexto)
-        resultado["indicadores_insuficientes"].extend(_normalizados["insuficientes"])
-        resultado["indicadores_indisponiveis"].extend(_normalizados["indisponiveis"])
-        resultado["indicadores_nao_aplicaveis"].extend(_normalizados["nao_aplicaveis"])
-
-        ajuste_total = max(-2, min(2, sum(a["impacto"] for a in resultado["ajustes"])))
-        resultado["ajuste_total"] = ajuste_total
-        resultado["score_final"] = max(0, min(7, score_base + ajuste_total))
-        return resultado
-    except Exception:
-        return resultado
-
-
 def executar_analise():
     ignorar_macro = st.session_state.modo_replay and not st.session_state.usar_macro_no_replay
 
@@ -10103,29 +9652,6 @@ def executar_analise():
             pass
         st.session_state["ultimo_erro_analise"] = f"{type(_e_ctx).__name__}: {_e_ctx}"
         contexto = _contexto_fallback_seguro(dados_tela, st.session_state.get("ultimo_contexto"))
-
-    # Camada continua (VWAP Bands/Volume Profile/LVN/Absorcao) — PARALELA e
-    # OBSERVACIONAL: roda depois do score base e antes do gatekeeper, mas so
-    # ACRESCENTA campos novos ao contexto. contexto["score"]/["score_ponderado"]
-    # (o que o gatekeeper usa pra liberar execucao de verdade) fica intocado.
-    try:
-        _score_continuo = calcular_score_contextual_continuo(contexto, dados_tela, agentes_info)
-        contexto["score_base"] = _score_continuo.get("score_base", contexto.get("score", 0))
-        contexto["score_ajuste_continuo"] = _score_continuo.get("ajuste_total", 0)
-        contexto["score_final_contextual"] = _score_continuo.get("score_final", contexto.get("score", 0))
-        contexto["ajustes_continuos"] = _score_continuo.get("ajustes", [])
-        contexto["bloqueios_suaves_continuos"] = _score_continuo.get("bloqueios_suaves", [])
-        contexto["alertas_continuos"] = _score_continuo.get("alertas", [])
-        contexto["indicadores_insuficientes"] = _score_continuo.get("indicadores_insuficientes", [])
-        contexto["indicadores_indisponiveis"] = _score_continuo.get("indicadores_indisponiveis", [])
-        contexto["indicadores_nao_aplicaveis"] = _score_continuo.get("indicadores_nao_aplicaveis", [])
-        contexto["vwap_band_continuo"] = _score_continuo.get("vwap_band", {})
-        contexto["volume_profile_continuo"] = _score_continuo.get("volume_profile", {})
-        contexto["lvn_continuo"] = _score_continuo.get("lvn", {})
-        contexto["absorcao_continua"] = _score_continuo.get("absorcao", {})
-    except Exception:
-        pass
-
     st.session_state["ultimo_contexto"] = contexto
     if img is not None:
         ia = analisar_com_ia(img, dados_tela, contexto, fech_ant, ignorar_macro)
@@ -10451,31 +9977,6 @@ def executar_analise():
         "LVNMotivo": _gk.get("LVNMotivo", ""),
         "VWAPBandaBloqueia": _gk.get("VWAPBandaBloqueia", "nao"),
         "VWAPBandaMotivo": _gk.get("VWAPBandaMotivo", ""),
-        # ---- Camada continua (experimental, NAO usada pelo gatekeeper) ----
-        "ScoreBase": contexto.get("score_base", contexto.get("score", 0)),
-        "ScoreAjusteContinuo": contexto.get("score_ajuste_continuo", 0),
-        "ScoreFinalContextual": contexto.get("score_final_contextual", contexto.get("score", 0)),
-        "AjustesContinuos": " | ".join(
-            f'{a.get("indicador")}({a.get("impacto"):+d}): {a.get("motivo","")}'
-            for a in (contexto.get("ajustes_continuos") or [])),
-        "VWAPBandEstado": contexto.get("vwap_band_continuo", {}).get("estado", "indisponivel"),
-        "VWAPBandZona": contexto.get("vwap_band_continuo", {}).get("zona", ""),
-        "VWAPBandScoreContinuo": contexto.get("vwap_band_continuo", {}).get("score", 0),
-        "VWAPBandMotivoContinuo": contexto.get("vwap_band_continuo", {}).get("motivo", ""),
-        "VolumeProfileEstado": contexto.get("volume_profile_continuo", {}).get("estado", "indisponivel"),
-        "VolumeProfileZona": contexto.get("volume_profile_continuo", {}).get("zona", ""),
-        "VolumeProfileScoreContinuo": contexto.get("volume_profile_continuo", {}).get("score", 0),
-        "VolumeProfileMotivoContinuo": contexto.get("volume_profile_continuo", {}).get("motivo", ""),
-        "LVNEstadoContinuo": contexto.get("lvn_continuo", {}).get("estado", "indisponivel"),
-        "LVNScoreContinuo": contexto.get("lvn_continuo", {}).get("score", 0),
-        "LVNMotivoContinuo": contexto.get("lvn_continuo", {}).get("motivo", ""),
-        "AbsorcaoEstado": contexto.get("absorcao_continua", {}).get("estado", "indisponivel"),
-        "AbsorcaoDirecao": contexto.get("absorcao_continua", {}).get("direcao", "neutra"),
-        "AbsorcaoScoreContinuo": contexto.get("absorcao_continua", {}).get("score", 0),
-        "AbsorcaoMotivoContinuo": contexto.get("absorcao_continua", {}).get("motivo", ""),
-        "IndicadoresInsuficientes": ",".join(contexto.get("indicadores_insuficientes") or []),
-        "IndicadoresIndisponiveis": ",".join(contexto.get("indicadores_indisponiveis") or []),
-        "IndicadoresNaoAplicaveis": ",".join(contexto.get("indicadores_nao_aplicaveis") or []),
         "AtrDia": num(contexto.get("atr_dia", 0.0)),
         "LimiteVetoMM9Atr": num(contexto.get("limite_veto_mm9_usado", 0.0)),
         "EscapeNeutroAtivo": "sim" if contexto.get("escape_neutro_ativo") else "nao",
@@ -12794,20 +12295,40 @@ if st.session_state.get("_cfg_pregao_anterior") != _cfg_pregao:
     st.session_state["_cfg_pregao_anterior"] = _cfg_pregao
 
 _disp_glob, _chave_glob, _evento_glob = (False, "", "")
-if st.session_state.get("analise_automatica") and _na_janela_glob:
+_replay_glob = bool(st.session_state.get("modo_replay"))
+if st.session_state.get("analise_automatica") and _na_janela_glob and not _replay_glob:
     try:
         _disp_glob, _chave_glob, _evento_glob = disparo_pos_anuncio()
     except Exception:
         _disp_glob, _chave_glob, _evento_glob = (False, "", "")
 
 _lig_glob = (st.session_state.get("analise_automatica") and not _na_janela_glob
-             and precisa_leitura_de_ligacao())
+             and not _replay_glob and precisa_leitura_de_ligacao())
 
-if st.session_state.get("analise_automatica") and CHAVE_OPENROUTER and (
-        (_na_janela_glob and (_dec_glob >= _int_glob or _disp_glob)) or _lig_glob):
+# ---- CICLO UNICO DE ANALISE AUTOMATICA (ciclo de 5 min) ----
+# Um SO toggle ("Análise automática — ciclo de 5 min") cobre os dois modos:
+#   - modo real: mantem a logica de sempre — so dispara dentro da janela
+#     operacional real, com furos para disparo por anuncio da agenda e
+#     leitura de ligacao apos o robo ficar tempo desligado;
+#   - modo replay: o relogio real (janela operacional, agenda de anuncios,
+#     ligacao) nao faz sentido aqui, porque o pregao sendo analisado nao e
+#     o de agora — dispara so pelo intervalo fixo de INTERVALO_ANALISE_SEGUNDOS
+#     (mesmos 300 s do ciclo real), contado em tempo real (time.time()).
+# Existia um SEGUNDO toggle so pro replay ("Analisar automaticamente durante
+# o replay", a cada 8 s) — removido a pedido do usuario: gastava credito de
+# API rapido demais e o usuario so queria UM botao, valendo em qualquer
+# situacao. O refresh geral da pagina (mais acima no script) ja roda rapido
+# o bastante (30 s em janela real, 60 s em repouso) pra nunca atrasar mais
+# que isso a checagem do intervalo de 300 s abaixo.
+_disparar_glob = st.session_state.get("analise_automatica") and CHAVE_OPENROUTER and (
+    (_replay_glob and _dec_glob >= _int_glob) or
+    (not _replay_glob and ((_na_janela_glob and (_dec_glob >= _int_glob or _disp_glob)) or _lig_glob)))
+
+if _disparar_glob:
     st.session_state["origem_ciclo_atual"] = (
         "ligacao" if _lig_glob else
-        "anuncio" if (_disp_glob and _dec_glob < _int_glob) else "ciclo_5min")
+        "anuncio" if (_disp_glob and _dec_glob < _int_glob) else
+        "replay_auto" if _replay_glob else "ciclo_5min")
     if _disp_glob:
         try:
             atualizar_macro_agendado(forcar=True)
@@ -12816,7 +12337,8 @@ if st.session_state.get("analise_automatica") and CHAVE_OPENROUTER and (
         st.session_state["ultimo_disparo_anuncio"] = (
             f"{datetime.now().strftime('%H:%M:%S')} — {_evento_glob}")
     st.session_state["leitura_fora_de_ciclo"] = bool(_lig_glob)
-    with st.spinner("Analisando o pregão..."):
+    st.session_state["auto_analise_tentativas"] = int(st.session_state.get("auto_analise_tentativas", 0)) + 1
+    with st.spinner("Replay: analisando o próximo instante..." if _replay_glob else "Analisando o pregão..."):
         try:
             executar_analise()
             st.session_state.ultimo_ciclo_analise = time.time()
@@ -12825,49 +12347,21 @@ if st.session_state.get("analise_automatica") and CHAVE_OPENROUTER and (
                 registrar_disparo_anuncio(_chave_glob)
             if _lig_glob:
                 registrar_leitura_de_ligacao()
+            # Observabilidade do salvamento no historico: sem isso, um ciclo
+            # que roda mas nao grava (duplicado pela chave_gatilho, ou erro
+            # ao escrever o CSV) fica indistinguivel de um ciclo que nunca
+            # rodou — foi exatamente essa confusao que gerou o relato de
+            # "analises rodam mas nao aparecem no historico".
+            _diag_glob = str(st.session_state.get("ultimo_diagnostico", ""))
+            if "HIST: Duplicado." in _diag_glob:
+                st.session_state["auto_analise_duplicados"] = int(st.session_state.get("auto_analise_duplicados", 0)) + 1
+            elif "HIST: " in _diag_glob:
+                st.session_state["auto_analise_erros"] = int(st.session_state.get("auto_analise_erros", 0)) + 1
+            else:
+                st.session_state["auto_analise_salvos"] = int(st.session_state.get("auto_analise_salvos", 0)) + 1
         except Exception as _e_glob:
             st.session_state["ultimo_erro_ciclo"] = str(_e_glob)
-
-# ---- AUTO-AVANCO NO REPLAY ----
-# analise_automatica so dispara dentro da janela operacional de VERDADE
-# (estado_janela_operacional usa o relogio real, nao o do replay) — ou seja,
-# em replay ele nunca disparava sozinho. O usuario tinha que clicar
-# "Executar análise agora" a cada instante manualmente; se clicasse uma unica
-# vez, o veredito ficava congelado naquele resultado pelo resto da sessao —
-# foi exatamente o que aconteceu no replay de 03/09 (compra parada em 12%
-# o dia inteiro: nada mais rodou depois do primeiro clique). Este ciclo roda
-# em paralelo, ignora o horario real e SO liga com o toggle explicito do
-# usuario em "Analisar automaticamente durante o replay".
-if st.session_state.get("modo_replay") and st.session_state.get("avancar_replay_auto"):
-    # st_autorefresh so faz a PAGINA responder/mostrar o cronometro a cada
-    # poucos segundos -- a analise de verdade (proximo "if"), que gasta
-    # credito de IA, so dispara a cada INTERVALO_ANALISE_SEGUNDOS (mesma
-    # cadencia do ciclo ao vivo, 5 min), nunca a cada refresh de tela.
-    st_autorefresh(interval=INTERVALO_AUTO_REPLAY_MS, key="refresh_auto_replay")
-    _dec_replay = time.time() - num(st.session_state.get("ultimo_ciclo_analise", 0))
-    if CHAVE_OPENROUTER and _dec_replay >= INTERVALO_ANALISE_SEGUNDOS:
-        st.session_state["origem_ciclo_atual"] = "replay_auto"
-        # Contador visivel de tentativas/salvos/duplicados — usuario relatou
-        # "as analises rodam sem parar mas nao aparecem no historico". A cada
-        # ciclo (agora a cada 5 min, mesma cadencia do ao vivo) a IA e
-        # chamada de verdade, mas salvar_historico() descarta como
-        # "Duplicado." quando o relogio do replay (DataEvento, parte da
-        # chave de deduplicacao) ainda nao mudou desde a ultima vez --
-        # comportamento correto (evita linha repetida do MESMO instante),
-        # mas invisivel: o spinner da a impressao de analise nova a cada
-        # ciclo, sem indicar quantas viraram linha de verdade no historico.
-        st.session_state["replay_auto_tentativas"] = st.session_state.get("replay_auto_tentativas", 0) + 1
-        with st.spinner("Replay: analisando o próximo instante..."):
-            try:
-                executar_analise()
-                st.session_state.ultimo_ciclo_analise = time.time()
-                st.session_state["ultimo_erro_ciclo"] = None
-                if "HIST: Duplicado." in str(st.session_state.get("ultimo_diagnostico", "")):
-                    st.session_state["replay_auto_duplicados"] = st.session_state.get("replay_auto_duplicados", 0) + 1
-                else:
-                    st.session_state["replay_auto_registrados"] = st.session_state.get("replay_auto_registrados", 0) + 1
-            except Exception as _e_replay:
-                st.session_state["ultimo_erro_ciclo"] = str(_e_replay)
+            st.session_state["auto_analise_erros"] = int(st.session_state.get("auto_analise_erros", 0)) + 1
 
 
 # =========================
@@ -13082,30 +12576,30 @@ with aba_geral:
     with col_cfg1:
         st.selectbox("Estratégia operacional", list(ESTRATEGIAS.keys()),
                      key="estrategia_operacional")
-        st.toggle("Análise automática (ciclo de 5 min)", key="analise_automatica")
+        st.toggle(f"Análise automática (ciclo de {INTERVALO_ANALISE_SEGUNDOS // 60} min)",
+                  key="analise_automatica",
+                  help="Vale em qualquer situação — pregão real ou modo replay. "
+                       "Ligado, o sistema analisa sozinho a cada "
+                       f"{INTERVALO_ANALISE_SEGUNDOS // 60} minutos, sem precisar "
+                       "clicar em 'Executar análise agora' a cada instante. Sem "
+                       "isso, o veredito fica parado no valor da última análise "
+                       "manual — foi o que aconteceu no replay de 03/09 (compra "
+                       "travada em 12% o dia inteiro).")
+        _tent_ui = int(st.session_state.get("auto_analise_tentativas", 0))
+        _salv_ui = int(st.session_state.get("auto_analise_salvos", 0))
+        _dup_ui = int(st.session_state.get("auto_analise_duplicados", 0))
+        _err_ui = int(st.session_state.get("auto_analise_erros", 0))
+        if _tent_ui:
+            st.caption(f"Ciclo automático — tentativas: {_tent_ui} · "
+                       f"salvos no histórico: {_salv_ui} · "
+                       f"duplicados (mesmo evento/preço/alvo): {_dup_ui} · "
+                       f"erros: {_err_ui}")
+            if st.session_state.get("ultimo_erro_ciclo"):
+                st.caption(f"⚠️ Último erro no ciclo: {st.session_state['ultimo_erro_ciclo']}")
     with col_cfg2:
         st.toggle("Modo replay", key="modo_replay")
         st.toggle("Usar macro no replay", key="usar_macro_no_replay",
                   disabled=not st.session_state.modo_replay)
-        st.toggle("🔁 Analisar automaticamente durante o replay",
-                  key="avancar_replay_auto", disabled=not st.session_state.modo_replay,
-                  help="Sem isso, o veredito fica parado no valor da última vez que "
-                       "você clicou 'Executar análise agora' — foi o que aconteceu "
-                       "no replay de 03/09 (compra travada em 12%). Com o toggle "
-                       "ligado, o sistema volta a analisar sozinho a cada "
-                       f"{INTERVALO_ANALISE_SEGUNDOS // 60} min — mesma cadência do "
-                       "ciclo ao vivo, para não gastar crédito de IA mais rápido "
-                       "do que no pregão real.")
-        if st.session_state.get("modo_replay") and st.session_state.get("avancar_replay_auto"):
-            _rat = st.session_state.get("replay_auto_tentativas", 0)
-            _rar = st.session_state.get("replay_auto_registrados", 0)
-            _rad = st.session_state.get("replay_auto_duplicados", 0)
-            st.caption(
-                f"🔁 Ciclos rodados: **{_rat}** · novos no histórico: **{_rar}** · "
-                f"descartados por ser o MESMO instante do replay (relógio da tela "
-                f"ainda não avançou): **{_rad}**. Descartado é esperado — só vira "
-                "problema se 'novos' ficar em 0 por muito tempo com o replay "
-                "avançando.")
 
     # ---- DATA E HORA DO REPLAY (entrada manual) ----
     # A data digitada aqui manda em todo o sistema: define o pregao analisado,
@@ -13665,11 +13159,6 @@ with aba_liquidez:
         render_volume_profile(_vol_profile_liq, _preco_liq)
     except Exception:
         st.caption("Volume Profile indisponível nesta leitura.")
-
-    try:
-        render_camada_continua(st.session_state.get("ultimo_contexto") or {})
-    except Exception:
-        st.caption("Camada contínua indisponível nesta leitura.")
 
 
 # ============================================================
