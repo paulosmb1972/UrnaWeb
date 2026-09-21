@@ -497,21 +497,43 @@ class TestCorrigirAnoReplayDaTela(unittest.TestCase):
 
     def test_virada_real_de_dia_com_ano_novo_e_aceita(self):
         """Controle: mudar de dia (replay avancou pro proximo pregao) nao e
-        confundido com leitura errada, mesmo se o ano tambem mudar."""
-        r = self.f("2027-01-02", "2026-12-31")
+        confundido com leitura errada, mesmo se o ano tambem mudar — desde
+        que o ano novo seja plausivel pro relogio real da maquina."""
+        from datetime import datetime as _dt
+        r = self.f("2027-01-02", "2026-12-31", agora=_dt(2027, 1, 5))
         self.assertEqual(r, "2027-01-02")
 
     def test_mesmo_ano_e_mesmo_dia_mes_devolve_sem_alteracao(self):
-        r = self.f("2026-09-15", "2026-09-15")
+        from datetime import datetime as _dt
+        r = self.f("2026-09-15", "2026-09-15", agora=_dt(2026, 9, 21))
         self.assertEqual(r, "2026-09-15")
 
-    def test_sem_data_anterior_para_comparar_devolve_a_nova_sem_alteracao(self):
-        r = self.f("2020-09-15", "")
-        self.assertEqual(r, "2020-09-15")
-
     def test_formato_invalido_devolve_a_nova_sem_alteracao(self):
-        r = self.f("nao-e-data", "2026-09-15")
+        from datetime import datetime as _dt
+        r = self.f("nao-e-data", "2026-09-15", agora=_dt(2026, 9, 21))
         self.assertEqual(r, "nao-e-data")
+
+    def test_primeira_leitura_da_sessao_sem_anterior_bom_ainda_corrige_ano_implausivel(self):
+        """Bug real: na PRIMEIRA leitura de um replay novo, "data_replay_atual"
+        ainda e o default do boot (hoje, dia normalmente diferente do
+        replay) -- o check de dia/mes igual nao pega. Sem essa segunda
+        blindagem, um ano implausivel (aqui, 2020 com o relogio real em
+        2026) passava direto na estreia da sessao."""
+        from datetime import datetime as _dt
+        r = self.f("2020-09-16", "", agora=_dt(2026, 9, 21))
+        self.assertEqual(r, "2026-09-16")
+
+    def test_ano_um_ano_atras_do_relogio_real_e_plausivel(self):
+        """Controle: replay de uma sessao do ano passado (uso legitimo) nao
+        pode ser 'corrigido' para o ano atual."""
+        from datetime import datetime as _dt
+        r = self.f("2025-12-20", "", agora=_dt(2026, 9, 21))
+        self.assertEqual(r, "2025-12-20")
+
+    def test_ano_no_futuro_do_relogio_real_e_corrigido(self):
+        from datetime import datetime as _dt
+        r = self.f("2028-09-16", "", agora=_dt(2026, 9, 21))
+        self.assertEqual(r, "2026-09-16")
 
 
 class TestColetarIndicadorWebNaoContaminaComCacheAntigo(unittest.TestCase):
@@ -696,6 +718,42 @@ class TestVeredictoMacroAbaRespeitaReplay(unittest.TestCase):
         FAKE_ST.session_state["replay_data"] = "2026-09-15"
         self.veredito_macro_aba()
         self.assertEqual(self._chamadas, [("replay", "2026-09-15")])
+
+
+class TestVereditoCandlesResumoSegueVies(unittest.TestCase):
+    """Usuario reportou (com print da aba): titulo do card mostrava NEUTRO
+    mas o texto abaixo dizia "Gráfico de candles aponta venda · convicção
+    8%" -- dois vereditos contraditorios pro mesmo calculo, com o grafico
+    visivelmente em alta. Causa: o resumo usava sempre a direcao com mais
+    voto (aqui, momentum de curtissimo prazo por uma margem minima: 1.0 x
+    0.5), mesmo quando a convicção nao bastava pra tirar "vies" do neutro
+    (que ja seguia a regra certa)."""
+
+    def setUp(self):
+        self.veredito = NS["veredito_candles_aba"]
+
+    def test_convicao_baixa_resumo_fica_neutro_nao_direcional(self):
+        """Reproducao exata do caso: so momentum baixa (venda, peso 1.0) e
+        tendencia de abertura compra (peso 0.5) -- convicção 8%."""
+        dt = {"preco_atual": 5178.0}
+        ctx = {"momentum": "baixa",
+               "abertura_info": {"tendencia_formando": "compra", "em_observacao": False}}
+        r = self.veredito(dt, ctx)
+        self.assertEqual(r["vies"], "neutro")
+        self.assertEqual(r["convicao"], 8)
+        self.assertNotIn("venda", r["resumo"])
+        self.assertNotIn("compra", r["resumo"])
+
+    def test_convicao_alta_resumo_continua_direcional(self):
+        """Controle: sinais fortes e concordantes continuam gerando um
+        resumo direcional de verdade, sem regressao."""
+        dt = {"preco_atual": 5178.0}
+        ctx = {"momentum": "baixa_forte",
+               "rompimento_dispara": True, "rompimento_direcao": "venda",
+               "bollinger_estado": "sobrecompra", "ifr_estado": "sobrecompra"}
+        r = self.veredito(dt, ctx)
+        self.assertEqual(r["vies"], "venda")
+        self.assertIn("venda", r["resumo"])
 
 
 class TestGatekeeperTendenciaAcimaDoFluxo(unittest.TestCase):

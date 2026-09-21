@@ -4597,25 +4597,47 @@ def _set_state(chave, valor):
         return False
 
 
-def corrigir_ano_replay_da_tela(data_tela_nova, data_replay_atual):
+def corrigir_ano_replay_da_tela(data_tela_nova, data_replay_atual, agora=None):
     """Blinda contra a IA lendo mal o ANO do relogio do replay na tela do
     Profit (ex.: "2026" virando "2020" — digitos parecidos/anti-aliasing),
     mantendo dia e mes certos. Um export real mostrou 20/49 leituras do
     MESMO pregao (mesmo dia/mes, sequencia continua de horarios ao longo do
     dia) gravadas com o ano trocado.
 
-    Dia e mes iguais ao ja estabelecido mas ano diferente = leitura errada,
-    nao virada real de pregao (isso sim muda dia e/ou mes) — devolve o ano
-    ja em uso nesse caso. Datas em formatos invalidos ou sem data anterior
-    para comparar sao devolvidas sem alteracao (o chamador decide o que
-    fazer com o formato)."""
+    Dois checks, nessa ordem:
+    1. Dia e mes iguais ao ja estabelecido mas ano diferente = leitura
+       errada, nao virada real de pregao (isso sim muda dia e/ou mes) —
+       devolve o ano ja em uso.
+    2. PRIMEIRA leitura da sessao (data_replay_atual ainda no default do
+       boot — hoje mesmo, dia geralmente diferente do replay, entao o
+       check 1 nao pega) com um ano implausivel: nenhum replay e de uma
+       data no FUTURO nem de mais de 1 ano atras do relogio real da
+       maquina. Fora dessa janela, assume o ano de hoje — foi exatamente
+       esse buraco que deixou "2026" virar "2020" na toda primeira leitura
+       de um replay novo, antes de existir qualquer "anterior" bom pra
+       comparar no check 1.
+
+    Datas em formato invalido sao devolvidas sem alteracao (o chamador
+    decide o que fazer com o formato)."""
+    agora = agora or datetime.now()
     try:
         ano_novo, mes_novo, dia_novo = str(data_tela_nova).split("-")
-        ano_prev, mes_prev, dia_prev = str(data_replay_atual).split("-")
     except Exception:
         return data_tela_nova
-    if (mes_novo, dia_novo) == (mes_prev, dia_prev) and ano_novo != ano_prev:
-        return data_replay_atual
+
+    try:
+        ano_prev, mes_prev, dia_prev = str(data_replay_atual).split("-")
+        if (mes_novo, dia_novo) == (mes_prev, dia_prev) and ano_novo != ano_prev:
+            return data_replay_atual
+    except Exception:
+        pass
+
+    try:
+        if int(ano_novo) > agora.year or int(ano_novo) < agora.year - 1:
+            return f"{agora.year}-{mes_novo}-{dia_novo}"
+    except Exception:
+        pass
+
     return data_tela_nova
 
 
@@ -9485,9 +9507,23 @@ def veredito_candles_aba(dados_tela=None, contexto=None):
     forca = "forte" if convicao >= 55 else ("moderado" if convicao >= 30 else "neutro")
     vies = direcao if forca != "neutro" else "neutro"
 
+    # BUG CORRIGIDO — o resumo usava sempre "direcao" (o lado que teve mais
+    # voto, nem que fosse por 0,5 contra 1,0), mesmo quando isso nao bastava
+    # pra tirar o veredito do neutro (convicao < 30, "vies" corretamente
+    # virava "neutro"). Resultado: o card mostrava "NEUTRO" no titulo mas
+    # "Gráfico de candles aponta venda · convicção 8%" no texto — dois
+    # vereditos contraditorios pro mesmo calculo, exatamente o que o
+    # usuario reportou (momentum de curtissimo prazo puxando venda por uma
+    # margem minima, com o grafico visivelmente em alta). Resumo agora
+    # segue o MESMO "vies" que decide o titulo do card.
+    if vies == "neutro":
+        resumo = f"Gráfico de candles sem direção clara · convicção insuficiente ({convicao}%)"
+    else:
+        resumo = f"Gráfico de candles aponta {direcao} · convicção {convicao}%"
+
     return {"vies": vies, "forca": forca, "convicao": convicao,
             "fatores": fatores[:6], "contras": contras,
-            "resumo": f"Gráfico de candles aponta {direcao} · convicção {convicao}%"}
+            "resumo": resumo}
 
 
 def veredito_confluencia_aba(veredito_liq=None, veredito_macro=None, veredito_candles=None):
