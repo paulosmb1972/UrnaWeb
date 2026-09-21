@@ -12525,8 +12525,15 @@ elif not dentro_janela_operacional() or not st.session_state.get("ultima_leitura
 else:
     _pulso_cor_hdr, _pulso_txt_hdr = "verde", "Engine operando normalmente"
 
-_fonte_nome_hdr = {"profitdll": "ProfitDLL",
-                    "captura_tela": "Captura de tela"}.get(FONTE_DADOS_MERCADO, FONTE_DADOS_MERCADO)
+# BUG CORRIGIDO — o fallback ".get(FONTE_DADOS_MERCADO, FONTE_DADOS_MERCADO)"
+# ecoava a variavel de ambiente CRUA quando ela nao era nem "profitdll" nem
+# "captura_tela" (ex.: um residuo "rtd" de uma sessao antiga do Windows,
+# de antes da fonte RTD ser removida do codigo). O comportamento de
+# verdade ja ignora qualquer valor que nao seja "profitdll" e cai pra
+# captura de tela (ver obter_dados_mercado_externo) — mas o header
+# mostrava "Fonte: rtd (ativo)", dando a entender que o RTD (que nao
+# existe mais no codigo) estava rodando de verdade.
+_fonte_nome_hdr = "ProfitDLL" if FONTE_DADOS_MERCADO == "profitdll" else "Captura de tela"
 if FONTE_DADOS_MERCADO == "profitdll":
     _fonte_status_hdr = "conectado" if _profitdll_estado.get("conectado") else "desconectado"
 else:
@@ -12882,7 +12889,15 @@ with aba_geral:
 
     st.markdown('<div class="section-title">🩺 Diagnóstico de captura</div>', unsafe_allow_html=True)
     st.caption(st.session_state.get("ultimo_diagnostico", "Aguardando primeira análise..."))
-    if FONTE_DADOS_MERCADO != "captura_tela":
+    # BUG CORRIGIDO — a condicao disparava pra QUALQUER valor diferente de
+    # "captura_tela" (inclusive um residuo "rtd" de uma variavel de ambiente
+    # antiga, de antes da fonte RTD ser removida do codigo), mas o texto e
+    # o estado checado (_profitdll_estado) so fazem sentido pra
+    # "profitdll" — pra qualquer outro valor nao reconhecido, o app ja usa
+    # captura de tela por baixo dos panos (ver obter_dados_mercado_externo),
+    # so a mensagem ficava enganosa, sugerindo uma fonte alternativa que na
+    # verdade nao existe mais.
+    if FONTE_DADOS_MERCADO == "profitdll":
         _pd_erro = _profitdll_estado.get("erro", "")
         if _profitdll_estado.get("conectado"):
             st.caption(f"Fonte de dados configurada: **{FONTE_DADOS_MERCADO}** (conectada).")
