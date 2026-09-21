@@ -580,6 +580,81 @@ class TestBcbPtaxNaoContaminaReplayComValorDeHoje(unittest.TestCase):
         self.assertIsNone(r)
 
 
+class TestMacroParaReplayNaoTravaComRedeRuim(unittest.TestCase):
+    """Usuario relatou o app travado por mais de 1 HORA com a aba Macro
+    congelada -- veredito_macro_aba() chama macro_para_replay() a cada
+    RERUN do Streamlit (autorefresh geral a cada 30-60s), bem mais
+    frequente que o ciclo de analise (300s). Uma coleta historica lenta ou
+    penduarada (rede com problema, nao so uma fonte fora do ar) sem teto de
+    tempo nem cache de falha reproduz exatamente esse sintoma: cada rerun
+    tenta de novo a mesma coleta lenta, empilhando travamento sem fim."""
+
+    def setUp(self):
+        FAKE_ST.session_state.clear()
+        self.macro_para_replay = NS["macro_para_replay"]
+        self._orig = {k: NS[k] for k in (
+            "coletar_macro_web", "_cache_macro_ler", "_cache_macro_gravar",
+            "TIMEOUT_MACRO_REPLAY_SEGUNDOS", "RESFRIAMENTO_MACRO_REPLAY_FALHA_SEGUNDOS")}
+        self._cache = {}
+        NS["_cache_macro_ler"] = lambda: self._cache
+        NS["_cache_macro_gravar"] = lambda c: self._cache.update(c)
+
+    def tearDown(self):
+        NS.update(self._orig)
+
+    def test_coleta_que_nunca_retorna_e_limitada_pelo_teto_de_tempo(self):
+        """A coleta simula uma rede pendurada (dorme muito mais que o teto).
+        macro_para_replay tem que devolver indisponivel dentro de um tempo
+        curto, nunca esperar a coleta terminar."""
+        import time as _time
+        def _coleta_pendurada(data_ref=None):
+            _time.sleep(5)   # bem mais que o teto usado no teste abaixo
+            return {"PTAX": 5.10, "DXY": 100.0, "VIX": 15.0}
+        NS["coletar_macro_web"] = _coleta_pendurada
+        NS["TIMEOUT_MACRO_REPLAY_SEGUNDOS"] = 0.2
+
+        t0 = _time.time()
+        r = self.macro_para_replay("2026-09-16")
+        decorrido = _time.time() - t0
+
+        self.assertLess(decorrido, 2.0, "nao pode esperar a coleta pendurada terminar")
+        self.assertFalse(r.get("disponivel"))
+
+    def test_falha_fica_em_resfriamento_nao_martela_a_cada_rerun(self):
+        """Depois de uma falha, uma chamada logo em seguida (equivalente a
+        outro rerun do streamlit segundos depois) nao deve tentar de novo —
+        devolve o mesmo resultado cacheado sem chamar coletar_macro_web."""
+        chamadas = []
+        def _coleta_falha(data_ref=None):
+            chamadas.append(data_ref)
+            return {}
+        NS["coletar_macro_web"] = _coleta_falha
+        NS["TIMEOUT_MACRO_REPLAY_SEGUNDOS"] = 5
+        NS["RESFRIAMENTO_MACRO_REPLAY_FALHA_SEGUNDOS"] = 120
+
+        r1 = self.macro_para_replay("2026-09-17")
+        r2 = self.macro_para_replay("2026-09-17")
+
+        self.assertFalse(r1.get("disponivel"))
+        self.assertEqual(r1, r2)
+        self.assertEqual(len(chamadas), 1)
+
+    def test_sucesso_fica_cacheado_para_o_dia_inteiro(self):
+        chamadas = []
+        def _coleta_ok(data_ref=None):
+            chamadas.append(data_ref)
+            return {"PTAX": 5.10, "PTAX_ANTERIOR": 5.08}
+        NS["coletar_macro_web"] = _coleta_ok
+        NS["TIMEOUT_MACRO_REPLAY_SEGUNDOS"] = 5
+
+        r1 = self.macro_para_replay("2026-09-18")
+        r2 = self.macro_para_replay("2026-09-18")
+
+        self.assertTrue(r1.get("disponivel"))
+        self.assertEqual(r1, r2)
+        self.assertEqual(len(chamadas), 1)
+
+
 class TestVeredictoMacroAbaRespeitaReplay(unittest.TestCase):
     """Usuario relatou: a aba Macroeconomicos so mostrava "compra" e sempre
     41% (n*20 arredondado -> aparentava travado em 40%), em qualquer dia de

@@ -602,6 +602,22 @@ TTL_CACHE_MACRO = {
 
 ARQ_CACHE_MACRO_WEB = "cache_macro_web.json"
 TIMEOUT_HTTP_MACRO = 12
+# Teto DURO de tempo pra coleta do macro de um dia de replay (macro_para_replay).
+# coletar_macro_web faz varias chamadas HTTP sequenciais (PTAX no BCB sozinho
+# pode ser 2 x TENTATIVAS x TIMEOUT_HTTP_MACRO); nenhum timeout de biblioteca
+# e garantia absoluta contra toda rede com problema (proxy/firewall que segura
+# a conexao sem responder nem cair). Ja foi observado travando uma analise de
+# replay inteira por mais de 1 HORA. macro_para_replay roda a coleta numa
+# thread separada e aplica este teto: estourou, devolve indisponivel — nunca
+# trava o ciclo de analise nem o render da aba Macro por causa da rede.
+TIMEOUT_MACRO_REPLAY_SEGUNDOS = 20
+# veredito_macro_aba() chama macro_para_replay() a cada RERUN do Streamlit
+# (autorefresh geral, a cada 30-60s) -- bem mais frequente que o ciclo de
+# analise (300s). Sem isso, uma falha/timeout NAO cacheada faria toda essa
+# tentativa lenta se repetir a cada rerun, empilhando lentidao sem parar
+# enquanto a rede estiver ruim. Uma falha fica cacheada por este tempo antes
+# de tentar de novo; um sucesso fica cacheado o dia inteiro (nunca expira).
+RESFRIAMENTO_MACRO_REPLAY_FALHA_SEGUNDOS = 120
 # Contratos plausiveis em um candle: acima disso o campo trouxe valor financeiro.
 LIMITE_CONTRATOS_PLAUSIVEL = 200000
 # Posicao no range a partir da qual a entrada persegue a ponta do dia.
@@ -777,18 +793,45 @@ def macro_para_replay(data_replay):
 
     BCB, FRED e FMP respondem por data; raspagem de pagina nao. O que nao vier
     fica marcado como indisponivel para NAO pontuar a favor nem contra.
-    """
+
+    A coleta roda numa thread separada com teto de TIMEOUT_MACRO_REPLAY_SEGUNDOS:
+    ver comentario da constante — sem isso, uma rede com problema (nao so uma
+    fonte fora do ar, e sim uma conexao que fica pendurada sem responder nem
+    falhar) pode travar a analise inteira por muito mais que o timeout de cada
+    requisicao HTTP individual deveria permitir."""
     if not data_replay:
         return {"disponivel": False, "motivo": "sem data de replay", "indisponiveis": ["todos"]}
     chave = f"replay::{str(data_replay)[:10]}"
-    cache = _cache_macro_ler().get(chave)
-    if isinstance(cache, dict) and cache.get("dados"):
-        return cache["dados"]
-    dados = coletar_macro_web(data_ref=data_replay)
-    dados["disponivel"] = bool(dados.get("PTAX") or dados.get("DXY") or dados.get("VIX"))
-    dados["motivo"] = ("" if dados["disponivel"]
-                       else "nenhuma fonte historica respondeu para a data do replay")
     cache_all = _cache_macro_ler()
+    entry = cache_all.get(chave)
+    if isinstance(entry, dict) and entry.get("dados"):
+        dados_cache = entry["dados"]
+        if dados_cache.get("disponivel"):
+            return dados_cache   # sucesso vale o dia inteiro do replay
+        try:
+            idade = (datetime.now()
+                     - datetime.strptime(entry.get("ts", ""), "%Y-%m-%d %H:%M:%S")).total_seconds()
+        except Exception:
+            idade = 9e9
+        if idade < RESFRIAMENTO_MACRO_REPLAY_FALHA_SEGUNDOS:
+            return dados_cache   # falha recente: nao martela a rede a cada rerun
+
+    resultado = {}
+    def _buscar():
+        resultado["dados"] = coletar_macro_web(data_ref=data_replay)
+    t = threading.Thread(target=_buscar, daemon=True)
+    t.start()
+    t.join(timeout=TIMEOUT_MACRO_REPLAY_SEGUNDOS)
+    if t.is_alive() or "dados" not in resultado:
+        dados = {"disponivel": False,
+                 "motivo": f"coleta macro do replay nao respondeu em {TIMEOUT_MACRO_REPLAY_SEGUNDOS}s",
+                 "indisponiveis": ["DXY", "VIX", "EWZ", "PTAX", "PMI"],
+                 "indisponiveis_essenciais": ["DXY", "VIX", "PTAX"]}
+    else:
+        dados = resultado["dados"]
+        dados["disponivel"] = bool(dados.get("PTAX") or dados.get("DXY") or dados.get("VIX"))
+        dados["motivo"] = ("" if dados["disponivel"]
+                           else "nenhuma fonte historica respondeu para a data do replay")
     cache_all[chave] = {"dados": dados, "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
     _cache_macro_gravar(cache_all)
     return dados
