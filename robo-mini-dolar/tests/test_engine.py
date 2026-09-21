@@ -514,6 +514,72 @@ class TestCorrigirAnoReplayDaTela(unittest.TestCase):
         self.assertEqual(r, "nao-e-data")
 
 
+class TestColetarIndicadorWebNaoContaminaComCacheAntigo(unittest.TestCase):
+    """Usuario pediu: indicador macro que nao foi capturado NAO pode entrar
+    na ponderacao da analise, nem em replay nem em tempo real. O fallback
+    final de coletar_indicador_web() (cache de ate 24h) nao respeitava
+    data_ref -- pra uma data de replay sem nenhuma fonte historica
+    respondendo, ele devolvia o ultimo valor de HOJE em vez de marcar o
+    indicador como indisponivel, contaminando a leitura daquele dia
+    passado com o dado de hoje."""
+
+    def setUp(self):
+        FAKE_ST.session_state.clear()
+        self.coletar = NS["coletar_indicador_web"]
+        self._cache_get_orig = NS["_cache_macro_get"]
+        # nome fora de FONTES_MACRO_WEB -> a cadeia de fontes fica vazia
+        # (nenhuma chamada de rede), so restam os dois pontos de cache.
+        self.nome = "INDICADOR_INEXISTENTE"
+        NS["_cache_macro_get"] = lambda chave, ttl=None: (
+            {"valor": 42.0, "fonte": "cache_de_ontem", "data": "2026-09-01"}
+            if chave == self.nome else None)
+
+    def tearDown(self):
+        NS["_cache_macro_get"] = self._cache_get_orig
+
+    def test_sem_data_ref_usa_cache_antigo_como_ultimo_recurso(self):
+        """Controle: modo real preserva a resiliencia de sempre."""
+        r = self.coletar(self.nome, data_ref=None)
+        self.assertEqual(r["valor"], 42.0)
+
+    def test_com_data_ref_nao_usa_cache_de_hoje_fica_indisponivel(self):
+        r = self.coletar(self.nome, data_ref="2020-01-02")
+        self.assertIsNone(r["valor"])
+        self.assertEqual(r["fonte"], "indisponivel")
+
+
+class TestBcbPtaxNaoContaminaReplayComValorDeHoje(unittest.TestCase):
+    """Mesmo bug, ponto especifico do PTAX: bcb_serie_ultimo() devolve o
+    valor MAIS RECENTE da serie (sem filtro de data) -- so faz sentido como
+    aproximacao no modo real. Usado tambem com data_ref (replay), contamina
+    a leitura do dia passado com o PTAX de hoje."""
+
+    def setUp(self):
+        FAKE_ST.session_state.clear()
+        self.bcb_ptax = NS["bcb_ptax"]
+        self._valor_em_ou_antes_orig = NS["_bcb_ptax_valor_em_ou_antes"]
+        self._serie_ultimo_orig = NS["bcb_serie_ultimo"]
+        # Simula o endpoint por dia sempre falhando (BCB fora do ar / feriado
+        # alem do numero de tentativas) e a serie SGS "ultimo valor" com um
+        # valor de HOJE disponivel.
+        NS["_bcb_ptax_valor_em_ou_antes"] = lambda d, tentativas=4: (None, None)
+        NS["bcb_serie_ultimo"] = lambda serie, n=1: {"valor": 5.55, "data": "2026-09-21"}
+
+    def tearDown(self):
+        NS["_bcb_ptax_valor_em_ou_antes"] = self._valor_em_ou_antes_orig
+        NS["bcb_serie_ultimo"] = self._serie_ultimo_orig
+
+    def test_sem_data_ref_cai_para_serie_mais_recente(self):
+        """Controle: modo real preserva a resiliencia de sempre."""
+        r = self.bcb_ptax(None)
+        self.assertIsNotNone(r)
+        self.assertEqual(r["valor"], 5.55)
+
+    def test_com_data_ref_nao_usa_serie_mais_recente_devolve_none(self):
+        r = self.bcb_ptax("2020-01-02")
+        self.assertIsNone(r)
+
+
 class TestVeredictoMacroAbaRespeitaReplay(unittest.TestCase):
     """Usuario relatou: a aba Macroeconomicos so mostrava "compra" e sempre
     41% (n*20 arredondado -> aparentava travado em 40%), em qualquer dia de

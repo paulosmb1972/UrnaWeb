@@ -2189,10 +2189,19 @@ def bcb_serie_na_data(serie, data_ref):
     return {"valor": v, "data": str(ult.get("data", ""))} if v else None
 
 
-def _bcb_ptax_valor_em_ou_antes(d, tentativas=6):
+def _bcb_ptax_valor_em_ou_antes(d, tentativas=4):
     """Cotacao de venda do PTAX no primeiro dia util <= d (anda pra tras em
     fim de semana/feriado, mesma logica de sempre). Devolve (valor, data)
-    ou (None, None) se nao achar em nenhuma das tentativas."""
+    ou (None, None) se nao achar em nenhuma das tentativas.
+
+    bcb_ptax() chama isso 2x (valor + anterior) — com o timeout de 12s por
+    requisicao (TIMEOUT_HTTP_MACRO), 6 tentativas cada deixava o PIOR caso
+    (BCB fora do ar) em ate 2x6x12s = 144s SO nessa etapa, dentro de
+    classificar_contexto() -- que passou a rodar de verdade no replay depois
+    da correcao de "modo_replay_ativo" -> "modo_replay" (antes era codigo
+    morto, nunca executava). 4 tentativas cobre folgado o pior feriado
+    prolongado (sexta+sabado+domingo+segunda de feriado) com metade do
+    tempo maximo."""
     for _ in range(tentativas):
         url = URLS_FONTES_MACRO["bcb_ptax_dia"].format(data=d.strftime("%m-%d-%Y"))
         dados = _http_json(url)
@@ -2228,10 +2237,18 @@ def bcb_ptax(data_ref=None):
             resultado["anterior"] = anterior
         return resultado
 
-    s = bcb_serie_ultimo(BCB_SERIES["PTAX_VENDA"], 1)
-    if s:
-        s["fonte"] = "BCB/SGS"
-        return s
+    # bcb_serie_ultimo devolve o valor MAIS RECENTE da serie, sem filtro de
+    # data -- so faz sentido como aproximacao quando NAO ha data_ref (modo
+    # real): usar isso pra um data_ref de replay contaminaria a leitura
+    # daquele dia passado com o PTAX de hoje, exatamente o que o usuario
+    # pediu pra nao acontecer ("indicador nao capturado nao entra na
+    # ponderacao, seja replay seja tempo real"). Sem data_ref, nao achar o
+    # valor do dia (BCB fora do ar bem na hora) e melhor que nada.
+    if not data_ref:
+        s = bcb_serie_ultimo(BCB_SERIES["PTAX_VENDA"], 1)
+        if s:
+            s["fonte"] = "BCB/SGS"
+            return s
     return None
 
 
@@ -2418,7 +2435,18 @@ def coletar_indicador_web(nome, data_ref=None, usar_cache=True):
             r["cache"] = False
             return r
 
-    if usar_cache:
+    # BUG CORRIGIDO — este fallback nao respeitava data_ref: sem nenhuma
+    # fonte respondendo para a data pedida (replay), ele devolvia o ultimo
+    # valor conhecido de HOJE (ttl de 24h), sem marcar o indicador como
+    # indisponivel. Na pratica, um indicador que falhava para o dia do
+    # replay silenciosamente votava com o dado de HOJE em vez de ficar de
+    # fora da ponderacao (pedido explicito do usuario: indicador nao
+    # capturado nao pode entrar no calculo do macro, nem no replay nem no
+    # tempo real). Agora so serve como fallback de resiliencia no modo real
+    # (falha passageira de rede bem no meio do pregao) — nunca em replay,
+    # onde "nao achei o valor daquele dia" tem que ficar indisponivel de
+    # verdade, sem se disfarçar de leitura de hoje.
+    if usar_cache and not data_ref:
         c = _cache_macro_get(nome, ttl=86400)   # ultimo valor conhecido do dia
         if c:
             return {"valor": c.get("valor"), "fonte": str(c.get("fonte", "")) + " (cache)",
