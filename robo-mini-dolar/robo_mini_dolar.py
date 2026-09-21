@@ -610,7 +610,17 @@ TIMEOUT_HTTP_MACRO = 12
 # replay inteira por mais de 1 HORA. macro_para_replay roda a coleta numa
 # thread separada e aplica este teto: estourou, devolve indisponivel — nunca
 # trava o ciclo de analise nem o render da aba Macro por causa da rede.
-TIMEOUT_MACRO_REPLAY_SEGUNDOS = 20
+# BUG CORRIGIDO — 20s se mostrou curto demais: coletar_macro_web faz ate 5
+# chamadas HTTP SEQUENCIAIS (DXY, VIX, EWZ, PTAX, PMI, cada uma podendo
+# levar alguns segundos), e o teto e por-tudo-ou-nada — se qualquer parte
+# ainda estiver em andamento quando o teto estoura, o resultado INTEIRO e
+# descartado (nao guarda o que ja tinha respondido rapido). Um export real
+# mostrou os 5 indicadores voltando "Sem leitura" simultaneamente logo
+# depois dessa correcao, mesmo com internet normal — sinal de que o teto
+# cortava fetches legitimos, so um pouco lentos. 45s ainda fica MUITO
+# abaixo do travamento de +1h que motivou o teto, com folga suficiente pra
+# 5 chamadas sequenciais em condicoes normais de rede.
+TIMEOUT_MACRO_REPLAY_SEGUNDOS = 45
 # veredito_macro_aba() chama macro_para_replay() a cada RERUN do Streamlit
 # (autorefresh geral, a cada 30-60s) -- bem mais frequente que o ciclo de
 # analise (300s). Sem isso, uma falha/timeout NAO cacheada faria toda essa
@@ -12518,6 +12528,18 @@ if _disparar_glob:
         except Exception as _e_glob:
             st.session_state["ultimo_erro_ciclo"] = str(_e_glob)
             st.session_state["auto_analise_erros"] = int(st.session_state.get("auto_analise_erros", 0)) + 1
+        except BaseException:
+            # Export real mostrou "tentativas" subindo sem NENHUM dos 3
+            # desfechos (salvos/duplicados/erros) acompanhar — sinal de um
+            # ciclo interrompido no meio por algo que nao herda de
+            # Exception (ex.: o proprio Streamlit aborta o script em
+            # andamento pra atender um rerun mais novo, via uma excecao de
+            # controle que deliberadamente NAO e pega por "except
+            # Exception" comum). Registra como erro pra o desfecho aparecer
+            # nos contadores em vez de sumir, mas tem que RELANCAR — engolir
+            # uma excecao de controle do Streamlit quebraria o rerun dele.
+            st.session_state["auto_analise_erros"] = int(st.session_state.get("auto_analise_erros", 0)) + 1
+            raise
 
 
 # =========================
