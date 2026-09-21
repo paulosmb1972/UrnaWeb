@@ -677,6 +677,46 @@ class TestMacroParaReplayNaoTravaComRedeRuim(unittest.TestCase):
         self.assertEqual(len(chamadas), 1)
 
 
+class TestMacroAtualOuReplayFonteUnica(unittest.TestCase):
+    """macro_atual_ou_replay() e a fonte unica que classificar_contexto,
+    veredito_macro_aba e o registro de auditoria do historico (colunas
+    DXY/EWZ/VIX/PTAX_Bacen/PMI_ISM do CSV) usam pra decidir de onde vem o
+    macro. Um export real mostrou o registro do historico ainda lendo
+    ler_dados_macro() (macro.json AO VIVO, de hoje) direto, sem passar por
+    essa escolha -- fica coberto aqui pra um 4o consumidor futuro nao
+    repetir o mesmo esquecimento."""
+
+    def setUp(self):
+        FAKE_ST.session_state.clear()
+        self.f = NS["macro_atual_ou_replay"]
+        self._orig = {k: NS[k] for k in ("macro_para_replay", "ler_dados_macro")}
+        self._chamadas = []
+        NS["macro_para_replay"] = lambda data: self._chamadas.append(("replay", data)) or {"PTAX": 5.10}
+        NS["ler_dados_macro"] = lambda: self._chamadas.append(("live", None)) or {"PTAX": 5.20}
+
+    def tearDown(self):
+        NS.update(self._orig)
+
+    def test_fora_do_replay_usa_ao_vivo(self):
+        FAKE_ST.session_state["modo_replay"] = False
+        r = self.f()
+        self.assertEqual(self._chamadas, [("live", None)])
+        self.assertEqual(r["PTAX"], 5.20)
+
+    def test_em_replay_usa_data_do_replay(self):
+        FAKE_ST.session_state["modo_replay"] = True
+        FAKE_ST.session_state["replay_data"] = "2026-09-16"
+        r = self.f()
+        self.assertEqual(self._chamadas, [("replay", "2026-09-16")])
+        self.assertEqual(r["PTAX"], 5.10)
+
+    def test_em_replay_sem_replay_data_usa_data_replay_do_dados_tela(self):
+        FAKE_ST.session_state["modo_replay"] = True
+        FAKE_ST.session_state["replay_data"] = ""
+        r = self.f({"data_replay": "2026-09-17"})
+        self.assertEqual(self._chamadas, [("replay", "2026-09-17")])
+
+
 class TestVeredictoMacroAbaRespeitaReplay(unittest.TestCase):
     """Usuario relatou: a aba Macroeconomicos so mostrava "compra" e sempre
     41% (n*20 arredondado -> aparentava travado em 40%), em qualquer dia de

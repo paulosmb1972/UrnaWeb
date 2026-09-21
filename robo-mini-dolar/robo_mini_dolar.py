@@ -837,6 +837,26 @@ def macro_para_replay(data_replay):
     return dados
 
 
+def macro_atual_ou_replay(dados_tela=None):
+    """Fonte UNICA de verdade de qual macro usar: macro_para_replay() (a
+    data do PREGAO REPLAYADO) em modo replay, ler_dados_macro() (a coleta ao
+    vivo, sempre de HOJE) fora dele.
+
+    3 lugares diferentes do app precisavam exatamente dessa mesma escolha
+    (classificar_contexto, veredito_macro_aba e o registro de auditoria do
+    historico) — cada um reimplementando o if/else na mao e um deles (o
+    registro do historico) ficou de fora quando os outros dois foram
+    corrigidos, mostrando no CSV um DXY/EWZ/VIX/PTAX que nao necessariamente
+    era o do dia replayado. Consolidado aqui pra um novo consumidor futuro
+    nao repetir o mesmo esquecimento."""
+    if st.session_state.get("modo_replay"):
+        return macro_para_replay(
+            st.session_state.get("replay_data")
+            or str((dados_tela or st.session_state.get("ultimos_dados_tela") or {})
+                   .get("data_replay", ""))[:10])
+    return ler_dados_macro()
+
+
 def proximo_evento_macro(agora=None):
     """Proximo indicador do dia, para exibir no painel."""
     agora = agora or datetime.now()
@@ -7242,19 +7262,10 @@ def classificar_contexto(dados_tela, fechamento_ant=None, ignorar_macro=False):
     lotes_info = avaliar_lotes_institucionais(st.session_state.get("ultimos_agentes", {}), preco)
 
     # ---- PMI dos EUA: vies macro para o Mini Dolar ----
-    if ignorar_macro:
-        _macro_pmi = {}
-    elif st.session_state.get("modo_replay"):
-        # No replay a coleta ao vivo nao vale: busca o macro da DATA do replay
-        # nas fontes com historico (BCB, FRED, FMP). O que nao vier fica
-        # marcado como indisponivel e nao pontua.
-        _macro_pmi = macro_para_replay(
-            st.session_state.get("replay_data")
-            or str((dados_tela or {}).get("data_replay", ""))[:10])
-    else:
-        # A coleta web tem relogio proprio no topo do app; aqui apenas LE o
-        # arquivo ja gravado. Buscar na web dentro da analise travava o ciclo.
-        _macro_pmi = ler_dados_macro()
+    # macro_atual_ou_replay: busca o macro da DATA do replay (BCB/FRED/FMP)
+    # em modo replay, ou so LE o arquivo ja gravado ao vivo (buscar na web
+    # dentro da analise travava o ciclo) fora dele.
+    _macro_pmi = {} if ignorar_macro else macro_atual_ou_replay(dados_tela)
     pmi_info = peso_pmi_eua(_macro_pmi)
 
     regime = classificar_regime(preco, vwap, ajuste, mm9, mm20, mm50, mm200, momentum=mom)
@@ -9138,14 +9149,10 @@ def veredito_macro_aba():
     ultimo pregao REAL (a coleta ao vivo fica congelada durante o replay —
     ver atualizar_macro_agendado) -- ou seja, a aba ficava travada no MESMO
     vies e percentual o dia inteiro de replay, nao importa qual dia estava
-    sendo replayado nem quanto tempo passasse. Busca o macro DA DATA do
-    replay, igual classificar_contexto ja faz na decisao real."""
-    if st.session_state.get("modo_replay"):
-        macro = macro_para_replay(
-            st.session_state.get("replay_data")
-            or str((st.session_state.get("ultimos_dados_tela") or {}).get("data_replay", ""))[:10])
-    else:
-        macro = ler_dados_macro()
+    sendo replayado nem quanto tempo passasse. macro_atual_ou_replay busca
+    o macro DA DATA do replay, igual classificar_contexto ja faz na
+    decisao real."""
+    macro = macro_atual_ou_replay()
     v = vies_macro_consolidado(macro)
     convicao = min(100, abs(int(v.get("pontos", 0))) * 20)
     return {
@@ -10087,11 +10094,17 @@ def executar_analise():
     contexto["veredito_acao"] = _veredito["acao_sugerida"]
 
     if st.session_state.registrar_fechamento_ativo:
-        mac = ler_dados_macro()
+        mac = macro_atual_ou_replay(dados_tela)
         salvar_fechamento_dia(preco,ajuste,vwap,num(mac.get("DXY")),num(mac.get("EWZ")),num(mac.get("VIX")))
 
     evento = ts_evento(dados_tela)
-    mac = ler_dados_macro()
+    # BUG CORRIGIDO — este "mac" alimenta as colunas de auditoria do
+    # historico (DXY/EWZ/VIX/PTAX_Bacen/PMI_ISM/Noticias) e ainda chamava
+    # ler_dados_macro() incondicionalmente (o macro.json AO VIVO, de hoje),
+    # mesmo com classificar_contexto() e veredito_macro_aba() ja corrigidos
+    # pra usar o macro DA DATA do replay -- as colunas do CSV podiam
+    # mostrar um DXY/PTAX de hoje rotulado como se fosse do dia replayado.
+    mac = macro_atual_ou_replay(dados_tela)
     val = calcular_pct(acao.upper(),preco,alvo,stop,maxima,minima)
 
     _falta_diag = " | ".join(contexto.get("falta_para_gatilho",[])) or "OK"
