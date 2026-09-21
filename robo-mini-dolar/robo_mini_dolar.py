@@ -4798,7 +4798,7 @@ CRITICO — VALIDE A ARITMETICA ANTES DE FECHAR O JSON:
   "preco_atual": 0.0, "abertura": 0.0, "maxima": 0.0, "minima": 0.0,
   "vwap": "valor da linha 'VWAP D' (VWAP diaria, UM unico numero central) na legenda do grafico. Se 'VWAP D' nao aparecer, use a linha generica 'VWAP'. NAO confunda com 'VWAP Band', que e outra linha com VARIOS numeros (bandas) — essa vai no campo vwap_banda_lista, nao aqui. 0.0 se nao encontrar.",
   "ajuste": "valor do AJUSTE em vigor no pregao atual — a mesma linha horizontal rotulada 'Ajuste' no grafico, ou o rotulo 'Prior Cote Ajuste'/'Ajuste Anterior' (durante o pregao, o ajuste do dia so e publicado no fechamento, entao essa MESMA linha serve de referencia o dia todo — normal o valor aqui ser igual ao de ajuste_anterior). 0.0 se nao encontrar.",
-  "ptax": 0.0,
+  "ptax": "valor de referencia da linha 'TR - PTAX' na legenda do grafico (Pontos de Referencia calculados a partir do PTAX, na ESCALA DE PRECO do WDO -- nao confundir com a cotacao dolar/real de verdade, que fica na casa de poucas unidades, ex: 5,16). A linha normalmente mostra varios numeros; use o PRIMEIRO (a referencia central). 0.0 se a linha 'TR - PTAX' nao existir ou nao estiver visivel.",
   "vwap_banda_lista": "TODOS os numeros da linha 'VWAP Band' na legenda do grafico (as bandas/desvios acima e abaixo da VWAP central), na ORDEM em que aparecem, separados por ponto e virgula (;). Exemplo: se a linha mostrar 'VWAP Band  5.175,85  5.193,04  5.210,24  5.141,46  5.124,26  5.107,07', responda EXATAMENTE '5.175,85;5.193,04;5.210,24;5.141,46;5.124,26;5.107,07'. Nao precisa identificar qual e qual — so transcreva todos os numeros dessa linha, na ordem, separados por ';'. String vazia se a linha 'VWAP Band' nao existir/nao estiver visivel.",
   "superdom_maxima": "MAXIMA do dia exibida no painel SuperDOM, se visivel. 0.0 se nao houver.",
   "superdom_minima": "MINIMA do dia exibida no painel SuperDOM, se visivel. 0.0 se nao houver.",
@@ -9648,7 +9648,13 @@ def executar_analise():
     ajuste = num(dados_tela.get("ajuste")); mm9 = num(dados_tela.get("mm9"))
     mm20 = num(dados_tela.get("mm20")); mm50 = num(dados_tela.get("mm50"))
     mm200 = num(dados_tela.get("mm200")); maxima = num(dados_tela.get("maxima"))
-    minima = num(dados_tela.get("minima")); ptax_tela = num(dados_tela.get("ptax"))
+    minima = num(dados_tela.get("minima"))
+    # "ptax" aqui e a linha 'TR - PTAX' do grafico (referencia na ESCALA DE
+    # PRECO do WDO, ex: 5111.10) -- NAO e a cotacao dolar/real (essa e a
+    # PTAX_Bacen, vinda do Banco Central via bcb_ptax(), na casa de poucas
+    # unidades, ex: 5.1575). So auditoria/exibicao (PTAX_Tela no CSV);
+    # nenhuma decisao usa este valor.
+    ptax_tela = num(dados_tela.get("ptax"))
 
     # Captura SuperDom, Times & Trades, Livro de Ofertas e Agentes
     img_sd, msg_sd_exec = capturar_SuperDom()
