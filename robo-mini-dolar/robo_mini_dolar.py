@@ -603,23 +603,13 @@ TTL_CACHE_MACRO = {
 ARQ_CACHE_MACRO_WEB = "cache_macro_web.json"
 TIMEOUT_HTTP_MACRO = 12
 # Teto DURO de tempo pra coleta do macro de um dia de replay (macro_para_replay).
-# coletar_macro_web faz varias chamadas HTTP sequenciais (PTAX no BCB sozinho
-# pode ser 2 x TENTATIVAS x TIMEOUT_HTTP_MACRO); nenhum timeout de biblioteca
-# e garantia absoluta contra toda rede com problema (proxy/firewall que segura
-# a conexao sem responder nem cair). Ja foi observado travando uma analise de
-# replay inteira por mais de 1 HORA. macro_para_replay roda a coleta numa
-# thread separada e aplica este teto: estourou, devolve indisponivel — nunca
-# trava o ciclo de analise nem o render da aba Macro por causa da rede.
-# BUG CORRIGIDO — 20s se mostrou curto demais: coletar_macro_web faz ate 5
-# chamadas HTTP SEQUENCIAIS (DXY, VIX, EWZ, PTAX, PMI, cada uma podendo
-# levar alguns segundos), e o teto e por-tudo-ou-nada — se qualquer parte
-# ainda estiver em andamento quando o teto estoura, o resultado INTEIRO e
-# descartado (nao guarda o que ja tinha respondido rapido). Um export real
-# mostrou os 5 indicadores voltando "Sem leitura" simultaneamente logo
-# depois dessa correcao, mesmo com internet normal — sinal de que o teto
-# cortava fetches legitimos, so um pouco lentos. 45s ainda fica MUITO
-# abaixo do travamento de +1h que motivou o teto, com folga suficiente pra
-# 5 chamadas sequenciais em condicoes normais de rede.
+# coletar_macro_web faz ate 5 chamadas HTTP sequenciais (DXY, VIX, EWZ, PTAX,
+# PMI); nenhum timeout de biblioteca e garantia absoluta contra toda rede com
+# problema (proxy/firewall que segura a conexao sem responder nem cair). A
+# coleta roda numa thread separada e aplica este teto: estourou, devolve
+# indisponivel — nunca trava o ciclo de analise nem o render da aba Macro por
+# causa da rede. 45s da folga pras 5 chamadas em rede normal, bem abaixo de
+# qualquer travamento longo por rede ruim.
 TIMEOUT_MACRO_REPLAY_SEGUNDOS = 45
 # veredito_macro_aba() chama macro_para_replay() a cada RERUN do Streamlit
 # (autorefresh geral, a cada 30-60s) -- bem mais frequente que o ciclo de
@@ -740,7 +730,7 @@ def macro_deve_coletar_agora(agora=None):
 def atualizar_macro_agendado(agora=None, forcar=False):
     """Dispara a coleta web quando for a hora. Chamar a cada ciclo de analise."""
     agora = agora or datetime.now()
-    if st.session_state.get("modo_replay") and not forcar:
+    if st.session_state.get("modo_replay_ativo") and not forcar:
         return {"coletou": False, "motivo": "replay: coleta ao vivo desligada"}
     # Fora da janela nao ha decisao a tomar: nao gasta requisicao nas fontes.
     if not forcar and not dentro_janela_operacional(agora):
@@ -804,11 +794,10 @@ def macro_para_replay(data_replay):
     BCB, FRED e FMP respondem por data; raspagem de pagina nao. O que nao vier
     fica marcado como indisponivel para NAO pontuar a favor nem contra.
 
-    A coleta roda numa thread separada com teto de TIMEOUT_MACRO_REPLAY_SEGUNDOS:
-    ver comentario da constante — sem isso, uma rede com problema (nao so uma
-    fonte fora do ar, e sim uma conexao que fica pendurada sem responder nem
-    falhar) pode travar a analise inteira por muito mais que o timeout de cada
-    requisicao HTTP individual deveria permitir."""
+    A coleta roda numa thread separada com teto de TIMEOUT_MACRO_REPLAY_SEGUNDOS
+    -- sem isso, uma rede com problema (conexao pendurada, nao so uma fonte
+    fora do ar) pode travar o render da aba Macro por muito mais tempo do que
+    o timeout de cada requisicao HTTP individual deveria permitir."""
     if not data_replay:
         return {"disponivel": False, "motivo": "sem data de replay", "indisponiveis": ["todos"]}
     chave = f"replay::{str(data_replay)[:10]}"
@@ -845,26 +834,6 @@ def macro_para_replay(data_replay):
     cache_all[chave] = {"dados": dados, "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
     _cache_macro_gravar(cache_all)
     return dados
-
-
-def macro_atual_ou_replay(dados_tela=None):
-    """Fonte UNICA de verdade de qual macro usar: macro_para_replay() (a
-    data do PREGAO REPLAYADO) em modo replay, ler_dados_macro() (a coleta ao
-    vivo, sempre de HOJE) fora dele.
-
-    3 lugares diferentes do app precisavam exatamente dessa mesma escolha
-    (classificar_contexto, veredito_macro_aba e o registro de auditoria do
-    historico) — cada um reimplementando o if/else na mao e um deles (o
-    registro do historico) ficou de fora quando os outros dois foram
-    corrigidos, mostrando no CSV um DXY/EWZ/VIX/PTAX que nao necessariamente
-    era o do dia replayado. Consolidado aqui pra um novo consumidor futuro
-    nao repetir o mesmo esquecimento."""
-    if st.session_state.get("modo_replay"):
-        return macro_para_replay(
-            st.session_state.get("replay_data")
-            or str((dados_tela or st.session_state.get("ultimos_dados_tela") or {})
-                   .get("data_replay", ""))[:10])
-    return ler_dados_macro()
 
 
 def proximo_evento_macro(agora=None):
@@ -2267,14 +2236,9 @@ def _bcb_ptax_valor_em_ou_antes(d, tentativas=4):
     fim de semana/feriado, mesma logica de sempre). Devolve (valor, data)
     ou (None, None) se nao achar em nenhuma das tentativas.
 
-    bcb_ptax() chama isso 2x (valor + anterior) — com o timeout de 12s por
-    requisicao (TIMEOUT_HTTP_MACRO), 6 tentativas cada deixava o PIOR caso
-    (BCB fora do ar) em ate 2x6x12s = 144s SO nessa etapa, dentro de
-    classificar_contexto() -- que passou a rodar de verdade no replay depois
-    da correcao de "modo_replay_ativo" -> "modo_replay" (antes era codigo
-    morto, nunca executava). 4 tentativas cobre folgado o pior feriado
-    prolongado (sexta+sabado+domingo+segunda de feriado) com metade do
-    tempo maximo."""
+    bcb_ptax() chama isso 2x (valor + anterior), 12s de timeout por
+    requisicao (TIMEOUT_HTTP_MACRO) — 4 tentativas cobre folgado um feriado
+    prolongado e mantem o pior caso controlado."""
     for _ in range(tentativas):
         url = URLS_FONTES_MACRO["bcb_ptax_dia"].format(data=d.strftime("%m-%d-%Y"))
         dados = _http_json(url)
@@ -2310,13 +2274,13 @@ def bcb_ptax(data_ref=None):
             resultado["anterior"] = anterior
         return resultado
 
-    # bcb_serie_ultimo devolve o valor MAIS RECENTE da serie, sem filtro de
-    # data -- so faz sentido como aproximacao quando NAO ha data_ref (modo
-    # real): usar isso pra um data_ref de replay contaminaria a leitura
-    # daquele dia passado com o PTAX de hoje, exatamente o que o usuario
-    # pediu pra nao acontecer ("indicador nao capturado nao entra na
-    # ponderacao, seja replay seja tempo real"). Sem data_ref, nao achar o
-    # valor do dia (BCB fora do ar bem na hora) e melhor que nada.
+    # BUG CORRIGIDO — bcb_serie_ultimo() devolve o valor MAIS RECENTE da
+    # serie, sem filtro de data: so faz sentido como aproximacao quando NAO
+    # ha data_ref (modo real). Usado tambem com data_ref (replay), contamina
+    # a leitura do dia passado com o PTAX de HOJE — exatamente o que o
+    # usuario pediu pra nao acontecer ("indicador nao capturado nao pode
+    # entrar na ponderacao"). Sem data_ref, nao achar o valor do dia (BCB
+    # fora do ar bem na hora) e melhor que nada.
     if not data_ref:
         s = bcb_serie_ultimo(BCB_SERIES["PTAX_VENDA"], 1)
         if s:
@@ -2511,14 +2475,11 @@ def coletar_indicador_web(nome, data_ref=None, usar_cache=True):
     # BUG CORRIGIDO — este fallback nao respeitava data_ref: sem nenhuma
     # fonte respondendo para a data pedida (replay), ele devolvia o ultimo
     # valor conhecido de HOJE (ttl de 24h), sem marcar o indicador como
-    # indisponivel. Na pratica, um indicador que falhava para o dia do
-    # replay silenciosamente votava com o dado de HOJE em vez de ficar de
-    # fora da ponderacao (pedido explicito do usuario: indicador nao
-    # capturado nao pode entrar no calculo do macro, nem no replay nem no
-    # tempo real). Agora so serve como fallback de resiliencia no modo real
-    # (falha passageira de rede bem no meio do pregao) — nunca em replay,
-    # onde "nao achei o valor daquele dia" tem que ficar indisponivel de
-    # verdade, sem se disfarçar de leitura de hoje.
+    # indisponivel. Pedido do usuario: indicador nao capturado nao pode
+    # entrar na ponderacao do macro, nem no replay nem no tempo real. Agora
+    # so serve como fallback de resiliencia no modo real (falha passageira
+    # de rede no meio do pregao) — nunca em replay, onde "nao achei o valor
+    # daquele dia" fica indisponivel de verdade.
     if usar_cache and not data_ref:
         c = _cache_macro_get(nome, ttl=86400)   # ultimo valor conhecido do dia
         if c:
@@ -4625,50 +4586,6 @@ def _set_state(chave, valor):
         return True
     except Exception:
         return False
-
-
-def corrigir_ano_replay_da_tela(data_tela_nova, data_replay_atual, agora=None):
-    """Blinda contra a IA lendo mal o ANO do relogio do replay na tela do
-    Profit (ex.: "2026" virando "2020" — digitos parecidos/anti-aliasing),
-    mantendo dia e mes certos. Um export real mostrou 20/49 leituras do
-    MESMO pregao (mesmo dia/mes, sequencia continua de horarios ao longo do
-    dia) gravadas com o ano trocado.
-
-    Dois checks, nessa ordem:
-    1. Dia e mes iguais ao ja estabelecido mas ano diferente = leitura
-       errada, nao virada real de pregao (isso sim muda dia e/ou mes) —
-       devolve o ano ja em uso.
-    2. PRIMEIRA leitura da sessao (data_replay_atual ainda no default do
-       boot — hoje mesmo, dia geralmente diferente do replay, entao o
-       check 1 nao pega) com um ano implausivel: nenhum replay e de uma
-       data no FUTURO nem de mais de 1 ano atras do relogio real da
-       maquina. Fora dessa janela, assume o ano de hoje — foi exatamente
-       esse buraco que deixou "2026" virar "2020" na toda primeira leitura
-       de um replay novo, antes de existir qualquer "anterior" bom pra
-       comparar no check 1.
-
-    Datas em formato invalido sao devolvidas sem alteracao (o chamador
-    decide o que fazer com o formato)."""
-    agora = agora or datetime.now()
-    try:
-        ano_novo, mes_novo, dia_novo = str(data_tela_nova).split("-")
-    except Exception:
-        return data_tela_nova
-
-    try:
-        ano_prev, mes_prev, dia_prev = str(data_replay_atual).split("-")
-        if (mes_novo, dia_novo) == (mes_prev, dia_prev) and ano_novo != ano_prev:
-            return data_replay_atual
-    except Exception:
-        pass
-
-    try:
-        if int(ano_novo) > agora.year or int(ano_novo) < agora.year - 1:
-            return f"{agora.year}-{mes_novo}-{dia_novo}"
-    except Exception:
-        pass
-
-    return data_tela_nova
 
 
 def ts_evento(dados_tela):
@@ -7272,10 +7189,19 @@ def classificar_contexto(dados_tela, fechamento_ant=None, ignorar_macro=False):
     lotes_info = avaliar_lotes_institucionais(st.session_state.get("ultimos_agentes", {}), preco)
 
     # ---- PMI dos EUA: vies macro para o Mini Dolar ----
-    # macro_atual_ou_replay: busca o macro da DATA do replay (BCB/FRED/FMP)
-    # em modo replay, ou so LE o arquivo ja gravado ao vivo (buscar na web
-    # dentro da analise travava o ciclo) fora dele.
-    _macro_pmi = {} if ignorar_macro else macro_atual_ou_replay(dados_tela)
+    if ignorar_macro:
+        _macro_pmi = {}
+    elif st.session_state.get("modo_replay_ativo"):
+        # No replay a coleta ao vivo nao vale: busca o macro da DATA do replay
+        # nas fontes com historico (BCB, FRED, FMP). O que nao vier fica
+        # marcado como indisponivel e nao pontua.
+        _macro_pmi = macro_para_replay(
+            st.session_state.get("data_replay")
+            or str((dados_tela or {}).get("data", ""))[:10])
+    else:
+        # A coleta web tem relogio proprio no topo do app; aqui apenas LE o
+        # arquivo ja gravado. Buscar na web dentro da analise travava o ciclo.
+        _macro_pmi = ler_dados_macro()
     pmi_info = peso_pmi_eua(_macro_pmi)
 
     regime = classificar_regime(preco, vwap, ajuste, mm9, mm20, mm50, mm200, momentum=mom)
@@ -9155,14 +9081,18 @@ def veredito_macro_aba():
     """Aba 2 — usa 1:1 a leitura de vies_macro_consolidado (DXY/EWZ/VIX/PMI/PTAX).
     Dado essencial ausente => NEUTRO explicito, nunca herda valor velho.
 
-    Em modo replay, ler_dados_macro() devolveria sempre o macro.json do
-    ultimo pregao REAL (a coleta ao vivo fica congelada durante o replay —
-    ver atualizar_macro_agendado) -- ou seja, a aba ficava travada no MESMO
-    vies e percentual o dia inteiro de replay, nao importa qual dia estava
-    sendo replayado nem quanto tempo passasse. macro_atual_ou_replay busca
-    o macro DA DATA do replay, igual classificar_contexto ja faz na
-    decisao real."""
-    macro = macro_atual_ou_replay()
+    BUG CORRIGIDO — em modo replay, ler_dados_macro() sempre devolvia o
+    macro.json do ULTIMO PREGAO REAL (a coleta ao vivo fica congelada durante
+    o replay — atualizar_macro_agendado nao coleta nesse modo): a aba ficava
+    travada no MESMO vies e percentual (relatado como "compra, 40%, sempre")
+    o dia inteiro de replay, nao importa qual dia estivesse sendo replayado
+    nem quanto tempo passasse. Agora busca o macro DA DATA do replay."""
+    if st.session_state.get("modo_replay"):
+        macro = macro_para_replay(
+            st.session_state.get("replay_data")
+            or str((st.session_state.get("ultimos_dados_tela") or {}).get("data_replay", ""))[:10])
+    else:
+        macro = ler_dados_macro()
     v = vies_macro_consolidado(macro)
     convicao = min(100, abs(int(v.get("pontos", 0))) * 20)
     return {
@@ -9524,23 +9454,9 @@ def veredito_candles_aba(dados_tela=None, contexto=None):
     forca = "forte" if convicao >= 55 else ("moderado" if convicao >= 30 else "neutro")
     vies = direcao if forca != "neutro" else "neutro"
 
-    # BUG CORRIGIDO — o resumo usava sempre "direcao" (o lado que teve mais
-    # voto, nem que fosse por 0,5 contra 1,0), mesmo quando isso nao bastava
-    # pra tirar o veredito do neutro (convicao < 30, "vies" corretamente
-    # virava "neutro"). Resultado: o card mostrava "NEUTRO" no titulo mas
-    # "Gráfico de candles aponta venda · convicção 8%" no texto — dois
-    # vereditos contraditorios pro mesmo calculo, exatamente o que o
-    # usuario reportou (momentum de curtissimo prazo puxando venda por uma
-    # margem minima, com o grafico visivelmente em alta). Resumo agora
-    # segue o MESMO "vies" que decide o titulo do card.
-    if vies == "neutro":
-        resumo = f"Gráfico de candles sem direção clara · convicção insuficiente ({convicao}%)"
-    else:
-        resumo = f"Gráfico de candles aponta {direcao} · convicção {convicao}%"
-
     return {"vies": vies, "forca": forca, "convicao": convicao,
             "fatores": fatores[:6], "contras": contras,
-            "resumo": resumo}
+            "resumo": f"Gráfico de candles aponta {direcao} · convicção {convicao}%"}
 
 
 def veredito_confluencia_aba(veredito_liq=None, veredito_macro=None, veredito_candles=None):
@@ -9669,8 +9585,6 @@ def executar_analise():
             if "/" in _data_tela:
                 _d, _m, _a = _data_tela.split("/")
                 _data_tela = f"{_a}-{_m}-{_d}"
-            _data_tela = corrigir_ano_replay_da_tela(
-                _data_tela, st.session_state.get("replay_data", ""))
             dados_tela["data_replay"] = _data_tela
             _set_state("replay_data", _data_tela)
         else:
@@ -10104,17 +10018,11 @@ def executar_analise():
     contexto["veredito_acao"] = _veredito["acao_sugerida"]
 
     if st.session_state.registrar_fechamento_ativo:
-        mac = macro_atual_ou_replay(dados_tela)
+        mac = ler_dados_macro()
         salvar_fechamento_dia(preco,ajuste,vwap,num(mac.get("DXY")),num(mac.get("EWZ")),num(mac.get("VIX")))
 
     evento = ts_evento(dados_tela)
-    # BUG CORRIGIDO — este "mac" alimenta as colunas de auditoria do
-    # historico (DXY/EWZ/VIX/PTAX_Bacen/PMI_ISM/Noticias) e ainda chamava
-    # ler_dados_macro() incondicionalmente (o macro.json AO VIVO, de hoje),
-    # mesmo com classificar_contexto() e veredito_macro_aba() ja corrigidos
-    # pra usar o macro DA DATA do replay -- as colunas do CSV podiam
-    # mostrar um DXY/PTAX de hoje rotulado como se fosse do dia replayado.
-    mac = macro_atual_ou_replay(dados_tela)
+    mac = ler_dados_macro()
     val = calcular_pct(acao.upper(),preco,alvo,stop,maxima,minima)
 
     _falta_diag = " | ".join(contexto.get("falta_para_gatilho",[])) or "OK"
@@ -12528,18 +12436,6 @@ if _disparar_glob:
         except Exception as _e_glob:
             st.session_state["ultimo_erro_ciclo"] = str(_e_glob)
             st.session_state["auto_analise_erros"] = int(st.session_state.get("auto_analise_erros", 0)) + 1
-        except BaseException:
-            # Export real mostrou "tentativas" subindo sem NENHUM dos 3
-            # desfechos (salvos/duplicados/erros) acompanhar — sinal de um
-            # ciclo interrompido no meio por algo que nao herda de
-            # Exception (ex.: o proprio Streamlit aborta o script em
-            # andamento pra atender um rerun mais novo, via uma excecao de
-            # controle que deliberadamente NAO e pega por "except
-            # Exception" comum). Registra como erro pra o desfecho aparecer
-            # nos contadores em vez de sumir, mas tem que RELANCAR — engolir
-            # uma excecao de controle do Streamlit quebraria o rerun dele.
-            st.session_state["auto_analise_erros"] = int(st.session_state.get("auto_analise_erros", 0)) + 1
-            raise
 
 
 # =========================

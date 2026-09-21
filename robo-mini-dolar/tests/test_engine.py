@@ -297,6 +297,183 @@ class TestViesMacroPTAXVota(unittest.TestCase):
         self.assertEqual(r["pontos"], 0)
 
 
+class TestVeredictoMacroAbaRespeitaReplay(unittest.TestCase):
+    """Usuario relatou: a aba Macroeconomicos so mostrava "compra" e sempre
+    ~40% de conviccao, em qualquer dia de replay testado. Causa raiz:
+    veredito_macro_aba() sempre chamava ler_dados_macro() (o macro.json do
+    ultimo pregao REAL, congelado durante o replay -- atualizar_macro_agendado
+    nao coleta nesse modo), nunca macro_para_replay(data)."""
+
+    def setUp(self):
+        FAKE_ST.session_state.clear()
+        self.veredito_macro_aba = NS["veredito_macro_aba"]
+        self._macro_para_replay_orig = NS["macro_para_replay"]
+        self._ler_dados_macro_orig = NS["ler_dados_macro"]
+        self._chamadas = []
+        NS["macro_para_replay"] = lambda data: (
+            self._chamadas.append(("replay", data)) or
+            {"DXY": 100.0, "DXY_ANTERIOR": 100.0, "VIX": 15.0, "PTAX": 5.10,
+             "PTAX_ANTERIOR": 5.10, "disponivel": True})
+        NS["ler_dados_macro"] = lambda: (
+            self._chamadas.append(("live", None)) or
+            {"DXY": 100.0, "DXY_ANTERIOR": 100.0, "VIX": 15.0, "PTAX": 5.10,
+             "PTAX_ANTERIOR": 5.10})
+
+    def tearDown(self):
+        NS["macro_para_replay"] = self._macro_para_replay_orig
+        NS["ler_dados_macro"] = self._ler_dados_macro_orig
+
+    def test_fora_do_replay_usa_ler_dados_macro(self):
+        FAKE_ST.session_state["modo_replay"] = False
+        self.veredito_macro_aba()
+        self.assertEqual(self._chamadas, [("live", None)])
+
+    def test_em_replay_usa_macro_da_data_do_replay(self):
+        FAKE_ST.session_state["modo_replay"] = True
+        FAKE_ST.session_state["replay_data"] = "2026-09-15"
+        self.veredito_macro_aba()
+        self.assertEqual(self._chamadas, [("replay", "2026-09-15")])
+
+
+class TestColetarIndicadorWebNaoContaminaComCacheAntigo(unittest.TestCase):
+    """Usuario pediu: indicador macro que nao foi capturado NAO pode entrar
+    na ponderacao da analise, nem em replay nem em tempo real. O fallback
+    final de coletar_indicador_web() (cache de ate 24h) nao respeitava
+    data_ref -- pra uma data de replay sem nenhuma fonte historica
+    respondendo, ele devolvia o ultimo valor de HOJE em vez de marcar o
+    indicador como indisponivel, contaminando a leitura daquele dia
+    passado com o dado de hoje."""
+
+    def setUp(self):
+        FAKE_ST.session_state.clear()
+        self.coletar = NS["coletar_indicador_web"]
+        self._cache_get_orig = NS["_cache_macro_get"]
+        # nome fora de FONTES_MACRO_WEB -> a cadeia de fontes fica vazia
+        # (nenhuma chamada de rede), so restam os dois pontos de cache.
+        self.nome = "INDICADOR_INEXISTENTE"
+        NS["_cache_macro_get"] = lambda chave, ttl=None: (
+            {"valor": 42.0, "fonte": "cache_de_ontem", "data": "2026-09-01"}
+            if chave == self.nome else None)
+
+    def tearDown(self):
+        NS["_cache_macro_get"] = self._cache_get_orig
+
+    def test_sem_data_ref_usa_cache_antigo_como_ultimo_recurso(self):
+        """Controle: modo real preserva a resiliencia de sempre."""
+        r = self.coletar(self.nome, data_ref=None)
+        self.assertEqual(r["valor"], 42.0)
+
+    def test_com_data_ref_nao_usa_cache_de_hoje_fica_indisponivel(self):
+        r = self.coletar(self.nome, data_ref="2020-01-02")
+        self.assertIsNone(r["valor"])
+        self.assertEqual(r["fonte"], "indisponivel")
+
+
+class TestBcbPtaxNaoContaminaReplayComValorDeHoje(unittest.TestCase):
+    """Mesmo bug, ponto especifico do PTAX: bcb_serie_ultimo() devolve o
+    valor MAIS RECENTE da serie (sem filtro de data) -- so faz sentido como
+    aproximacao no modo real. Usado tambem com data_ref (replay), contamina
+    a leitura do dia passado com o PTAX de hoje."""
+
+    def setUp(self):
+        FAKE_ST.session_state.clear()
+        self.bcb_ptax = NS["bcb_ptax"]
+        self._valor_em_ou_antes_orig = NS["_bcb_ptax_valor_em_ou_antes"]
+        self._serie_ultimo_orig = NS["bcb_serie_ultimo"]
+        # Simula o endpoint por dia sempre falhando (BCB fora do ar / feriado
+        # alem do numero de tentativas) e a serie SGS "ultimo valor" com um
+        # valor de HOJE disponivel.
+        NS["_bcb_ptax_valor_em_ou_antes"] = lambda d, tentativas=4: (None, None)
+        NS["bcb_serie_ultimo"] = lambda serie, n=1: {"valor": 5.55, "data": "2026-09-21"}
+
+    def tearDown(self):
+        NS["_bcb_ptax_valor_em_ou_antes"] = self._valor_em_ou_antes_orig
+        NS["bcb_serie_ultimo"] = self._serie_ultimo_orig
+
+    def test_sem_data_ref_cai_para_serie_mais_recente(self):
+        """Controle: modo real preserva a resiliencia de sempre."""
+        r = self.bcb_ptax(None)
+        self.assertIsNotNone(r)
+        self.assertEqual(r["valor"], 5.55)
+
+    def test_com_data_ref_nao_usa_serie_mais_recente_devolve_none(self):
+        r = self.bcb_ptax("2020-01-02")
+        self.assertIsNone(r)
+
+
+class TestMacroParaReplayNaoTravaComRedeRuim(unittest.TestCase):
+    """A aba Macro chama macro_para_replay() a cada RERUN do Streamlit
+    (autorefresh geral, mais frequente que o ciclo de analise). Uma coleta
+    historica lenta ou pendurada (rede com problema, nao so uma fonte fora
+    do ar) sem teto de tempo nem cache de falha pode travar o render da aba
+    inteira: cada rerun tenta de novo a mesma coleta lenta."""
+
+    def setUp(self):
+        FAKE_ST.session_state.clear()
+        self.macro_para_replay = NS["macro_para_replay"]
+        self._orig = {k: NS[k] for k in (
+            "coletar_macro_web", "_cache_macro_ler", "_cache_macro_gravar",
+            "TIMEOUT_MACRO_REPLAY_SEGUNDOS", "RESFRIAMENTO_MACRO_REPLAY_FALHA_SEGUNDOS")}
+        self._cache = {}
+        NS["_cache_macro_ler"] = lambda: self._cache
+        NS["_cache_macro_gravar"] = lambda c: self._cache.update(c)
+
+    def tearDown(self):
+        NS.update(self._orig)
+
+    def test_coleta_que_nunca_retorna_e_limitada_pelo_teto_de_tempo(self):
+        """A coleta simula uma rede pendurada (dorme muito mais que o teto).
+        macro_para_replay tem que devolver indisponivel dentro de um tempo
+        curto, nunca esperar a coleta terminar."""
+        import time as _time
+        def _coleta_pendurada(data_ref=None):
+            _time.sleep(5)   # bem mais que o teto usado no teste abaixo
+            return {"PTAX": 5.10, "DXY": 100.0, "VIX": 15.0}
+        NS["coletar_macro_web"] = _coleta_pendurada
+        NS["TIMEOUT_MACRO_REPLAY_SEGUNDOS"] = 0.2
+
+        t0 = _time.time()
+        r = self.macro_para_replay("2026-09-16")
+        decorrido = _time.time() - t0
+
+        self.assertLess(decorrido, 2.0, "nao pode esperar a coleta pendurada terminar")
+        self.assertFalse(r.get("disponivel"))
+
+    def test_falha_fica_em_resfriamento_nao_martela_a_cada_rerun(self):
+        """Depois de uma falha, uma chamada logo em seguida (equivalente a
+        outro rerun do streamlit segundos depois) nao deve tentar de novo —
+        devolve o mesmo resultado cacheado sem chamar coletar_macro_web."""
+        chamadas = []
+        def _coleta_falha(data_ref=None):
+            chamadas.append(data_ref)
+            return {}
+        NS["coletar_macro_web"] = _coleta_falha
+        NS["TIMEOUT_MACRO_REPLAY_SEGUNDOS"] = 5
+        NS["RESFRIAMENTO_MACRO_REPLAY_FALHA_SEGUNDOS"] = 120
+
+        r1 = self.macro_para_replay("2026-09-17")
+        r2 = self.macro_para_replay("2026-09-17")
+
+        self.assertFalse(r1.get("disponivel"))
+        self.assertEqual(r1, r2)
+        self.assertEqual(len(chamadas), 1)
+
+    def test_sucesso_fica_cacheado_para_o_dia_inteiro(self):
+        chamadas = []
+        def _coleta_ok(data_ref=None):
+            chamadas.append(data_ref)
+            return {"PTAX": 5.10, "PTAX_ANTERIOR": 5.08}
+        NS["coletar_macro_web"] = _coleta_ok
+        NS["TIMEOUT_MACRO_REPLAY_SEGUNDOS"] = 5
+
+        r1 = self.macro_para_replay("2026-09-18")
+        r2 = self.macro_para_replay("2026-09-18")
+
+        self.assertTrue(r1.get("disponivel"))
+        self.assertEqual(r1, r2)
+        self.assertEqual(len(chamadas), 1)
+
+
 class TestSaldoAgressaoProxyDeBook(unittest.TestCase):
     """BUG 6 — diagnosticado no dia 16/09/2026: sem Times & Trades com nomes
     de agentes (o caso comum — TemNomesAgentes="nao" em quase toda leitura),
@@ -480,320 +657,6 @@ class TestTsEventoModoRealIgnoraDataReplay(unittest.TestCase):
         dt = {"data_replay": "2026-07-28", "hora_replay": "09:00:31"}
         r = self.ts_evento(dt)
         self.assertEqual(r, "2026-07-28 09:00:31")
-
-
-class TestCorrigirAnoReplayDaTela(unittest.TestCase):
-    """Export de 20/09/2026 mostrou 20 de 49 leituras do MESMO pregao (mesmo
-    dia/mes, sequencia continua de horarios ao longo do dia) gravadas com o
-    ano trocado (2026 -> 2020) -- a IA le mal o relogio do replay na tela do
-    Profit as vezes, mas acerta dia e mes."""
-
-    def setUp(self):
-        self.f = NS["corrigir_ano_replay_da_tela"]
-
-    def test_ano_trocado_no_mesmo_dia_mes_mantem_ano_anterior(self):
-        r = self.f("2020-09-15", "2026-09-15")
-        self.assertEqual(r, "2026-09-15")
-
-    def test_virada_real_de_dia_com_ano_novo_e_aceita(self):
-        """Controle: mudar de dia (replay avancou pro proximo pregao) nao e
-        confundido com leitura errada, mesmo se o ano tambem mudar — desde
-        que o ano novo seja plausivel pro relogio real da maquina."""
-        from datetime import datetime as _dt
-        r = self.f("2027-01-02", "2026-12-31", agora=_dt(2027, 1, 5))
-        self.assertEqual(r, "2027-01-02")
-
-    def test_mesmo_ano_e_mesmo_dia_mes_devolve_sem_alteracao(self):
-        from datetime import datetime as _dt
-        r = self.f("2026-09-15", "2026-09-15", agora=_dt(2026, 9, 21))
-        self.assertEqual(r, "2026-09-15")
-
-    def test_formato_invalido_devolve_a_nova_sem_alteracao(self):
-        from datetime import datetime as _dt
-        r = self.f("nao-e-data", "2026-09-15", agora=_dt(2026, 9, 21))
-        self.assertEqual(r, "nao-e-data")
-
-    def test_primeira_leitura_da_sessao_sem_anterior_bom_ainda_corrige_ano_implausivel(self):
-        """Bug real: na PRIMEIRA leitura de um replay novo, "data_replay_atual"
-        ainda e o default do boot (hoje, dia normalmente diferente do
-        replay) -- o check de dia/mes igual nao pega. Sem essa segunda
-        blindagem, um ano implausivel (aqui, 2020 com o relogio real em
-        2026) passava direto na estreia da sessao."""
-        from datetime import datetime as _dt
-        r = self.f("2020-09-16", "", agora=_dt(2026, 9, 21))
-        self.assertEqual(r, "2026-09-16")
-
-    def test_ano_um_ano_atras_do_relogio_real_e_plausivel(self):
-        """Controle: replay de uma sessao do ano passado (uso legitimo) nao
-        pode ser 'corrigido' para o ano atual."""
-        from datetime import datetime as _dt
-        r = self.f("2025-12-20", "", agora=_dt(2026, 9, 21))
-        self.assertEqual(r, "2025-12-20")
-
-    def test_ano_no_futuro_do_relogio_real_e_corrigido(self):
-        from datetime import datetime as _dt
-        r = self.f("2028-09-16", "", agora=_dt(2026, 9, 21))
-        self.assertEqual(r, "2026-09-16")
-
-
-class TestColetarIndicadorWebNaoContaminaComCacheAntigo(unittest.TestCase):
-    """Usuario pediu: indicador macro que nao foi capturado NAO pode entrar
-    na ponderacao da analise, nem em replay nem em tempo real. O fallback
-    final de coletar_indicador_web() (cache de ate 24h) nao respeitava
-    data_ref -- pra uma data de replay sem nenhuma fonte historica
-    respondendo, ele devolvia o ultimo valor de HOJE em vez de marcar o
-    indicador como indisponivel, contaminando a leitura daquele dia
-    passado com o dado de hoje."""
-
-    def setUp(self):
-        FAKE_ST.session_state.clear()
-        self.coletar = NS["coletar_indicador_web"]
-        self._cache_get_orig = NS["_cache_macro_get"]
-        # nome fora de FONTES_MACRO_WEB -> a cadeia de fontes fica vazia
-        # (nenhuma chamada de rede), so restam os dois pontos de cache.
-        self.nome = "INDICADOR_INEXISTENTE"
-        NS["_cache_macro_get"] = lambda chave, ttl=None: (
-            {"valor": 42.0, "fonte": "cache_de_ontem", "data": "2026-09-01"}
-            if chave == self.nome else None)
-
-    def tearDown(self):
-        NS["_cache_macro_get"] = self._cache_get_orig
-
-    def test_sem_data_ref_usa_cache_antigo_como_ultimo_recurso(self):
-        """Controle: modo real preserva a resiliencia de sempre."""
-        r = self.coletar(self.nome, data_ref=None)
-        self.assertEqual(r["valor"], 42.0)
-
-    def test_com_data_ref_nao_usa_cache_de_hoje_fica_indisponivel(self):
-        r = self.coletar(self.nome, data_ref="2020-01-02")
-        self.assertIsNone(r["valor"])
-        self.assertEqual(r["fonte"], "indisponivel")
-
-
-class TestBcbPtaxNaoContaminaReplayComValorDeHoje(unittest.TestCase):
-    """Mesmo bug, ponto especifico do PTAX: bcb_serie_ultimo() devolve o
-    valor MAIS RECENTE da serie (sem filtro de data) -- so faz sentido como
-    aproximacao no modo real. Usado tambem com data_ref (replay), contamina
-    a leitura do dia passado com o PTAX de hoje."""
-
-    def setUp(self):
-        FAKE_ST.session_state.clear()
-        self.bcb_ptax = NS["bcb_ptax"]
-        self._valor_em_ou_antes_orig = NS["_bcb_ptax_valor_em_ou_antes"]
-        self._serie_ultimo_orig = NS["bcb_serie_ultimo"]
-        # Simula o endpoint por dia sempre falhando (BCB fora do ar / feriado
-        # alem do numero de tentativas) e a serie SGS "ultimo valor" com um
-        # valor de HOJE disponivel.
-        NS["_bcb_ptax_valor_em_ou_antes"] = lambda d, tentativas=4: (None, None)
-        NS["bcb_serie_ultimo"] = lambda serie, n=1: {"valor": 5.55, "data": "2026-09-21"}
-
-    def tearDown(self):
-        NS["_bcb_ptax_valor_em_ou_antes"] = self._valor_em_ou_antes_orig
-        NS["bcb_serie_ultimo"] = self._serie_ultimo_orig
-
-    def test_sem_data_ref_cai_para_serie_mais_recente(self):
-        """Controle: modo real preserva a resiliencia de sempre."""
-        r = self.bcb_ptax(None)
-        self.assertIsNotNone(r)
-        self.assertEqual(r["valor"], 5.55)
-
-    def test_com_data_ref_nao_usa_serie_mais_recente_devolve_none(self):
-        r = self.bcb_ptax("2020-01-02")
-        self.assertIsNone(r)
-
-
-class TestMacroParaReplayNaoTravaComRedeRuim(unittest.TestCase):
-    """Usuario relatou o app travado por mais de 1 HORA com a aba Macro
-    congelada -- veredito_macro_aba() chama macro_para_replay() a cada
-    RERUN do Streamlit (autorefresh geral a cada 30-60s), bem mais
-    frequente que o ciclo de analise (300s). Uma coleta historica lenta ou
-    penduarada (rede com problema, nao so uma fonte fora do ar) sem teto de
-    tempo nem cache de falha reproduz exatamente esse sintoma: cada rerun
-    tenta de novo a mesma coleta lenta, empilhando travamento sem fim."""
-
-    def setUp(self):
-        FAKE_ST.session_state.clear()
-        self.macro_para_replay = NS["macro_para_replay"]
-        self._orig = {k: NS[k] for k in (
-            "coletar_macro_web", "_cache_macro_ler", "_cache_macro_gravar",
-            "TIMEOUT_MACRO_REPLAY_SEGUNDOS", "RESFRIAMENTO_MACRO_REPLAY_FALHA_SEGUNDOS")}
-        self._cache = {}
-        NS["_cache_macro_ler"] = lambda: self._cache
-        NS["_cache_macro_gravar"] = lambda c: self._cache.update(c)
-
-    def tearDown(self):
-        NS.update(self._orig)
-
-    def test_coleta_que_nunca_retorna_e_limitada_pelo_teto_de_tempo(self):
-        """A coleta simula uma rede pendurada (dorme muito mais que o teto).
-        macro_para_replay tem que devolver indisponivel dentro de um tempo
-        curto, nunca esperar a coleta terminar."""
-        import time as _time
-        def _coleta_pendurada(data_ref=None):
-            _time.sleep(5)   # bem mais que o teto usado no teste abaixo
-            return {"PTAX": 5.10, "DXY": 100.0, "VIX": 15.0}
-        NS["coletar_macro_web"] = _coleta_pendurada
-        NS["TIMEOUT_MACRO_REPLAY_SEGUNDOS"] = 0.2
-
-        t0 = _time.time()
-        r = self.macro_para_replay("2026-09-16")
-        decorrido = _time.time() - t0
-
-        self.assertLess(decorrido, 2.0, "nao pode esperar a coleta pendurada terminar")
-        self.assertFalse(r.get("disponivel"))
-
-    def test_falha_fica_em_resfriamento_nao_martela_a_cada_rerun(self):
-        """Depois de uma falha, uma chamada logo em seguida (equivalente a
-        outro rerun do streamlit segundos depois) nao deve tentar de novo —
-        devolve o mesmo resultado cacheado sem chamar coletar_macro_web."""
-        chamadas = []
-        def _coleta_falha(data_ref=None):
-            chamadas.append(data_ref)
-            return {}
-        NS["coletar_macro_web"] = _coleta_falha
-        NS["TIMEOUT_MACRO_REPLAY_SEGUNDOS"] = 5
-        NS["RESFRIAMENTO_MACRO_REPLAY_FALHA_SEGUNDOS"] = 120
-
-        r1 = self.macro_para_replay("2026-09-17")
-        r2 = self.macro_para_replay("2026-09-17")
-
-        self.assertFalse(r1.get("disponivel"))
-        self.assertEqual(r1, r2)
-        self.assertEqual(len(chamadas), 1)
-
-    def test_sucesso_fica_cacheado_para_o_dia_inteiro(self):
-        chamadas = []
-        def _coleta_ok(data_ref=None):
-            chamadas.append(data_ref)
-            return {"PTAX": 5.10, "PTAX_ANTERIOR": 5.08}
-        NS["coletar_macro_web"] = _coleta_ok
-        NS["TIMEOUT_MACRO_REPLAY_SEGUNDOS"] = 5
-
-        r1 = self.macro_para_replay("2026-09-18")
-        r2 = self.macro_para_replay("2026-09-18")
-
-        self.assertTrue(r1.get("disponivel"))
-        self.assertEqual(r1, r2)
-        self.assertEqual(len(chamadas), 1)
-
-
-class TestMacroAtualOuReplayFonteUnica(unittest.TestCase):
-    """macro_atual_ou_replay() e a fonte unica que classificar_contexto,
-    veredito_macro_aba e o registro de auditoria do historico (colunas
-    DXY/EWZ/VIX/PTAX_Bacen/PMI_ISM do CSV) usam pra decidir de onde vem o
-    macro. Um export real mostrou o registro do historico ainda lendo
-    ler_dados_macro() (macro.json AO VIVO, de hoje) direto, sem passar por
-    essa escolha -- fica coberto aqui pra um 4o consumidor futuro nao
-    repetir o mesmo esquecimento."""
-
-    def setUp(self):
-        FAKE_ST.session_state.clear()
-        self.f = NS["macro_atual_ou_replay"]
-        self._orig = {k: NS[k] for k in ("macro_para_replay", "ler_dados_macro")}
-        self._chamadas = []
-        NS["macro_para_replay"] = lambda data: self._chamadas.append(("replay", data)) or {"PTAX": 5.10}
-        NS["ler_dados_macro"] = lambda: self._chamadas.append(("live", None)) or {"PTAX": 5.20}
-
-    def tearDown(self):
-        NS.update(self._orig)
-
-    def test_fora_do_replay_usa_ao_vivo(self):
-        FAKE_ST.session_state["modo_replay"] = False
-        r = self.f()
-        self.assertEqual(self._chamadas, [("live", None)])
-        self.assertEqual(r["PTAX"], 5.20)
-
-    def test_em_replay_usa_data_do_replay(self):
-        FAKE_ST.session_state["modo_replay"] = True
-        FAKE_ST.session_state["replay_data"] = "2026-09-16"
-        r = self.f()
-        self.assertEqual(self._chamadas, [("replay", "2026-09-16")])
-        self.assertEqual(r["PTAX"], 5.10)
-
-    def test_em_replay_sem_replay_data_usa_data_replay_do_dados_tela(self):
-        FAKE_ST.session_state["modo_replay"] = True
-        FAKE_ST.session_state["replay_data"] = ""
-        r = self.f({"data_replay": "2026-09-17"})
-        self.assertEqual(self._chamadas, [("replay", "2026-09-17")])
-
-
-class TestVeredictoMacroAbaRespeitaReplay(unittest.TestCase):
-    """Usuario relatou: a aba Macroeconomicos so mostrava "compra" e sempre
-    41% (n*20 arredondado -> aparentava travado em 40%), em qualquer dia de
-    replay. Causa raiz: veredito_macro_aba() sempre chamava
-    ler_dados_macro() (o macro.json do ultimo pregao REAL, congelado durante
-    o replay -- atualizar_macro_agendado nao coleta em modo replay), nunca
-    macro_para_replay(data). Um segundo bug agravava isso na DECISAO (nao so
-    na aba): classificar_contexto() e atualizar_macro_agendado() checavam
-    "modo_replay_ativo", uma chave que nunca e definida em lugar nenhum do
-    app (o toggle real e "modo_replay") -- o ramo de macro-por-data-do-replay
-    era codigo morto, nunca executava."""
-
-    def setUp(self):
-        FAKE_ST.session_state.clear()
-        self.veredito_macro_aba = NS["veredito_macro_aba"]
-        self._macro_para_replay_orig = NS["macro_para_replay"]
-        self._ler_dados_macro_orig = NS["ler_dados_macro"]
-        self._chamadas = []
-        NS["macro_para_replay"] = lambda data: (
-            self._chamadas.append(("replay", data)) or
-            {"DXY": 100.0, "DXY_ANTERIOR": 100.0, "VIX": 15.0, "PTAX": 5.10,
-             "PTAX_ANTERIOR": 5.10, "disponivel": True})
-        NS["ler_dados_macro"] = lambda: (
-            self._chamadas.append(("live", None)) or
-            {"DXY": 100.0, "DXY_ANTERIOR": 100.0, "VIX": 15.0, "PTAX": 5.10,
-             "PTAX_ANTERIOR": 5.10})
-
-    def tearDown(self):
-        NS["macro_para_replay"] = self._macro_para_replay_orig
-        NS["ler_dados_macro"] = self._ler_dados_macro_orig
-
-    def test_fora_do_replay_usa_ler_dados_macro(self):
-        FAKE_ST.session_state["modo_replay"] = False
-        self.veredito_macro_aba()
-        self.assertEqual(self._chamadas, [("live", None)])
-
-    def test_em_replay_usa_macro_da_data_do_replay(self):
-        FAKE_ST.session_state["modo_replay"] = True
-        FAKE_ST.session_state["replay_data"] = "2026-09-15"
-        self.veredito_macro_aba()
-        self.assertEqual(self._chamadas, [("replay", "2026-09-15")])
-
-
-class TestVereditoCandlesResumoSegueVies(unittest.TestCase):
-    """Usuario reportou (com print da aba): titulo do card mostrava NEUTRO
-    mas o texto abaixo dizia "Gráfico de candles aponta venda · convicção
-    8%" -- dois vereditos contraditorios pro mesmo calculo, com o grafico
-    visivelmente em alta. Causa: o resumo usava sempre a direcao com mais
-    voto (aqui, momentum de curtissimo prazo por uma margem minima: 1.0 x
-    0.5), mesmo quando a convicção nao bastava pra tirar "vies" do neutro
-    (que ja seguia a regra certa)."""
-
-    def setUp(self):
-        self.veredito = NS["veredito_candles_aba"]
-
-    def test_convicao_baixa_resumo_fica_neutro_nao_direcional(self):
-        """Reproducao exata do caso: so momentum baixa (venda, peso 1.0) e
-        tendencia de abertura compra (peso 0.5) -- convicção 8%."""
-        dt = {"preco_atual": 5178.0}
-        ctx = {"momentum": "baixa",
-               "abertura_info": {"tendencia_formando": "compra", "em_observacao": False}}
-        r = self.veredito(dt, ctx)
-        self.assertEqual(r["vies"], "neutro")
-        self.assertEqual(r["convicao"], 8)
-        self.assertNotIn("venda", r["resumo"])
-        self.assertNotIn("compra", r["resumo"])
-
-    def test_convicao_alta_resumo_continua_direcional(self):
-        """Controle: sinais fortes e concordantes continuam gerando um
-        resumo direcional de verdade, sem regressao."""
-        dt = {"preco_atual": 5178.0}
-        ctx = {"momentum": "baixa_forte",
-               "rompimento_dispara": True, "rompimento_direcao": "venda",
-               "bollinger_estado": "sobrecompra", "ifr_estado": "sobrecompra"}
-        r = self.veredito(dt, ctx)
-        self.assertEqual(r["vies"], "venda")
-        self.assertIn("venda", r["resumo"])
 
 
 class TestGatekeeperTendenciaAcimaDoFluxo(unittest.TestCase):
