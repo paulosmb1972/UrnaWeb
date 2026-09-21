@@ -659,6 +659,48 @@ class TestTsEventoModoRealIgnoraDataReplay(unittest.TestCase):
         self.assertEqual(r, "2026-07-28 09:00:31")
 
 
+class TestRodarCicloAutomaticoRegistraDesfecho(unittest.TestCase):
+    """_rodar_ciclo_automatico e a logica compartilhada entre o gatilho do
+    proprio rerun do Streamlit e a thread em segundo plano
+    (_loop_analise_automatica_background, criada pra corrigir o ciclo de 5
+    min travando quando a aba do navegador fica atras dos graficos do
+    Profit -- navegadores pausam o timer de abas escondidas/minimizadas).
+    Cobre so a contabilizacao dos contadores auto_analise_*, que e a parte
+    que ja tinha ficado quebrada silenciosamente antes."""
+
+    def setUp(self):
+        FAKE_ST.session_state.clear()
+        self.rodar = NS["_rodar_ciclo_automatico"]
+        self._executar_orig = NS["executar_analise"]
+
+    def tearDown(self):
+        NS["executar_analise"] = self._executar_orig
+
+    def test_sucesso_incrementa_tentativas_e_salvos(self):
+        NS["executar_analise"] = lambda: FAKE_ST.session_state.__setitem__(
+            "ultimo_diagnostico", "ARMADO: COMPRA a 5170.00")
+        self.rodar("ciclo_5min")
+        self.assertEqual(FAKE_ST.session_state.get("auto_analise_tentativas"), 1)
+        self.assertEqual(FAKE_ST.session_state.get("auto_analise_salvos"), 1)
+        self.assertEqual(FAKE_ST.session_state.get("auto_analise_duplicados", 0), 0)
+        self.assertEqual(FAKE_ST.session_state.get("auto_analise_erros", 0), 0)
+
+    def test_duplicado_incrementa_duplicados_nao_salvos(self):
+        NS["executar_analise"] = lambda: FAKE_ST.session_state.__setitem__(
+            "ultimo_diagnostico", "ESPERA: ESPERA a 5170.00 | HIST: Duplicado.")
+        self.rodar("ciclo_5min")
+        self.assertEqual(FAKE_ST.session_state.get("auto_analise_duplicados"), 1)
+        self.assertEqual(FAKE_ST.session_state.get("auto_analise_salvos", 0), 0)
+
+    def test_excecao_incrementa_erros_e_registra_ultimo_erro(self):
+        def _falha():
+            raise RuntimeError("falha simulada de captura")
+        NS["executar_analise"] = _falha
+        self.rodar("ciclo_5min")
+        self.assertEqual(FAKE_ST.session_state.get("auto_analise_erros"), 1)
+        self.assertIn("falha simulada", str(FAKE_ST.session_state.get("ultimo_erro_ciclo")))
+
+
 class TestGatekeeperTendenciaAcimaDoFluxo(unittest.TestCase):
     """Caso real relatado pelo usuario: preco caiu de 5171 para 5147 (24
     pontos) e o sistema NUNCA armou venda. Causa raiz: o gatekeeper

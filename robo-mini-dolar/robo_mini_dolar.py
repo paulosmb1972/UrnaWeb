@@ -72,6 +72,20 @@ import win32com.client
 from streamlit_autorefresh import st_autorefresh
 import yfinance as yf
 
+# add_script_run_ctx: forma oficial do Streamlit de dar a uma thread em
+# segundo plano acesso valido a st.session_state DESTA sessao (sem isso, a
+# thread nao teria o contexto de execucao e session_state ficaria
+# inconsistente/invisivel). O caminho de import mudou entre versoes do
+# Streamlit -- tenta os dois conhecidos e desliga o recurso (em vez de
+# quebrar o app) se nenhum existir nesta instalacao.
+try:
+    from streamlit.runtime.scriptrunner import add_script_run_ctx
+except Exception:
+    try:
+        from streamlit.script_run_context import add_script_run_ctx
+    except Exception:
+        add_script_run_ctx = None
+
 # =============================================================================
 # LOGGING DE AUDITORIA — decisoes do gatekeeper
 # Log estruturado, paralelo ao CSV (log_armadilhas_evitadas.csv). O CSV serve
@@ -1335,6 +1349,12 @@ defaults = {
     "auto_analise_salvos": 0,
     "auto_analise_duplicados": 0,
     "auto_analise_erros": 0,
+    # Trava compartilhada entre o gatilho do proprio rerun do Streamlit e a
+    # thread em segundo plano (ver _loop_analise_automatica_background):
+    # garante que as duas nunca chamem executar_analise() ao mesmo tempo
+    # pra mesma sessao.
+    "_lock_analise_bg": threading.Lock(),
+    "_thread_analise_bg_iniciada": False,
     "disparos_anuncio_feitos": {},
     "ultimo_disparo_anuncio": "",
     "disparo_automatico": False,
@@ -12341,6 +12361,106 @@ st.markdown(f'<span class="status-badge {badge_cls}">{badge_txt}</span>',
             unsafe_allow_html=True)
 
 
+def _rodar_ciclo_automatico(origem, disp_glob=False, chave_glob="", evento_glob="", lig_glob=False):
+    """Dispara executar_analise() e registra o desfecho nos contadores
+    auto_analise_* (tentativas/salvos/duplicados/erros). COMPARTILHADO entre
+    o gatilho do proprio rerun do Streamlit (mais abaixo) e a thread em
+    segundo plano (_loop_analise_automatica_background) -- pra nao duplicar
+    a mesma logica em dois lugares com chance de um dia divergir."""
+    st.session_state["origem_ciclo_atual"] = origem
+    if disp_glob:
+        try:
+            atualizar_macro_agendado(forcar=True)
+        except Exception:
+            pass
+        st.session_state["ultimo_disparo_anuncio"] = (
+            f"{datetime.now().strftime('%H:%M:%S')} — {evento_glob}")
+    st.session_state["leitura_fora_de_ciclo"] = bool(lig_glob)
+    st.session_state["auto_analise_tentativas"] = int(st.session_state.get("auto_analise_tentativas", 0)) + 1
+    try:
+        executar_analise()
+        st.session_state.ultimo_ciclo_analise = time.time()
+        st.session_state["ultimo_erro_ciclo"] = None
+        if disp_glob and chave_glob:
+            registrar_disparo_anuncio(chave_glob)
+        if lig_glob:
+            registrar_leitura_de_ligacao()
+        # Observabilidade do salvamento no historico: sem isso, um ciclo
+        # que roda mas nao grava (duplicado pela chave_gatilho, ou erro
+        # ao escrever o CSV) fica indistinguivel de um ciclo que nunca
+        # rodou — foi exatamente essa confusao que gerou o relato de
+        # "analises rodam mas nao aparecem no historico".
+        _diag = str(st.session_state.get("ultimo_diagnostico", ""))
+        if "HIST: Duplicado." in _diag:
+            st.session_state["auto_analise_duplicados"] = int(st.session_state.get("auto_analise_duplicados", 0)) + 1
+        elif "HIST: " in _diag:
+            st.session_state["auto_analise_erros"] = int(st.session_state.get("auto_analise_erros", 0)) + 1
+        else:
+            st.session_state["auto_analise_salvos"] = int(st.session_state.get("auto_analise_salvos", 0)) + 1
+    except Exception as _e:
+        st.session_state["ultimo_erro_ciclo"] = str(_e)
+        st.session_state["auto_analise_erros"] = int(st.session_state.get("auto_analise_erros", 0)) + 1
+
+
+def _loop_analise_automatica_background():
+    """Ciclo de 5 min rodando numa thread em segundo plano, independente do
+    navegador estar renderizando esta pagina.
+
+    BUG CORRIGIDO — ate aqui, o UNICO jeito do ciclo de 5 min disparar de
+    novo era o st_autorefresh (um timer em JAVASCRIPT no navegador) acordar
+    o script pra reavaliar a condicao. Navegadores pausam ou atrasam MUITO
+    esse tipo de timer em abas que nao estao visiveis (outra aba em
+    primeiro plano, janela minimizada) -- o usuario relatou o ciclo
+    parando de verdade assim: so 1 analise em mais de 15 minutos, com a
+    aba do app atras dos graficos do Profit (o proprio fluxo de trabalho:
+    olhar o grafico/SuperDom do Profit, nao o navegador). Essa thread nao
+    depende de nenhum timer do navegador — roda sozinha no processo do
+    Streamlit enquanto a sessao existir.
+
+    So mexe em session_state (nunca em st.spinner/st.write/etc — chamadas
+    de UI so podem vir da thread principal do script)."""
+    while True:
+        time.sleep(10)
+        try:
+            if not (st.session_state.get("analise_automatica") and CHAVE_OPENROUTER):
+                continue
+            replay = bool(st.session_state.get("modo_replay"))
+            intervalo = intervalo_analise_atual()
+            decorrido = time.time() - num(st.session_state.get("ultimo_ciclo_analise", 0))
+            na_janela = bool(estado_janela_operacional().get("dentro"))
+            deve_rodar = (replay and decorrido >= intervalo) or (
+                not replay and na_janela and decorrido >= intervalo)
+            if not deve_rodar:
+                continue
+            lock = st.session_state.get("_lock_analise_bg")
+            if lock is None or not lock.acquire(blocking=False):
+                continue   # o script principal (ou este loop) ja esta analisando agora
+            try:
+                # Revalida DEPOIS de pegar a trava: pode ter rodado enquanto
+                # esperava (nao deveria com acquire(blocking=False), mas o
+                # tempo entre o check acima e pegar a trava e real).
+                decorrido2 = time.time() - num(st.session_state.get("ultimo_ciclo_analise", 0))
+                if decorrido2 < intervalo:
+                    continue
+                _rodar_ciclo_automatico("replay_auto" if replay else "ciclo_5min")
+            finally:
+                lock.release()
+        except Exception:
+            # Uma iteracao ruim (erro de rede, sessao encerrada, etc) nunca
+            # pode matar a thread inteira -- ela precisa continuar tentando
+            # nos proximos ciclos.
+            pass
+
+
+if add_script_run_ctx is not None and not st.session_state.get("_thread_analise_bg_iniciada"):
+    st.session_state["_thread_analise_bg_iniciada"] = True
+    _thread_analise_bg = threading.Thread(
+        target=_loop_analise_automatica_background, daemon=True,
+        name="ciclo_analise_automatica_bg")
+    add_script_run_ctx(_thread_analise_bg)
+    _thread_analise_bg.start()
+
+
 # =============================================================================
 # CICLO GLOBAL DE ANALISE — vale para TODAS as abas
 # Roda antes de montar as abas: o ciclo de 5 min e o disparo pos-anuncio
@@ -12399,43 +12519,23 @@ _disparar_glob = st.session_state.get("analise_automatica") and CHAVE_OPENROUTER
     (not _replay_glob and ((_na_janela_glob and (_dec_glob >= _int_glob or _disp_glob)) or _lig_glob)))
 
 if _disparar_glob:
-    st.session_state["origem_ciclo_atual"] = (
+    _origem_glob = (
         "ligacao" if _lig_glob else
         "anuncio" if (_disp_glob and _dec_glob < _int_glob) else
         "replay_auto" if _replay_glob else "ciclo_5min")
-    if _disp_glob:
+    # A thread em segundo plano (_loop_analise_automatica_background) pode
+    # estar analisando agora mesmo — acquire(blocking=False) pra nunca
+    # travar o RENDER da pagina esperando ela terminar; se ja estiver
+    # ocupada, simplesmente nao disputa (a proxima leitura do gatilho, seja
+    # por rerun ou pela propria thread, cobre o ciclo).
+    _lock_glob = st.session_state.get("_lock_analise_bg")
+    if _lock_glob is None or _lock_glob.acquire(blocking=False):
         try:
-            atualizar_macro_agendado(forcar=True)
-        except Exception:
-            pass
-        st.session_state["ultimo_disparo_anuncio"] = (
-            f"{datetime.now().strftime('%H:%M:%S')} — {_evento_glob}")
-    st.session_state["leitura_fora_de_ciclo"] = bool(_lig_glob)
-    st.session_state["auto_analise_tentativas"] = int(st.session_state.get("auto_analise_tentativas", 0)) + 1
-    with st.spinner("Replay: analisando o próximo instante..." if _replay_glob else "Analisando o pregão..."):
-        try:
-            executar_analise()
-            st.session_state.ultimo_ciclo_analise = time.time()
-            st.session_state["ultimo_erro_ciclo"] = None
-            if _disp_glob and _chave_glob:
-                registrar_disparo_anuncio(_chave_glob)
-            if _lig_glob:
-                registrar_leitura_de_ligacao()
-            # Observabilidade do salvamento no historico: sem isso, um ciclo
-            # que roda mas nao grava (duplicado pela chave_gatilho, ou erro
-            # ao escrever o CSV) fica indistinguivel de um ciclo que nunca
-            # rodou — foi exatamente essa confusao que gerou o relato de
-            # "analises rodam mas nao aparecem no historico".
-            _diag_glob = str(st.session_state.get("ultimo_diagnostico", ""))
-            if "HIST: Duplicado." in _diag_glob:
-                st.session_state["auto_analise_duplicados"] = int(st.session_state.get("auto_analise_duplicados", 0)) + 1
-            elif "HIST: " in _diag_glob:
-                st.session_state["auto_analise_erros"] = int(st.session_state.get("auto_analise_erros", 0)) + 1
-            else:
-                st.session_state["auto_analise_salvos"] = int(st.session_state.get("auto_analise_salvos", 0)) + 1
-        except Exception as _e_glob:
-            st.session_state["ultimo_erro_ciclo"] = str(_e_glob)
-            st.session_state["auto_analise_erros"] = int(st.session_state.get("auto_analise_erros", 0)) + 1
+            with st.spinner("Replay: analisando o próximo instante..." if _replay_glob else "Analisando o pregão..."):
+                _rodar_ciclo_automatico(_origem_glob, _disp_glob, _chave_glob, _evento_glob, _lig_glob)
+        finally:
+            if _lock_glob is not None:
+                _lock_glob.release()
 
 
 # =========================
