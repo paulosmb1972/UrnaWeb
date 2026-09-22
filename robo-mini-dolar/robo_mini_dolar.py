@@ -13221,6 +13221,20 @@ with aba_macro:
     if _mac_bruto.get("indisponiveis"):
         st.caption("Sem leitura de: " + ", ".join(str(x) for x in _mac_bruto["indisponiveis"]))
 
+    # BUG CORRIGIDO — pmi_manufatura/pmi_composto ja existiam no
+    # session_state e ja eram lidos por ler_dados_macro(), mas nenhum
+    # widget da interface escrevia neles: nao tinha como preencher, por
+    # isso o PMI ficava sempre "N/A" (a busca automatica nao tem fonte
+    # confiavel sem chave paga de FRED/FMP). PMI e divulgacao MENSAL —
+    # baixo esforco preencher a mao a cada nova divulgacao.
+    with st.expander("✍️ Preencher PMI manualmente (fonte automática indisponível sem chave paga)"):
+        st.caption("PMI Manufatura EUA: https://br.investing.com/economic-calendar/manufacturing-pmi-1838")
+        pcol1, pcol2 = st.columns(2)
+        pcol1.number_input("PMI Manufatura (EUA)", min_value=0.0, max_value=100.0,
+                           step=0.1, format="%.1f", key="pmi_manufatura")
+        pcol2.number_input("PMI Composto (EUA)", min_value=0.0, max_value=100.0,
+                           step=0.1, format="%.1f", key="pmi_composto")
+
     st.markdown('<div class="section-title">📈 Sinal de abertura (9h)</div>', unsafe_allow_html=True)
     if st.button("🔄 Atualizar sinal de abertura"):
         st.session_state.sinal_9h = gerar_sinal_abertura()
