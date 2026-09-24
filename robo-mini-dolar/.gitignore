@@ -1,5 +1,6 @@
 __pycache__/
 *.pyc
 gatekeeper_audit.log
+thread_analise_bg_audit.log
 mercado_macro.json
 config_local.bat

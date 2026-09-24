@@ -54,6 +54,7 @@ import time
 import base64
 import requests
 import threading
+import traceback
 import ctypes
 import logging
 import xml.etree.ElementTree as ET
@@ -157,6 +158,20 @@ if not logger_gatekeeper.handlers:
     except Exception:
         # Sem permissao de escrita no diretorio, por exemplo: o app continua
         # rodando sem log em arquivo, apenas sem o rastro em disco.
+        pass
+
+LOG_THREAD_BG_PATH = "thread_analise_bg_audit.log"
+logger_thread_bg = logging.getLogger("autopro.thread_analise_bg")
+if not logger_thread_bg.handlers:
+    try:
+        _handler_tbg = logging.FileHandler(LOG_THREAD_BG_PATH, encoding="utf-8")
+        _handler_tbg.setFormatter(logging.Formatter(
+            "%(asctime)s.%(msecs)03d | %(levelname)s | %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S"))
+        logger_thread_bg.addHandler(_handler_tbg)
+        logger_thread_bg.setLevel(logging.INFO)
+        logger_thread_bg.propagate = False
+    except Exception:
         pass
 
 # =========================
@@ -1355,6 +1370,9 @@ defaults = {
     # pra mesma sessao.
     "_lock_analise_bg": threading.Lock(),
     "_thread_analise_bg_iniciada": False,
+    "_thread_analise_bg_obj": None,
+    "_thread_bg_reinicios": 0,
+    "_ultimo_erro_thread_bg": None,
     "disparos_anuncio_feitos": {},
     "ultimo_disparo_anuncio": "",
     "disparo_automatico": False,
@@ -12424,7 +12442,20 @@ def _loop_analise_automatica_background():
     Streamlit enquanto a sessao existir.
 
     So mexe em session_state (nunca em st.spinner/st.write/etc — chamadas
-    de UI so podem vir da thread principal do script)."""
+    de UI so podem vir da thread principal do script).
+
+    BUG CORRIGIDO (2) — o "nunca pode matar a thread" so valia pra
+    subclasses de Exception. O proprio Streamlit usa excecoes que
+    HERDAM DE BaseException DE PROPOSITO (RerunException, StopException e
+    afins), exatamente pra atravessar um "except Exception" alheio sem
+    serem engolidas -- e essa thread nao tem por baixo o scriptrunner do
+    Streamlit pra pegar essas excecoes como a thread principal tem. Se uma
+    dessas (ou qualquer outra BaseException, tipo SystemExit) escapasse
+    daqui, a thread morria em silencio pra sempre -- sem crash visivel em
+    lugar nenhum, so um "parou de gravar historico do nada" horas depois.
+    Por isso o except abaixo e BaseException, nao Exception, com o motivo
+    registrado (nunca so um "pass") pra dar pra diagnosticar se acontecer
+    de novo."""
     while True:
         time.sleep(10)
         try:
@@ -12451,20 +12482,60 @@ def _loop_analise_automatica_background():
                 _rodar_ciclo_automatico("replay_auto" if replay else "ciclo_5min")
             finally:
                 lock.release()
-        except Exception:
-            # Uma iteracao ruim (erro de rede, sessao encerrada, etc) nunca
-            # pode matar a thread inteira -- ela precisa continuar tentando
-            # nos proximos ciclos.
-            pass
+        except BaseException as _e_bg:
+            # Uma iteracao ruim (erro de rede, sessao encerrada, excecao
+            # interna do Streamlit, etc) nunca pode matar a thread inteira
+            # -- ela precisa continuar tentando nos proximos ciclos. O
+            # motivo fica registrado (resumo na aba Geral, traceback
+            # completo em arquivo) em vez de sumir sem deixar rastro.
+            try:
+                logger_thread_bg.error(
+                    "Excecao na thread de analise automatica: %s",
+                    "".join(traceback.format_exception(
+                        type(_e_bg), _e_bg, _e_bg.__traceback__)))
+            except Exception:
+                pass
+            try:
+                st.session_state["_ultimo_erro_thread_bg"] = (
+                    f"{datetime.now().strftime('%H:%M:%S')} — "
+                    f"{type(_e_bg).__name__}: {_e_bg}")
+            except Exception:
+                pass
 
 
-if add_script_run_ctx is not None and not st.session_state.get("_thread_analise_bg_iniciada"):
+def _iniciar_thread_analise_bg():
+    """Cria e inicia a thread do ciclo automatico, guardando o objeto em
+    session_state pra o watchdog (mais abaixo) poder checar is_alive()."""
     st.session_state["_thread_analise_bg_iniciada"] = True
-    _thread_analise_bg = threading.Thread(
+    _thread = threading.Thread(
         target=_loop_analise_automatica_background, daemon=True,
         name="ciclo_analise_automatica_bg")
-    add_script_run_ctx(_thread_analise_bg)
-    _thread_analise_bg.start()
+    add_script_run_ctx(_thread)
+    st.session_state["_thread_analise_bg_obj"] = _thread
+    _thread.start()
+
+
+if add_script_run_ctx is not None:
+    if not st.session_state.get("_thread_analise_bg_iniciada"):
+        _iniciar_thread_analise_bg()
+    else:
+        # Watchdog: se por algum motivo a thread morreu mesmo com o
+        # "except BaseException" acima (por exemplo, ela nunca chegou a
+        # rodar antes de travar em algo fora do try), reinicia sozinha no
+        # proximo rerun em vez de deixar o ciclo automatico parado ate o
+        # usuario reiniciar o app manualmente.
+        _thread_bg_atual = st.session_state.get("_thread_analise_bg_obj")
+        if _thread_bg_atual is not None and not _thread_bg_atual.is_alive():
+            st.session_state["_thread_bg_reinicios"] = int(
+                st.session_state.get("_thread_bg_reinicios", 0)) + 1
+            try:
+                logger_thread_bg.warning(
+                    "Thread de analise automatica estava morta -- reiniciando "
+                    "(reinicio numero %s).",
+                    st.session_state["_thread_bg_reinicios"])
+            except Exception:
+                pass
+            _iniciar_thread_analise_bg()
 
 
 # =============================================================================
@@ -12783,6 +12854,14 @@ with aba_geral:
                        f"erros: {_err_ui}")
             if st.session_state.get("ultimo_erro_ciclo"):
                 st.caption(f"⚠️ Último erro no ciclo: {st.session_state['ultimo_erro_ciclo']}")
+        _reinicios_bg_ui = int(st.session_state.get("_thread_bg_reinicios", 0))
+        if _reinicios_bg_ui:
+            st.caption(f"⚠️ Thread do ciclo automático em segundo plano morreu e foi "
+                       f"reiniciada {_reinicios_bg_ui}x — ver detalhe em "
+                       f"`{LOG_THREAD_BG_PATH}`.")
+        if st.session_state.get("_ultimo_erro_thread_bg"):
+            st.caption(f"⚠️ Último erro na thread de segundo plano: "
+                       f"{st.session_state['_ultimo_erro_thread_bg']}")
     with col_cfg2:
         st.toggle("Modo replay", key="modo_replay")
         st.toggle("Usar macro no replay", key="usar_macro_no_replay",
