@@ -335,6 +335,103 @@ class TestVeredictoMacroAbaRespeitaReplay(unittest.TestCase):
         self.assertEqual(self._chamadas, [("replay", "2026-09-15")])
 
 
+class TestPmiManualExpiraValidade(unittest.TestCase):
+    """Usuario relatou: a aba Macro nunca indicava 'venda', so 'compra' ou
+    'neutro' -- em 676 linhas do historico. Causa raiz: o PMI digitado a
+    mao (pmi_manufatura/pmi_composto) ficava no session_state PRA SEMPRE
+    (widget do Streamlit so muda quando o usuario mexe de novo de verdade)
+    e votava com o MESMO peso em toda leitura, dias a fio, mesmo depois do
+    PMI real do mes ja ter saido outro -- PMI_EUA apareceu travado em 55.2
+    (peso +2, comprador) em 495 das 676 linhas. Com +2 fixo, so um -3 nas
+    OUTRAS fontes (DXY+PTAX+EWZ+VIX) derrubava o macro pra venda -- quase
+    nunca acontecia. Agora o valor manual so pondera por ate
+    PMI_MANUAL_VALIDADE_DIAS depois de digitado (ver _registrar_data_pmi_manual
+    / _pmi_manual_esta_fresco)."""
+
+    def setUp(self):
+        FAKE_ST.session_state.clear()
+        self.ler_dados_macro = NS["ler_dados_macro"]
+        self.datetime = NS["datetime"]
+        self.timedelta = NS["timedelta"]
+        self.validade = NS["PMI_MANUAL_VALIDADE_DIAS"]
+
+    def test_valor_sem_data_registrada_nao_pondera(self):
+        """Valor herdado de antes desta correcao (sem data carimbada) nao
+        pode continuar votando silenciosamente pra sempre."""
+        FAKE_ST.session_state["pmi_composto"] = 55.2
+        r = self.ler_dados_macro()
+        self.assertNotIn("PMI_COMPOSTO", r)
+
+    def test_valor_dentro_da_validade_pondera(self):
+        FAKE_ST.session_state["pmi_composto"] = 55.2
+        FAKE_ST.session_state["pmi_composto_data"] = self.datetime.now().strftime("%Y-%m-%d")
+        r = self.ler_dados_macro()
+        self.assertEqual(r["PMI_COMPOSTO"], 55.2)
+
+    def test_valor_vencido_nao_pondera_mais(self):
+        FAKE_ST.session_state["pmi_manufatura"] = 55.2
+        _velha = self.datetime.now() - self.timedelta(days=self.validade + 1)
+        FAKE_ST.session_state["pmi_manufatura_data"] = _velha.strftime("%Y-%m-%d")
+        r = self.ler_dados_macro()
+        self.assertNotIn("PMI_MANUFATURA", r)
+
+    def test_digitar_de_novo_renova_a_validade(self):
+        """_registrar_data_pmi_manual (o on_change do widget) e o unico
+        jeito de renovar -- simula o usuario digitando de novo."""
+        FAKE_ST.session_state["pmi_manufatura"] = 55.2
+        _velha = self.datetime.now() - self.timedelta(days=self.validade + 1)
+        FAKE_ST.session_state["pmi_manufatura_data"] = _velha.strftime("%Y-%m-%d")
+        NS["_registrar_data_pmi_manual"]("pmi_manufatura_data")
+        r = self.ler_dados_macro()
+        self.assertEqual(r["PMI_MANUFATURA"], 55.2)
+
+
+class TestMacroAtualOuReplayFonteUnica(unittest.TestCase):
+    """A funcao macro_atual_ou_replay() foi reintroduzida depois de ter sido
+    perdida numa reversao pra base antiga: 2 call sites (o PMI dentro de
+    classificar_contexto e o registro de auditoria do historico) tinham
+    voltado a checar a chave morta 'modo_replay_ativo' (nunca setada em
+    lugar nenhum -- a de verdade e 'modo_replay'), sempre caindo no ramo ao
+    vivo mesmo durante o replay."""
+
+    def setUp(self):
+        FAKE_ST.session_state.clear()
+        self.f = NS["macro_atual_ou_replay"]
+        self._macro_para_replay_orig = NS["macro_para_replay"]
+        self._ler_dados_macro_orig = NS["ler_dados_macro"]
+        self._chamadas = []
+        NS["macro_para_replay"] = lambda data: (
+            self._chamadas.append(("replay", data)) or {"disponivel": True})
+        NS["ler_dados_macro"] = lambda: (
+            self._chamadas.append(("live", None)) or {"disponivel": True})
+
+    def tearDown(self):
+        NS["macro_para_replay"] = self._macro_para_replay_orig
+        NS["ler_dados_macro"] = self._ler_dados_macro_orig
+
+    def test_fora_do_replay_usa_ler_dados_macro(self):
+        FAKE_ST.session_state["modo_replay"] = False
+        self.f()
+        self.assertEqual(self._chamadas, [("live", None)])
+
+    def test_em_replay_usa_macro_da_data_do_replay(self):
+        FAKE_ST.session_state["modo_replay"] = True
+        FAKE_ST.session_state["replay_data"] = "2026-09-15"
+        self.f()
+        self.assertEqual(self._chamadas, [("replay", "2026-09-15")])
+
+    def test_chave_morta_modo_replay_ativo_nao_afeta_mais_a_escolha(self):
+        """Regressao direta do bug: setar a chave ERRADA (que algum codigo
+        antigo ainda podia ter deixado no session_state) nao pode fazer a
+        funcao escolher replay por engano nem deixar de escolher replay
+        quando modo_replay (a chave certa) esta ligada."""
+        FAKE_ST.session_state["modo_replay"] = True
+        FAKE_ST.session_state["modo_replay_ativo"] = False
+        FAKE_ST.session_state["replay_data"] = "2026-09-15"
+        self.f()
+        self.assertEqual(self._chamadas, [("replay", "2026-09-15")])
+
+
 class TestColetarIndicadorWebNaoContaminaComCacheAntigo(unittest.TestCase):
     """Usuario pediu: indicador macro que nao foi capturado NAO pode entrar
     na ponderacao da analise, nem em replay nem em tempo real. O fallback

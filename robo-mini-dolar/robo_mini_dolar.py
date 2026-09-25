@@ -759,7 +759,7 @@ def macro_deve_coletar_agora(agora=None):
 def atualizar_macro_agendado(agora=None, forcar=False):
     """Dispara a coleta web quando for a hora. Chamar a cada ciclo de analise."""
     agora = agora or datetime.now()
-    if st.session_state.get("modo_replay_ativo") and not forcar:
+    if st.session_state.get("modo_replay") and not forcar:
         return {"coletou": False, "motivo": "replay: coleta ao vivo desligada"}
     # Fora da janela nao ha decisao a tomar: nao gasta requisicao nas fontes.
     if not forcar and not dentro_janela_operacional(agora):
@@ -1391,6 +1391,8 @@ defaults = {
     "pmi_sp_servicos": 0.0,
     "pmi_manufatura": 0.0,
     "pmi_composto": 0.0,
+    "pmi_manufatura_data": "",
+    "pmi_composto_data": "",
     "estado_anterior_tendencia": {},
     "ultima_mudanca_brusca": "",
     "ultimo_ciclo_analise": 0.0,
@@ -2622,20 +2624,76 @@ def coletar_dados_macro():
     return dados
 
 
+PMI_MANUAL_VALIDADE_DIAS = 40  # PMI e divulgacao MENSAL: passado isso, o
+# numero digitado a mao vira o mes anterior e nao pode continuar votando
+# como se fosse atual pra sempre.
+
+
+def _pmi_manual_esta_fresco(chave_data):
+    """BUG CORRIGIDO — o valor digitado a mao em 'Preencher PMI manualmente'
+    ficava no session_state PARA SEMPRE (widget do Streamlit so muda quando
+    o usuario mexe de novo), votando com o MESMO peso em toda leitura,
+    dias a fio, mesmo depois do PMI real do mes ja ter saido outro. No
+    historico isso apareceu como PMI_EUA travado no mesmssimo valor (55.2)
+    em 495 das 676 linhas do dia, e por causa disso o macro nunca fechava
+    'venda' (o +2 fixo do PMI sempre precisava de -3 nas outras fontes pra
+    ser superado). Agora o valor so conta por ate PMI_MANUAL_VALIDADE_DIAS
+    depois de digitado -- passado isso, e tratado como indicador nao
+    capturado (nao pondera), igual a qualquer outra fonte ausente."""
+    _data_str = str(st.session_state.get(chave_data, "") or "")
+    if not _data_str:
+        return False   # nunca foi carimbado (valor de antes desta correcao)
+    try:
+        _data = datetime.strptime(_data_str, "%Y-%m-%d")
+    except Exception:
+        return False
+    return (datetime.now() - _data).days <= PMI_MANUAL_VALIDADE_DIAS
+
+
+def _registrar_data_pmi_manual(chave_data):
+    st.session_state[chave_data] = datetime.now().strftime("%Y-%m-%d")
+
+
 def ler_dados_macro():
-    """Le o macro salvo e mescla os valores de PMI informados na interface."""
+    """Le o macro salvo e mescla os valores de PMI informados na interface
+    -- so enquanto ainda estiverem dentro da validade (ver
+    _pmi_manual_esta_fresco); passado isso entram como indisponivel, nunca
+    como um valor antigo silencioso."""
     _base = _ler_macro_arquivo()
     try:
-        for _k, _s in (("PMI_ISM_SERVICOS", "pmi_ism_servicos"),
-                       ("PMI_SP_SERVICOS", "pmi_sp_servicos"),
-                       ("PMI_MANUFATURA", "pmi_manufatura"),
-                       ("PMI_COMPOSTO", "pmi_composto")):
+        for _k, _s, _sd in (("PMI_ISM_SERVICOS", "pmi_ism_servicos", None),
+                            ("PMI_SP_SERVICOS", "pmi_sp_servicos", None),
+                            ("PMI_MANUFATURA", "pmi_manufatura", "pmi_manufatura_data"),
+                            ("PMI_COMPOSTO", "pmi_composto", "pmi_composto_data")):
             _v = float(st.session_state.get(_s, 0) or 0)
-            if _v > 0:
+            if _v > 0 and (_sd is None or _pmi_manual_esta_fresco(_sd)):
                 _base[_k] = _v
     except Exception:
         pass
     return _base
+
+
+def macro_atual_ou_replay(dados_tela=None):
+    """Fonte UNICA de verdade de qual macro usar: macro_para_replay() (a
+    data do PREGAO REPLAYADO) em modo replay, ler_dados_macro() (a coleta ao
+    vivo, sempre de HOJE) fora dele.
+
+    BUG CORRIGIDO (reintroduzido) — esta funcao ja tinha sido criada antes
+    exatamente pra evitar 3 lugares reimplementando o mesmo if/else na mao
+    (um deles sempre ficando pra tras quando os outros eram corrigidos), mas
+    foi perdida numa reversao pra uma base mais antiga e nunca reaplicada —
+    e o call site do PMI dentro de classificar_contexto() e o do registro de
+    auditoria do historico voltaram a checar a chave morta
+    'modo_replay_ativo' (nunca setada em lugar nenhum; a de verdade e
+    'modo_replay'), o que fazia os dois SEMPRE cair no ramo ao vivo mesmo
+    durante o replay — contaminando tanto a decisao quanto o CSV com
+    DXY/EWZ/VIX/PTAX/PMI de HOJE em vez do dia replayado."""
+    if st.session_state.get("modo_replay"):
+        return macro_para_replay(
+            st.session_state.get("replay_data")
+            or str((dados_tela or st.session_state.get("ultimos_dados_tela") or {})
+                   .get("data_replay", ""))[:10])
+    return ler_dados_macro()
 
 
 def _ler_macro_arquivo():
@@ -7227,19 +7285,11 @@ def classificar_contexto(dados_tela, fechamento_ant=None, ignorar_macro=False):
     lotes_info = avaliar_lotes_institucionais(st.session_state.get("ultimos_agentes", {}), preco)
 
     # ---- PMI dos EUA: vies macro para o Mini Dolar ----
-    if ignorar_macro:
-        _macro_pmi = {}
-    elif st.session_state.get("modo_replay_ativo"):
-        # No replay a coleta ao vivo nao vale: busca o macro da DATA do replay
-        # nas fontes com historico (BCB, FRED, FMP). O que nao vier fica
-        # marcado como indisponivel e nao pontua.
-        _macro_pmi = macro_para_replay(
-            st.session_state.get("data_replay")
-            or str((dados_tela or {}).get("data", ""))[:10])
-    else:
-        # A coleta web tem relogio proprio no topo do app; aqui apenas LE o
-        # arquivo ja gravado. Buscar na web dentro da analise travava o ciclo.
-        _macro_pmi = ler_dados_macro()
+    # BUG CORRIGIDO — checava a chave morta 'modo_replay_ativo' (nunca setada
+    # em lugar nenhum) em vez de 'modo_replay': em replay, SEMPRE caia no
+    # ramo ao vivo, contaminando a decisao com o macro de HOJE em vez do dia
+    # replayado. Ver macro_atual_ou_replay().
+    _macro_pmi = {} if ignorar_macro else macro_atual_ou_replay(dados_tela)
     pmi_info = peso_pmi_eua(_macro_pmi)
 
     regime = classificar_regime(preco, vwap, ajuste, mm9, mm20, mm50, mm200, momentum=mom)
@@ -9124,13 +9174,11 @@ def veredito_macro_aba():
     o replay — atualizar_macro_agendado nao coleta nesse modo): a aba ficava
     travada no MESMO vies e percentual (relatado como "compra, 40%, sempre")
     o dia inteiro de replay, nao importa qual dia estivesse sendo replayado
-    nem quanto tempo passasse. Agora busca o macro DA DATA do replay."""
-    if st.session_state.get("modo_replay"):
-        macro = macro_para_replay(
-            st.session_state.get("replay_data")
-            or str((st.session_state.get("ultimos_dados_tela") or {}).get("data_replay", ""))[:10])
-    else:
-        macro = ler_dados_macro()
+    nem quanto tempo passasse. Agora busca o macro DA DATA do replay (via
+    macro_atual_ou_replay — fonte unica compartilhada com classificar_contexto
+    e o registro de auditoria, pra essa escolha nunca mais divergir entre os
+    3 lugares)."""
+    macro = macro_atual_ou_replay()
     v = vies_macro_consolidado(macro)
     convicao = min(100, abs(int(v.get("pontos", 0))) * 20)
     return {
@@ -10066,7 +10114,10 @@ def executar_analise():
         salvar_fechamento_dia(preco,ajuste,vwap,num(mac.get("DXY")),num(mac.get("EWZ")),num(mac.get("VIX")))
 
     evento = ts_evento(dados_tela)
-    mac = ler_dados_macro()
+    # BUG CORRIGIDO — este era o call site que ficava pra tras: sempre
+    # ler_dados_macro() (hoje ao vivo) mesmo durante replay, gravando no CSV
+    # de auditoria um DXY/EWZ/VIX/PTAX/PMI que nao era o do dia replayado.
+    mac = macro_atual_ou_replay(dados_tela)
     val = calcular_pct(acao.upper(),preco,alvo,stop,maxima,minima)
 
     _falta_diag = " | ".join(contexto.get("falta_para_gatilho",[])) or "OK"
@@ -13308,11 +13359,28 @@ with aba_macro:
     # baixo esforco preencher a mao a cada nova divulgacao.
     with st.expander("✍️ Preencher PMI manualmente (fonte automática indisponível sem chave paga)"):
         st.caption("PMI Manufatura EUA: https://br.investing.com/economic-calendar/manufacturing-pmi-1838")
+        st.caption(f"PMI é divulgação MENSAL — o valor só entra na análise por até "
+                   f"{PMI_MANUAL_VALIDADE_DIAS} dias depois de digitado. Passado isso, "
+                   f"para de pontuar sozinho (evita votar 'compra' com o número do mês "
+                   f"passado pra sempre) — é só digitar de novo (mesmo que seja o mesmo "
+                   f"número) para renovar a validade.")
         pcol1, pcol2 = st.columns(2)
         pcol1.number_input("PMI Manufatura (EUA)", min_value=0.0, max_value=100.0,
-                           step=0.1, format="%.1f", key="pmi_manufatura")
+                           step=0.1, format="%.1f", key="pmi_manufatura",
+                           on_change=_registrar_data_pmi_manual, args=("pmi_manufatura_data",))
         pcol2.number_input("PMI Composto (EUA)", min_value=0.0, max_value=100.0,
-                           step=0.1, format="%.1f", key="pmi_composto")
+                           step=0.1, format="%.1f", key="pmi_composto",
+                           on_change=_registrar_data_pmi_manual, args=("pmi_composto_data",))
+        _fresco_man = _pmi_manual_esta_fresco("pmi_manufatura_data")
+        _fresco_comp = _pmi_manual_esta_fresco("pmi_composto_data")
+        if num(st.session_state.get("pmi_manufatura", 0)) > 0:
+            _d = st.session_state.get("pmi_manufatura_data") or "sem data registrada"
+            st.caption(f"{'✅' if _fresco_man else '⚠️'} PMI Manufatura preenchido em {_d}"
+                       f"{'' if _fresco_man else ' — vencido, NÃO está entrando na análise; digite de novo para renovar'}")
+        if num(st.session_state.get("pmi_composto", 0)) > 0:
+            _d = st.session_state.get("pmi_composto_data") or "sem data registrada"
+            st.caption(f"{'✅' if _fresco_comp else '⚠️'} PMI Composto preenchido em {_d}"
+                       f"{'' if _fresco_comp else ' — vencido, NÃO está entrando na análise; digite de novo para renovar'}")
 
     st.markdown('<div class="section-title">📈 Sinal de abertura (9h)</div>', unsafe_allow_html=True)
     if st.button("🔄 Atualizar sinal de abertura"):
