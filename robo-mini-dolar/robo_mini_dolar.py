@@ -12318,10 +12318,21 @@ def _render_indices(lista, lado):
     return "".join(linhas)
 
 
-def render_painel_comando(ctx_res, dados_tela, pe):
+def render_painel_comando(ctx_res, dados_tela, pe, veredito_final=None):
     """SUGESTAO UNIFICADA — primeira e principal informacao da pagina.
     A conviccao vem da soma ponderada dos indicadores pelo acerto historico
-    de cada um; os melhores empurram para cima, os piores para baixo."""
+    de cada um; os melhores empurram para cima, os piores para baixo.
+
+    Esse numero NAO e a mesma escala do "Veredito final" (aba Confluencia,
+    acima): aquele e bidirecional (soma macro + liquidez + candles + gatilho,
+    compra e venda competindo pelo mesmo total). Este aqui e unidirecional --
+    so soma pontos A FAVOR da direcao que o gatilho ja escolheu, calibrados
+    pelo acerto historico de cada indicador (sem indicador de penalidade
+    ativo na tabela, a pedido do usuario em 17/09) -- por isso pode saturar
+    em 100% (bastam 2-3 indicadores fortes) mesmo com o Veredito final
+    neutro ou pendendo pro lado oposto. Usuario relatou isso como parecendo
+    dois resultados contraditorios na mesma tela; o rotulo e o aviso abaixo
+    deixam explicito que sao duas perguntas diferentes."""
     conv = int(num(ctx_res.get("conviccao_ponderada", 0)))
     acao = str(ctx_res.get("sugestao_acao", "FORA"))
     cor = str(ctx_res.get("sugestao_cor", "#8892a4"))
@@ -12381,7 +12392,7 @@ def render_painel_comando(ctx_res, dados_tela, pe):
       <div class="linha" style="color:#dfe5f0">{texto}</div>
     </div>
     <div style="min-width:170px;text-align:right;">
-      <div style="font-size:11px;color:#8892a4;text-transform:uppercase;letter-spacing:1px;">Convicção ponderada</div>
+      <div style="font-size:11px;color:#8892a4;text-transform:uppercase;letter-spacing:1px;">Qualidade histórica deste setup</div>
       <div style="font-size:42px;font-weight:800;color:{cor};line-height:1;">{conv}%</div>
       <div style="background:#0e1117;border-radius:5px;height:9px;margin-top:6px;overflow:hidden;">
         <div style="background:{cor};height:9px;width:{conv}%;"></div></div>
@@ -12404,6 +12415,24 @@ def render_painel_comando(ctx_res, dados_tela, pe):
   </div>
 </div>
 """, unsafe_allow_html=True)
+
+    st.caption("ℹ️ Esse número mede só a qualidade histórica DESTE setup pontual "
+               "(indicadores calibrados por acerto passado, soma só a favor da "
+               "direção do gatilho) — não é a mesma conta do 'Veredito final' "
+               "(aba acima, que soma macro + liquidez + candles + gatilho e pode "
+               "apontar para o lado oposto). Quem decide se pode operar são o "
+               "score e o gatekeeper, não esse percentual.")
+    if isinstance(veredito_final, dict):
+        _vf_vies = str(veredito_final.get("vies", "neutro")).lower()
+        _dir_painel = ("compra" if "COMPRA" in acao else "venda" if "VENDA" in acao else "")
+        if (_dir_painel in ("compra", "venda") and _vf_vies in ("compra", "venda")
+                and _vf_vies != _dir_painel):
+            st.warning(
+                f"⚠️ Direções diferentes: este setup aponta **{_dir_painel.upper()}** "
+                f"({conv}%), mas o Veredito final (macro+liquidez+candles+gatilho) "
+                f"aponta **{_vf_vies.upper()}** ({int(num(veredito_final.get('convicao', 0)))}%). "
+                f"Para uma leitura geral do mercado, priorize o Veredito final — este "
+                f"painel só avalia a qualidade histórica do setup específico do gatilho atual.")
 
     if ajustes or aviso_vol:
         itens = "".join(f'<div style="font-size:12px;color:#40c4ff;padding:2px 0;">🔧 {a}</div>'
@@ -13748,7 +13777,7 @@ with aba_confluencia:
     # (reavaliar_execucao incluída) que a leitura mais recente salvou.
     _ctx_conf = st.session_state.get("ultimo_contexto")
     if _dt_conf and _ctx_conf:
-        render_painel_comando(_ctx_conf, _dt_conf, _pe_conf)
+        render_painel_comando(_ctx_conf, _dt_conf, _pe_conf, veredito_final=_v_final)
     elif _dt_conf:
         st.info("Contexto da última leitura ainda não disponível — execute uma análise "
                 "para gerar o painel de comando.")
