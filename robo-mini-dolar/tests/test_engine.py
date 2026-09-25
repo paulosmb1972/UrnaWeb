@@ -432,6 +432,71 @@ class TestMacroAtualOuReplayFonteUnica(unittest.TestCase):
         self.assertEqual(self._chamadas, [("replay", "2026-09-15")])
 
 
+class TestLerMacroArquivoFalhaNaoPoluiComNA(unittest.TestCase):
+    """Usuario relatou DXY/EWZ sempre "sem leitura" mesmo tendo funcionado
+    mais cedo no mesmo dia. Uma das causas: arquivo ausente/corrompido
+    devolvia um dict cheio de STRINGS "N/A" (nao None) para cada indicador
+    -- e quem faz merge com o valor anterior (`if v is not None: ...`)
+    tratava essa string como um valor de verdade, apagando o ultimo bom
+    conhecido em vez de preservar."""
+
+    def setUp(self):
+        self.ler = NS["_ler_macro_arquivo"]
+        self._orig_path = NS["MACRO_JSON"]
+        NS["MACRO_JSON"] = "/caminho/que/nao/existe/arquivo_de_teste_inexistente.json"
+
+    def tearDown(self):
+        NS["MACRO_JSON"] = self._orig_path
+
+    def test_arquivo_ausente_devolve_dict_vazio_nunca_na(self):
+        r = self.ler()
+        self.assertEqual(r, {})
+
+
+class TestColetarDadosMacroNaoApagaValorBomComFalhaPassageira(unittest.TestCase):
+    """coletar_dados_macro() roda em TODO rerun do Streamlit (sem respeitar
+    horario de pregao, ao contrario de atualizar_macro_agendado) e escrevia
+    um dict novo por cima do arquivo mesmo quando a coleta desta rodada
+    falhava para DXY/EWZ (comum fora do horario de Nova York) -- perdendo
+    pra sempre o ultimo valor bom conhecido, ja que nada corrigia depois."""
+
+    def setUp(self):
+        FAKE_ST.session_state.clear()
+        self.coletar = NS["coletar_dados_macro"]
+        self._orig = {k: NS[k] for k in (
+            "_ler_macro_arquivo", "coletar_macro_web", "buscar_noticias_automaticas",
+            "buscar_ptax_bacen", "obter_ultimo_preco", "_gravar_json_atomico")}
+        self._gravado = {}
+        NS["_gravar_json_atomico"] = lambda caminho, dados: self._gravado.update(dados)
+        NS["buscar_noticias_automaticas"] = lambda: []
+        NS["buscar_ptax_bacen"] = lambda: None
+        NS["obter_ultimo_preco"] = lambda ticker: "N/A"   # yfinance tambem falha
+
+    def tearDown(self):
+        NS.update(self._orig)
+
+    def test_fetch_falho_preserva_dxy_ewz_do_arquivo(self):
+        NS["_ler_macro_arquivo"] = lambda: {"DXY": 101.01, "EWZ": 36.82}
+        NS["coletar_macro_web"] = lambda data_ref=None: {
+            "DXY": None, "EWZ": None, "VIX": None, "PTAX": None, "PMI": None,
+            "fontes": {}, "indisponiveis": ["DXY", "EWZ", "VIX", "PTAX", "PMI"],
+            "indisponiveis_essenciais": ["DXY", "VIX", "PTAX"], "completo": False}
+        self.coletar()
+        self.assertEqual(self._gravado.get("DXY"), 101.01)
+        self.assertEqual(self._gravado.get("EWZ"), 36.82)
+
+    def test_fetch_bem_sucedido_continua_atualizando_normalmente(self):
+        """Controle: coleta que funciona continua usando o valor NOVO, no
+        apenas preservando o antigo pra sempre."""
+        NS["_ler_macro_arquivo"] = lambda: {"DXY": 101.01, "EWZ": 36.82}
+        NS["coletar_macro_web"] = lambda data_ref=None: {
+            "DXY": 99.5, "EWZ": 37.0, "VIX": 15.0, "PTAX": 5.20, "PMI": 55.0,
+            "fontes": {}, "indisponiveis": [], "indisponiveis_essenciais": [], "completo": True}
+        self.coletar()
+        self.assertEqual(self._gravado.get("DXY"), 99.5)
+        self.assertEqual(self._gravado.get("EWZ"), 37.0)
+
+
 class TestColetarIndicadorWebNaoContaminaComCacheAntigo(unittest.TestCase):
     """Usuario pediu: indicador macro que nao foi capturado NAO pode entrar
     na ponderacao da analise, nem em replay nem em tempo real. O fallback

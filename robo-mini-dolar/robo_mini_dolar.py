@@ -804,8 +804,7 @@ def atualizar_macro_agendado(agora=None, forcar=False):
         if _v_novo > 0 and _v_ant > 0:
             base[_k + "_ANTERIOR"] = _v_ant
     try:
-        with open(MACRO_JSON, "w", encoding="utf-8") as f:
-            json.dump(base, f, ensure_ascii=False, indent=2)
+        _gravar_json_atomico(MACRO_JSON, base)
     except Exception:
         pass
     st.session_state["ultima_coleta_macro_web"] = agora.strftime("%Y-%m-%d %H:%M:%S")
@@ -2188,8 +2187,7 @@ def _cache_macro_ler():
 
 def _cache_macro_gravar(cache):
     try:
-        with open(ARQ_CACHE_MACRO_WEB, "w", encoding="utf-8") as f:
-            json.dump(cache, f, ensure_ascii=False, indent=2)
+        _gravar_json_atomico(ARQ_CACHE_MACRO_WEB, cache)
     except Exception:
         pass
 
@@ -2569,6 +2567,7 @@ def coletar_dados_macro():
         "USDBRL": ["USDBRL=X"], "SPY": ["SPY"], "QQQ": ["QQQ"],
         "VIX": ["^VIX"], "TLT": ["TLT"], "GLD": ["GLD"], "CL_OIL": ["CL=F"],
     }
+    _prev = _ler_macro_arquivo() or {}
     dados = {
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "noticias": buscar_noticias_automaticas(),
@@ -2589,7 +2588,6 @@ def coletar_dados_macro():
         dados["macro_completo"] = bool(_web.get("completo"))
         # Guarda a leitura ANTERIOR de DXY e EWZ. Sem ela a variacao percentual
         # nunca era calculada e o macro ficava neutro em 100% das linhas.
-        _prev = _ler_macro_arquivo() or {}
         for _k in ("DXY", "EWZ", "VIX"):
             _novo, _velho = num(_web.get(_k)), num(_prev.get(_k))
             if _novo > 0 and _velho > 0 and abs(_novo - _velho) > 1e-9:
@@ -2617,10 +2615,27 @@ def coletar_dados_macro():
         dados[nome] = v
         if v != "N/A" and nome in ("DXY", "EWZ", "VIX"):
             dados.setdefault("macro_fontes", {})[nome] = "yfinance"
+    # BUG CORRIGIDO — depois da cadeia web E do yfinance, quem ainda ficasse
+    # "N/A" (ou None) era gravado assim MESMO POR CIMA de um valor bom que
+    # ja estava no arquivo de uma coleta anterior -- essa funcao roda em
+    # TODO rerun do Streamlit (sem respeitar horario de pregao, ao contrario
+    # de atualizar_macro_agendado), entao bastava UMA falha passageira de
+    # rede (comum fora do horario de Nova York, quando DXY/EWZ nao tem
+    # cotacao fresca em fonte nenhuma) para apagar o ultimo valor bom
+    # PERMANENTEMENTE -- nada reescrevia depois, porque a string "N/A" nao e
+    # None e o merge daqui na frente nunca a tratava como "sem dado". Agora,
+    # se a coleta desta rodada falhou, mantem o ultimo valor conhecido do
+    # arquivo em vez de apagar (o mesmo espirito ja usado em
+    # atualizar_macro_agendado).
+    for nome in tickers:
+        if not (num(dados.get(nome), 0) > 0):
+            _velho = _prev.get(nome)
+            if num(_velho, 0) > 0:
+                dados[nome] = _velho
     try:
-        with open(MACRO_JSON, "w", encoding="utf-8") as f:
-            json.dump(dados, f, ensure_ascii=False, indent=2)
-    except Exception: pass
+        _gravar_json_atomico(MACRO_JSON, dados)
+    except Exception:
+        pass
     return dados
 
 
@@ -2696,12 +2711,43 @@ def macro_atual_ou_replay(dados_tela=None):
     return ler_dados_macro()
 
 
+def _gravar_json_atomico(caminho, dados):
+    """Grava escrevendo num arquivo temporario e so entao renomeando por cima
+    do definitivo (os.replace e atomico, inclusive no Windows) -- em vez de
+    escrever direto no arquivo final.
+
+    BUG CORRIGIDO — o app agora tem uma thread de segundo plano rodando o
+    ciclo automatico (ver _loop_analise_automatica_background) AO MESMO
+    TEMPO que a thread principal pode estar renderizando a aba Macro e lendo
+    o mesmo arquivo. Escrita direta (open(...,"w") + json.dump) deixa uma
+    janela real onde uma leitura concorrente pega o arquivo PELA METADE —
+    json.load() estoura JSONDecodeError, cai no "except" de quem le, e ai
+    DXY/EWZ (as fontes mais frageis, as que mais falham em QUALQUER ciclo
+    normal) ficam permanentemente perdidos: o merge de atualizar_macro_agendado
+    le esse arquivo corrompido como base, nao acha nada dentro, e grava de
+    volta sem eles -- apagando um valor bom que so estava la por acidente de
+    timing. Escrever atomico fecha essa janela: quem le sempre pega ou a
+    versao ANTERIOR completa ou a NOVA completa, nunca uma mistura."""
+    tmp = f"{caminho}.tmp{os.getpid()}"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(dados, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, caminho)
+
+
 def _ler_macro_arquivo():
     try:
         with open(MACRO_JSON, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception:
-        return {k: "N/A" for k in ["DXY","EWZ","USDBRL","PTAX","SPY","QQQ","VIX","TLT","GLD","CL_OIL","noticias","timestamp"]}
+        # BUG CORRIGIDO — devolvia um dict com "N/A" (STRING) para cada
+        # indicador quando o arquivo nao existe/nao le. Essa string nao e
+        # None, entao o merge de atualizar_macro_agendado ("so sobrescreve
+        # quando o valor novo não é None") tratava esse "N/A" de falha de
+        # LEITURA como se fosse um valor de verdade, apagando o ultimo bom
+        # conhecido. Vazio (sem a chave) deixa o merge preservar o que ja
+        # existia, e o .get(..., "N/A") de quem exibe continua mostrando
+        # "N/A" do mesmo jeito quando a chave nao existe.
+        return {}
 
 
 # =========================
