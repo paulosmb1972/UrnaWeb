@@ -908,23 +908,27 @@ class MotorFluxoMicroestrutura:
 def evento_a_partir_da_leitura_atual(
         dados_tela: dict, agentes_info: dict, fluxo_calculado: dict) -> EventoFluxoAgregado:
     """Constroi um EventoFluxoAgregado a partir do que ja existe hoje:
-    dados_tela (leitura de tela/IA), agentes_info (ofertantes_compra/venda),
-    fluxo_calculado (saida de calcular_pressao_fluxo). Nao inventa nenhum
-    campo -- so remapeia o que ja e coletado.
+    dados_tela (leitura de tela/IA), agentes_info (ofertantes_compra/venda,
+    cada oferta com "preco"/"qtde"/"agente"), fluxo_calculado (saida de
+    calcular_pressao_fluxo: "agressao_pct" 0-100 e "delta_agressao"). Nao
+    inventa nenhum campo -- so remapeia o que ja e coletado.
 
-    NUNCA assume nome de corretora: usa .get(..., None) e so promove pra
-    ModoDados.PARTICIPANTE se o campo realmente vier preenchido."""
+    NUNCA assume nome de corretora: quando o campo "agente" vem ausente OU
+    com o rotulo generico "BOOK" (o que o prompt de visao manda escrever
+    quando NAO ha nome legivel -- ver extrair_dados_tela), trata como
+    participante desconhecido e mantem ModoDados.AGREGADO."""
     niveis: List[NivelBook] = []
     participante_presente = False
     for lado, chave in (("compra", "ofertantes_compra"), ("venda", "ofertantes_venda")):
         for oferta in (agentes_info or {}).get(chave, []) or []:
-            nome = oferta.get("corretora") or oferta.get("participante")
+            _agente_bruto = str(oferta.get("agente", "") or "").strip()
+            nome = _agente_bruto if _agente_bruto and _agente_bruto.upper() != "BOOK" else None
             if nome:
                 participante_presente = True
             niveis.append(NivelBook(
                 preco=float(oferta.get("preco", 0) or 0),
-                qtd_compra=float(oferta.get("quantidade", 0) or 0) if lado == "compra" else 0.0,
-                qtd_venda=float(oferta.get("quantidade", 0) or 0) if lado == "venda" else 0.0,
+                qtd_compra=float(oferta.get("qtde", 0) or 0) if lado == "compra" else 0.0,
+                qtd_venda=float(oferta.get("qtde", 0) or 0) if lado == "venda" else 0.0,
                 participante_compra=nome if lado == "compra" else None,
                 participante_venda=nome if lado == "venda" else None,
             ))
@@ -935,6 +939,11 @@ def evento_a_partir_da_leitura_atual(
                          preco_referencia=float(dados_tela.get("preco_atual", 0) or 0))
 
     preco_atual = float(dados_tela.get("preco_atual", 0) or 0)
+    # calcular_pressao_fluxo devolve um UNICO "agressao_pct" (0-100, onde
+    # >50 = mais pressao compradora) -- nao dois campos separados. O
+    # complemento (100 - pct) e a leitura do lado vendedor, nao um campo
+    # que precisa vir de outro lugar.
+    _agressao_pct = float((fluxo_calculado or {}).get("agressao_pct", 50.0) or 50.0)
     return EventoFluxoAgregado(
         timestamp=datetime.now(),
         preco_abertura=float(dados_tela.get("abertura", preco_atual) or preco_atual),
@@ -942,8 +951,8 @@ def evento_a_partir_da_leitura_atual(
         maxima=float(dados_tela.get("maxima", preco_atual) or preco_atual),
         minima=float(dados_tela.get("minima", preco_atual) or preco_atual),
         volume_total=float(dados_tela.get("volume", 0) or 0),
-        agressao_compradora_pct=float((fluxo_calculado or {}).get("pressao_compradora", 0) or 0),
-        agressao_vendedora_pct=float((fluxo_calculado or {}).get("pressao_vendedora", 0) or 0),
+        agressao_compradora_pct=_agressao_pct,
+        agressao_vendedora_pct=100.0 - _agressao_pct,
         delta=float((fluxo_calculado or {}).get("delta_agressao", 0) or 0),
         book=book,
     )

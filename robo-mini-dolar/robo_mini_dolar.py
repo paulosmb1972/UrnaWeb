@@ -72,6 +72,8 @@ import pythoncom
 import win32com.client
 from streamlit_autorefresh import st_autorefresh
 import yfinance as yf
+from motor_fluxo_microestrutura import (
+    MotorFluxoMicroestrutura, ConfigMotorFluxo, evento_a_partir_da_leitura_atual)
 
 # add_script_run_ctx: forma oficial do Streamlit de dar a uma thread em
 # segundo plano acesso valido a st.session_state DESTA sessao (sem isso, a
@@ -1372,6 +1374,11 @@ defaults = {
     "_thread_analise_bg_obj": None,
     "_thread_bg_reinicios": 0,
     "_ultimo_erro_thread_bg": None,
+    # Motor de fluxo/microestrutura (aba Liquidez, painel novo em paralelo).
+    # Perfil conservador por padrao -- exige mais evidencia, classifica mais
+    # casos como indefinido em vez de arriscar falso positivo.
+    "motor_fluxo": MotorFluxoMicroestrutura(ConfigMotorFluxo.conservador()),
+    "classificacao_fluxo_micro": None,
     "disparos_anuncio_feitos": {},
     "ultimo_disparo_anuncio": "",
     "disparo_automatico": False,
@@ -7327,6 +7334,19 @@ def classificar_contexto(dados_tela, fechamento_ant=None, ignorar_macro=False):
     rompimento = gatilho_rompimento_candle(dados_tela)
     vel_real, vel_valida_ctx = calcular_velocidade_real(dados_tela, mom)
     fluxo_info = calcular_pressao_fluxo(st.session_state.get("ultimos_agentes", {}), preco, registrar=True)
+    # Motor de fluxo/microestrutura (painel novo, em paralelo, aba Liquidez).
+    # So ingere aqui -- 1x por leitura REAL, igual ao registrar=True acima --
+    # nunca no render (veredito_liquidez_aba roda a cada rerun do Streamlit
+    # e ingerir ali duplicaria a mesma leitura na janela rolante). Blindado
+    # com try/except: um bug num modulo novo/experimental nunca pode
+    # derrubar a analise principal.
+    try:
+        _evento_fluxo_micro = evento_a_partir_da_leitura_atual(
+            dados_tela, st.session_state.get("ultimos_agentes", {}), fluxo_info)
+        st.session_state["motor_fluxo"].ingerir(_evento_fluxo_micro)
+        st.session_state["classificacao_fluxo_micro"] = st.session_state["motor_fluxo"].classificar()
+    except Exception:
+        pass
     abertura_info = avaliar_janela_abertura(dados_tela, fechamento_ant)
     lotes_info = avaliar_lotes_institucionais(st.session_state.get("ultimos_agentes", {}), preco)
 
@@ -11492,6 +11512,58 @@ def render_liquidez_nomeada(ag, fluxo, preco_atual=0.0):
     if not tem_nomes:
         st.caption("Painel lido sem coluna de corretoras — certifique-se de que a captura do Book de Agentes está ativa.")
 
+
+def render_motor_fluxo_micro(classificacao):
+    """Painel do motor de fluxo/microestrutura (12 sinais: ordem escondida,
+    dominancia, absorcao, reposicao de lote, retirada de liquidez,
+    empilhamento, agressao compradora/vendedora, desequilibrio de execucao,
+    defesa de preco, rompimento com aceitacao/falso).
+
+    NOVO, roda em PARALELO ao painel de liquidez de sempre (nao substitui
+    nada) -- perfil conservador por padrao. So mostra sinais com
+    presente=True; o resto fica omitido (equivalente a "indefinido/sem
+    evidencia suficiente", igual ao resto do app nunca fabrica conviccao
+    do vazio)."""
+    if classificacao is None:
+        st.caption("Motor de fluxo ainda sem leitura acumulada — execute uma análise.")
+        return
+
+    _cor_conf = {"leitura_direta": "#00e676", "inferencia_forte": "#40c4ff",
+                 "inferencia_fraca": "#ffd740", "indefinido": "#8892a4"}
+    _cor_dir = {"compra": "#00e676", "venda": "#ff5252", "compradora": "#00e676",
+                "vendedora": "#ff5252"}
+
+    ativos = [s for s in classificacao.sinais.values() if s.presente]
+    st.caption(f"Modo de dados: **{classificacao.modo_dados.value}** "
+               f"({'sem' if classificacao.modo_dados.value == 'agregado' else 'com'} "
+               f"corretora/participante identificado) · {len(ativos)} de "
+               f"{len(classificacao.sinais)} sinais com evidência suficiente nesta janela.")
+
+    if not ativos:
+        st.info("Nenhum sinal com evidência suficiente nesta janela — motor conservador "
+                 "prefere indefinido a inferência fraca sem lastro.")
+        return
+
+    for s in sorted(ativos, key=lambda x: -x.score):
+        _cor = _cor_dir.get(s.direcao or "", "#8892a4")
+        _rotulo_dir = f" · {s.direcao.upper()}" if s.direcao else ""
+        st.markdown(
+            f'<div class="book-wrap" style="margin-bottom:6px;">'
+            f'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">'
+            f'<div><b>{s.tipo.replace("_"," ").title()}</b>{_rotulo_dir}'
+            f'<div style="font-size:12px;color:#8892a4;">{s.detalhe}</div></div>'
+            f'<div style="text-align:right;">'
+            f'<span class="pill" style="background:{_cor_conf.get(s.confianca.value,"#8892a4")}22;'
+            f'color:{_cor_conf.get(s.confianca.value,"#8892a4")};">{s.confianca.value}</span>'
+            f'<div style="font-size:11px;color:#8892a4;margin-top:2px;">score {s.score:.0f}</div>'
+            f'</div></div></div>', unsafe_allow_html=True)
+        with st.expander(f"Evidências — {s.tipo.replace('_',' ')}", expanded=False):
+            for ev in s.evidencias_favor:
+                st.caption(f"✅ {ev.descricao} (peso {ev.peso:+.0f})")
+            for ev in s.evidencias_contra:
+                st.caption(f"⚠️ {ev.descricao} (peso {ev.peso:+.0f})")
+
+
 # ---- GATEKEEPER DE TRAVAS (MODO SOMBRA) ----
 # MODO_SOMBRA=True: as travas AVALIAM e REGISTRAM, mas deixam o sinal passar.
 # E o unico jeito de medir o que cada trava custaria: sinal bloqueado nao gera
@@ -13590,6 +13662,21 @@ with aba_liquidez:
         render_volume_profile(_vol_profile_liq, _preco_liq)
     except Exception:
         st.caption("Volume Profile indisponível nesta leitura.")
+
+    # NOVO: motor de fluxo/microestrutura (12 sinais, perfil conservador).
+    # Roda em PARALELO ao painel de liquidez de sempre -- nao substitui nada
+    # acima. So ingere leitura nova dentro de classificar_contexto (uma vez
+    # por ciclo real); aqui so LE o ultimo resultado ja calculado.
+    st.markdown('<div class="section-title">🧬 Motor de fluxo/microestrutura (novo · conservador)</div>',
+                unsafe_allow_html=True)
+    st.caption("Ordem escondida, dominância, absorção, reposição de lote, retirada de liquidez, "
+               "empilhamento, agressão, desequilíbrio de execução, defesa de preço e rompimento "
+               "(com aceitação / falso). Sinais sem evidência suficiente ficam omitidos — nunca "
+               "fabrica confiança do vazio.")
+    try:
+        render_motor_fluxo_micro(st.session_state.get("classificacao_fluxo_micro"))
+    except Exception as _e_motor_fluxo:
+        st.caption(f"Motor de fluxo indisponível nesta leitura: {type(_e_motor_fluxo).__name__}.")
 
 
 # ============================================================
