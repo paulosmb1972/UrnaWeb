@@ -2676,12 +2676,18 @@ def _registrar_data_pmi_manual(chave_data):
     st.session_state[chave_data] = datetime.now().strftime("%Y-%m-%d")
 
 
-def ler_dados_macro():
-    """Le o macro salvo e mescla os valores de PMI informados na interface
-    -- so enquanto ainda estiverem dentro da validade (ver
-    _pmi_manual_esta_fresco); passado isso entram como indisponivel, nunca
-    como um valor antigo silencioso."""
-    _base = _ler_macro_arquivo()
+def _mesclar_pmi_manual(base):
+    """Mescla os valores de PMI informados na interface em cima de um dict
+    de macro ja existente -- so enquanto ainda estiverem dentro da validade
+    (ver _pmi_manual_esta_fresco); passado isso entram como indisponivel,
+    nunca como um valor antigo silencioso. Extraida de ler_dados_macro()
+    pra ser reaproveitada tambem no REPLAY (ver macro_atual_ou_replay):
+    PMI e um numero mensal do mundo real, o mesmo em qualquer dia que o
+    replay estiver mostrando -- nao e "dado de hoje vazando pro passado"
+    como DXY/EWZ/VIX/PTAX (esses sim so fazem sentido do dia exato). Usuario
+    pediu explicitamente que o PMI digitado fique invariavel ate ele digitar
+    de novo, em QUALQUER modo, ao vivo ou replay."""
+    base = dict(base or {})
     try:
         for _k, _s, _sd in (("PMI_ISM_SERVICOS", "pmi_ism_servicos", None),
                             ("PMI_SP_SERVICOS", "pmi_sp_servicos", None),
@@ -2689,10 +2695,16 @@ def ler_dados_macro():
                             ("PMI_COMPOSTO", "pmi_composto", "pmi_composto_data")):
             _v = float(st.session_state.get(_s, 0) or 0)
             if _v > 0 and (_sd is None or _pmi_manual_esta_fresco(_sd)):
-                _base[_k] = _v
+                base[_k] = _v
     except Exception:
         pass
-    return _base
+    return base
+
+
+def ler_dados_macro():
+    """Le o macro salvo e mescla os valores de PMI informados na interface
+    (ver _mesclar_pmi_manual)."""
+    return _mesclar_pmi_manual(_ler_macro_arquivo())
 
 
 def macro_atual_ou_replay(dados_tela=None):
@@ -2709,12 +2721,19 @@ def macro_atual_ou_replay(dados_tela=None):
     'modo_replay_ativo' (nunca setada em lugar nenhum; a de verdade e
     'modo_replay'), o que fazia os dois SEMPRE cair no ramo ao vivo mesmo
     durante o replay — contaminando tanto a decisao quanto o CSV com
-    DXY/EWZ/VIX/PTAX/PMI de HOJE em vez do dia replayado."""
+    DXY/EWZ/VIX/PTAX/PMI de HOJE em vez do dia replayado.
+
+    BUG CORRIGIDO (2) — usuario relatou o PMI manual "nao pegando" durante
+    replay: macro_para_replay() busca o PMI historico da DATA replayada
+    (BCB/FRED/FMP), nunca olhava pro que foi digitado no expander manual.
+    Como PMI e mensal e nao muda dependendo de qual dia esta sendo
+    replayado, a entrada manual agora se aplica aqui tambem."""
     if st.session_state.get("modo_replay"):
-        return macro_para_replay(
+        _m = macro_para_replay(
             st.session_state.get("replay_data")
             or str((dados_tela or st.session_state.get("ultimos_dados_tela") or {})
                    .get("data_replay", ""))[:10])
+        return _mesclar_pmi_manual(_m)
     return ler_dados_macro()
 
 

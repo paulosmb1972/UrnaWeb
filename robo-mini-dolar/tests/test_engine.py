@@ -462,6 +462,19 @@ class TestMacroAtualOuReplayFonteUnica(unittest.TestCase):
         self.f()
         self.assertEqual(self._chamadas, [("replay", "2026-09-15")])
 
+    def test_pmi_manual_se_aplica_tambem_no_replay(self):
+        """Usuario relatou o PMI manual "nao pegando" durante o replay --
+        macro_para_replay() busca o PMI historico da data replayada e nunca
+        olhava pro que foi digitado no expander manual. PMI e mensal e nao
+        muda dependendo do dia replayado, entao a entrada manual (fresca)
+        tem que valer aqui tambem, exatamente como no modo ao vivo."""
+        FAKE_ST.session_state["modo_replay"] = True
+        FAKE_ST.session_state["replay_data"] = "2026-09-15"
+        FAKE_ST.session_state["pmi_composto"] = 58.4
+        FAKE_ST.session_state["pmi_composto_data"] = NS["datetime"].now().strftime("%Y-%m-%d")
+        r = self.f()
+        self.assertEqual(r.get("PMI_COMPOSTO"), 58.4)
+
     def test_chave_morta_modo_replay_ativo_nao_afeta_mais_a_escolha(self):
         """Regressao direta do bug: setar a chave ERRADA (que algum codigo
         antigo ainda podia ter deixado no session_state) nao pode fazer a
