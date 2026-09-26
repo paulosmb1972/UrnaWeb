@@ -858,9 +858,27 @@ class TestRodarCicloAutomaticoRegistraDesfecho(unittest.TestCase):
         def _falha():
             raise RuntimeError("falha simulada de captura")
         NS["executar_analise"] = _falha
-        self.rodar("ciclo_5min")
+        with self.assertRaises(RuntimeError):
+            self.rodar("ciclo_5min")
         self.assertEqual(FAKE_ST.session_state.get("auto_analise_erros"), 1)
         self.assertIn("falha simulada", str(FAKE_ST.session_state.get("ultimo_erro_ciclo")))
+
+    def test_excecao_base_exception_tambem_incrementa_erros_antes_de_propagar(self):
+        """BUG CORRIGIDO — antes so pegava Exception; uma excecao de controle
+        do Streamlit (BaseException, nao Exception) escapava sem cair em
+        NENHUM dos 3 contadores (tentativa 'orfa': incrementada mas nunca
+        classificada). Reproduzido com KeyboardInterrupt so como exemplo de
+        BaseException que nao e Exception -- o importante e que o motivo
+        fica contado ANTES de propagar de novo (nunca engolido)."""
+        def _falha_base():
+            raise KeyboardInterrupt("simulando excecao de controle do Streamlit")
+        NS["executar_analise"] = _falha_base
+        with self.assertRaises(KeyboardInterrupt):
+            self.rodar("ciclo_5min")
+        self.assertEqual(FAKE_ST.session_state.get("auto_analise_tentativas"), 1)
+        self.assertEqual(FAKE_ST.session_state.get("auto_analise_erros"), 1)
+        self.assertEqual(FAKE_ST.session_state.get("auto_analise_salvos", 0), 0)
+        self.assertEqual(FAKE_ST.session_state.get("auto_analise_duplicados", 0), 0)
 
 
 class TestGatekeeperTendenciaAcimaDoFluxo(unittest.TestCase):

@@ -12619,9 +12619,25 @@ def _rodar_ciclo_automatico(origem, disp_glob=False, chave_glob="", evento_glob=
             st.session_state["auto_analise_erros"] = int(st.session_state.get("auto_analise_erros", 0)) + 1
         else:
             st.session_state["auto_analise_salvos"] = int(st.session_state.get("auto_analise_salvos", 0)) + 1
-    except Exception as _e:
+    except BaseException as _e:
+        # BUG CORRIGIDO — so pegava Exception. Usuario relatou "tentativas:
+        # 10, salvos: 8, duplicados: 0, erros: 0" -- 2 tentativas orfas,
+        # sem cair em NENHUM dos 3 contadores. Causa: o Streamlit usa
+        # excecoes de controle (RerunException/StopException) que herdam de
+        # BaseException DE PROPOSITO, pra atravessar um "except Exception"
+        # alheio sem serem contadas como erro comum -- se uma delas escapar
+        # daqui, o ciclo nem cai no "salvos" (nao chegou a classificar o
+        # diagnostico) nem no "erros" (o except antigo nao pegava), so
+        # incrementava "tentativas" e sumia sem deixar rastro. Agora conta
+        # como erro ANTES de propagar de novo (o "raise" no final): no
+        # gatilho do proprio rerun do Streamlit isso deixa a excecao seguir
+        # pro scriptrunner normalmente (nunca pode ser engolida ali, senao
+        # quebra o proprio mecanismo de rerun); na thread de segundo plano,
+        # quem pega depois e o "except BaseException" de
+        # _loop_analise_automatica_background, que so loga e continua.
         st.session_state["ultimo_erro_ciclo"] = str(_e)
         st.session_state["auto_analise_erros"] = int(st.session_state.get("auto_analise_erros", 0)) + 1
+        raise
 
 
 def _loop_analise_automatica_background():
