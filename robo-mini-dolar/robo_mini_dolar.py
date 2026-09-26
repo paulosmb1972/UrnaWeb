@@ -6041,15 +6041,29 @@ def peso_pmi_eua(macro):
 
     PMI forte (>52)  -> economia americana aquecida -> dolar tende a SUBIR  -> vies comprador
     PMI fraco (<48)  -> economia desacelerando      -> dolar tende a CAIR   -> vies vendedor
-    """
+
+    BUG CORRIGIDO — usuario digitou o PMI manualmente e viu na tela um
+    numero DIFERENTE do que tinha digitado. Causa: a media somava o valor
+    manual (PMI_MANUFATURA/PMI_COMPOSTO) JUNTO com a raspagem automatica
+    (PMI_ISM_SERVICOS/PMI_SP_SERVICOS/PMI generico -- fonte instavel, sem
+    chave paga, historico de ler o indicador errado, ver o bug do campo
+    "ptax" do prompt de visao corrigido antes), diluindo o numero que o
+    usuario efetivamente confirmou com um numero que ele nao digitou e nao
+    controla. Agora: quando existe entrada MANUAL fresca (ver
+    _pmi_manual_esta_fresco em ler_dados_macro), ela sozinha decide --
+    fica invariavel ate o usuario digitar de novo, exatamente como pedido.
+    So cai pra raspagem automatica quando NAO ha nenhuma entrada manual
+    valida."""
     if not macro:
         return {"pmi": None, "vies": "neutro", "peso": 0, "descricao": "PMI indisponivel"}
 
-    valores = []
-    for chave in ("PMI_ISM_SERVICOS", "PMI_SP_SERVICOS", "PMI_COMPOSTO", "PMI_MANUFATURA", "PMI"):
-        v = num(macro.get(chave))
-        if 20 < v < 80:
-            valores.append(v)
+    valores_manuais = [num(macro.get(c)) for c in ("PMI_MANUFATURA", "PMI_COMPOSTO")]
+    valores_manuais = [v for v in valores_manuais if 20 < v < 80]
+    if valores_manuais:
+        valores = valores_manuais
+    else:
+        valores = [num(macro.get(c)) for c in ("PMI_ISM_SERVICOS", "PMI_SP_SERVICOS", "PMI")]
+        valores = [v for v in valores if 20 < v < 80]
     if not valores:
         return {"pmi": None, "vies": "neutro", "peso": 0, "descricao": "PMI indisponivel"}
 
@@ -13509,7 +13523,19 @@ with aba_macro:
     mcol1.metric("DXY", _mac_bruto.get("DXY", "N/A"))
     mcol2.metric("EWZ", _mac_bruto.get("EWZ", "N/A"))
     mcol3.metric("VIX", _mac_bruto.get("VIX", "N/A"))
-    mcol4.metric("PMI EUA", _mac_bruto.get("PMI", "N/A"))
+    # BUG CORRIGIDO — mostrava _mac_bruto.get("PMI"), a raspagem automatica
+    # (fonte sem chave paga, historico de ler o indicador errado) -- um
+    # numero DIFERENTE do que o usuario digitava no expander "Preencher PMI
+    # manualmente" logo abaixo, mesmo quando a entrada manual estava
+    # ativa e sendo usada de verdade na decisao. Agora mostra o MESMO valor
+    # que peso_pmi_eua() efetivamente usa (prioriza manual sobre a
+    # raspagem — ver peso_pmi_eua), com a fonte explicita.
+    _pmi_efetivo = peso_pmi_eua(_mac_bruto)
+    _pmi_txt = f"{_pmi_efetivo['pmi']}" if _pmi_efetivo.get("pmi") is not None else "N/A"
+    _pmi_fonte_manual = any(20 < num(_mac_bruto.get(c)) < 80 for c in ("PMI_MANUFATURA", "PMI_COMPOSTO"))
+    mcol4.metric("PMI EUA", _pmi_txt,
+                 help="Manual (digitado no expander abaixo)" if _pmi_fonte_manual
+                 else "Automático (raspagem web — sem chave paga, pode ficar indisponível)")
     mcol5.metric("PTAX", _mac_bruto.get("PTAX", "N/A"))
     if _mac_bruto.get("indisponiveis"):
         st.caption("Sem leitura de: " + ", ".join(str(x) for x in _mac_bruto["indisponiveis"]))

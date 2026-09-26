@@ -335,6 +335,48 @@ class TestVeredictoMacroAbaRespeitaReplay(unittest.TestCase):
         self.assertEqual(self._chamadas, [("replay", "2026-09-15")])
 
 
+class TestPesoPmiEuaPriorizaManualSobreAutomatico(unittest.TestCase):
+    """Usuario relatou: digitou o PMI manualmente e a tela mostrava um
+    numero DIFERENTE do que ele tinha digitado, e o macro continuava preso
+    em 0%/neutro. Causa: peso_pmi_eua() fazia a MEDIA de tudo que achasse
+    (PMI_ISM_SERVICOS/PMI_SP_SERVICOS/PMI automaticos + PMI_MANUFATURA/
+    PMI_COMPOSTO manuais), diluindo o valor que o usuario confirmou com um
+    numero de uma fonte automatica sem chave paga (historico de ler o
+    indicador errado). Pedido explicito do usuario: o registro manual tem
+    que ficar invariavel ate ele digitar de novo -- nunca mais misturado
+    com a raspagem automatica."""
+
+    def setUp(self):
+        self.peso_pmi_eua = NS["peso_pmi_eua"]
+
+    def test_manual_sozinho_decide_ignora_automatico_divergente(self):
+        """Automatico (PMI_ISM_SERVICOS) diverge bastante do manual -- o
+        resultado tem que ser EXATAMENTE o manual, sem media."""
+        macro = {"PMI_COMPOSTO": 58.4, "PMI_MANUFATURA": 57.0,
+                 "PMI_ISM_SERVICOS": 51.7, "PMI": 51.7}
+        r = self.peso_pmi_eua(macro)
+        self.assertAlmostEqual(r["pmi"], (58.4 + 57.0) / 2, places=1)
+        self.assertEqual(r["vies"], "comprador")
+
+    def test_so_um_campo_manual_preenchido_ainda_ignora_automatico(self):
+        macro = {"PMI_COMPOSTO": 58.4, "PMI_ISM_SERVICOS": 40.0, "PMI": 40.0}
+        r = self.peso_pmi_eua(macro)
+        self.assertAlmostEqual(r["pmi"], 58.4, places=1)
+
+    def test_sem_manual_cai_para_automatico_como_antes(self):
+        """Controle: sem nenhuma entrada manual valida, comportamento de
+        sempre (usa a raspagem automatica)."""
+        macro = {"PMI_ISM_SERVICOS": 45.0, "PMI_SP_SERVICOS": 47.0}
+        r = self.peso_pmi_eua(macro)
+        self.assertAlmostEqual(r["pmi"], (45.0 + 47.0) / 2, places=1)
+
+    def test_manual_fora_da_faixa_valida_nao_conta_cai_para_automatico(self):
+        """0 (nunca preenchido) nao pode ser tratado como manual valido."""
+        macro = {"PMI_MANUFATURA": 0, "PMI_COMPOSTO": 0, "PMI_ISM_SERVICOS": 55.0}
+        r = self.peso_pmi_eua(macro)
+        self.assertAlmostEqual(r["pmi"], 55.0, places=1)
+
+
 class TestPmiManualExpiraValidade(unittest.TestCase):
     """Usuario relatou: a aba Macro nunca indicava 'venda', so 'compra' ou
     'neutro' -- em 676 linhas do historico. Causa raiz: o PMI digitado a
